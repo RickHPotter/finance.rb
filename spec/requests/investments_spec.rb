@@ -716,6 +716,18 @@ RSpec.describe "Investments", type: :request do
         month: 3,
         year: 2026
       )
+      create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account: create(:user_bank_account, :random, user:),
+        investment_type: create(:investment_type, :random),
+        description: "Unrelated March investment",
+        price: 5678,
+        date: Date.new(2026, 3, 18),
+        month: 3,
+        year: 2026
+      )
 
       expect do
         post investments_path, params: {
@@ -735,8 +747,13 @@ RSpec.describe "Investments", type: :request do
 
       expect(response).to have_http_status(:see_other)
       destination = URI.parse(response.location).request_uri
-      expect(destination).to include("investment%5Buser_bank_account_id%5D", "investment%5Binvestment_type_id%5D", "202603")
+      expect(destination).to include("investment%5Buser_bank_account_id%5D", "investment%5Binvestment_type_id%5D", "202603", "full_month_counts=1")
       expect(destination).not_to include("investment%5Bid%5D")
+
+      get destination, headers: html_headers
+
+      month_button = Nokogiri::HTML.fragment(response.body).at_css("[data-month-year='202603']")
+      expect(month_button["data-count"]).to eq(user.main_context.investments.where(year: 2026, month: 3).count.to_s)
     end
 
     it "shows every investment in the duplicated account, type, and reference month" do
@@ -749,6 +766,18 @@ RSpec.describe "Investments", type: :request do
         description: "Existing grouped investment",
         price: 1000,
         date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026
+      )
+      create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account: create(:user_bank_account, :random, user:),
+        investment_type: create(:investment_type, :random),
+        description: "Unrelated grouped investment",
+        price: 900,
+        date: Date.new(2026, 3, 12),
         month: 3,
         year: 2026
       )
@@ -768,12 +797,13 @@ RSpec.describe "Investments", type: :request do
       }, headers: turbo_stream_headers
 
       expect(response).to have_http_status(:see_other)
-      expect(response.location).to include("investment%5Buser_bank_account_id%5D", "investment%5Binvestment_type_id%5D")
+      expect(response.location).to include("investment%5Buser_bank_account_id%5D", "investment%5Binvestment_type_id%5D", "full_month_counts=1")
       expect(response.location).not_to include("investment%5Bid%5D")
 
       get URI.parse(response.location).request_uri, headers: html_headers
 
       document = Nokogiri::HTML.fragment(response.body)
+      expect(document.at_css("[data-month-year='202603']")["data-count"]).to eq("3")
       frame_path = document.at_css("#month_year_container_202603")["src"]
       get frame_path, headers: html_headers
 

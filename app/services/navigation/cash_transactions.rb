@@ -10,6 +10,7 @@ module Navigation
       direction: :scalar,
       exchange_bound_type: :scalar,
       force_mobile: :scalar,
+      full_month_counts: :scalar,
       from_ct_price: :scalar,
       from_date: :scalar,
       from_installments_count: :scalar,

@@ -133,7 +133,11 @@ class InvestmentsController < ApplicationController
     investment_type_id = [ investment_params[:investment_type_id] ].flatten&.compact_blank
     piggy_bank_return_cash_transaction_id = [ investment_params[:piggy_bank_return_cash_transaction_id] ].flatten&.compact_blank
 
-    count_by_month_year = Logic::Investments.find_count_based_on_search(current_context, investment_params, search_investment_params)
+    count_by_month_year = if full_month_counts?
+                            Logic::Investments.find_count_based_on_search(current_context, {}, {})
+                          else
+                            Logic::Investments.find_count_based_on_search(current_context, investment_params, search_investment_params)
+                          end
 
     @index_context = {
       current_user:,
@@ -191,6 +195,7 @@ class InvestmentsController < ApplicationController
     destination = investments_path(
       default_year: months.max.to_s.first(4).to_i,
       active_month_years: months.to_json,
+      full_month_counts: "1",
       investment: filters
     )
     investment_navigation_destination(destination)
@@ -304,8 +309,10 @@ class InvestmentsController < ApplicationController
   end
 
   def search_investment_params
-    params.permit(%i[search_term month_year])
+    params.permit(%i[search_term month_year full_month_counts])
   end
+
+  def full_month_counts? = ActiveModel::Type::Boolean.new.cast(search_investment_params[:full_month_counts])
 
   def investment_params
     return {} if params[:investment].blank?

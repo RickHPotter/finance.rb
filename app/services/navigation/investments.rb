@@ -5,6 +5,7 @@ module Navigation
     QUERY_SCHEMA = {
       active_month_years: :scalar_or_array,
       default_year: :scalar,
+      full_month_counts: :scalar,
       search_term: :scalar,
       investment: {
         id: :scalar_or_array,

@@ -464,6 +464,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       user_card_id: @card_transaction.user_card_id,
       active_month_years: active_month_years.to_json,
       default_year: active_month_years.max.to_s.first(4).to_i,
+      full_month_counts: "1",
       card_transaction: { card_installment_ids: installment_ids }
     )
 
@@ -554,6 +555,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
         to_installments_number
         exchange_bound_type
         month_year
+        full_month_counts
         force_mobile
         sort
         direction

@@ -253,6 +253,16 @@ RSpec.describe "CashTransactions", type: :request do
         month: 4,
         year: 2026
       )
+      create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Unrelated April cash transaction",
+        date: Date.new(2026, 4, 8),
+        month: 4,
+        year: 2026
+      )
 
       get edit_cash_transaction_path(existing_cash_transaction)
 
@@ -1153,11 +1163,15 @@ RSpec.describe "CashTransactions", type: :request do
       end.not_to change(CashTransaction, :count)
 
       expect(response).to have_http_status(:see_other)
+      expect(response.location).to include("full_month_counts=1")
       follow_redirect!
       expect(request.path).to eq(cash_transactions_path)
       expect(response.body).to include("month_year_container_202604")
       expect(response.body).to include("cash_transaction%5Bcash_installment_ids%5D")
       expect(response.body).not_to include("Chain Creating")
+      month_button = Nokogiri::HTML.fragment(response.body).at_css("[data-month-year='202604']")
+      expected_count = user.main_context.cash_installments.where(year: 2026, month: 4).count
+      expect(month_button["data-count"]).to eq(expected_count.to_s)
     end
 
     it "keeps duplicate chain controls checked on hidden update submits" do

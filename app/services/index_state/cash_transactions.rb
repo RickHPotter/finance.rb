@@ -32,6 +32,7 @@ module IndexState
       :exchange_bound_type,
       :skip_budgets,
       :force_mobile,
+      :full_month_counts,
       :sort,
       :direction
     ].freeze
@@ -219,6 +220,8 @@ module IndexState
     end
 
     def count_by_month_year_for
+      return Logic::CashTransactions.find_count_based_on_search(current_context, {}, {}) if boolean(source_context[:full_month_counts])
+
       if params[:action].in?(%w[create update]) && selection_context.blank?
         Logic::CashTransactions.find_count_based_on_search(current_context, {}, {})
       else

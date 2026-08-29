@@ -715,6 +715,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     destination = cash_transactions_path(
       active_month_years: active_month_years.to_json,
       default_year: active_month_years.max.to_s.first(4).to_i,
+      full_month_counts: "1",
       cash_transaction: { cash_installment_ids: installment_ids }
     )
 
@@ -963,6 +964,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         pending
         paid_state
         month_year
+        full_month_counts
         skip_budgets
         force_mobile
         sort

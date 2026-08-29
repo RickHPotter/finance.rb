@@ -23,6 +23,7 @@ module IndexState
       *RANGE_FILTER_KEYS,
       :exchange_bound_type,
       :force_mobile,
+      :full_month_counts,
       :sort,
       :direction,
       :order_by
@@ -245,6 +246,8 @@ module IndexState
     end
 
     def transaction_filters_for_count
+      return { user_card_id: resolved_user_card&.id }.compact if boolean(source_context[:full_month_counts])
+
       compact_filter_context.merge(user_card_id: resolved_user_card&.id || [])
     end
 
