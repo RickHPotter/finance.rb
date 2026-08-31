@@ -380,6 +380,7 @@ export default class extends Controller {
 
     if (active) this.syncPiggyBankDefault()
     if (active) this.syncPiggyBankAttachmentOptions()
+    this.element.dispatchEvent(new CustomEvent("piggy-bank-mode-changed"))
   }
 
   syncPiggyBankDefault() {

@@ -67,6 +67,13 @@ module Views
         end
 
         span(class: "entities_entity_name text-nowrap") { entity_transaction.entity&.entity_name }
+
+        span(
+          class: "#{'hidden ' unless piggy_bank_return_price_mismatch?}shrink-0 scale-75 text-amber-500 dark:text-amber-300",
+          title: I18n.t("piggy_banks.return_price_mismatch"),
+          aria: { label: I18n.t("piggy_banks.return_price_mismatch") },
+          data: { entity_transaction_target: :allocationWarning }
+        ) { cached_icon(:warning_octagon) }
       end
 
       def entity_chip_class
@@ -77,6 +84,12 @@ module Views
       def remove_button_class
         "ms-2 inline-flex items-center rounded-xs bg-white p-1 text-sm text-black dark:bg-slate-900 dark:text-slate-300 " \
           "dark:hover:bg-slate-700 dark:hover:text-slate-100"
+      end
+
+      def piggy_bank_return_price_mismatch?
+        return false unless transactable.is_a?(CashTransaction) && transactable.piggy_bank_source?
+
+        transactable.piggy_bank&.return_price.to_i != transactable.price.to_i.abs
       end
     end
   end

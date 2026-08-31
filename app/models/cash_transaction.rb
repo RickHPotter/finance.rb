@@ -457,7 +457,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   def prevent_paid_piggy_bank_rewrite
     return if piggy_bank.blank? || !piggy_bank.paid_history?
 
-    projection_changed = piggy_bank.changed? || piggy_bank.marked_for_destruction?
+    projection_changed = piggy_bank.marked_for_destruction? || (piggy_bank.changed_attribute_names_to_save - [ "return_price" ]).present?
     source_changed = will_save_change_to_price? || will_save_change_to_user_bank_account_id? || piggy_bank_allocation_changed?
     errors.add(:base, :piggy_bank_paid_history_locked) if projection_changed || source_changed
   end

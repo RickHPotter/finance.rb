@@ -35,7 +35,7 @@ RSpec.describe "CashTransactions", type: :request do
 
   before { sign_in user }
 
-  def create_piggy_bank_source(description:, return_transaction: nil, price: 5_000)
+  def create_piggy_bank_source(description:, return_transaction: nil, price: 5_000, return_price: price)
     source = build(
       :cash_transaction,
       user:,
@@ -46,7 +46,7 @@ RSpec.describe "CashTransactions", type: :request do
       cash_installments: [ build(:cash_installment, number: 1, price: -price, date: Time.zone.now) ],
       category_transactions: [ CategoryTransaction.new(category: user.built_in_category("PIGGY BANK")) ],
       entity_transactions: [ EntityTransaction.new(entity:, price: 0, price_to_be_returned: 0, is_payer: false) ],
-      piggy_bank: PiggyBank.new(return_price: price, return_date: 3.months.from_now, return_cash_transaction: return_transaction)
+      piggy_bank: PiggyBank.new(return_price:, return_date: 3.months.from_now, return_cash_transaction: return_transaction)
     )
     source.save!
     source
@@ -91,6 +91,20 @@ RSpec.describe "CashTransactions", type: :request do
       expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present
       expect(price_input["readonly"]).to be_nil
       expect(price_input["name"]).to eq("cash_transaction[cash_installments_attributes][0][price]")
+    end
+
+    it "marks a Piggy Bank entity when its return differs from the source transaction" do
+      source = create_piggy_bank_source(description: "Discounted reserve", price: 800, return_price: 500)
+
+      get edit_cash_transaction_path(source)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      icon_warning = document.at_css('span[data-entity-transaction-target~="allocationWarning"]')
+      message_warning = document.at_css('p[data-entity-transaction-target~="allocationWarning"]')
+
+      expect(icon_warning["class"].to_s.split).not_to include("hidden")
+      expect(message_warning["class"].to_s.split).not_to include("hidden")
+      expect(response.body).to include(I18n.t("piggy_banks.return_price_mismatch"))
     end
 
     it "renders paid installment datetimes as read-only while keeping their canonical values enabled" do
@@ -2120,6 +2134,56 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to redirect_to(cash_transactions_path)
       expect(flash[:notice]).to eq(I18n.t("notification.updateda", model: CashTransaction.model_name.human))
       expect(@existing_cash_transaction.reload.description).to eq(original_description)
+    end
+
+    it "updates a mismatched Piggy Bank return while preserving its paid portion" do
+      source = create_piggy_bank_source(description: "Editable discounted reserve", price: 800, return_price: 500)
+      piggy_bank = source.piggy_bank
+      generated_return = piggy_bank.return_cash_transaction
+      original_return_installment = generated_return.cash_installments.first
+      original_return_installment.update!(price: 100, starting_price: 100, paid: true)
+      Logic::Manipulation::CashInstallment.new(original_return_installment).split_installment(generated_return.date, 400)
+      source_installment = source.cash_installments.first
+      category_transaction = source.category_transactions.first
+      entity_transaction = source.entity_transactions.first
+
+      put cash_transaction_path(source), params: {
+        cash_transaction: {
+          description: source.description,
+          price: source.price,
+          date: source.date,
+          month: source.month,
+          year: source.year,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          cash_installments_attributes: [
+            source_installment.slice(:id, :number, :date, :month, :year, :price, :paid)
+          ],
+          category_transactions_attributes: [
+            { id: category_transaction.id, category_id: category_transaction.category_id }
+          ],
+          entity_transactions_attributes: [
+            {
+              id: entity_transaction.id,
+              entity_id: entity_transaction.entity_id,
+              price: entity_transaction.price,
+              price_to_be_returned: entity_transaction.price_to_be_returned,
+              loan_return_percentage: entity_transaction.loan_return_percentage,
+              exchanges_attributes: []
+            }
+          ],
+          piggy_bank_attributes: {
+            id: piggy_bank.id,
+            return_date: piggy_bank.return_date.strftime("%Y-%m-%dT%H:%M"),
+            return_price: 600
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      expect(piggy_bank.reload.return_price).to eq(600)
+      expect(generated_return.reload.price).to eq(600)
+      expect(generated_return.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 100, true ], [ 500, false ] ])
     end
 
     it "shows generic and detailed failure notifications when update validation fails" do
