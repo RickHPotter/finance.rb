@@ -25,6 +25,7 @@
     - [KAKASHI-19: Harden internal and external entity ledgers](#kakashi-19-harden-internal-and-external-entity-ledgers)
     - [KAKASHI-20: Audit spec quality and application performance](#kakashi-20-audit-spec-quality-and-application-performance)
     - [KAKASHI-21: Choose how a user-card reference merge reallocates installments](#kakashi-21-choose-how-a-user-card-reference-merge-reallocates-installments)
+    - [KAKASHI-22: Reconcile Piggy Bank valuation under IOF constraints](#kakashi-22-reconcile-piggy-bank-valuation-under-iof-constraints)
   - [CONCLUSION](#conclusion)
 <!--toc:end-->
 
@@ -1508,6 +1509,35 @@ References:
 - [implementation slices](docs/sprints/4-kakashi/kakashi-21/02-implementation-slices.md)
 - [decisions and test matrix](docs/sprints/4-kakashi/kakashi-21/03-decisions-and-test-matrix.md)
 
+### KAKASHI-22: Reconcile Piggy Bank valuation under IOF constraints
+
+Goal: let Piggy Bank valuation remain useful when the bank provides no daily profit
+history and the amount economically available before day 30 differs from gross yield
+because of IOF.
+
+Exploration direction:
+
+- reuse linked signed `Investment` rows as valuation deltas instead of requiring daily
+  entries
+- prefer sparse reconciliation against the bank's observed net redeemable total
+- calculate the required delta from the observed total and the currently recorded
+  Piggy Bank return
+- recognize no profit when IOF leaves net redeemable value equal to principal
+- allow a single catch-up valuation when accumulated profit becomes available
+- avoid computing tax rules or synthesizing daily accrual without authoritative data
+- preserve separate maturity clocks for contributions made on different dates
+- keep an IOF-free/availability date conceptually separate from projected withdrawal
+  date
+- retain current paid-history, audit-operation, projection synchronization, and guarded
+  rollback guarantees
+
+This direction is not locked. It depends on confirming what the bank exposes during the
+30-day period and whether each contribution has an independent IOF clock.
+
+Reference:
+
+- [product exploration](docs/sprints/4-kakashi/kakashi-22/01-piggy-bank-net-valuation-exploration.md)
+
 ## CONCLUSION
 
 Kakashi should leave the application more predictable after Jiraiya: subscription and
@@ -1532,4 +1562,6 @@ cleaning outdated or wasteful test setup, and using slow examples to improve app
 hot paths without sacrificing financial regression coverage. `KAKASHI-21` makes the
 user-card reference merge decision explicit, adds Itaú-style sequence reallocation,
 and requires the entire resulting financial graph to remain eligible for guarded,
-operation-wide rollback.
+operation-wide rollback. `KAKASHI-22` records the next Piggy Bank discovery direction:
+sparse net-value reconciliation, contribution-level IOF maturity, and no invented daily
+profit history.
