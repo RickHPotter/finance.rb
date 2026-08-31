@@ -145,6 +145,93 @@ RSpec.describe Exchange, type: :model do
       expect(paid_exchange.mirrored_paid?).to be(true)
       expect(unpaid_exchange.mirrored_paid?).to be(false)
     end
+
+    it "adds a standalone exchange only once when moving it into a card-bound projection with paid history" do
+      user = create(:user)
+      user_card = create(:user_card, user:)
+      entity = create(:entity, user:)
+      september_source = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Existing September exchange",
+        price: -10_000,
+        date: Date.new(2026, 8, 10),
+        month: 9,
+        year: 2026
+      )
+      september_entity_transaction = create(
+        :entity_transaction,
+        transactable: september_source,
+        entity:,
+        is_payer: true,
+        price: 10_000,
+        price_to_be_returned: 10_000
+      )
+      existing_exchange = create(
+        :exchange,
+        entity_transaction: september_entity_transaction,
+        bound_type: :card_bound,
+        exchange_type: :monetary,
+        price: 10_000,
+        date: Date.new(2026, 9, 10),
+        month: 9,
+        year: 2026
+      )
+      shared_return = existing_exchange.cash_transaction
+      original_installment = shared_return.cash_installments.first
+      original_installment.update_columns(price: 8_000, starting_price: 8_000, paid: true, cash_installments_count: 2)
+      shared_return.cash_installments.create!(
+        number: 2,
+        price: 2_000,
+        starting_price: 2_000,
+        date: shared_return.date,
+        month: 9,
+        year: 2026,
+        cash_installments_count: 2,
+        paid: false
+      )
+      shared_return.update_columns(cash_installments_count: 2, paid: false)
+
+      standalone_source = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Standalone December exchange",
+        price: -3_000,
+        date: Date.new(2026, 11, 10),
+        month: 12,
+        year: 2026
+      )
+      standalone_entity_transaction = create(
+        :entity_transaction,
+        transactable: standalone_source,
+        entity:,
+        is_payer: true,
+        price: 3_000,
+        price_to_be_returned: 3_000
+      )
+      exchange = create(
+        :exchange,
+        entity_transaction: standalone_entity_transaction,
+        bound_type: :standalone,
+        exchange_type: :monetary,
+        price: 3_000,
+        date: Date.new(2026, 12, 10),
+        month: 12,
+        year: 2026
+      )
+      standalone_return_id = exchange.cash_transaction_id
+
+      exchange.update!(bound_type: :card_bound, date: Date.new(2026, 9, 10), month: 9, year: 2026)
+
+      expect(exchange.reload.cash_transaction).to eq(shared_return)
+      expect(shared_return.reload.price).to eq(13_000)
+      expect(shared_return.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 8_000, true ], [ 5_000, false ] ])
+      expect(CashTransaction.exists?(standalone_return_id)).to be(false)
+    end
   end
 end
 
