@@ -119,6 +119,10 @@ RSpec.describe Investment, type: :model do
     context "( when new investments are created )" do
       before { cash_transaction.reload }
 
+      it "places the generated cash installment at the beginning of the investment month" do
+        expect(cash_transaction.cash_installments.sole.date).to eq(subject.beginning_of_month.beginning_of_day)
+      end
+
       it "applies the right relationship to the cash_transaction" do
         2.times do |i|
           expect(investments[i].cash_transaction).to eq investments[i + 1].cash_transaction
