@@ -66,7 +66,7 @@ RSpec.describe "Bank-account and user-card navigation", type: :request do
     end
   end
 
-  it "carries filtered index state through row links and dashboard return actions" do
+  it "carries filtered index state through row links and edit actions without a redundant list action" do
     account = create(:user_bank_account, :random, user:, bank:)
     user_card = create(:user_card, :random, user:, card:)
     account_return = canonical_account_return(account)
@@ -78,7 +78,9 @@ RSpec.describe "Bank-account and user-card navigation", type: :request do
     expect(account_document.at_css(%[a[href="#{account_show_path}"]])).to be_present
 
     get account_show_path
-    expect(Nokogiri::HTML.parse(response.body).at_css(%[a[href="#{account_return}"]])).to be_present
+    account_show_document = Nokogiri::HTML.parse(response.body)
+    expect(account_show_document.at_css(%[a[href="#{account_return}"]])).to be_nil
+    expect(account_show_document.at_css(%[a[href="#{edit_user_bank_account_path(account, return_to: account_return)}"]])).to be_present
 
     get card_return
     card_document = Nokogiri::HTML.parse(response.body)
@@ -86,7 +88,9 @@ RSpec.describe "Bank-account and user-card navigation", type: :request do
     expect(card_document.at_css(%[a[href="#{card_show_path}"]])).to be_present
 
     get card_show_path
-    expect(Nokogiri::HTML.parse(response.body).at_css(%[a[href="#{card_return}"]])).to be_present
+    card_show_document = Nokogiri::HTML.parse(response.body)
+    expect(card_show_document.at_css(%[a[href="#{card_return}"]])).to be_nil
+    expect(card_show_document.at_css(%[a[href="#{edit_user_card_path(user_card, return_to: card_return)}"]])).to be_present
   end
 
   it "redirects successful active creates to refreshable seeded transaction URLs" do

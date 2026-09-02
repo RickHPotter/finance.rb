@@ -42,6 +42,7 @@ class CardTransaction < ApplicationRecord
   after_commit :update_cash_balance, :update_associations_total, unless: :skip_post_commit_financial_recalculation
 
   # @scopes ...................................................................
+  scope :subscription_candidates, -> { where(subscription_id: nil) }
   # @class_methods ............................................................
   def self.duplicate(id)
     existing_card_transaction = includes(:card_installments, :category_transactions, entity_transactions: %i[entity exchanges]).find(id)
@@ -136,7 +137,7 @@ class CardTransaction < ApplicationRecord
   end
 
   def bulk_subscription_eligible?
-    true
+    subscription_id.blank?
   end
 
   def operation_type

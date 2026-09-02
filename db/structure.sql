@@ -713,7 +713,7 @@ CREATE TABLE public.conversations (
     friendship_id bigint,
     public_id uuid DEFAULT gen_random_uuid() NOT NULL,
     last_message_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT conversations_kind CHECK (((kind)::text = ANY ((ARRAY['human'::character varying, 'assistant'::character varying])::text[])))
+    CONSTRAINT conversations_kind CHECK (((kind)::text = ANY (ARRAY[('human'::character varying)::text, ('assistant'::character varying)::text])))
 );
 
 
@@ -1122,12 +1122,12 @@ CREATE TABLE public.message_actions (
     error_code character varying,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT message_actions_action CHECK (((action)::text = ANY ((ARRAY['apply'::character varying, 'acknowledge'::character varying, 'reject'::character varying, 'revert'::character varying])::text[]))),
-    CONSTRAINT message_actions_error_code CHECK (((error_code IS NULL) OR ((error_code)::text = ANY ((ARRAY['unavailable'::character varying, 'friendship_unavailable'::character varying, 'wrong_recipient'::character varying, 'wrong_context'::character varying, 'superseded'::character varying, 'invalid_payload'::character varying, 'unsupported_action'::character varying, 'local_reference_unavailable'::character varying, 'local_reference_changed'::character varying, 'wrong_target'::character varying, 'unsafe_destroy'::character varying, 'paid_history'::character varying, 'state_unavailable'::character varying, 'validation_failed'::character varying, 'persistence_failed'::character varying])::text[])))),
-    CONSTRAINT message_actions_initiator CHECK (((initiator)::text = ANY ((ARRAY['manual'::character varying, 'automatic'::character varying, 'system'::character varying])::text[]))),
+    CONSTRAINT message_actions_action CHECK (((action)::text = ANY (ARRAY[('apply'::character varying)::text, ('acknowledge'::character varying)::text, ('reject'::character varying)::text, ('revert'::character varying)::text]))),
+    CONSTRAINT message_actions_error_code CHECK (((error_code IS NULL) OR ((error_code)::text = ANY (ARRAY[('unavailable'::character varying)::text, ('friendship_unavailable'::character varying)::text, ('wrong_recipient'::character varying)::text, ('wrong_context'::character varying)::text, ('superseded'::character varying)::text, ('invalid_payload'::character varying)::text, ('unsupported_action'::character varying)::text, ('local_reference_unavailable'::character varying)::text, ('local_reference_changed'::character varying)::text, ('wrong_target'::character varying)::text, ('unsafe_destroy'::character varying)::text, ('paid_history'::character varying)::text, ('state_unavailable'::character varying)::text, ('validation_failed'::character varying)::text, ('persistence_failed'::character varying)::text])))),
+    CONSTRAINT message_actions_initiator CHECK (((initiator)::text = ANY (ARRAY[('manual'::character varying)::text, ('automatic'::character varying)::text, ('system'::character varying)::text]))),
     CONSTRAINT message_actions_metadata_size CHECK ((octet_length((metadata)::text) <= 16384)),
-    CONSTRAINT message_actions_outcome CHECK (((outcome)::text = ANY ((ARRAY['succeeded'::character varying, 'failed'::character varying, 'denied'::character varying, 'idempotent'::character varying])::text[]))),
-    CONSTRAINT message_actions_resulting_state CHECK (((resulting_state)::text = ANY ((ARRAY['pending'::character varying, 'accepted'::character varying, 'rejected'::character varying, 'expired'::character varying, 'failed'::character varying, 'unavailable'::character varying, 'reverted'::character varying])::text[])))
+    CONSTRAINT message_actions_outcome CHECK (((outcome)::text = ANY (ARRAY[('succeeded'::character varying)::text, ('failed'::character varying)::text, ('denied'::character varying)::text, ('idempotent'::character varying)::text]))),
+    CONSTRAINT message_actions_resulting_state CHECK (((resulting_state)::text = ANY (ARRAY[('pending'::character varying)::text, ('accepted'::character varying)::text, ('rejected'::character varying)::text, ('expired'::character varying)::text, ('failed'::character varying)::text, ('unavailable'::character varying)::text, ('reverted'::character varying)::text])))
 );
 
 
@@ -1172,8 +1172,8 @@ CREATE TABLE public.messages (
     reverted_at timestamp(6) without time zone,
     kind character varying NOT NULL,
     action_state character varying,
-    CONSTRAINT messages_action_state CHECK (((action_state IS NULL) OR ((action_state)::text = ANY ((ARRAY['pending'::character varying, 'accepted'::character varying, 'rejected'::character varying, 'expired'::character varying, 'failed'::character varying, 'unavailable'::character varying, 'reverted'::character varying])::text[])))),
-    CONSTRAINT messages_kind CHECK (((kind)::text = ANY ((ARRAY['human'::character varying, 'transaction_notification'::character varying, 'transaction_destroy_notification'::character varying, 'paid_state_sync'::character varying])::text[]))),
+    CONSTRAINT messages_action_state CHECK (((action_state IS NULL) OR ((action_state)::text = ANY (ARRAY[('pending'::character varying)::text, ('accepted'::character varying)::text, ('rejected'::character varying)::text, ('expired'::character varying)::text, ('failed'::character varying)::text, ('unavailable'::character varying)::text, ('reverted'::character varying)::text])))),
+    CONSTRAINT messages_kind CHECK (((kind)::text = ANY (ARRAY[('human'::character varying)::text, ('transaction_notification'::character varying)::text, ('transaction_destroy_notification'::character varying)::text, ('paid_state_sync'::character varying)::text]))),
     CONSTRAINT messages_kind_action_state CHECK (((((kind)::text = 'human'::text) AND (action_state IS NULL)) OR (((kind)::text <> 'human'::text) AND (action_state IS NOT NULL))))
 );
 

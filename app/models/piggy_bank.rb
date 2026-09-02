@@ -62,6 +62,12 @@ class PiggyBank < ApplicationRecord
     return_cash_transaction&.piggy_bank_group_open? || false
   end
 
+  # The form submits datetime-local values with minute precision. Preserve the
+  # stored timestamp when the submitted value still denotes that same minute.
+  def return_date=(value)
+    super unless preserve_existing_timestamp_for_minute_value?(value)
+  end
+
   def sync_return_projection!
     return if return_cash_transaction.blank?
 
@@ -80,6 +86,13 @@ class PiggyBank < ApplicationRecord
   # @private_instance_methods .................................................
 
   private
+
+  def preserve_existing_timestamp_for_minute_value?(value)
+    persisted? &&
+      value.is_a?(String) &&
+      value.match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}\z/) &&
+      return_date&.strftime("%Y-%m-%dT%H:%M") == value
+  end
 
   def create_return_projection!
     return_transaction = CashTransaction.new(return_projection_attributes.merge(cash_transaction_type: "PiggyBank", reference_transactable: source_cash_transaction))
@@ -267,7 +280,7 @@ class PiggyBank < ApplicationRecord
 
   def prevent_paid_history_projection_change
     return unless paid_history?
-    return unless will_save_change_to_return_date? || will_save_change_to_return_price?
+    return unless will_save_change_to_return_date?
 
     errors.add(:base, :paid_history_locked)
   end

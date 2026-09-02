@@ -119,6 +119,10 @@ RSpec.describe Investment, type: :model do
     context "( when new investments are created )" do
       before { cash_transaction.reload }
 
+      it "places the generated cash installment at the beginning of the investment month" do
+        expect(cash_transaction.cash_installments.sole.date).to eq(subject.beginning_of_month.beginning_of_day)
+      end
+
       it "applies the right relationship to the cash_transaction" do
         2.times do |i|
           expect(investments[i].cash_transaction).to eq investments[i + 1].cash_transaction
@@ -223,6 +227,8 @@ RSpec.describe Investment, type: :model do
         expect(piggy_bank_return.reload.price).to eq(5_500)
         expect(profit.cash_transaction).to be_nil
         expect(loss.cash_transaction).to be_nil
+        expect(profit.can_be_destroyed?).to be(true)
+        expect(loss.can_be_destroyed?).to be(true)
       end
 
       it "rejects a loss that would consume the unpaid return" do
@@ -250,6 +256,7 @@ RSpec.describe Investment, type: :model do
         Logic::Manipulation::CashInstallment.new(piggy_bank_return.cash_installments.first).split_installment(piggy_bank_return.date, 300)
 
         expect(profit.destroy).to be(false)
+        expect(profit.can_be_destroyed?).to be(false)
         expect(profit.errors.of_kind?(:base, :piggy_bank_paid_history_locked)).to be(true)
         expect(piggy_bank_return.reload.price).to eq(5_800)
       end

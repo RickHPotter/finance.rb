@@ -93,16 +93,20 @@ RSpec.describe "Allocation mutation audit rollback" do
       budget_categories: [],
       budget_entities: [ build(:budget_entity, entity: original_entity) ]
     )
+    original_description = budget.description
     applied = apply_allocation(owner: budget, allocation_type: :category, destination_id: category.id)
     allocation_id = budget.reload.budget_categories.sole.id
 
+    expect(budget.description).not_to eq(original_description)
+
     preview, result = rollback(applied.operation)
 
-    expect(applied.operation.audit_versions.pluck(:item_type)).to eq([ "BudgetCategory" ])
+    expect(applied.operation.audit_versions.pluck(:item_type)).to contain_exactly("Budget", "BudgetCategory")
     expect(preview).to have_attributes(state: "previewable")
     expect(result).to have_attributes(status: "applied")
     expect(BudgetCategory).not_to exist(allocation_id)
-    expect(budget.reload.entities).to contain_exactly(original_entity)
+    expect(budget.reload).to have_attributes(description: original_description)
+    expect(budget.entities).to contain_exactly(original_entity)
   end
 
   it "rolls back a BudgetEntity created by the bulk workflow" do
@@ -114,15 +118,19 @@ RSpec.describe "Allocation mutation audit rollback" do
       budget_categories: [ build(:budget_category, category: original_category) ],
       budget_entities: []
     )
+    original_description = budget.description
     applied = apply_allocation(owner: budget, allocation_type: :entity, destination_id: entity.id)
     allocation_id = budget.reload.budget_entities.sole.id
 
+    expect(budget.description).not_to eq(original_description)
+
     preview, result = rollback(applied.operation)
 
-    expect(applied.operation.audit_versions.pluck(:item_type)).to eq([ "BudgetEntity" ])
+    expect(applied.operation.audit_versions.pluck(:item_type)).to contain_exactly("Budget", "BudgetEntity")
     expect(preview).to have_attributes(state: "previewable")
     expect(result).to have_attributes(status: "applied")
     expect(BudgetEntity).not_to exist(allocation_id)
-    expect(budget.reload.categories).to contain_exactly(original_category)
+    expect(budget.reload).to have_attributes(description: original_description)
+    expect(budget.categories).to contain_exactly(original_category)
   end
 end

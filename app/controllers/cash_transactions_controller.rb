@@ -9,7 +9,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def index
     build_index_context(current_context.cash_installments)
-    @index_context[:return_to] = cash_navigation_return_param(request.fullpath)
+    @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || cash_navigation_return_param(request.fullpath)
 
     render_top_level Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)
   end
@@ -715,6 +715,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     destination = cash_transactions_path(
       active_month_years: active_month_years.to_json,
       default_year: active_month_years.max.to_s.first(4).to_i,
+      full_month_counts: "1",
       cash_transaction: { cash_installment_ids: installment_ids }
     )
 
@@ -899,7 +900,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def set_return_to
-    @return_to = cash_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || cash_navigation_destination(params[:return_to])
   end
 
   def cash_navigation_destination(raw)
@@ -947,6 +948,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     params.permit(
       %i[
         search_term
+        attach_to_subscription_id
         from_ct_price
         to_ct_price
         from_price
@@ -962,6 +964,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         pending
         paid_state
         month_year
+        full_month_counts
         skip_budgets
         force_mobile
         sort
@@ -980,7 +983,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         reference_transactable_type reference_transactable_id category_id entity_id subscription_id
         friend_notification_intent source_message_id historical_correction_confirmation
       ],
-      user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
+      id: [], subscription_id: [], user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       piggy_bank_attributes: %i[id return_cash_transaction_id return_date return_price _destroy],
@@ -1075,7 +1078,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       sort:,
       direction:,
       force_mobile: mobile,
-      return_to: cash_navigation_return_param(params[:return_to])
+      return_to: dashboard_navigation_destination(params[:return_to]) || cash_navigation_return_param(params[:return_to])
     }
   end
 
@@ -1194,7 +1197,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def selected_cash_transactions_for_bulk_subscription
-    current_context.cash_transactions.where(id: Array(params[:ids].to_s.split(",")).compact_blank).to_a
+    current_context.cash_transactions.subscription_candidates.where(id: Array(params[:ids].to_s.split(",")).compact_blank).to_a
   end
 
   def render_bulk_subscription_failure(alert_message)

@@ -52,6 +52,10 @@ class ApplicationController < ActionController::Base
     CategoryColours::DisplayMode.for(current_user)
   end
 
+  def dashboard_navigation_destination(raw)
+    Navigation::Dashboard.new(raw:, current_user:, current_context:).destination
+  end
+
   # @private_instance_methods ................................................
   private
 

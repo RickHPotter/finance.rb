@@ -5,7 +5,7 @@ module IndexState
     DEFAULT_SORT = "default"
     DEFAULT_DIRECTION = "asc"
     FILTER_KEYS = %i[search_term].freeze
-    ARRAY_FILTER_KEYS = %i[category_id entity_id].freeze
+    ARRAY_FILTER_KEYS = %i[category_id entity_id id].freeze
 
     attr_reader :budget_filters, :search_filters, :years_override, :default_year_override, :active_month_years_override
 
@@ -52,7 +52,8 @@ module IndexState
     def filter_context
       values_from(search_filters, *FILTER_KEYS).merge(
         category_id: compact_array(budget_filters[:category_id]),
-        entity_id: compact_array(budget_filters[:entity_id])
+        entity_id: compact_array(budget_filters[:entity_id]),
+        id: compact_array(budget_filters[:id])
       )
     end
 

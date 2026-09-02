@@ -32,6 +32,21 @@ RSpec.describe "Category and entity navigation", type: :request do
     end
   end
 
+  it "does not render merge actions or preview frames in category and entity indexes" do
+    category = create(:category, :random, user:, built_in: false)
+    entity = create(:entity, :random, user:, built_in: false, entity_user: nil)
+
+    {
+      categories_path => [ "#merge_category_#{category.id}", "#category_merge_preview_#{category.id}" ],
+      entities_path => [ "#merge_entity_#{entity.id}", "#entity_merge_preview_#{entity.id}" ]
+    }.each do |index_path, selectors|
+      get index_path
+
+      document = Nokogiri::HTML.parse(response.body)
+      selectors.each { |selector| expect(document.at_css(selector)).to be_nil }
+    end
+  end
+
   it "canonicalizes obsolete stream-format entry URLs" do
     category = create(:category, :random, user:)
     entity = create(:entity, :random, user:)
@@ -64,6 +79,24 @@ RSpec.describe "Category and entity navigation", type: :request do
       expect(hidden_update).to be_present
       expect(hidden_update["data-turbo-frame"]).to be_nil
       expect(hidden_update["data-turbo-action"]).to be_nil
+    end
+  end
+
+  it "preserves filtered return paths through edit without rendering redundant list actions" do
+    category = create(:category, :random, user:)
+    entity = create(:entity, :random, user:)
+    category_return = categories_path(search_term: category.category_name)
+    entity_return = entities_path(search_term: entity.entity_name)
+
+    {
+      category_path(category, return_to: category_return) => [ category_return, edit_category_path(category, return_to: category_return) ],
+      entity_path(entity, return_to: entity_return) => [ entity_return, edit_entity_path(entity, return_to: entity_return) ]
+    }.each do |show_path, (return_path, edit_path)|
+      get show_path
+
+      document = Nokogiri::HTML.parse(response.body)
+      expect(document.at_css(%[a[href="#{return_path}"]])).to be_nil
+      expect(document.at_css(%[a[href="#{edit_path}"]])).to be_present
     end
   end
 

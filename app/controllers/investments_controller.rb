@@ -3,14 +3,27 @@
 class InvestmentsController < ApplicationController
   include TabsConcern
 
-  before_action :set_investment, only: %i[edit update destroy]
+  before_action :set_investment, only: %i[show edit update destroy]
   before_action :set_investment_tabs
 
   def index
     build_index_context
-    @index_context[:return_to] = investment_navigation_return_param(request.fullpath)
+    @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || investment_navigation_return_param(request.fullpath)
 
     render_top_level Views::Investments::Index.new(index_context: @index_context, mobile: @mobile)
+  end
+
+  def show
+    set_return_to
+    generated_cash_transaction = scoped_generated_cash_transaction
+    piggy_bank_return_cash_transaction = scoped_piggy_bank_return_cash_transaction
+
+    render_top_level Views::Investments::Show.new(
+      investment: @investment,
+      generated_cash_transaction:,
+      piggy_bank_return_cash_transaction:,
+      return_to: @return_to
+    )
   end
 
   def month_year
@@ -25,7 +38,7 @@ class InvestmentsController < ApplicationController
       month_year_str:,
       investments:,
       current_user:,
-      return_to: investment_navigation_return_param(params[:return_to])
+      return_to: dashboard_navigation_destination(params[:return_to]) || investment_navigation_return_param(params[:return_to])
     )
   end
 
@@ -120,7 +133,11 @@ class InvestmentsController < ApplicationController
     investment_type_id = [ investment_params[:investment_type_id] ].flatten&.compact_blank
     piggy_bank_return_cash_transaction_id = [ investment_params[:piggy_bank_return_cash_transaction_id] ].flatten&.compact_blank
 
-    count_by_month_year = Logic::Investments.find_count_based_on_search(current_context, investment_params, search_investment_params)
+    count_by_month_year = if full_month_counts?
+                            Logic::Investments.find_count_based_on_search(current_context, {}, {})
+                          else
+                            Logic::Investments.find_count_based_on_search(current_context, investment_params, search_investment_params)
+                          end
 
     @index_context = {
       current_user:,
@@ -178,6 +195,7 @@ class InvestmentsController < ApplicationController
     destination = investments_path(
       default_year: months.max.to_s.first(4).to_i,
       active_month_years: months.to_json,
+      full_month_counts: "1",
       investment: filters
     )
     investment_navigation_destination(destination)
@@ -251,7 +269,22 @@ class InvestmentsController < ApplicationController
   end
 
   def set_return_to
-    @return_to = investment_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || investment_navigation_destination(params[:return_to])
+  end
+
+  def scoped_generated_cash_transaction
+    return if @investment.piggy_bank_valuation? || @investment.cash_transaction_id.blank?
+
+    current_context.cash_transactions.includes(:categories, :entities).find_by(id: @investment.cash_transaction_id)
+  end
+
+  def scoped_piggy_bank_return_cash_transaction
+    return unless @investment.piggy_bank_valuation?
+
+    current_context.cash_transactions
+                   .piggy_bank_return
+                   .includes(:cash_installments, :piggy_bank_investments, :piggy_bank_return_links)
+                   .find_by(id: @investment.piggy_bank_return_cash_transaction_id)
   end
 
   def investment_navigation_destination(raw)
@@ -276,8 +309,10 @@ class InvestmentsController < ApplicationController
   end
 
   def search_investment_params
-    params.permit(%i[search_term month_year])
+    params.permit(%i[search_term month_year full_month_counts])
   end
+
+  def full_month_counts? = ActiveModel::Type::Boolean.new.cast(search_investment_params[:full_month_counts])
 
   def investment_params
     return {} if params[:investment].blank?

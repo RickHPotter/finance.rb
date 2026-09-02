@@ -270,11 +270,18 @@ module Views
                 data: {
                   controller: "input-select",
                   price_mask_target: :input,
+                  entity_transaction_target: :piggyBankReturnPriceInput,
                   piggy_bank_return_price: true,
                   piggy_bank_defaulted: transactable.piggy_bank.blank?,
-                  action: "click->input-select#select input->price-mask#applyMask input->reactive-form#markPiggyBankReturnCustomized",
+                  action: "click->input-select#select input->price-mask#applyMask input->reactive-form#markPiggyBankReturnCustomized " \
+                          "input->entity-transaction#refreshAllocationWarning",
                   sign: "+"
                 }
+
+              p(
+                class: "#{'hidden ' unless piggy_bank_return_price_mismatch?}mt-1 text-[0.65rem] leading-tight text-amber-600 dark:text-amber-300",
+                data: { entity_transaction_target: :allocationWarning }
+              ) { I18n.t("piggy_banks.return_price_mismatch") }
             end
           end
         end
@@ -354,6 +361,12 @@ module Views
       end
 
       private
+
+      def piggy_bank_return_price_mismatch?
+        return false unless transactable.piggy_bank_source?
+
+        transactable.piggy_bank&.return_price.to_i != transactable.price.to_i.abs
+      end
 
       def mirror_installments_available?
         entity_transaction.is_payer && entity_transaction.paid_installment_prices_match_paid_exchange_prices?

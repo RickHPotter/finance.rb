@@ -358,18 +358,26 @@ RSpec.describe "Budgets", type: :request do
   describe "[ bulk actions ]" do
     it "updates selected budget matching and installment flags" do
       second_category = create(:category, :random, user:)
-      first_budget = create(:budget, user:, inclusive: false, first_installment_only: false, budget_categories: [ build(:budget_category, category:) ])
+      first_entity = create(:entity, :random, user:, entity_name: "ANA")
+      second_entity = create(:entity, :random, user:, entity_name: "BRUNO")
+      first_budget = create(:budget, user:, description: "First stale description", inclusive: false, first_installment_only: false,
+                                     budget_categories: [ build(:budget_category, category:) ], budget_entities: [ build(:budget_entity, entity: first_entity) ])
       second_budget = create(:budget, user:, inclusive: false, first_installment_only: false,
-                                      budget_categories: [ build(:budget_category, category: second_category) ])
+                                      description: "Second stale description", budget_categories: [ build(:budget_category, category: second_category) ],
+                                      budget_entities: [ build(:budget_entity, entity: second_entity) ])
 
       patch bulk_update_budgets_path, params: { ids: [ first_budget.id, second_budget.id ].join(","), bulk_action: "make_inclusive" }, headers: turbo_stream_headers
       expect(response).to have_http_status(:success)
       expect(first_budget.reload).to be_inclusive
       expect(second_budget.reload).to be_inclusive
+      expect(first_budget.description).to eq("[ #{category.name} ] && ( ANA )")
+      expect(second_budget.description).to eq("[ #{second_category.name} ] && ( BRUNO )")
 
       patch bulk_update_budgets_path, params: { ids: [ first_budget.id, second_budget.id ].join(","), bulk_action: "make_exclusive" }, headers: turbo_stream_headers
       expect(first_budget.reload).not_to be_inclusive
       expect(second_budget.reload).not_to be_inclusive
+      expect(first_budget.description).to eq("[ #{category.name} ] || ( ANA )")
+      expect(second_budget.description).to eq("[ #{second_category.name} ] || ( BRUNO )")
 
       patch bulk_update_budgets_path, params: { ids: [ first_budget.id, second_budget.id ].join(","), bulk_action: "first_installment_only" },
                                       headers: turbo_stream_headers

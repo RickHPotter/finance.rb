@@ -137,7 +137,10 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
     return unless projection_sync_relevant_change?
 
-    rehome_card_bound_exchange_before_sync! if card_bound_projection_bucket_changed?
+    if card_bound_projection_bucket_changed?
+      rehome_card_bound_exchange_before_sync!
+      return
+    end
 
     assign_projection_cash_transaction_to_siblings!
     sync_projection_cash_transaction!(cash_transaction:, exchanges: synchronized_projection_exchanges(cash_transaction:))

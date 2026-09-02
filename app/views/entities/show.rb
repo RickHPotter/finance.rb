@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::Entities::Show < Views::Base
+class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
@@ -46,8 +46,10 @@ class Views::Entities::Show < Views::Base
       end
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
+        dashboard_action(I18n.t("dashboards.actions.view_cash_transactions"), cash_transactions_index_path, variant: :outline) if scoped_cash_transactions.exists?
+        dashboard_action(I18n.t("dashboards.actions.view_card_transactions"), card_transactions_index_path, variant: :outline) if scoped_card_transactions.exists?
         dashboard_action(action_message(:edit), edit_entity_path(entity, return_to:), variant: :edit)
-        dashboard_action(action_message(:index), return_to, variant: :outline)
+        merge_action
         destroy_action
       end
     end
@@ -169,6 +171,33 @@ class Views::Entities::Show < Views::Base
         class: dashboard_action_class(:destroy),
         data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
       }
+    )
+  end
+
+  def merge_action
+    return if entity.built_in? || entity.entity_user_id.present?
+
+    Button(
+      link: merge_preview_entity_path(entity, entity_merge: { return_to: entity_path(entity) }),
+      variant: :outline,
+      class: dashboard_action_class(:outline),
+      data: { turbo_method: :post, turbo_frame: "_top", turbo_action: "replace" }
+    ) { I18n.t("entity_merges.preview.title", default: "Merge Entity") }
+  end
+
+  def cash_transactions_index_path
+    cash_transactions_path(
+      all_month_years: true,
+      cash_transaction: { entity_id: [ entity.id ] },
+      return_to: entity_path(entity)
+    )
+  end
+
+  def card_transactions_index_path
+    card_transactions_path(
+      all_month_years: true,
+      card_transaction: { entity_id: [ entity.id ] },
+      return_to: entity_path(entity)
     )
   end
 

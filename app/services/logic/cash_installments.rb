@@ -15,7 +15,7 @@ module Logic
         price: raw_conditions[:installments_price],
         number: raw_conditions[:installments_number],
         date: raw_conditions[:date],
-        cash_transaction: { **raw_conditions.slice(:cash_installments_count, :price, :user_bank_account_id).compact_blank,
+        cash_transaction: { **raw_conditions.slice(:cash_installments_count, :id, :price, :subscription_id, :user_bank_account_id).compact_blank,
                             **raw_conditions[:associations] }.compact_blank
       }.compact_blank
 
@@ -29,6 +29,7 @@ module Logic
           conditions:,
           search_term_condition:,
           ids: raw_conditions[:cash_installment_ids],
+          attach_to_subscription_id: raw_conditions[:attach_to_subscription_id],
           exchange_bound_type: raw_conditions[:exchange_bound_type],
           sort: raw_conditions[:sort],
           direction: raw_conditions[:direction]
@@ -56,6 +57,10 @@ module Logic
                  .preload(cash_transaction: :reference_transactable)
                  .where(options[:conditions])
                  .where(options[:search_term_condition])
+
+      if options[:attach_to_subscription_id].present?
+        relation = relation.where(cash_transaction_id: financial_scope.cash_transactions.subscription_candidates.select(:id))
+      end
 
       relation = relation.where(id: options[:ids]) if options[:ids].present?
       relation = apply_exchange_bound_type_filter(relation, options[:exchange_bound_type])

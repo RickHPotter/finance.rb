@@ -59,6 +59,7 @@ module Logic
 
       cash_transaction_params = cash_transaction_params.to_unsafe_h if cash_transaction_params.is_a?(ActionController::Parameters)
       cash_transaction_params.merge({
+        attach_to_subscription_id: search_params.delete(:attach_to_subscription_id),
         price: build_price_range_conditions(search_params),
         cash_installment_ids: cash_transaction_params[:cash_installment_ids],
         exchange_bound_type: search_params.delete(:exchange_bound_type),
@@ -175,6 +176,7 @@ module Logic
       search_params = search_params.to_h.deep_dup.with_indifferent_access
 
       search_term = search_params.delete(:search_term) || ""
+      attach_to_subscription_id = search_params.delete(:attach_to_subscription_id)
       category_ids = cash_transaction_params.delete(:category_id).presence
       category_ids = [ category_ids ].flatten.compact_blank if category_ids.present?
       entity_ids   = cash_transaction_params.delete(:entity_id).presence
@@ -199,6 +201,8 @@ module Logic
                                 .left_joins({ cash_transaction: %i[categories entities] })
                                 .where(conditions)
                                 .where("cash_transactions.description ILIKE ?", "%#{search_term}%")
+
+      relation = relation.where(cash_transaction_id: financial_scope.cash_transactions.subscription_candidates.select(:id)) if attach_to_subscription_id.present?
 
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
       relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?

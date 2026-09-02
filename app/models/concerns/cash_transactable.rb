@@ -185,7 +185,6 @@ module CashTransactable
       paid = (respond_to?(:paid) && paid) || (date.present? && Time.zone.today >= date)
       reference_date = card_payment_date
     end
-
     cash_transaction_params
       .without(:category_transactions)
       .merge(price:,
@@ -193,8 +192,14 @@ module CashTransactable
              category_transactions_attributes:,
              entity_transactions_attributes:,
              cash_installments_attributes: [
-               { number: 1, price: full_price * - 1, installment_type: :CashTransaction, date: card_payment_date.end_of_day, month:, year:, paid: }
+               { number: 1, price: full_price * - 1, installment_type: :CashTransaction, date: cash_installment_projection_date, month:, year:, paid: }
              ])
+  end
+
+  def cash_installment_projection_date
+    return card_payment_date.beginning_of_day if is_a?(Investment)
+
+    card_payment_date.end_of_day
   end
 
   def full_price

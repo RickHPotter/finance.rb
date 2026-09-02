@@ -2,7 +2,7 @@
 
 class Views::CashTransactions::MonthYearContainer < Views::Base
   attr_reader :search_term, :cash_installment_ids,
-              :category_id, :entity_id,
+              :category_id, :entity_id, :id, :subscription_id,
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
@@ -11,13 +11,15 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
               :from_date, :to_date,
               :paid, :pending, :paid_state,
               :user_bank_account_id, :active_month_years, :default_year,
-              :skip_budgets, :sort, :direction, :force_mobile, :return_to
+              :skip_budgets, :sort, :direction, :force_mobile, :attach_to_subscription_id, :return_to
 
   def initialize(index_context: {})
     @search_term = index_context[:search_term]
     @cash_installment_ids = index_context[:cash_installment_ids]
     @category_id = index_context[:category_id]
     @entity_id = index_context[:entity_id]
+    @id = index_context[:id]
+    @subscription_id = index_context[:subscription_id]
     @from_ct_price = index_context[:from_ct_price]
     @to_ct_price = index_context[:to_ct_price]
     @from_price = index_context[:from_price]
@@ -39,6 +41,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
     @sort = index_context[:sort]
     @direction = index_context[:direction]
     @force_mobile = index_context[:force_mobile]
+    @attach_to_subscription_id = index_context[:attach_to_subscription_id]
     @return_to = index_context[:return_to]
   end
 
@@ -50,7 +53,9 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
           cash_installment_ids:,
           user_bank_account_id:,
           category_id:,
-          entity_id:
+          entity_id:,
+          id:,
+          subscription_id:
         },
         search_term:,
         from_ct_price:,
@@ -73,6 +78,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
         sort:,
         direction:,
         force_mobile:,
+        attach_to_subscription_id:,
         return_to:
       },
       path_lambda: ->(params) { month_year_cash_transactions_path(params) }

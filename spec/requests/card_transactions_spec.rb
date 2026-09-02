@@ -116,6 +116,16 @@ RSpec.describe "CardTransactions", type: :request do
         month: 4,
         year: 2026
       )
+      create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Unrelated April card transaction",
+        date: Date.new(2026, 4, 8),
+        month: 4,
+        year: 2026
+      )
 
       get edit_card_transaction_path(existing_card_transaction)
 
@@ -310,6 +320,30 @@ RSpec.describe "CardTransactions", type: :request do
       expect(first_transaction.reload.subscription).to eq(other_subscription)
       expect(second_transaction.reload.subscription).to eq(other_subscription)
       expect(response.body).to include(I18n.t("notification.added_to_subscription"))
+    end
+
+    it "does not reassign a card transaction that already belongs to a subscription" do
+      original_subscription = create(:subscription, user:, context: user.main_context)
+      destination_subscription = create(:subscription, user:, context: user.main_context)
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        subscription: original_subscription
+      )
+
+      post add_to_subscription_card_transactions_path,
+           params: {
+             ids: transaction.id.to_s,
+             subscription_id: destination_subscription.id,
+             index_context_json: {}.to_json
+           },
+           headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(transaction.reload.subscription).to eq(original_subscription)
+      expect(response.body).to include(I18n.t("bulk_actions.empty_selection"))
     end
   end
 
@@ -626,8 +660,17 @@ RSpec.describe "CardTransactions", type: :request do
 
       expect(response).to have_http_status(:see_other)
       destination = URI.parse(response.location).request_uri
-      expect(destination).to include("active_month_years", expected_month_year)
+      expect(destination).to include("active_month_years", expected_month_year, "full_month_counts=1")
       expect(destination).to include("user_card_id=#{user_card_one.id}")
+
+      get destination, headers: html_headers
+
+      month_button = Nokogiri::HTML.fragment(response.body).at_css("[data-month-year='#{expected_month_year}']")
+      expected_count = user.main_context.card_installments.joins(:card_transaction)
+                           .where(year: existing_card_transaction.card_installments.first.year,
+                                  month: existing_card_transaction.card_installments.first.month,
+                                  card_transactions: { user_card_id: user_card_one.id }).count
+      expect(month_button["data-count"]).to eq(expected_count.to_s)
     end
 
     it "keeps duplicate chain controls checked on hidden update submits" do

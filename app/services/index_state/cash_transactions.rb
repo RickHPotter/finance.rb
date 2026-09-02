@@ -8,7 +8,7 @@ module IndexState
     DEFAULT_DIRECTION = "asc"
     VALID_SORTS = %w[default description installment_date transaction_date price].freeze
     VALID_DIRECTIONS = %w[asc desc].freeze
-    TRANSACTION_FILTER_KEYS = %i[category_id entity_id cash_installment_ids user_bank_account_id].freeze
+    TRANSACTION_FILTER_KEYS = %i[category_id entity_id cash_installment_ids id subscription_id user_bank_account_id].freeze
     RANGE_FILTER_KEYS = %i[
       from_ct_price
       to_ct_price
@@ -24,6 +24,7 @@ module IndexState
     ].freeze
     SEARCH_FILTER_KEYS = [
       :search_term,
+      :attach_to_subscription_id,
       *RANGE_FILTER_KEYS,
       :paid,
       :pending,
@@ -31,6 +32,7 @@ module IndexState
       :exchange_bound_type,
       :skip_budgets,
       :force_mobile,
+      :full_month_counts,
       :sort,
       :direction
     ].freeze
@@ -114,7 +116,7 @@ module IndexState
         pending: source_context[:pending]
       )
 
-      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :exchange_bound_type, :skip_budgets).merge(
+      values_from(source_context, :search_term, :attach_to_subscription_id, *RANGE_FILTER_KEYS, :exchange_bound_type, :skip_budgets).merge(
         compact_filter_context,
         user_card: nil,
         **paid_filters,
@@ -183,6 +185,9 @@ module IndexState
     def relation_for_all_month_years
       associations = association_filters
       relation = cash_installments
+      if source_context[:attach_to_subscription_id].present?
+        relation = relation.where(cash_transaction_id: current_context.cash_transactions.subscription_candidates.select(:id))
+      end
       return relation.joins(cash_transaction: associations.keys).where(cash_transaction: associations.merge(account_filter)) if associations.present?
       return relation.joins(:cash_transaction).where(cash_transaction: account_filter) if account_filter.present?
 
@@ -199,7 +204,11 @@ module IndexState
     end
 
     def account_filter
-      { user_bank_account_id: compact_array(source_context[:user_bank_account_id]) }.compact_blank
+      {
+        id: compact_array(source_context[:id]),
+        subscription_id: compact_array(source_context[:subscription_id]),
+        user_bank_account_id: compact_array(source_context[:user_bank_account_id])
+      }.compact_blank
     end
 
     def default_year_for(active_month_years:, today_zn:)
@@ -211,6 +220,8 @@ module IndexState
     end
 
     def count_by_month_year_for
+      return Logic::CashTransactions.find_count_based_on_search(current_context, {}, {}) if boolean(source_context[:full_month_counts])
+
       if params[:action].in?(%w[create update]) && selection_context.blank?
         Logic::CashTransactions.find_count_based_on_search(current_context, {}, {})
       else
@@ -223,6 +234,8 @@ module IndexState
         category_id: compact_array(source_context[:category_id]),
         entity_id: compact_array(source_context[:entity_id]),
         cash_installment_ids: compact_array(source_context[:cash_installment_ids]),
+        id: compact_array(source_context[:id]),
+        subscription_id: compact_array(source_context[:subscription_id]),
         user_bank_account_id: compact_array(source_context[:user_bank_account_id])
       }
     end
@@ -238,7 +251,7 @@ module IndexState
         pending: source_context[:pending]
       )
 
-      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :exchange_bound_type, :skip_budgets, :force_mobile).merge(
+      values_from(source_context, :search_term, :attach_to_subscription_id, *RANGE_FILTER_KEYS, :exchange_bound_type, :skip_budgets, :force_mobile).merge(
         **paid_filters,
         sort: self.class.resolve_sort(sort: source_context[:sort], direction: source_context[:direction]).first,
         direction: self.class.resolve_sort(sort: source_context[:sort], direction: source_context[:direction]).last

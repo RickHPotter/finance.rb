@@ -110,6 +110,28 @@ RSpec.describe AllocationMutations::EntityMutator do
     expect(impact.reference_months).to eq([ Date.new(2026, 7, 1) ])
   end
 
+  it "refreshes a Budget description after entity add, switch, and remove" do
+    category = create(:category, user:, category_name: "FOOD")
+    budget = create(
+      :budget,
+      user:,
+      context: user.main_context,
+      description: "Stale description",
+      inclusive: false,
+      budget_categories: [ build(:budget_category, category:) ],
+      budget_entities: [ build(:budget_entity, entity: source) ]
+    )
+
+    described_class.new(plan: entity_plan(budget, :add, destination_id: destination.id)).call
+    expect(budget.reload.description).to eq("[ FOOD ] || ( SOURCE | DESTINATION )")
+
+    described_class.new(plan: entity_plan(budget, :switch, source_id: source.id, destination_id: destination.id)).call
+    expect(budget.reload.description).to eq("[ FOOD ] || ( DESTINATION )")
+
+    described_class.new(plan: entity_plan(budget, :remove, source_id: destination.id)).call
+    expect(budget.reload.description).to eq("[ FOOD ]")
+  end
+
   it "refuses ineligible and stale plans" do
     noop_plan = entity_plan(transaction, :remove, source_id: source.id)
     built_in = user.built_in_entity

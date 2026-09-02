@@ -35,7 +35,7 @@ RSpec.describe "CashTransactions", type: :request do
 
   before { sign_in user }
 
-  def create_piggy_bank_source(description:, return_transaction: nil, price: 5_000)
+  def create_piggy_bank_source(description:, return_transaction: nil, price: 5_000, return_price: price)
     source = build(
       :cash_transaction,
       user:,
@@ -46,7 +46,7 @@ RSpec.describe "CashTransactions", type: :request do
       cash_installments: [ build(:cash_installment, number: 1, price: -price, date: Time.zone.now) ],
       category_transactions: [ CategoryTransaction.new(category: user.built_in_category("PIGGY BANK")) ],
       entity_transactions: [ EntityTransaction.new(entity:, price: 0, price_to_be_returned: 0, is_payer: false) ],
-      piggy_bank: PiggyBank.new(return_price: price, return_date: 3.months.from_now, return_cash_transaction: return_transaction)
+      piggy_bank: PiggyBank.new(return_price:, return_date: 3.months.from_now, return_cash_transaction: return_transaction)
     )
     source.save!
     source
@@ -91,6 +91,20 @@ RSpec.describe "CashTransactions", type: :request do
       expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present
       expect(price_input["readonly"]).to be_nil
       expect(price_input["name"]).to eq("cash_transaction[cash_installments_attributes][0][price]")
+    end
+
+    it "marks a Piggy Bank entity when its return differs from the source transaction" do
+      source = create_piggy_bank_source(description: "Discounted reserve", price: 800, return_price: 500)
+
+      get edit_cash_transaction_path(source)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      icon_warning = document.at_css('span[data-entity-transaction-target~="allocationWarning"]')
+      message_warning = document.at_css('p[data-entity-transaction-target~="allocationWarning"]')
+
+      expect(icon_warning["class"].to_s.split).not_to include("hidden")
+      expect(message_warning["class"].to_s.split).not_to include("hidden")
+      expect(response.body).to include(I18n.t("piggy_banks.return_price_mismatch"))
     end
 
     it "renders paid installment datetimes as read-only while keeping their canonical values enabled" do
@@ -253,6 +267,16 @@ RSpec.describe "CashTransactions", type: :request do
         month: 4,
         year: 2026
       )
+      create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Unrelated April cash transaction",
+        date: Date.new(2026, 4, 8),
+        month: 4,
+        year: 2026
+      )
 
       get edit_cash_transaction_path(existing_cash_transaction)
 
@@ -370,6 +394,11 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include("paid_state=pending")
 
       document = Nokogiri::HTML.fragment(response.body)
+      expect(document.at_css("form#search_form")["data-action"]).to include("submit->reactive-form#syncPaidStateFromActiveButton")
+      expect(document.at_css("#cash_transactions_paid_state")["name"]).to eq("paid_state")
+      expect(document.at_css("#cash_transactions_paid")["name"]).to eq("paid")
+      expect(document.at_css("#cash_transactions_pending")["name"]).to eq("pending")
+
       chips = document.css("a[aria-label^=\"#{I18n.t('filters.summary.clear')}\"]")
       paid_state_chip = chips.find do |chip|
         chip.text.include?(I18n.t("filters.summary.items.paid_state", value: I18n.t("filters.paid_state.pending")))
@@ -591,6 +620,91 @@ RSpec.describe "CashTransactions", type: :request do
       expect(projection.reload.price).to eq(5_000)
       expect(projection.cash_installments.reload.sum(:price)).to eq(5_000)
       expect(projection.cash_installments.first.balance).not_to be_nil
+    end
+
+    it "merges duplicate card-bound projections while preserving paid history from both transactions" do
+      exchange_return_category = user.built_in_category("EXCHANGE RETURN")
+      user_card = create(:user_card, :random, user:, card: create(:card, :random))
+      description = "[ 09/2026 ] #{entity.entity_name} - #{user_card.user_card_name}"
+      target_projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: nil,
+        user_card:,
+        cash_transaction_type: "Exchange",
+        description:,
+        date: Time.zone.parse("2026-09-10 12:00:00"),
+        month: 9,
+        year: 2026,
+        price: 5_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 4_000, date: Time.zone.parse("2026-08-27 12:00:00"), month: 8, year: 2026, paid: true),
+          build(:cash_installment, number: 2, price: 1_000, date: Time.zone.parse("2026-09-10 12:00:00"), month: 9, year: 2026, paid: true)
+        ]
+      )
+      duplicate_projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: nil,
+        user_card:,
+        cash_transaction_type: "Exchange",
+        description:,
+        date: Time.zone.parse("2026-09-10 12:00:00"),
+        month: 9,
+        year: 2026,
+        price: 3_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 3_000, date: Time.zone.parse("2026-09-10 12:00:00"), month: 9, year: 2026, paid: true)
+        ]
+      )
+      [ target_projection, duplicate_projection ].each do |projection|
+        projection.categories = [ exchange_return_category ]
+        projection.save!
+      end
+
+      exchanges = [ 4_000, 1_000, 3_000 ].zip([ target_projection, target_projection, duplicate_projection ]).map do |price, projection|
+        source_card = create(
+          :card_transaction,
+          user:,
+          context: user.main_context,
+          user_card:,
+          price: -price,
+          month: 9,
+          year: 2026,
+          card_installments: [
+            build(:card_installment, number: 1, price: -price, date: Time.zone.parse("2026-09-01 12:00:00"), month: 9, year: 2026)
+          ]
+        )
+        payer = source_card.entity_transactions.first
+        payer.update_columns(entity_id: entity.id, is_payer: true, price:, price_to_be_returned: price, exchanges_count: 1)
+        Exchange.insert({
+                          entity_transaction_id: payer.id,
+                          cash_transaction_id: projection.id,
+                          bound_type: Exchange.bound_types.fetch(:card_bound),
+                          exchange_type: Exchange.exchange_types.fetch(:monetary),
+                          number: 1,
+                          price:,
+                          starting_price: price,
+                          date: Time.zone.parse("2026-09-01 12:00:00"),
+                          month: 9,
+                          year: 2026,
+                          exchanges_count: 1,
+                          created_at: Time.current,
+                          updated_at: Time.current
+                        })
+        Exchange.find_by!(entity_transaction_id: payer.id, cash_transaction_id: projection.id)
+      end
+
+      patch fix_exchange_projection_cash_transaction_path(duplicate_projection)
+
+      expect(response.request.flash[:alert]).to be_nil
+      expect(response).to redirect_to(cash_transaction_path(target_projection))
+      expect(CashTransaction.exists?(duplicate_projection.id)).to be(false)
+      expect(target_projection.reload.exchanges).to contain_exactly(*exchanges)
+      expect(target_projection.price).to eq(8_000)
+      expect(target_projection.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 4_000, true ], [ 3_000, true ], [ 1_000, true ] ])
     end
 
     it "shows the fix button when card-bound projection exchange buckets are stale even if totals match" do
@@ -929,6 +1043,30 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(I18n.t("notification.added_to_subscription"))
     end
 
+    it "does not reassign a cash transaction that already belongs to a subscription" do
+      original_subscription = create(:subscription, user:, context: user.main_context)
+      destination_subscription = create(:subscription, user:, context: user.main_context)
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        subscription: original_subscription
+      )
+
+      post add_to_subscription_cash_transactions_path,
+           params: {
+             ids: transaction.id.to_s,
+             subscription_id: destination_subscription.id,
+             index_context_json: {}.to_json
+           },
+           headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(transaction.reload.subscription).to eq(original_subscription)
+      expect(response.body).to include(I18n.t("bulk_actions.empty_selection"))
+    end
+
     it "merges subscription categories and entities into a paid-history cash transaction" do
       leisure = create(:category, user:, category_name: "LEISURE")
       nous = create(:entity, user:, entity_name: "NOUS")
@@ -1129,11 +1267,15 @@ RSpec.describe "CashTransactions", type: :request do
       end.not_to change(CashTransaction, :count)
 
       expect(response).to have_http_status(:see_other)
+      expect(response.location).to include("full_month_counts=1")
       follow_redirect!
       expect(request.path).to eq(cash_transactions_path)
       expect(response.body).to include("month_year_container_202604")
       expect(response.body).to include("cash_transaction%5Bcash_installment_ids%5D")
       expect(response.body).not_to include("Chain Creating")
+      month_button = Nokogiri::HTML.fragment(response.body).at_css("[data-month-year='202604']")
+      expected_count = user.main_context.cash_installments.where(year: 2026, month: 4).count
+      expect(month_button["data-count"]).to eq(expected_count.to_s)
     end
 
     it "keeps duplicate chain controls checked on hidden update submits" do
@@ -2077,6 +2219,56 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to redirect_to(cash_transactions_path)
       expect(flash[:notice]).to eq(I18n.t("notification.updateda", model: CashTransaction.model_name.human))
       expect(@existing_cash_transaction.reload.description).to eq(original_description)
+    end
+
+    it "updates a mismatched Piggy Bank return while preserving its paid portion" do
+      source = create_piggy_bank_source(description: "Editable discounted reserve", price: 800, return_price: 500)
+      piggy_bank = source.piggy_bank
+      generated_return = piggy_bank.return_cash_transaction
+      original_return_installment = generated_return.cash_installments.first
+      original_return_installment.update!(price: 100, starting_price: 100, paid: true)
+      Logic::Manipulation::CashInstallment.new(original_return_installment).split_installment(generated_return.date, 400)
+      source_installment = source.cash_installments.first
+      category_transaction = source.category_transactions.first
+      entity_transaction = source.entity_transactions.first
+
+      put cash_transaction_path(source), params: {
+        cash_transaction: {
+          description: source.description,
+          price: source.price,
+          date: source.date,
+          month: source.month,
+          year: source.year,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          cash_installments_attributes: [
+            source_installment.slice(:id, :number, :date, :month, :year, :price, :paid)
+          ],
+          category_transactions_attributes: [
+            { id: category_transaction.id, category_id: category_transaction.category_id }
+          ],
+          entity_transactions_attributes: [
+            {
+              id: entity_transaction.id,
+              entity_id: entity_transaction.entity_id,
+              price: entity_transaction.price,
+              price_to_be_returned: entity_transaction.price_to_be_returned,
+              loan_return_percentage: entity_transaction.loan_return_percentage,
+              exchanges_attributes: []
+            }
+          ],
+          piggy_bank_attributes: {
+            id: piggy_bank.id,
+            return_date: piggy_bank.return_date.strftime("%Y-%m-%dT%H:%M"),
+            return_price: 600
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      expect(piggy_bank.reload.return_price).to eq(600)
+      expect(generated_return.reload.price).to eq(600)
+      expect(generated_return.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 100, true ], [ 500, false ] ])
     end
 
     it "shows generic and detailed failure notifications when update validation fails" do

@@ -5,10 +5,12 @@ module Navigation
     QUERY_SCHEMA = {
       active_month_years: :scalar_or_array,
       all_month_years: :scalar,
+      attach_to_subscription_id: :scalar,
       default_year: :scalar,
       direction: :scalar,
       exchange_bound_type: :scalar,
       force_mobile: :scalar,
+      full_month_counts: :scalar,
       from_ct_price: :scalar,
       from_installments_count: :scalar,
       from_installments_number: :scalar,
@@ -25,6 +27,8 @@ module Navigation
         card_installment_ids: :scalar_or_array,
         category_id: :scalar_or_array,
         entity_id: :scalar_or_array,
+        id: :scalar_or_array,
+        subscription_id: :scalar_or_array,
         user_card_id: :scalar_or_array
       }
     }.freeze
@@ -44,7 +48,10 @@ module Navigation
           "card_transaction.card_installment_ids" => current_context.card_installments,
           "card_transaction.category_id" => current_user.categories,
           "card_transaction.entity_id" => current_user.entities,
-          "card_transaction.user_card_id" => current_user.user_cards
+          "card_transaction.id" => current_context.card_transactions,
+          "card_transaction.subscription_id" => current_context.subscriptions,
+          "card_transaction.user_card_id" => current_user.user_cards,
+          "attach_to_subscription_id" => current_context.subscriptions
         }
       )
     end

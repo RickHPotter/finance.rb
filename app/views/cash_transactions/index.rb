@@ -47,12 +47,14 @@ class Views::CashTransactions::Index < Views::Base
                 return_to: index_context[:return_to].presence || request.fullpath,
                 selection_kind: "budget"
               )
-              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id,
+              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :attach_to_subscription_id,
+                                                                               :category_id, :entity_id, :id, :subscription_id,
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count,
                                                                                :exchange_bound_type, :paid, :pending, :paid_state,
                                                                                :from_date, :to_date,
-                                                                               :user_bank_account_id, :active_month_years, :skip_budgets, :sort, :direction))
+                                                                               :user_bank_account_id, :active_month_years, :skip_budgets, :sort, :direction,
+                                                                               :return_to))
 
               BulkActionBar(
                 selected_label: action_message(:selected),

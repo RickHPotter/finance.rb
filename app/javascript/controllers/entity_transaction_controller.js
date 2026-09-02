@@ -9,20 +9,29 @@ import { mirroredPrice, paidPricesMatch } from "../lib/installment_mirror.mjs"
 export default class extends Controller {
   static targets = [
     "button", "dateInput", "priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangesCountEqualsButton",
-    "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange", "loanReturnPercentageInput", "mirrorInstallmentsButton"
+    "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange", "loanReturnPercentageInput", "mirrorInstallmentsButton",
+    "allocationWarning", "piggyBankReturnPriceInput"
   ]
 
   async connect() {
     this.initModalOnce()
     this.boundRefreshMirrorAvailability = this.refreshMirrorInstallmentsAvailability.bind(this)
+    this.boundRefreshAllocationWarning = this.refreshAllocationWarning.bind(this)
     this.transactionForm()?.addEventListener("input", this.boundRefreshMirrorAvailability)
     this.transactionForm()?.addEventListener("change", this.boundRefreshMirrorAvailability)
+    this.transactionForm()?.addEventListener("input", this.boundRefreshAllocationWarning)
+    this.transactionForm()?.addEventListener("change", this.boundRefreshAllocationWarning)
+    this.transactionForm()?.addEventListener("piggy-bank-mode-changed", this.boundRefreshAllocationWarning)
     this.refreshMirrorInstallmentsAvailability()
+    this.refreshAllocationWarning()
   }
 
   disconnect() {
     this.transactionForm()?.removeEventListener("input", this.boundRefreshMirrorAvailability)
     this.transactionForm()?.removeEventListener("change", this.boundRefreshMirrorAvailability)
+    this.transactionForm()?.removeEventListener("input", this.boundRefreshAllocationWarning)
+    this.transactionForm()?.removeEventListener("change", this.boundRefreshAllocationWarning)
+    this.transactionForm()?.removeEventListener("piggy-bank-mode-changed", this.boundRefreshAllocationWarning)
   }
 
   initModalOnce() {
@@ -208,6 +217,17 @@ export default class extends Controller {
     if (!this.hasMirrorInstallmentsButtonTarget) { return }
 
     this.mirrorInstallmentsButtonTarget.disabled = !this.paidPricesAreMirrorable()
+  }
+
+  refreshAllocationWarning() {
+    if (!this.hasPiggyBankReturnPriceInputTarget) { return }
+
+    const piggySection = this.piggyBankReturnPriceInputTarget.closest("[data-piggy-bank-mode='piggy']")
+    const piggyBankActive = piggySection && !piggySection.classList.contains("hidden") && !this.piggyBankReturnPriceInputTarget.disabled
+    const returnPrice = Math.abs(parseInt(this._removeMask(this.piggyBankReturnPriceInputTarget.value || "0"), 10) || 0)
+    const mismatch = piggyBankActive && returnPrice !== Math.abs(this.transactionTotalCents())
+
+    this.allocationWarningTargets.forEach((warning) => warning.classList.toggle("hidden", !mismatch))
   }
 
   paidPricesAreMirrorable() {

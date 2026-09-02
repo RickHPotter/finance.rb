@@ -8,6 +8,7 @@ RSpec.describe Navigation::CardTransactions do
   let(:user_card) { create(:user_card, :random, user:) }
   let(:category) { create(:category, :random, user:) }
   let(:entity) { create(:entity, :random, user:) }
+  let(:subscription) { create(:subscription, user:, context:) }
   let(:card_transaction) do
     create(
       :card_transaction,
@@ -32,14 +33,25 @@ RSpec.describe Navigation::CardTransactions do
     installment = card_transaction.card_installments.first
     raw = "/card_transactions?active_month_years=%5B202607%5D&default_year=2026&user_card_id=#{user_card.id}" \
           "&card_transaction[card_installment_ids][]=#{installment.id}&card_transaction[category_id][]=#{category.id}" \
-          "&card_transaction[entity_id][]=#{entity.id}&sort=description&direction=desc"
+          "&card_transaction[entity_id][]=#{entity.id}&card_transaction[id][]=#{card_transaction.id}" \
+          "&card_transaction[subscription_id][]=#{subscription.id}&attach_to_subscription_id=#{subscription.id}&sort=description&direction=desc"
 
     state = build_state(raw)
 
     expect(state).to be_accepted
     expect(state.destination).to include("/card_transactions?")
     expect(state.destination).to include("active_month_years=%5B202607%5D", "default_year=2026", "sort=description")
-    expect(state.destination).to include(installment.id.to_s, category.id.to_s, entity.id.to_s, user_card.id.to_s)
+    expect(state.destination).to include(installment.id.to_s, category.id.to_s, entity.id.to_s, card_transaction.id.to_s, subscription.id.to_s, user_card.id.to_s)
+  end
+
+  it "rejects a foreign attach-to-subscription destination" do
+    foreign_user = create(:user, :random)
+    foreign_subscription = create(:subscription, user: foreign_user, context: foreign_user.main_context)
+
+    state = build_state("/card_transactions?attach_to_subscription_id=#{foreign_subscription.id}")
+
+    expect(state.destination).to eq("/card_transactions")
+    expect(state.rejected_reason).to eq(:foreign_identifier)
   end
 
   it "accepts the canonical search route and strips unrelated form data" do
@@ -49,16 +61,19 @@ RSpec.describe Navigation::CardTransactions do
     expect(state.destination).to eq("/card_transactions/search?search_term=rent")
   end
 
-  it "rejects foreign card, category, entity, and installment identifiers" do
+  it "rejects foreign transaction, subscription, card, category, entity, and installment identifiers" do
     foreign_user = create(:user, :random)
     foreign_card = create(:user_card, :random, user: foreign_user)
     foreign_category = create(:category, :random, user: foreign_user)
     foreign_entity = create(:entity, :random, user: foreign_user)
     foreign_transaction = create(:card_transaction, user: foreign_user, context: foreign_user.main_context, user_card: foreign_card)
+    foreign_subscription = create(:subscription, user: foreign_user, context: foreign_user.main_context)
     foreign_values = {
       card_installment_ids: foreign_transaction.card_installments.first.id,
       category_id: foreign_category.id,
       entity_id: foreign_entity.id,
+      id: foreign_transaction.id,
+      subscription_id: foreign_subscription.id,
       user_card_id: foreign_card.id
     }
 

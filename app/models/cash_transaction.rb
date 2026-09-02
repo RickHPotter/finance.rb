@@ -72,6 +72,17 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   scope :card_advance, -> { where(cash_transaction_type: "CardTransaction") }
   scope :exchange_return, -> { where(cash_transaction_type: "Exchange") }
   scope :piggy_bank_return, -> { where(cash_transaction_type: "PiggyBank") }
+  scope :subscription_candidates, lambda {
+    protected_category_ids = Category.where(category_name: [ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ]).select(:id)
+    protected_transaction_ids = CategoryTransaction
+                                .where(transactable_type: "CashTransaction", category_id: protected_category_ids)
+                                .where.not(transactable_id: nil)
+                                .select(:transactable_id)
+
+    where(subscription_id: nil)
+      .where("cash_transaction_type IS NULL OR cash_transaction_type NOT IN (?)", %w[CardInstallment CardTransaction Investment PiggyBank])
+      .where.not(id: protected_transaction_ids)
+  }
 
   # @public_instance_methods ..................................................
 
@@ -145,7 +156,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def bulk_subscription_eligible?
-    !generated_piggy_bank_return? && !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ])
+    subscription_id.blank? && !generated_piggy_bank_return? && !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ])
   end
 
   def investment?
@@ -446,7 +457,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   def prevent_paid_piggy_bank_rewrite
     return if piggy_bank.blank? || !piggy_bank.paid_history?
 
-    projection_changed = piggy_bank.changed? || piggy_bank.marked_for_destruction?
+    projection_changed = piggy_bank.marked_for_destruction? || (piggy_bank.changed_attribute_names_to_save - [ "return_price" ]).present?
     source_changed = will_save_change_to_price? || will_save_change_to_user_bank_account_id? || piggy_bank_allocation_changed?
     errors.add(:base, :piggy_bank_paid_history_locked) if projection_changed || source_changed
   end

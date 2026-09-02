@@ -136,11 +136,25 @@ class Logic::CardExchangeProjectionRepair # rubocop:disable Metrics/ClassLength
     return @cash_transaction if target.blank?
 
     duplicate_card_bound_projection_transactions.where.not(id: target.id).find_each do |duplicate|
+      Audit::BulkMutation.update_all!(duplicate.cash_installments.where(paid: true), cash_transaction_id: target.id, updated_at: Time.current)
       Audit::BulkMutation.update_all!(duplicate.exchanges, cash_transaction_id: target.id, updated_at: Time.current)
+      duplicate.reload
       duplicate.destroy!
     end
 
+    normalize_merged_paid_installment_numbers!(target)
+    projection_price = target.exchanges.card_bound.monetary.sum(:price)
+    Audit::BulkMutation.update_columns!(target, starting_price: projection_price, price: projection_price, updated_at: Time.current)
     target.reload
+  end
+
+  def normalize_merged_paid_installment_numbers!(target)
+    target.cash_installments.where(paid: true).order(:date, :number, :id).each_with_index do |installment, index|
+      number = index + 1
+      next if installment.number == number
+
+      Audit::BulkMutation.update_columns!(installment, number:, updated_at: Time.current)
+    end
   end
 
   def preferred_duplicate_card_bound_projection_transaction
@@ -220,7 +234,7 @@ class Logic::CardExchangeProjectionRepair # rubocop:disable Metrics/ClassLength
       else
         Exchange.card_bound.monetary.joins(:cash_transaction)
                 .where(cash_transactions: { context_id: current_context.id })
-                .where.not(cash_transaction_id: @cash_transaction.id)
+                .where.not(cash_transaction_id: duplicate_card_bound_projection_transactions.map(&:id))
                 .includes(entity_transaction: :entity)
                 .select do |exchange|
                   incoming_wrong_owner_card_bound_projection_exchange?(exchange, group_keys)

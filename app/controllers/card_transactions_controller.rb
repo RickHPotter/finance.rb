@@ -11,7 +11,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     @user_card ||= current_user.user_cards.find_by(id: card_transaction_params[:user_card_id])
 
     build_index_context(card_installments_for_selected_user_card)
-    @index_context[:return_to] = card_navigation_return_param(request.fullpath)
+    @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || card_navigation_return_param(request.fullpath)
 
     set_card_tabs
 
@@ -20,7 +20,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def search
     build_index_context(current_context.card_installments)
-    @index_context[:return_to] = card_navigation_return_param(request.fullpath)
+    @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || card_navigation_return_param(request.fullpath)
 
     render_top_level Views::CardTransactions::Index.new(index_context: @index_context, search: true, mobile: @mobile)
   end
@@ -28,7 +28,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def month_year
     mobile = search_card_transaction_params[:force_mobile] || @mobile
     month_year = search_card_transaction_params[:month_year]
-    return_to = card_navigation_return_param(params[:return_to])
+    return_to = dashboard_navigation_destination(params[:return_to]) || card_navigation_return_param(params[:return_to])
     user_card_id = card_transaction_params[:user_card_id].presence
     user_card = current_user.user_cards.find_by(id: user_card_id)
 
@@ -285,7 +285,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def set_return_to
-    @return_to = card_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || card_navigation_destination(params[:return_to])
     @return_to = card_transactions_path(user_card_id: @card_transaction.user_card_id) if @return_to == card_transactions_path && @card_transaction.user_card_id
   end
 
@@ -464,6 +464,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       user_card_id: @card_transaction.user_card_id,
       active_month_years: active_month_years.to_json,
       default_year: active_month_years.max.to_s.first(4).to_i,
+      full_month_counts: "1",
       card_transaction: { card_installment_ids: installment_ids }
     )
 
@@ -543,6 +544,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     params.permit(
       %i[
         search_term
+        attach_to_subscription_id
         from_ct_price
         to_ct_price
         from_price
@@ -553,6 +555,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
         to_installments_number
         exchange_bound_type
         month_year
+        full_month_counts
         force_mobile
         sort
         direction
@@ -567,7 +570,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
     params.require(:card_transaction).permit(
       %i[id description comment date month year price paid user_id user_card_id category_id entity_id duplicate subscription_id historical_correction_confirmation],
-      card_installment_ids: [], category_id: [], entity_id: [],
+      id: [], subscription_id: [], card_installment_ids: [], category_id: [], entity_id: [],
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],
       entity_transactions_attributes: [
@@ -663,7 +666,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def selected_card_transactions_for_bulk_subscription
-    current_context.card_transactions.where(id: Array(params[:ids].to_s.split(",")).compact_blank).to_a
+    current_context.card_transactions.subscription_candidates.where(id: Array(params[:ids].to_s.split(",")).compact_blank).to_a
   end
 
   def render_bulk_subscription_failure(alert_message)

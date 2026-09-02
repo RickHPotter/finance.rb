@@ -4,16 +4,31 @@ class SubscriptionsController < ApplicationController
   include TabsConcern
   include ContextHelper
 
-  before_action :set_subscription, only: %i[edit update destroy]
+  before_action :set_subscription, only: %i[show edit update destroy transition]
   before_action :set_categories, :set_entities, only: %i[new create edit update]
   before_action :set_subscription_tabs
 
   def index
     build_index_context
     @subscriptions = subscriptions_scope
-    @index_context[:return_to] = subscription_navigation_return_param(request.fullpath)
+    @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || subscription_navigation_return_param(request.fullpath)
 
     render_top_level Views::Subscriptions::Index.new(subscriptions: @subscriptions, index_context: @index_context, mobile: @mobile)
+  end
+
+  def show
+    set_return_to
+    cash_transactions = current_context.cash_transactions.where(subscription_id: @subscription.id).includes(:user_bank_account).to_a
+    card_transactions = current_context.card_transactions.where(subscription_id: @subscription.id).includes(:user_card).to_a
+    detached_transactions = Logic::Subscriptions::DetachedHistory.call(subscription: @subscription)
+
+    render_top_level Views::Subscriptions::Show.new(
+      subscription: @subscription,
+      cash_transactions:,
+      card_transactions:,
+      detached_transactions:,
+      return_to: @return_to
+    )
   end
 
   def new
@@ -50,6 +65,16 @@ class SubscriptionsController < ApplicationController
     end
   end
 
+  def transition
+    set_return_to
+    event = params[:event].to_s
+    Logic::Subscriptions::LifecycleTransition.call(subscription: @subscription, event:)
+
+    redirect_to @return_to, notice: I18n.t("dashboards.subscriptions.lifecycle.success.#{event}"), status: :see_other
+  rescue Logic::Subscriptions::LifecycleTransition::InvalidTransition
+    redirect_to @return_to, alert: I18n.t("dashboards.subscriptions.lifecycle.invalid"), status: :see_other
+  end
+
   private
 
   def render_top_level(view)
@@ -57,7 +82,7 @@ class SubscriptionsController < ApplicationController
   end
 
   def set_return_to
-    @return_to = subscription_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || subscription_navigation_destination(params[:return_to])
   end
 
   def subscription_navigation_destination(raw)
@@ -86,6 +111,7 @@ class SubscriptionsController < ApplicationController
     @index_context = {
       current_user:,
       search_term: search_subscription_params[:search_term],
+      id: Array(subscription_filter_params[:id]).compact_blank,
       category_id: Array(subscription_filter_params[:category_id]).compact_blank,
       entity_id: Array(subscription_filter_params[:entity_id]).compact_blank,
       status: Array(subscription_filter_params[:status]).compact_blank
@@ -96,6 +122,7 @@ class SubscriptionsController < ApplicationController
     build_index_context if @index_context.blank?
 
     scope = current_context.subscriptions.includes(:categories, :entities).left_outer_joins(:categories, :entities)
+    scope = scope.where(id: @index_context[:id]) if @index_context[:id].present?
     scope = scope.where(status: @index_context[:status]) if @index_context[:status].present?
     scope = scope.where(categories: { id: @index_context[:category_id] }) if @index_context[:category_id].present?
     scope = scope.where(entities: { id: @index_context[:entity_id] }) if @index_context[:entity_id].present?
@@ -162,6 +189,6 @@ class SubscriptionsController < ApplicationController
   def subscription_filter_params
     return {} if params[:subscription].blank?
 
-    params.require(:subscription).permit(category_id: [], entity_id: [], status: [])
+    params.require(:subscription).permit(id: [], category_id: [], entity_id: [], status: [])
   end
 end

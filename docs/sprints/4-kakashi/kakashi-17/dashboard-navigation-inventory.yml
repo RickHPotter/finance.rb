@@ -1,0 +1,174 @@
+version: 1
+scope:
+  dashboards:
+    - cash_transaction
+    - card_transaction
+    - budget
+    - user_bank_account
+    - user_card
+    - category
+    - entity
+  rule: >-
+    Direct relationships use context-scoped show routes. Collection claims use
+    bounded relationship identifiers and preserve the source show as return_to.
+
+filter_contracts:
+  cash_transactions:
+    finite_records: cash_transaction[id][]
+    finite_installments: cash_transaction[cash_installment_ids][]
+    account: cash_transaction[user_bank_account_id][]
+    categories: cash_transaction[category_id][]
+    entities: cash_transaction[entity_id][]
+    subscription: cash_transaction[subscription_id][]
+  card_transactions:
+    finite_records: card_transaction[id][]
+    finite_installments: card_transaction[card_installment_ids][]
+    card: user_card_id
+    categories: card_transaction[category_id][]
+    entities: card_transaction[entity_id][]
+    subscription: card_transaction[subscription_id][]
+  budgets:
+    finite_records: budget[id][]
+    categories: budget[category_id][]
+    entities: budget[entity_id][]
+  investments:
+    finite_records: investment[id][]
+    account: investment[user_bank_account_id][]
+    type: investment[investment_type_id][]
+    piggy_bank_return: investment[piggy_bank_return_cash_transaction_id][]
+  subscriptions:
+    finite_records: subscription[id][]
+    categories: subscription[category_id][]
+    entities: subscription[entity_id][]
+    status: subscription[status][]
+
+dashboards:
+  cash_transaction:
+    - claim: audit history
+      current: direct audit collection
+      target: direct audit collection
+      status: correct
+    - claim: edit, duplicate, pay, destroy
+      current: mutation actions
+      target: existing guarded mutation actions
+      status: correct
+    - claim: subscription
+      current: subscription edit
+      target: subscription show
+      status: slice_5
+    - claim: reference and exchange projections
+      current: typed cash/card/budget show links
+      target: typed show links with source return_to
+      status: implemented
+    - claim: Piggy Bank sources
+      current: edit current return transaction
+      target: intentionally labelled mutation action for managing the source group
+      status: implemented
+    - claim: reference descendants count
+      current: display_only
+      target: exact typed record links or bounded finite collections
+      status: implemented
+
+  card_transaction:
+    - claim: audit history
+      current: direct audit collection
+      target: direct audit collection
+      status: correct
+    - claim: edit, duplicate, advance pay, destroy
+      current: mutation actions
+      target: existing guarded mutation actions
+      status: correct
+    - claim: subscription
+      current: subscription edit
+      target: subscription show
+      status: slice_5
+    - claim: invoice payments, references, and exchanges
+      current: typed cash/card/budget show links
+      target: typed show links with source return_to
+      status: implemented
+    - claim: reference descendants count
+      current: display_only
+      target: exact typed record links or bounded finite collections
+      status: implemented
+
+  budget:
+    - claim: audit, edit, duplicate, destroy
+      current: direct or guarded actions
+      target: preserve
+      status: correct
+    - claim: consumed installments
+      current: embedded rows linked to typed transaction shows
+      target: preserve and add source return_to
+      status: implemented
+    - claim: budget index return
+      current: month plus category/entity intersection
+      target: exact budget id when the claim is this budget; allocation filters only for aggregation claims
+      status: implemented
+
+  user_bank_account:
+    - claim: audit, edit, index, destroy
+      current: direct or guarded actions
+      target: preserve
+      status: correct
+    - claim: cash transaction count and total
+      current: display_only
+      target: cash index filtered by account
+      status: implemented
+    - claim: category and entity breakdowns
+      current: display_only charts and cards
+      target: account plus selected allocation filters
+      status: implemented
+
+  user_card:
+    - claim: audit, edit, index, destroy
+      current: direct or guarded actions
+      target: preserve
+      status: correct
+    - claim: card transaction count and total
+      current: display_only
+      target: card index filtered by user card
+      status: implemented
+    - claim: category and entity breakdowns
+      current: display_only charts and cards
+      target: user card plus selected allocation filters
+      status: implemented
+    - claim: billing references
+      current: embedded reference cards
+      target: retain embedded records; merge entry point remains the existing reference workflow
+      status: correct
+
+  category:
+    - claim: edit, index, destroy
+      current: direct or guarded actions
+      target: preserve and add existing KAKASHI-18 merge entry point
+      status: implemented
+    - claim: cash/card counts and totals
+      current: display_only
+      target: typed indexes filtered by category
+      status: implemented
+    - claim: entity and funding-source breakdowns
+      current: display_only charts
+      target: intentionally display-only visualization with exact typed collection actions in the header
+      status: implemented
+
+  entity:
+    - claim: edit, index, destroy
+      current: direct or guarded actions
+      target: preserve and add existing KAKASHI-18 merge entry point
+      status: implemented
+    - claim: cash/card counts and totals
+      current: display_only
+      target: typed indexes filtered by entity
+      status: implemented
+    - claim: category and funding-source breakdowns
+      current: display_only charts
+      target: intentionally display-only visualization with exact typed collection actions in the header
+      status: implemented
+
+invariants:
+  - No collection relationship is represented by search_term.
+  - Every identifier in a return path is owned by the current user or context.
+  - Finite ID arrays are bounded by Navigation::State::MAX_VALUES.
+  - Foreign, malformed, oversized, and unknown state falls back canonically.
+  - Filtered forms and lazy month requests preserve exact hidden scope.
+  - Actionable-message behavior is outside this feature and remains unchanged.

@@ -31,7 +31,7 @@ class Views::Shared::AddToSubscriptionModal < Views::Base
 
           div(class: "relative w-full") do
             select_tag(:subscription_id, class: input_class_without_icon) do
-              options_for_select(subscription_options)
+              options_for_select(subscription_options, index_context[:attach_to_subscription_id])
             end
           end
         end

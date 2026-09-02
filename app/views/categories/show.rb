@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::Categories::Show < Views::Base
+class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::AssetPath
 
@@ -43,8 +43,10 @@ class Views::Categories::Show < Views::Base
       end
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
+        dashboard_action(I18n.t("dashboards.actions.view_cash_transactions"), cash_transactions_index_path, variant: :outline) if scoped_cash_transactions.exists?
+        dashboard_action(I18n.t("dashboards.actions.view_card_transactions"), card_transactions_index_path, variant: :outline) if scoped_card_transactions.exists?
         dashboard_action(action_message(:edit), edit_category_path(category, return_to:), variant: :edit)
-        dashboard_action(action_message(:index), return_to, variant: :outline)
+        merge_action
         destroy_action
       end
     end
@@ -167,6 +169,33 @@ class Views::Categories::Show < Views::Base
         class: dashboard_action_class(:destroy),
         data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
       }
+    )
+  end
+
+  def merge_action
+    return if category.built_in?
+
+    Button(
+      link: merge_preview_category_path(category, category_merge: { return_to: category_path(category) }),
+      variant: :outline,
+      class: dashboard_action_class(:outline),
+      data: { turbo_method: :post, turbo_frame: "_top", turbo_action: "replace" }
+    ) { I18n.t("category_merges.preview.title") }
+  end
+
+  def cash_transactions_index_path
+    cash_transactions_path(
+      all_month_years: true,
+      cash_transaction: { category_id: [ category.id ] },
+      return_to: category_path(category)
+    )
+  end
+
+  def card_transactions_index_path
+    card_transactions_path(
+      all_month_years: true,
+      card_transaction: { category_id: [ category.id ] },
+      return_to: category_path(category)
     )
   end
 

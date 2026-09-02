@@ -33,7 +33,7 @@ class Views::Budgets::Index < Views::Base
                 selection_kind: "budget"
               )
               render MonthYearContainer.new(
-                index_context: index_context.slice(:search_term, :category_id, :entity_id, :active_month_years, :sort, :direction, :return_to)
+                index_context: index_context.slice(:search_term, :category_id, :entity_id, :id, :active_month_years, :sort, :direction, :return_to)
               )
               render_budget_bulk_forms
               render_budget_bulk_action_bar

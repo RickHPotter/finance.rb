@@ -103,7 +103,7 @@ class UserCardsController < ApplicationController
   end
 
   def set_return_to
-    @return_to = user_card_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || user_card_navigation_destination(params[:return_to])
   end
 
   def user_card_navigation_destination(raw)

@@ -87,5 +87,6 @@ class Audit::Rollback::Adapters::Budget < Audit::Rollback::Adapters::Base
 
   def prepare_budget(budget)
     budget.recalculate_balance = false
+    budget.skip_description_refresh = true
   end
 end

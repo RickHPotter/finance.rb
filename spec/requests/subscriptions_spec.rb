@@ -67,6 +67,23 @@ RSpec.describe "Subscriptions", type: :request do
     transaction.reload
   end
 
+  def create_subscription_history_version(subscription:, item_type:, item_id:, object:, event: :update, context: subscription.context)
+    operation = AuditOperation.create!(source: :web, result: :committed, actor_id: user.id, context_id: context.id)
+    AuditVersion.create!(
+      operation:,
+      owner_id: user.id,
+      context_id: context.id,
+      item_type:,
+      item_subtype: item_type,
+      item_id:,
+      event:,
+      mutation_source: :web,
+      object:,
+      object_changes: { "subscription_id" => [ subscription.id, nil ] },
+      metadata: {}
+    )
+  end
+
   describe "[ #index ]" do
     it "renders successfully" do
       get subscriptions_path
@@ -97,6 +114,416 @@ RSpec.describe "Subscriptions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("background-color: #123456", "color: #ffffff")
       expect(response.body).to include(category.name)
+    end
+
+    it "links the primary label to show while retaining a distinct edit action" do
+      subscription = create(:subscription, user:, context: user.main_context)
+
+      get subscriptions_path
+
+      document = Nokogiri::HTML.fragment(response.body)
+
+      expect(document.at_css("#show_subscription_#{subscription.id}")["href"]).to eq(subscription_path(subscription))
+      expect(document.at_css("#edit_subscription_#{subscription.id}")["href"]).to eq(edit_subscription_path(subscription))
+    end
+  end
+
+  describe "[ #show ]" do
+    it "renders derived live totals, allocations, and disjoint open and paid transaction histories without writes" do
+      subscription = create(:subscription, user:, context: user.main_context, description: "House services", comment: "Shared utilities", status: :paused)
+      subscription.categories << category
+      subscription.entities << entity
+      open_cash = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        subscription:,
+        description: "Open electricity",
+        price: -4_900,
+        date: 2.days.ago
+      )
+      paid_card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        subscription:,
+        description: "Paid streaming",
+        price: -5_500,
+        date: 2.days.from_now,
+        month: 9,
+        year: 2026
+      )
+      open_cash.update_column(:paid, false)
+      paid_card.update_column(:paid, true)
+      other_context = create(:context, user:)
+      foreign_cash = create(
+        :cash_transaction,
+        user:,
+        context: other_context,
+        user_bank_account:,
+        description: "Foreign cash relationship",
+        price: -90_000,
+        date: Time.zone.today
+      )
+      foreign_card = create(
+        :card_transaction,
+        user:,
+        context: other_context,
+        user_card:,
+        description: "Foreign card relationship",
+        price: -80_000,
+        date: Time.zone.today
+      )
+      foreign_cash.update_column(:subscription_id, subscription.id)
+      foreign_card.update_column(:subscription_id, subscription.id)
+      subscription.update_columns(price: 123, cash_transactions_count: 99, card_transactions_count: 98)
+      subscription_updated_at = subscription.reload.updated_at
+      cash_updated_at = open_cash.reload.updated_at
+      card_updated_at = paid_card.reload.updated_at
+      audit_count = AuditVersion.count
+      message_count = Message.count
+
+      get subscription_path(subscription)
+
+      expect(response).to have_http_status(:success)
+      expect(AuditVersion.count).to eq(audit_count)
+      expect(Message.count).to eq(message_count)
+      expect(subscription.reload.updated_at).to eq(subscription_updated_at)
+      expect(open_cash.reload.updated_at).to eq(cash_updated_at)
+      expect(paid_card.reload.updated_at).to eq(card_updated_at)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      open_section = document.at_css("#subscription_open_transactions")
+      paid_section = document.at_css("#subscription_paid_transactions")
+      hrefs = document.css("a").map { |link| link["href"] }
+
+      expect(document.text).to include("House services", "Shared utilities", category.name, entity.entity_name, "104.00")
+      expect(document.text).not_to include(foreign_cash.description, foreign_card.description)
+      expect(open_section.text).to include(open_cash.description)
+      expect(open_section.text).not_to include(paid_card.description)
+      expect(paid_section.text).to include(paid_card.description)
+      expect(paid_section.text).not_to include(open_cash.description)
+      expect(hrefs).to include(
+        cash_transaction_path(open_cash, return_to: subscription_path(subscription)),
+        card_transaction_path(paid_card, return_to: subscription_path(subscription)),
+        category_path(category, return_to: subscription_path(subscription)),
+        entity_path(entity, return_to: subscription_path(subscription)),
+        record_audit_versions_path(item_type: "Subscription", item_id: subscription.id)
+      )
+      expect(response.body).not_to include("delete_subscription_#{subscription.id}")
+    end
+
+    it "does not render redundant collection or transaction attachment actions" do
+      subscription = create(:subscription, user:, context: user.main_context)
+
+      get subscription_path(subscription)
+
+      expect(response).to have_http_status(:success)
+      expect(Nokogiri::HTML.fragment(response.body).text).not_to include(
+        I18n.t("dashboards.actions.view_in_list"),
+        I18n.t("dashboards.subscriptions.actions.add_transaction"),
+        I18n.t("dashboards.subscriptions.actions.attach_cash"),
+        I18n.t("dashboards.subscriptions.actions.attach_card")
+      )
+    end
+
+    it "renders useful empty states and guarded destroy for an empty subscription" do
+      subscription = create(:subscription, user:, context: user.main_context)
+
+      get subscription_path(subscription)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(
+        I18n.t("dashboards.subscriptions.empty.open"),
+        I18n.t("dashboards.subscriptions.empty.paid"),
+        I18n.t("dashboards.subscriptions.empty.detached"),
+        "delete_subscription_#{subscription.id}"
+      )
+    end
+
+    it "renders audited detached records and destroyed tombstones without guessing from matching descriptions" do
+      subscription = create(:subscription, user:, context: user.main_context, description: "Historical subscription")
+      detached_cash = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        subscription: nil,
+        description: "Detached internet bill",
+        date: Time.zone.local(2026, 7, 10),
+        price: -4_500
+      )
+      lookalike = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        subscription: nil,
+        description: detached_cash.description,
+        date: Time.zone.local(2026, 7, 11),
+        price: -4_500
+      )
+      destroyed_item_id = CashTransaction.maximum(:id).to_i + 10_000
+      create_subscription_history_version(
+        subscription:,
+        item_type: "CashTransaction",
+        item_id: detached_cash.id,
+        object: detached_cash.attributes.merge("subscription_id" => subscription.id)
+      )
+      create_subscription_history_version(
+        subscription:,
+        item_type: "CashTransaction",
+        item_id: destroyed_item_id,
+        event: :destroy,
+        object: {
+          "id" => destroyed_item_id,
+          "description" => "Destroyed telephone bill",
+          "date" => Time.zone.local(2026, 6, 10).iso8601,
+          "price" => -3_200,
+          "subscription_id" => subscription.id
+        }
+      )
+      audit_count = AuditVersion.count
+      subscription_updated_at = subscription.updated_at
+      transaction_updated_at = detached_cash.updated_at
+
+      get subscription_path(subscription)
+
+      expect(response).to have_http_status(:success)
+      expect(AuditVersion.count).to eq(audit_count)
+      expect(subscription.reload.updated_at).to eq(subscription_updated_at)
+      expect(detached_cash.reload.updated_at).to eq(transaction_updated_at)
+
+      section = Nokogiri::HTML.fragment(response.body).at_css("#subscription_detached_transactions")
+      hrefs = section.css("a").map { |link| link["href"] }
+      expect(section.text).to include(detached_cash.description, "Destroyed telephone bill")
+      expect(section.text.scan(detached_cash.description).size).to eq(1)
+      expect(section.at_css("#detached_subscription_CashTransaction_#{detached_cash.id}")).to be_present
+      expect(section.at_css("#detached_subscription_CashTransaction_#{lookalike.id}")).to be_nil
+      expect(section.at_css("#destroyed_subscription_CashTransaction_#{destroyed_item_id}")).to be_present
+      expect(hrefs).to include(
+        cash_transaction_path(detached_cash, return_to: subscription_path(subscription)),
+        record_audit_versions_path(item_type: "CashTransaction", item_id: destroyed_item_id)
+      )
+      expect(hrefs).not_to include(cash_transaction_path(destroyed_item_id))
+      expect(response.body).to include("delete_subscription_#{subscription.id}")
+
+      get subscription_path(subscription), headers: { "HTTP_USER_AGENT" => "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)" }
+      mobile_section = Nokogiri::HTML.fragment(response.body).at_css("#subscription_detached_transactions")
+      expect(mobile_section.at_css("a#detached_subscription_CashTransaction_#{detached_cash.id}")["href"]).to eq(
+        cash_transaction_path(detached_cash, return_to: subscription_path(subscription))
+      )
+      expect(mobile_section.at_css("div#destroyed_subscription_CashTransaction_#{destroyed_item_id}")).to be_present
+      expect(mobile_section.at_css("div#destroyed_subscription_CashTransaction_#{destroyed_item_id} a")["href"]).to eq(
+        record_audit_versions_path(item_type: "CashTransaction", item_id: destroyed_item_id)
+      )
+    end
+
+    it "keeps reattached transactions exclusively in their current live section" do
+      subscription = create(:subscription, user:, context: user.main_context)
+      card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        subscription:,
+        description: "Reattached streaming plan",
+        paid: false
+      )
+      create_subscription_history_version(
+        subscription:,
+        item_type: "CardTransaction",
+        item_id: card_transaction.id,
+        object: card_transaction.attributes.merge("subscription_id" => subscription.id)
+      )
+
+      get subscription_path(subscription)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      expect(document.at_css("#subscription_open_transactions").text).to include(card_transaction.description)
+      expect(document.at_css("#subscription_paid_transactions").text).not_to include(card_transaction.description)
+      expect(document.at_css("#subscription_detached_transactions").text).not_to include(card_transaction.description)
+      expect(document.text.scan(card_transaction.description).size).to eq(1)
+    end
+
+    it "does not expose a subscription from another active context" do
+      other_context = create(:context, user:)
+      subscription = create(:subscription, user:, context: other_context)
+
+      get subscription_path(subscription)
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "links cash and card transaction dashboards back to the Subscription show" do
+      subscription = create(:subscription, user:, context: user.main_context)
+      cash_transaction = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, subscription:)
+      card_transaction = create(:card_transaction, user:, context: user.main_context, user_card:, subscription:)
+
+      get cash_transaction_path(cash_transaction)
+      expect(response.body).to include(subscription_path(subscription, return_to: cash_transaction_path(cash_transaction)))
+
+      get card_transaction_path(card_transaction)
+      expect(response.body).to include(subscription_path(subscription, return_to: card_transaction_path(card_transaction)))
+    end
+
+    it "keeps exact eligible unowned cash and card attachment collections available without dashboard shortcuts" do
+      subscription = create(:subscription, user:, context: user.main_context, description: "Target subscription")
+      other_subscription = create(:subscription, user:, context: user.main_context)
+      available_cash = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, description: "Available cash", date: Time.zone.today)
+      owned_cash = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        subscription: other_subscription,
+        description: "Owned cash",
+        date: Time.zone.today
+      )
+      available_card = create(:card_transaction, user:, context: user.main_context, user_card:, description: "Available card", date: Time.zone.today)
+      owned_card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        subscription: other_subscription,
+        description: "Owned card",
+        date: Time.zone.today
+      )
+
+      expect(available_cash).to be_bulk_subscription_eligible
+      expect(available_card).to be_bulk_subscription_eligible
+      expect(user.main_context.cash_transactions.subscription_candidates).to include(available_cash)
+      expect(user.main_context.card_transactions.subscription_candidates).to include(available_card)
+
+      cash_attach_path = cash_transactions_path(all_month_years: "1", attach_to_subscription_id: subscription.id, return_to: subscription_path(subscription))
+
+      get month_year_cash_transactions_path,
+          params: {
+            month_year: available_cash.cash_installments.first.date.strftime("%Y%m"),
+            attach_to_subscription_id: subscription.id
+          }
+      expect(response.body).to include(available_cash.description)
+      expect(response.body).not_to include(owned_cash.description)
+
+      get month_year_card_transactions_path,
+          params: {
+            month_year: Date.new(available_card.card_installments.first.year, available_card.card_installments.first.month).strftime("%Y%m"),
+            attach_to_subscription_id: subscription.id
+          }
+      expect(response.body).to include(available_card.description)
+      expect(response.body).not_to include(owned_card.description)
+
+      get cash_attach_path
+      selected_option = Nokogiri::HTML.fragment(response.body).at_css("select[name='subscription_id'] option[selected]")
+      expect(selected_option["value"]).to eq(subscription.id.to_s)
+    end
+  end
+
+  describe "[ #transition ]" do
+    it "renders exactly the lifecycle actions available for each current status" do
+      subscription = create(:subscription, user:, context: user.main_context, status: :active)
+
+      get subscription_path(subscription)
+      active_document = Nokogiri::HTML.fragment(response.body)
+      expect(response.body).to include("subscription_lifecycle_pause_#{subscription.id}", "subscription_lifecycle_finish_#{subscription.id}")
+      expect(response.body).not_to include("subscription_lifecycle_resume_#{subscription.id}", "subscription_lifecycle_reopen_#{subscription.id}")
+      expect(response.body).to include("linkWithConfirmDialog_subscription_lifecycle_finish_#{subscription.id}")
+      expect(active_document.at_css("#subscription_lifecycle_pause_#{subscription.id}")["href"]).to eq(
+        transition_subscription_path(subscription, event: :pause, return_to: subscription_path(subscription))
+      )
+      expect(active_document.at_css("#linkWithConfirmDialog_subscription_lifecycle_finish_#{subscription.id}")["data-confirm-href-value"]).to eq(
+        transition_subscription_path(subscription, event: :finish, return_to: subscription_path(subscription))
+      )
+
+      subscription.update_column(:status, "paused")
+      get subscription_path(subscription)
+      expect(response.body).to include("subscription_lifecycle_resume_#{subscription.id}", "subscription_lifecycle_finish_#{subscription.id}")
+      expect(response.body).not_to include("subscription_lifecycle_pause_#{subscription.id}", "subscription_lifecycle_reopen_#{subscription.id}")
+
+      subscription.update_column(:status, "finished")
+      get subscription_path(subscription)
+      finished_document = Nokogiri::HTML.fragment(response.body)
+      expect(response.body).to include(
+        "subscription_lifecycle_reopen_#{subscription.id}",
+        "linkWithConfirmDialog_subscription_lifecycle_reopen_#{subscription.id}"
+      )
+      expect(finished_document.at_css("#linkWithConfirmDialog_subscription_lifecycle_reopen_#{subscription.id}")["data-confirm-href-value"]).to eq(
+        transition_subscription_path(subscription, event: :reopen, return_to: subscription_path(subscription))
+      )
+      expect(response.body).not_to include(
+        "subscription_lifecycle_pause_#{subscription.id}",
+        "subscription_lifecycle_resume_#{subscription.id}",
+        "subscription_lifecycle_finish_#{subscription.id}"
+      )
+    end
+
+    it "changes only lifecycle status and refreshes the dashboard with the next valid actions" do
+      subscription = create(:subscription, user:, context: user.main_context, status: :active, price: -12_345)
+      subscription.categories << category
+      subscription.entities << entity
+      cash_transaction = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, subscription:)
+      card_transaction = create(:card_transaction, user:, context: user.main_context, user_card:, subscription:)
+      preserved_subscription_attributes = subscription.reload.attributes.slice("price", "cash_transactions_count", "card_transactions_count")
+      preserved_category_ids = subscription.category_ids
+      preserved_entity_ids = subscription.entity_ids
+      preserved_cash_ids = subscription.cash_transaction_ids
+      preserved_card_ids = subscription.card_transaction_ids
+      cash_updated_at = cash_transaction.reload.updated_at
+      card_updated_at = card_transaction.reload.updated_at
+
+      patch transition_subscription_path(subscription),
+            params: { event: "pause", return_to: subscription_path(subscription) }
+
+      expect(response).to redirect_to(subscription_path(subscription))
+      expect(response).to have_http_status(:see_other)
+
+      subscription.reload
+      expect(subscription).to be_paused
+      expect(subscription.attributes.slice("price", "cash_transactions_count", "card_transactions_count")).to eq(preserved_subscription_attributes)
+      expect(subscription.category_ids).to eq(preserved_category_ids)
+      expect(subscription.entity_ids).to eq(preserved_entity_ids)
+      expect(subscription.cash_transaction_ids).to eq(preserved_cash_ids)
+      expect(subscription.card_transaction_ids).to eq(preserved_card_ids)
+      expect(cash_transaction.reload.updated_at).to eq(cash_updated_at)
+      expect(card_transaction.reload.updated_at).to eq(card_updated_at)
+
+      follow_redirect!
+      expect(response.body).to include(I18n.t("dashboards.subscriptions.lifecycle.success.pause"))
+      expect(response.body).to include("subscription_lifecycle_resume_#{subscription.id}", "subscription_lifecycle_finish_#{subscription.id}")
+      expect(response.body).not_to include("subscription_lifecycle_pause_#{subscription.id}", "subscription_lifecycle_reopen_#{subscription.id}")
+    end
+
+    it "rejects invalid and unknown lifecycle events without mutation" do
+      subscription = create(:subscription, user:, context: user.main_context, status: :active)
+      original_updated_at = subscription.updated_at
+      original_audit_count = AuditVersion.count
+
+      %w[reopen archive].each do |event|
+        patch transition_subscription_path(subscription),
+              params: { event:, return_to: subscription_path(subscription) }
+
+        expect(response).to redirect_to(subscription_path(subscription))
+        expect(response).to have_http_status(:see_other)
+        expect(subscription.reload).to be_active
+        expect(subscription.updated_at).to eq(original_updated_at)
+        expect(AuditVersion.count).to eq(original_audit_count)
+      end
+
+      follow_redirect!
+      expect(Nokogiri::HTML.parse(response.body).text).to include(I18n.t("dashboards.subscriptions.lifecycle.invalid"))
+    end
+
+    it "does not expose the lifecycle endpoint for another context" do
+      other_context = create(:context, user:)
+      subscription = create(:subscription, user:, context: other_context, status: :active)
+
+      patch transition_subscription_path(subscription), params: { event: "pause" }
+
+      expect(response).to have_http_status(:not_found)
+      expect(subscription.reload).to be_active
     end
   end
 

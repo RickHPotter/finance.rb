@@ -77,6 +77,13 @@ class Investment < ApplicationRecord
     piggy_bank_return_cash_transaction_id.present?
   end
 
+  def can_be_destroyed?
+    return false unless persisted?
+    return true unless piggy_bank_valuation?
+
+    removable_piggy_bank_valuation?
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -182,16 +189,29 @@ class Investment < ApplicationRecord
   end
 
   def prevent_invalid_piggy_bank_projection_destroy
-    return unless piggy_bank_valuation?
+    return if can_be_destroyed?
+
+    if valid_piggy_bank_target?
+      errors.add(:base, :piggy_bank_paid_history_locked)
+    else
+      errors.add(:piggy_bank_return_cash_transaction, :invalid)
+    end
+    throw(:abort)
+  end
+
+  def removable_piggy_bank_valuation?
+    return false unless valid_piggy_bank_target?
 
     target = piggy_bank_return_cash_transaction
     principal = target.piggy_bank_return_links.sum(:return_price)
     remaining_deltas = target.piggy_bank_investments.where.not(id:).sum(:price)
     paid_total = target.cash_installments.where(paid: true).sum(:price)
-    return if principal + remaining_deltas > paid_total
+    principal + remaining_deltas > paid_total
+  end
 
-    errors.add(:base, :piggy_bank_paid_history_locked)
-    throw(:abort)
+  def valid_piggy_bank_target?
+    target = piggy_bank_return_cash_transaction
+    target&.user_id == user_id && target&.context_id == context_id && target.generated_piggy_bank_return?
   end
 end
 

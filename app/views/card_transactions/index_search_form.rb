@@ -12,13 +12,14 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
   attr_reader :url,
               :index_context, :current_user,
               :default_year, :years, :active_month_years, :search_term,
-              :category_id, :entity_id,
+              :category_id, :entity_id, :id, :subscription_id,
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
               :exchange_bound_type, :sort, :direction,
               :user_card, :categories, :entities,
               :count_by_month_year,
+              :attach_to_subscription_id, :return_to,
               :mobile
 
   def initialize(url:, index_context: {}, mobile: false)
@@ -31,6 +32,8 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
     @search_term = index_context[:search_term]
     @category_id = index_context[:category_id]
     @entity_id = index_context[:entity_id]
+    @id = index_context[:id]
+    @subscription_id = index_context[:subscription_id]
     @from_ct_price = index_context[:from_ct_price]
     @to_ct_price = index_context[:to_ct_price]
     @from_price = index_context[:from_price]
@@ -42,6 +45,8 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
     @direction = index_context[:direction]
     @user_card = index_context[:user_card]
     @count_by_month_year = index_context[:count_by_month_year] || {}
+    @return_to = index_context[:return_to]
+    @attach_to_subscription_id = index_context[:attach_to_subscription_id]
     @mobile = mobile
 
     set_all_categories
@@ -58,6 +63,9 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
       build_month_year_selector
 
       TextFieldTag :user_card_id, class: :hidden, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || user_card&.id
+      exact_scope_inputs("card_transaction", id:, subscription_id:)
+      input type: "hidden", name: "return_to", value: return_to if return_to.present?
+      input type: "hidden", name: :attach_to_subscription_id, value: attach_to_subscription_id if attach_to_subscription_id.present?
       input type: "hidden", name: :sort, value: sort, id: "card_transactions_sort"
       input type: "hidden", name: :direction, value: direction, id: "card_transactions_direction"
 
@@ -169,6 +177,14 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
   end
 
   private
+
+  def exact_scope_inputs(scope, **filters)
+    filters.each do |key, values|
+      Array(values).compact_blank.each do |value|
+        input type: "hidden", name: "#{scope}[#{key}][]", value:
+      end
+    end
+  end
 
   def advanced_filter_button_class
     "scale-105 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white"

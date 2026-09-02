@@ -114,6 +114,21 @@ RSpec.describe PiggyBank, type: :model do
     expect(return_transaction.cash_installments.first).to have_attributes(date: new_date, price: 5_500)
   end
 
+  it "preserves a stored return timestamp when its minute-only form value is unchanged" do
+    source = build_source
+    source.save!
+    piggy_bank = source.piggy_bank
+    precise_date = Time.zone.local(2026, 11, 30, 9, 15, 59) + 0.999_999
+    piggy_bank.update_column(:return_date, precise_date)
+    piggy_bank.reload
+    persisted_date = piggy_bank.return_date
+
+    piggy_bank.return_date = "2026-11-30T09:15"
+
+    expect(piggy_bank.return_date).to eq(persisted_date)
+    expect(piggy_bank).not_to be_changed
+  end
+
   it "blocks source destruction after return history is paid" do
     source = build_source
     source.save!
@@ -123,13 +138,40 @@ RSpec.describe PiggyBank, type: :model do
     expect(source.errors.of_kind?(:base, :piggy_bank_paid_history_locked)).to be(true)
   end
 
-  it "blocks direct projection changes after return history is paid" do
+  it "allows a return value change after partial payment and preserves paid history" do
+    source = build_source
+    source.save!
+    piggy_bank = source.piggy_bank
+    return_transaction = piggy_bank.return_cash_transaction
+    original_installment = return_transaction.cash_installments.first
+    original_installment.update!(price: 1_000, starting_price: 1_000, paid: true)
+    Logic::Manipulation::CashInstallment.new(original_installment).split_installment(return_transaction.date, 4_000)
+
+    expect(piggy_bank.update(return_price: 5_500)).to be(true)
+    expect(return_transaction.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 1_000, true ], [ 4_500, false ] ])
+  end
+
+  it "rejects a return value below the amount already paid" do
+    source = build_source
+    source.save!
+    piggy_bank = source.piggy_bank
+    return_transaction = piggy_bank.return_cash_transaction
+    original_installment = return_transaction.cash_installments.first
+    original_installment.update!(price: 1_000, starting_price: 1_000, paid: true)
+    Logic::Manipulation::CashInstallment.new(original_installment).split_installment(return_transaction.date, 4_000)
+
+    expect(piggy_bank.update(return_price: 500)).to be(false)
+    expect(piggy_bank.errors.of_kind?(:return_price, :insufficient_for_paid_history)).to be(true)
+    expect(return_transaction.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 1_000, true ], [ 4_000, false ] ])
+  end
+
+  it "continues to block return date changes after return history is paid" do
     source = build_source
     source.save!
     piggy_bank = source.piggy_bank
     piggy_bank.return_cash_transaction.cash_installments.first.update!(paid: true)
 
-    expect(piggy_bank.update(return_price: 5_500)).to be(false)
+    expect(piggy_bank.update(return_date: piggy_bank.return_date + 1.day)).to be(false)
     expect(piggy_bank.errors.of_kind?(:base, :paid_history_locked)).to be(true)
   end
 

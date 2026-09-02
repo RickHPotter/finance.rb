@@ -6,7 +6,7 @@ module IndexState
     DEFAULT_DIRECTION = "asc"
     VALID_SORTS = %w[description installment_date transaction_date price].freeze
     VALID_DIRECTIONS = %w[asc desc].freeze
-    TRANSACTION_FILTER_KEYS = %i[card_installment_ids category_id entity_id].freeze
+    TRANSACTION_FILTER_KEYS = %i[card_installment_ids category_id entity_id id subscription_id].freeze
     RANGE_FILTER_KEYS = %i[
       from_ct_price
       to_ct_price
@@ -19,9 +19,11 @@ module IndexState
     ].freeze
     SEARCH_FILTER_KEYS = [
       :search_term,
+      :attach_to_subscription_id,
       *RANGE_FILTER_KEYS,
       :exchange_bound_type,
       :force_mobile,
+      :full_month_counts,
       :sort,
       :direction,
       :order_by
@@ -101,7 +103,7 @@ module IndexState
     end
 
     def filter_context
-      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :exchange_bound_type).merge(
+      values_from(source_context, :search_term, :attach_to_subscription_id, *RANGE_FILTER_KEYS, :exchange_bound_type).merge(
         compact_filter_context,
         user_card_context,
         force_mobile: boolean(source_context[:force_mobile])
@@ -112,7 +114,9 @@ module IndexState
       {
         card_installment_ids: compact_array(source_context[:card_installment_ids]),
         category_id: compact_array(source_context[:category_id]),
-        entity_id: compact_array(source_context[:entity_id])
+        entity_id: compact_array(source_context[:entity_id]),
+        id: compact_array(source_context[:id]),
+        subscription_id: compact_array(source_context[:subscription_id])
       }
     end
 
@@ -199,7 +203,12 @@ module IndexState
     def months_for_all_month_years
       associations = association_filters
       relation = card_installments
-      relation = relation.joins(card_transaction: associations.keys).where(card_transaction: associations) if associations.present?
+      if source_context[:attach_to_subscription_id].present?
+        relation = relation.where(card_transaction_id: current_context.card_transactions.subscription_candidates.select(:id))
+      end
+      direct_filters = direct_transaction_filters
+      relation = relation.joins(card_transaction: associations.keys).where(card_transaction: associations.merge(direct_filters)) if associations.present?
+      relation = relation.joins(:card_transaction).where(card_transaction: direct_filters) if associations.blank? && direct_filters.present?
 
       relation.map { |installment| month_year_value(installment.year, installment.month) }.uniq
     end
@@ -211,6 +220,13 @@ module IndexState
         associations[:categories] = { id: category_ids } if category_ids.present?
         associations[:entities] = { id: entity_ids } if entity_ids.present?
       end
+    end
+
+    def direct_transaction_filters
+      {
+        id: compact_array(source_context[:id]),
+        subscription_id: compact_array(source_context[:subscription_id])
+      }.compact_blank
     end
 
     def default_year_for(active_month_years:, max_date:, today:)
@@ -230,11 +246,13 @@ module IndexState
     end
 
     def transaction_filters_for_count
+      return { user_card_id: resolved_user_card&.id }.compact if boolean(source_context[:full_month_counts])
+
       compact_filter_context.merge(user_card_id: resolved_user_card&.id || [])
     end
 
     def search_filters_for_count(state)
-      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :force_mobile, :exchange_bound_type).merge(
+      values_from(source_context, :search_term, :attach_to_subscription_id, *RANGE_FILTER_KEYS, :force_mobile, :exchange_bound_type).merge(
         sort: state[:sort],
         direction: state[:direction]
       )

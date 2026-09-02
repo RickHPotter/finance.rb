@@ -48,8 +48,8 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "UserCard", item_id: user_card.id), variant: :outline)
+        dashboard_action(I18n.t("dashboards.actions.view_transactions"), transactions_index_path, variant: :outline) if scoped_card_transactions.exists?
         dashboard_action(action_message(:edit), edit_user_card_path(user_card, return_to:), variant: :edit)
-        dashboard_action(action_message(:index), return_to, variant: :outline)
         destroy_action
       end
     end
@@ -148,11 +148,13 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
     section_card(model_attribute(CardTransaction, :categories), open: false) do
       if category_breakdowns.present?
         allocation_breakdown_grid(category_breakdowns) do |entry|
-          CategoryBadge(
-            category: entry[:record],
-            class: "min-h-12 wrap-break-word px-2 py-1 text-center text-sm",
-            title: entry[:record].name
-          )
+          link_to category_transactions_index_path(entry[:record]), data: { turbo_frame: "_top", turbo_prefetch: false } do
+            CategoryBadge(
+              category: entry[:record],
+              class: "min-h-12 wrap-break-word px-2 py-1 text-center text-sm",
+              title: entry[:record].name
+            )
+          end
         end
       else
         empty_state
@@ -164,10 +166,12 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
     section_card(model_attribute(CardTransaction, :entities), open: false) do
       if entity_breakdowns.present?
         allocation_breakdown_grid(entity_breakdowns) do |entry|
-          div(class: entity_chip_class,
-              title: entry[:record].name) do
-            image_tag(asset_path("avatars/#{entry[:record].avatar_name}"), class: "h-6 w-6 rounded-full") if entry[:record].avatar_name.present?
-            span(class: "wrap-break-word") { entry[:record].name }
+          link_to entity_transactions_index_path(entry[:record]), data: { turbo_frame: "_top", turbo_prefetch: false } do
+            div(class: entity_chip_class,
+                title: entry[:record].name) do
+              image_tag(asset_path("avatars/#{entry[:record].avatar_name}"), class: "h-6 w-6 rounded-full") if entry[:record].avatar_name.present?
+              span(class: "wrap-break-word") { entry[:record].name }
+            end
           end
         end
       else
@@ -376,6 +380,32 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
   def scoped_card_transactions
     @scoped_card_transactions ||= current_context.card_transactions.where(user_card:)
+  end
+
+  def transactions_index_path
+    card_transactions_path(
+      all_month_years: true,
+      user_card_id: user_card.id,
+      return_to: user_card_path(user_card)
+    )
+  end
+
+  def category_transactions_index_path(category)
+    card_transactions_path(
+      all_month_years: true,
+      user_card_id: user_card.id,
+      card_transaction: { category_id: [ category.id ] },
+      return_to: user_card_path(user_card)
+    )
+  end
+
+  def entity_transactions_index_path(entity)
+    card_transactions_path(
+      all_month_years: true,
+      user_card_id: user_card.id,
+      card_transaction: { entity_id: [ entity.id ] },
+      return_to: user_card_path(user_card)
+    )
   end
 
   def reference_records

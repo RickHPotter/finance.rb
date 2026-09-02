@@ -46,8 +46,8 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "UserBankAccount", item_id: user_bank_account.id), variant: :outline)
+        dashboard_action(I18n.t("dashboards.actions.view_transactions"), transactions_index_path, variant: :outline) if account_cash_transactions.exists?
         dashboard_action(action_message(:edit), edit_user_bank_account_path(user_bank_account, return_to:), variant: :edit)
-        dashboard_action(action_message(:index), return_to, variant: :outline)
         destroy_action
       end
     end
@@ -73,11 +73,13 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     section_card(model_attribute(CashTransaction, :categories), open: false) do
       if category_breakdowns.present?
         allocation_breakdown_grid(category_breakdowns) do |entry|
-          CategoryBadge(
-            category: entry[:record],
-            class: "min-h-12 wrap-break-word px-2 py-1 text-center text-sm",
-            title: entry[:record].name
-          )
+          link_to category_transactions_index_path(entry[:record]), data: { turbo_frame: "_top", turbo_prefetch: false } do
+            CategoryBadge(
+              category: entry[:record],
+              class: "min-h-12 wrap-break-word px-2 py-1 text-center text-sm",
+              title: entry[:record].name
+            )
+          end
         end
       else
         empty_state
@@ -89,10 +91,12 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     section_card(model_attribute(CashTransaction, :entities), open: false) do
       if entity_breakdowns.present?
         allocation_breakdown_grid(entity_breakdowns) do |entry|
-          div(class: entity_chip_class,
-              title: entry[:record].name) do
-            image_tag(asset_path("avatars/#{entry[:record].avatar_name}"), class: "h-6 w-6 rounded-full") if entry[:record].avatar_name.present?
-            span(class: "wrap-break-word") { entry[:record].name }
+          link_to entity_transactions_index_path(entry[:record]), data: { turbo_frame: "_top", turbo_prefetch: false } do
+            div(class: entity_chip_class,
+                title: entry[:record].name) do
+              image_tag(asset_path("avatars/#{entry[:record].avatar_name}"), class: "h-6 w-6 rounded-full") if entry[:record].avatar_name.present?
+              span(class: "wrap-break-word") { entry[:record].name }
+            end
           end
         end
       else
@@ -311,6 +315,30 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def account_cash_transactions
     @account_cash_transactions ||= current_context.cash_transactions.where(user_bank_account: user_bank_account)
+  end
+
+  def transactions_index_path
+    cash_transactions_path(
+      all_month_years: true,
+      cash_transaction: { user_bank_account_id: [ user_bank_account.id ] },
+      return_to: user_bank_account_path(user_bank_account)
+    )
+  end
+
+  def category_transactions_index_path(category)
+    cash_transactions_path(
+      all_month_years: true,
+      cash_transaction: { category_id: [ category.id ], user_bank_account_id: [ user_bank_account.id ] },
+      return_to: user_bank_account_path(user_bank_account)
+    )
+  end
+
+  def entity_transactions_index_path(entity)
+    cash_transactions_path(
+      all_month_years: true,
+      cash_transaction: { entity_id: [ entity.id ], user_bank_account_id: [ user_bank_account.id ] },
+      return_to: user_bank_account_path(user_bank_account)
+    )
   end
 
   def category_breakdowns

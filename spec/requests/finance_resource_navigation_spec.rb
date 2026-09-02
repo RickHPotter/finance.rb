@@ -23,10 +23,12 @@ RSpec.describe "Finance resource navigation", type: :request do
       duplicate_budget_path(budget),
       investments_path,
       new_investment_path,
+      investment_path(investment),
       edit_investment_path(investment),
       duplicate_investment_path(investment),
       subscriptions_path,
       new_subscription_path,
+      subscription_path(subscription),
       edit_subscription_path(subscription)
     ].each do |path|
       get path, headers: html_headers

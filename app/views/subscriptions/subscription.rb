@@ -29,7 +29,11 @@ class Views::Subscriptions::Subscription < Views::Base
       data: { id: subscription.id, datatable_target: :row }
     ) do
       div(class: "col-span-3 px-3 py-3") do
-        p(class: "font-lekton text-base font-semibold text-slate-900 dark:text-slate-100") { subscription.description }
+        link_to subscription.description,
+                subscription_path(subscription, return_to:),
+                id: "show_subscription_#{subscription.id}",
+                class: "font-lekton text-base font-semibold text-slate-900 no-underline hover:underline dark:text-slate-100",
+                data: { turbo_frame: "_top", turbo_prefetch: false }
         p(class: "truncate text-sm text-slate-500 dark:text-slate-400") { subscription.comment.presence }
       end
 
@@ -80,10 +84,10 @@ class Views::Subscriptions::Subscription < Views::Base
       div(class: "border-b border-slate-200 bg-sky-50/70 px-4 py-5 text-center dark:border-slate-700 dark:bg-slate-800/70") do
         link_to(
           subscription.description,
-          edit_subscription_path(subscription, return_to:),
-          id: "edit_subscription_#{subscription.id}",
-          class: "block text-lg font-semibold text-slate-900 underline underline-offset-[3px] dark:text-slate-100",
-          data: { turbo_frame: "_top" }
+          subscription_path(subscription, return_to:),
+          id: "show_subscription_#{subscription.id}",
+          class: "block text-lg font-semibold text-slate-900 no-underline hover:text-sky-700 dark:text-slate-100 dark:hover:text-sky-300",
+          data: { turbo_frame: "_top", turbo_prefetch: false }
         )
 
         p(class: "mt-2 text-sm text-slate-500 dark:text-slate-400") { subscription.comment } if subscription.comment.present?
@@ -100,6 +104,17 @@ class Views::Subscriptions::Subscription < Views::Base
             render_mobile_categories if subscription.categories.any?
             render_mobile_entities if subscription.entities.any?
           end
+        end
+
+        div(class: "flex justify-center") do
+          link_to(
+            edit_subscription_path(subscription, return_to:),
+            id: "edit_subscription_#{subscription.id}",
+            class: action_button_class,
+            title: action_message(:edit),
+            aria: { label: action_message(:edit) },
+            data: { turbo_frame: "_top", turbo_prefetch: false }
+          ) { cached_icon(:pencil) }
         end
       end
     end

@@ -95,7 +95,7 @@ class UserBankAccountsController < ApplicationController
   end
 
   def set_return_to
-    @return_to = user_bank_account_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || user_bank_account_navigation_destination(params[:return_to])
   end
 
   def user_bank_account_navigation_destination(raw)

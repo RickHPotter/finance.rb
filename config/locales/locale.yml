@@ -116,6 +116,11 @@ en:
       number: "Number"
   dashboards:
     empty: "Nothing to display yet."
+    actions:
+      view_in_list: "View in list"
+      view_transactions: "View transactions"
+      view_cash_transactions: "View cash transactions"
+      view_card_transactions: "View card transactions"
     sections:
       summary: "Summary"
       installments: "Installments"
@@ -159,6 +164,76 @@ en:
         first_installment_only:
           enabled: "First installment only"
           disabled: "All installments"
+    investments:
+      reference_month: "Reference month"
+      kind:
+        ordinary: "Investment"
+        valuation: "Valuation adjustment"
+      actions:
+        view_aggregation: "Same account and type"
+        view_valuations: "View sibling valuations"
+        view_projection: "View cash projection"
+        view_piggy_bank_return: "View Piggy Bank return"
+      projection:
+        title: "Generated cash projection"
+        entries: "Investment entries"
+        unavailable: "The generated cash projection is unavailable. Viewing this dashboard does not recreate it."
+      valuation:
+        title: "Piggy Bank valuation"
+        adjustment: "Valuation adjustment"
+        target: "Target Piggy Bank return"
+        principal: "Contributed principal"
+        adjustments: "Valuation adjustments"
+        projected_total: "Calculated projected total"
+        recorded_total: "Recorded return total"
+        paid_total: "Paid return total"
+        siblings: "Valuation entries"
+        status: "Return status"
+        unavailable: "The target Piggy Bank return is unavailable in this context. Viewing this dashboard does not recreate or relink it."
+        statuses:
+          open: "Open"
+          settled: "Settled"
+    subscriptions:
+      derived_total: "Derived live total"
+      cash_count: "Cash transactions"
+      card_count: "Card transactions"
+      open: "Open transactions"
+      paid_history: "Paid history"
+      detached_history: "Detached history"
+      detached_state: "State"
+      view_audit: "View audit history"
+      type: "Type"
+      source: "Source"
+      actions:
+        add_transaction: "Add transaction"
+        attach_cash: "Attach existing cash"
+        attach_card: "Attach existing card"
+      empty:
+        open: "There are no open transactions linked to this subscription."
+        paid: "There is no paid history linked to this subscription."
+        detached: "There is no audited detached history for this subscription."
+      detached_states:
+        detached: "Detached"
+        destroyed: "Destroyed"
+      types:
+        cash: "Cash"
+        card: "Card"
+      due:
+        overdue: "Overdue"
+        today: "Today"
+        future: "Future"
+      lifecycle:
+        actions:
+          pause: "Pause"
+          resume: "Resume"
+          finish: "Finish"
+          reopen: "Reopen"
+        success:
+          pause: "Subscription paused."
+          resume: "Subscription resumed."
+          finish: "Subscription finished."
+          reopen: "Subscription reopened."
+        invalid: "This lifecycle action is not available for the Subscription's current status."
 
   navigation:
     previous: "Previous"
@@ -454,6 +529,11 @@ pt-BR:
       number: "Número"
   dashboards:
     empty: "Nada para exibir ainda."
+    actions:
+      view_in_list: "Ver na lista"
+      view_transactions: "Ver movimentações"
+      view_cash_transactions: "Ver movimentações em dinheiro"
+      view_card_transactions: "Ver movimentações no cartão"
     sections:
       summary: "Resumo"
       installments: "Parcelas"
@@ -497,6 +577,76 @@ pt-BR:
         first_installment_only:
           enabled: "Apenas primeira parcela"
           disabled: "Todas as parcelas"
+    investments:
+      reference_month: "Mês de referência"
+      kind:
+        ordinary: "Investimento"
+        valuation: "Ajuste de valorização"
+      actions:
+        view_aggregation: "Mesma conta e tipo"
+        view_valuations: "Ver valorizações relacionadas"
+        view_projection: "Ver projeção em dinheiro"
+        view_piggy_bank_return: "Ver Retorno do Cofrinho"
+      projection:
+        title: "Projeção em dinheiro gerada"
+        entries: "Lançamentos de investimento"
+        unavailable: "A projeção em dinheiro gerada está indisponível. A visualização deste painel não a recria."
+      valuation:
+        title: "Valorização do Cofrinho"
+        adjustment: "Ajuste de valorização"
+        target: "Retorno do Cofrinho de destino"
+        principal: "Principal aportado"
+        adjustments: "Ajustes de valorização"
+        projected_total: "Total projetado calculado"
+        recorded_total: "Total registrado do retorno"
+        paid_total: "Total pago do retorno"
+        siblings: "Lançamentos de valorização"
+        status: "Situação do retorno"
+        unavailable: "O Retorno do Cofrinho de destino está indisponível neste contexto. A visualização deste painel não o recria nem refaz o vínculo."
+        statuses:
+          open: "Aberto"
+          settled: "Liquidado"
+    subscriptions:
+      derived_total: "Total atual calculado"
+      cash_count: "Movimentações em dinheiro"
+      card_count: "Movimentações no cartão"
+      open: "Movimentações em aberto"
+      paid_history: "Histórico pago"
+      detached_history: "Histórico desvinculado"
+      detached_state: "Estado"
+      view_audit: "Ver histórico de auditoria"
+      type: "Tipo"
+      source: "Origem"
+      actions:
+        add_transaction: "Adicionar movimentação"
+        attach_cash: "Vincular movimentação em dinheiro"
+        attach_card: "Vincular movimentação no cartão"
+      empty:
+        open: "Não há movimentações em aberto vinculadas a esta assinatura."
+        paid: "Não há histórico pago vinculado a esta assinatura."
+        detached: "Não há histórico auditado de desvinculação para esta assinatura."
+      detached_states:
+        detached: "Desvinculada"
+        destroyed: "Destruída"
+      types:
+        cash: "Dinheiro"
+        card: "Cartão"
+      due:
+        overdue: "Atrasada"
+        today: "Hoje"
+        future: "Futura"
+      lifecycle:
+        actions:
+          pause: "Pausar"
+          resume: "Retomar"
+          finish: "Finalizar"
+          reopen: "Reabrir"
+        success:
+          pause: "Assinatura pausada."
+          resume: "Assinatura retomada."
+          finish: "Assinatura finalizada."
+          reopen: "Assinatura reaberta."
+        invalid: "Esta ação não está disponível para o status atual da Assinatura."
 
   navigation:
     previous: "Anterior"

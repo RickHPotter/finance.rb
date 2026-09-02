@@ -51,6 +51,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "CashTransaction", item_id: cash_transaction.id), variant: :outline)
+        dashboard_action(I18n.t("dashboards.actions.view_in_list"), cash_index_path, variant: :outline)
         dashboard_action(action_message(:edit), edit_cash_transaction_path(editable_cash_transaction, return_to:), variant: :edit)
         dashboard_action(action_message(:duplicate), duplicate_cash_transaction_path(cash_transaction, return_to:), variant: :duplicate) if duplicate_allowed?
         pay_action_button
@@ -107,7 +108,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
       div(class: "space-y-2") do
         if cash_transaction.subscription.present?
           link_item(model_attribute(CashTransaction, :subscription_id), cash_transaction.subscription&.description,
-                    edit_subscription_path(cash_transaction.subscription))
+                    subscription_path(cash_transaction.subscription, return_to: cash_transaction_path(cash_transaction)))
         end
         reference_link_item
         piggy_bank_link_item
@@ -329,9 +330,9 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def cash_index_path
     cash_transactions_path(
-      default_year: cash_transaction.year,
-      active_month_years: active_month_years_param(cash_transaction.year, cash_transaction.month),
-      cash_transaction: { user_bank_account_id: cash_transaction.user_bank_account_id }
+      all_month_years: true,
+      cash_transaction: { id: [ cash_transaction.id ] },
+      return_to: cash_transaction_path(cash_transaction)
     )
   end
 
@@ -359,7 +360,8 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
       linked_return = cash_transaction.piggy_bank.return_cash_transaction
       return if linked_return.blank?
 
-      link_item(I18n.t("piggy_banks.linked_return"), linked_return.description, cash_transaction_path(linked_return))
+      link_item(I18n.t("piggy_banks.linked_return"), linked_return.description,
+                cash_transaction_path(linked_return, return_to: cash_transaction_path(cash_transaction)))
     elsif cash_transaction.piggy_bank_return_links.present?
       link_item(
         I18n.t("piggy_banks.sources"),
@@ -372,8 +374,13 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   def descendants_link_item
     return if reference_descendants.empty?
 
-    p(class: empty_link_card_class) do
-      I18n.t("dashboards.cash_transactions.reference_descendants", count: reference_descendants.count)
+    div(class: "space-y-2") do
+      p(class: empty_link_card_class) do
+        I18n.t("dashboards.cash_transactions.reference_descendants", count: reference_descendants.count)
+      end
+      reference_descendants.each do |descendant|
+        link_item(CashTransaction.model_name.human, descendant.description, reference_path_for(descendant))
+      end
     end
   end
 
@@ -463,7 +470,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def exchange_row(exchange)
-    href = exchange.cash_transaction.present? ? cash_transaction_path(exchange.cash_transaction) : nil
+    href = exchange.cash_transaction.present? ? cash_transaction_path(exchange.cash_transaction, return_to: cash_transaction_path(cash_transaction)) : nil
     row_classes = "grid grid-cols-12 items-center border-t border-slate-200 px-3 py-2 text-sm #{exchange_row_class(exchange)}"
 
     if href.present?
@@ -478,7 +485,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def exchange_mobile_card(exchange)
-    href = exchange.cash_transaction.present? ? cash_transaction_path(exchange.cash_transaction) : nil
+    href = exchange.cash_transaction.present? ? cash_transaction_path(exchange.cash_transaction, return_to: cash_transaction_path(cash_transaction)) : nil
     classes = "rounded-xl border border-inherit px-3 py-2 #{exchange_row_class(exchange)}"
 
     if href.present?
@@ -575,7 +582,8 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   def projection_exchange_source_link(exchange)
     source = exchange.entity_transaction&.transactable
     if source.is_a?(CardTransaction)
-      link_to "##{source.id}", card_transaction_path(source), class: "hover:underline", data: { turbo_frame: "_top", turbo_prefetch: false }
+      link_to "##{source.id}", card_transaction_path(source, return_to: cash_transaction_path(cash_transaction)),
+              class: "hover:underline", data: { turbo_frame: "_top", turbo_prefetch: false }
     else
       plain "-"
     end
@@ -893,9 +901,9 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def reference_path_for(reference)
     case reference
-    when CashTransaction then cash_transaction_path(reference)
-    when CardTransaction then card_transaction_path(reference)
-    when Budget then budget_path(reference)
+    when CashTransaction then cash_transaction_path(reference, return_to: cash_transaction_path(cash_transaction))
+    when CardTransaction then card_transaction_path(reference, return_to: cash_transaction_path(cash_transaction))
+    when Budget then budget_path(reference, return_to: cash_transaction_path(cash_transaction))
     else "#"
     end
   end

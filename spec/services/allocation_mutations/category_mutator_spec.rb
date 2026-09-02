@@ -89,6 +89,28 @@ RSpec.describe AllocationMutations::CategoryMutator do
     expect(impact.reference_months).to eq([ Date.new(2026, 7, 1) ])
   end
 
+  it "refreshes a Budget description after category add, switch, and remove" do
+    entity = create(:entity, user:, entity_name: "ANA")
+    budget = create(
+      :budget,
+      user:,
+      context: user.main_context,
+      description: "Stale description",
+      inclusive: false,
+      budget_categories: [ build(:budget_category, category: source) ],
+      budget_entities: [ build(:budget_entity, entity:) ]
+    )
+
+    described_class.new(plan: category_plan(budget, :add, destination_id: destination.id)).call
+    expect(budget.reload.description).to eq("[ SOURCE | DESTINATION ] || ( ANA )")
+
+    described_class.new(plan: category_plan(budget, :switch, source_id: source.id, destination_id: destination.id)).call
+    expect(budget.reload.description).to eq("[ DESTINATION ] || ( ANA )")
+
+    described_class.new(plan: category_plan(budget, :remove, source_id: destination.id)).call
+    expect(budget.reload.description).to eq("( ANA )")
+  end
+
   it "recalculates from the Budget month when changed criteria alter its persisted remaining value" do
     matching_transaction = create(
       :cash_transaction,

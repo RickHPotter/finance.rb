@@ -9,6 +9,7 @@ en:
     linked_return: Linked Piggy Bank Return
     no_investments: No investments are linked to this return yet.
     return_mode: Return destination
+    return_price_mismatch: This return differs from the transaction amount.
     select_return: Select an open return
     source: Piggy Bank Source
     sources: Piggy Bank Sources
@@ -57,6 +58,7 @@ pt-BR:
     linked_return: Retorno do Cofrinho Vinculado
     no_investments: Nenhum investimento está vinculado a este retorno ainda.
     return_mode: Destino do retorno
+    return_price_mismatch: Este retorno difere do valor da movimentação.
     select_return: Selecione um retorno aberto
     source: Cofrinho de Origem
     sources: Origens do Cofrinho

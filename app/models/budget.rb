@@ -9,7 +9,7 @@ class Budget < ApplicationRecord
   audits_financial_changes skip: %i[balance order_id remaining_value]
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :recalculate_balance, :duplicate
+  attr_accessor :recalculate_balance, :duplicate, :skip_description_refresh
 
   # @relationships ............................................................
   belongs_to :user
@@ -33,6 +33,7 @@ class Budget < ApplicationRecord
   # @callbacks ................................................................
   before_validation :assign_default_context
   before_validation :set_starting_value, :set_inclusive, :set_first_installment_only
+  before_validation :refresh_description_from_allocations, if: :description_dependencies_changed?
   before_save :set_remaining_value
   before_save :set_recalculate_balance
   after_commit :update_cash_balance, if: -> { recalculate_balance || destroyed? }
@@ -69,6 +70,16 @@ class Budget < ApplicationRecord
     return if [ false, true ].include?(first_installment_only)
 
     self.first_installment_only = false
+  end
+
+  def refresh_description_from_allocations
+    category_names = active_budget_categories.filter_map { |allocation| allocation.category&.name }
+    entity_names = active_budget_entities.filter_map { |allocation| allocation.entity&.name }
+    groups = []
+    groups << "[ #{category_names.join(' | ')} ]" if category_names.present?
+    groups << "( #{entity_names.join(' | ')} )" if entity_names.present?
+
+    self.description = groups.join(inclusive? ? " && " : " || ")
   end
 
   def set_remaining_value # rubocop:disable Metrics/AbcSize
@@ -122,6 +133,24 @@ class Budget < ApplicationRecord
   # @private_instance_methods .................................................
 
   private
+
+  def description_dependencies_changed?
+    return false if skip_description_refresh
+    return false unless persisted?
+
+    will_save_change_to_inclusive? || allocation_collection_changed?(budget_categories, :category_id) ||
+      allocation_collection_changed?(budget_entities, :entity_id)
+  end
+
+  def allocation_collection_changed?(allocations, foreign_key)
+    allocations.any? do |allocation|
+      allocation.new_record? || allocation.marked_for_destruction? || allocation.public_send("will_save_change_to_#{foreign_key}?")
+    end
+  end
+
+  def active_budget_categories = budget_categories.reject { |allocation| allocation.marked_for_destruction? || allocation.destroyed? }
+
+  def active_budget_entities = budget_entities.reject { |allocation| allocation.marked_for_destruction? || allocation.destroyed? }
 
   def assign_default_context
     self.context ||= user&.ensure_main_context!
