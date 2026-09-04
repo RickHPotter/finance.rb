@@ -32,7 +32,7 @@ RSpec.describe "Category and entity navigation", type: :request do
     end
   end
 
-  it "does not render merge actions or preview frames in category and entity indexes" do
+  it "keeps index merge entry points withheld until the V2 execution path is safe" do
     category = create(:category, :random, user:, built_in: false)
     entity = create(:entity, :random, user:, built_in: false, entity_user: nil)
 
@@ -44,6 +44,21 @@ RSpec.describe "Category and entity navigation", type: :request do
 
       document = Nokogiri::HTML.parse(response.body)
       selectors.each { |selector| expect(document.at_css(selector)).to be_nil }
+    end
+  end
+
+  it "does not expose merge actions from category or entity show dashboards" do
+    category = create(:category, :random, user:, built_in: false)
+    entity = create(:entity, :random, user:, built_in: false, entity_user: nil)
+
+    {
+      category_path(category) => merge_preview_category_path(category),
+      entity_path(entity) => merge_preview_entity_path(entity)
+    }.each do |show_path, merge_path|
+      get show_path
+
+      document = Nokogiri::HTML.parse(response.body)
+      expect(document.at_css(%[a[href^="#{merge_path}"]])).to be_nil
     end
   end
 

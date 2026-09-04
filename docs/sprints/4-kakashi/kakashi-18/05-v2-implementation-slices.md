@@ -11,9 +11,9 @@ intermediate branch state never exposes a known-unsafe merge workflow.
 - Add regression coverage proving Category/Entity indexes are the intended merge
   entry surfaces and show pages are not.
 - Remove the broken Category/Entity show-page merge actions.
-- Add pending backend contract examples for context isolation, exact stale
-  detection, accepted modes, and guarded rollback, then make subsequent slices
-  satisfy them without weakening the assertions.
+- Record the backend regression matrix for context isolation, exact stale
+  detection, accepted modes, and guarded rollback; subsequent slices add each
+  executable example together with the implementation that satisfies it.
 - Keep the index triggers temporarily absent until the execution path is safe.
 
 Commit: `spec: define kakashi 18 v2 completion boundary`
@@ -97,4 +97,3 @@ Commit: `feat: restore safe category and entity merge workflows`
 - Update KAKASHI-18 status and record any deliberately rejected future scope.
 
 Commit: `docs: close kakashi 18 v2`
-
