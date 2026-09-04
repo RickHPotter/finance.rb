@@ -1234,6 +1234,8 @@ References:
 - [selector ranking and merge contract](docs/sprints/4-kakashi/kakashi-18/01-selector-ranking-and-merge-contract.md)
 - [implementation slices](docs/sprints/4-kakashi/kakashi-18/02-implementation-slices.md)
 - [decisions and test matrix](docs/sprints/4-kakashi/kakashi-18/03-decisions-and-test-matrix.md)
+- [V2 completion contract](docs/sprints/4-kakashi/kakashi-18/04-v2-completion-contract.md)
+- [V2 implementation slices](docs/sprints/4-kakashi/kakashi-18/05-v2-implementation-slices.md)
 
 ### KAKASHI-19: Harden internal and external entity ledgers
 
