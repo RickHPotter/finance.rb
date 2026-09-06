@@ -58,14 +58,21 @@ class CategoryMerges::Planner
   end
 
   def classify_row(row, transfer_rows, collapse_rows, conflict_rows, destination_row)
-    reason_code = context_conflict_for(row)
-    if reason_code
-      conflict_rows << row_plan(row, :conflict, reason_code)
+    policy_conflict = conflict_for(row)
+    if policy_conflict
+      conflict_rows << row_plan(row, :conflict, policy_conflict.fetch(:reason_code), policy_conflict.fetch(:details, {}))
     elsif destination_row
       collapse_rows << row_plan(row, :collapse, nil, destination_row_id: destination_row.id)
     else
       transfer_rows << row_plan(row, :transfer)
     end
+  end
+
+  def conflict_for(row)
+    reason_code = context_conflict_for(row)
+    return { reason_code: } if reason_code
+
+    category_policy_conflict_for(row)
   end
 
   def context_conflict_for(row)
@@ -75,6 +82,32 @@ class CategoryMerges::Planner
     return :cross_context_allocation unless identity.context_id == context.id
 
     nil
+  end
+
+  def category_policy_conflict_for(row)
+    owner = MasterRecordMerges::AllocationOwner.resolve(row).record
+    return { reason_code: :subscription_owned_category, details: { subscription_id: owner.id } } if owner.is_a?(Subscription)
+    return if owner.is_a?(Investment)
+    return { reason_code: :unsupported_owner } unless owner.is_a?(CashTransaction) || owner.is_a?(CardTransaction) || owner.is_a?(Budget)
+
+    policy_plan = AllocationMutations::CategoryPlanner.new(owner:, action: category_action).call
+    return unless policy_plan.conflict?
+
+    {
+      reason_code: policy_plan.outcome.reason_code,
+      details: policy_plan.outcome.details
+    }
+  rescue AllocationMutations::OwnerAdapter::UnsupportedOwner
+    { reason_code: :unsupported_owner }
+  end
+
+  def category_action
+    @category_action ||= AllocationMutations::Action.new(
+      allocation_type: :category,
+      operation: :switch,
+      source_id:,
+      destination_id:
+    )
   end
 
   def destination_category_transaction(row)

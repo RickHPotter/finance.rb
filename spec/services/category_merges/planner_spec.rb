@@ -104,13 +104,13 @@ RSpec.describe CategoryMerges::Planner do
     let(:context) { user.main_context }
 
     let(:budget_reassign) do
-      create(:budget, context:, user:).tap do |b|
+      create(:budget, context:, user:, month: 8, year: 2026).tap do |b|
         b.budget_categories.create!(category: source)
       end
     end
 
     let(:budget_dedup) do
-      create(:budget, context:, user:).tap do |b|
+      create(:budget, context:, user:, month: 9, year: 2026).tap do |b|
         b.budget_categories.create!(category: source)
         b.budget_categories.create!(category: destination)
       end
@@ -126,6 +126,66 @@ RSpec.describe CategoryMerges::Planner do
       expect(result.budget_reassign_count).to eq(1)
       expect(result.budget_dedup_count).to    eq(1)
       expect(result.budget_total_count).to    eq(2)
+    end
+
+    it "blocks a merge that would duplicate another Budget allocation set" do
+      create(
+        :budget,
+        context:,
+        user:,
+        month: 7,
+        year: 2026,
+        budget_categories: [ build(:budget_category, category: destination) ]
+      )
+      create(
+        :budget,
+        context:,
+        user:,
+        month: 7,
+        year: 2026,
+        budget_categories: [ build(:budget_category, category: source) ]
+      )
+
+      result = plan
+
+      expect(result).to be_conflict
+      expect(result.conflict_rows.map(&:reason_code)).to include(:invalid_final_state)
+    end
+  end
+
+  describe "allocation policy" do
+    let(:context) { user.main_context }
+
+    it "blocks categories owned directly by a Subscription" do
+      subscription = create(:subscription, user:, context:)
+      subscription.category_transactions.create!(category: source)
+
+      result = plan
+
+      expect(result).to be_conflict
+      expect(result.conflict_rows.map(&:reason_code)).to contain_exactly(:subscription_owned_category)
+    end
+
+    it "blocks a custom category inherited by a linked transaction" do
+      subscription = create(:subscription, user:, context:)
+      subscription.category_transactions.create!(category: source)
+      transaction = create(:cash_transaction, user:, context:, user_bank_account: create(:user_bank_account, :random, user:), subscription:)
+      transaction.category_transactions.find_or_create_by!(category: source)
+
+      result = plan
+
+      expect(result).to be_conflict
+      expect(result.conflict_rows.map(&:reason_code)).to all(eq(:subscription_owned_category))
+    end
+
+    it "keeps a directly categorized Investment eligible as an ordinary allocation" do
+      investment = create(:investment, user:, context:)
+      CategoryTransaction.create!(transactable: investment, category: source)
+
+      result = plan
+
+      expect(result).to be_eligible
+      expect(result.transfer_rows.map(&:row)).to contain_exactly(CategoryTransaction.find_by!(transactable: investment, category: source))
     end
   end
 

@@ -37,11 +37,11 @@ RSpec.describe CategoryMerges::Apply do
     end
 
     let!(:budget_reassign) do
-      create(:budget, context:, user:).tap { |b| b.budget_categories.create!(category: source) }
+      create(:budget, context:, user:, month: 8, year: 2026).tap { |b| b.budget_categories.create!(category: source) }
     end
 
     let!(:budget_dedup) do
-      create(:budget, context:, user:).tap do |b|
+      create(:budget, context:, user:, month: 9, year: 2026).tap do |b|
         b.budget_categories.create!(category: source)
         b.budget_categories.create!(category: destination)
       end
@@ -85,6 +85,14 @@ RSpec.describe CategoryMerges::Apply do
     it "reassigns the non-dedup BudgetCategory to destination" do
       result
       expect(budget_reassign.budget_categories.reload.map(&:category_id)).to include(destination.id)
+    end
+
+    it "refreshes affected Budget descriptions from the final allocation graph" do
+      result
+
+      expect(budget_reassign.reload.description).to include(destination.name)
+      expect(budget_reassign.description).not_to include(source.name)
+      expect(budget_dedup.reload.description.scan(destination.name).size).to eq(1)
     end
 
     it "drops the dedup BudgetCategory on source" do
@@ -166,6 +174,16 @@ RSpec.describe CategoryMerges::Apply do
       expect(result.reason_code).to eq("stale_preview")
     end
 
+    it "rejects when an allocation is added after preview" do
+      token = valid_token
+      transaction = create(:cash_transaction, user:, context:, user_bank_account: uba)
+      transaction.category_transactions.create!(category: source)
+      result = nil
+
+      expect { result = apply(token:) }.not_to(change { Category.exists?(source.id) })
+      expect(result.reason_code).to eq("stale_preview")
+    end
+
     it "rejects with merge_ineligible when source is gone between preview and apply" do
       token = valid_token
       # Force a digest match but ineligible plan by destroying source between token and apply
@@ -194,5 +212,15 @@ RSpec.describe CategoryMerges::Apply do
     end.not_to change(AuditOperation, :count)
 
     expect(Category.exists?(source.id)).to be(true)
+  end
+
+  it "acquires its advisory lock with a safely quoted category-pair key" do
+    token = valid_token
+    service = described_class.new(actor: user, context:, source_id: source.id, token:, confirmed: true)
+    service.send(:validate_request!)
+
+    expect do
+      Category.transaction { service.send(:acquire_advisory_lock!) }
+    end.not_to raise_error
   end
 end
