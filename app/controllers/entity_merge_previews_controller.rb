@@ -37,6 +37,7 @@ class EntityMergePreviewsController < ApplicationController
     mode = (merge_params[:mode].presence || "strict").to_sym
     EntityMerges::Planner.new(
       actor: current_user,
+      context: current_context,
       source_id: @source.id,
       destination_id: merge_params[:destination_id],
       mode:
@@ -63,7 +64,8 @@ class EntityMergePreviewsController < ApplicationController
       transaction_reassign_count: plan.transaction_reassign_count,
       transaction_dedup_count: plan.transaction_dedup_count,
       budget_reassign_count: plan.budget_reassign_count,
-      budget_dedup_count: plan.budget_dedup_count
+      budget_dedup_count: plan.budget_dedup_count,
+      conflict_count: plan.conflict_rows.size
     }
   end
 

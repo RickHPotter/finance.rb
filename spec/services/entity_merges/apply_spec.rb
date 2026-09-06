@@ -23,9 +23,9 @@ RSpec.describe "EntityMerges::Apply" do
   end
 
   def apply(mode: :strict)
-    plan = EntityMerges::Planner.new(actor: user, source_id: source.id, destination_id: destination.id, mode:).call
+    plan = EntityMerges::Planner.new(actor: user, context:, source_id: source.id, destination_id: destination.id, mode:).call
     token = EntityMerges::PreviewToken.generate(plan)
-    EntityMerges::Apply.new(actor: user, context:, token:, confirmed: true, mode:).call
+    EntityMerges::Apply.new(actor: user, context:, source_id: source.id, token:, confirmed: true, mode:).call
   end
 
   describe "strict mode" do
@@ -48,6 +48,26 @@ RSpec.describe "EntityMerges::Apply" do
       expect(result).to be_rejected
       expect(result.reason_code).to eq("merge_ineligible")
       expect(Entity.exists?(source.id)).to be(true)
+    end
+
+    it "rejects a mode that was not bound to the preview" do
+      plan = EntityMerges::Planner.new(actor: user, context:, source_id: source.id, destination_id: destination.id, mode: :strict).call
+      token = EntityMerges::PreviewToken.generate(plan)
+      result = EntityMerges::Apply.new(actor: user, context:, source_id: source.id, token:, confirmed: true, mode: :eligible_only).call
+
+      expect(result).to be_rejected
+      expect(result.reason_code).to eq("token_mode_mismatch")
+    end
+
+    it "rejects a missing or unknown mode" do
+      plan = EntityMerges::Planner.new(actor: user, context:, source_id: source.id, destination_id: destination.id, mode: :strict).call
+      token = EntityMerges::PreviewToken.generate(plan)
+
+      [ nil, :best_effort ].each do |mode|
+        result = EntityMerges::Apply.new(actor: user, context:, source_id: source.id, token:, confirmed: true, mode:).call
+        expect(result).to be_rejected
+        expect(result.reason_code).to eq("invalid_mode")
+      end
     end
   end
 

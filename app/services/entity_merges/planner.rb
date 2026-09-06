@@ -6,16 +6,21 @@
 # for monetary, payer, exchange, piggy bank, and structural conflicts.
 # Supports both :strict and :eligible_only modes.
 class EntityMerges::Planner
-  attr_reader :actor, :source_id, :destination_id, :mode
+  VALID_MODES = %i[strict eligible_only].freeze
 
-  def initialize(actor:, source_id:, destination_id:, mode: :strict)
+  attr_reader :actor, :context, :source_id, :destination_id, :mode
+
+  def initialize(actor:, context:, source_id:, destination_id:, mode:)
     @actor = actor
+    @context = context
     @source_id = source_id.to_i
     @destination_id = destination_id.to_i
-    @mode = mode.to_sym
+    @mode = mode&.to_sym
   end
 
   def call
+    return conflict(:context_not_owned) unless context&.user_id == actor.id
+    return conflict(:invalid_mode) unless mode.in?(VALID_MODES)
     return noop(:same_entity) if source_id == destination_id
 
     err = validate_entities
@@ -60,10 +65,11 @@ class EntityMerges::Planner
     conflict_rows = []
 
     classify_entity_transactions(transfer_rows, collapse_rows, conflict_rows)
-    classify_budget_entities(transfer_rows, collapse_rows)
+    classify_budget_entities(transfer_rows, collapse_rows, conflict_rows)
 
     EntityMerges::Plan.new(
       actor:,
+      context:,
       source:,
       destination:,
       mode:,
@@ -77,21 +83,24 @@ class EntityMerges::Planner
   def classify_entity_transactions(transfer, collapse, conflict)
     # Preload exchanges to avoid N+1 during neutrality check
     source.entity_transactions.includes(:exchanges, :transactable).find_each do |entity_transaction|
-      reason = transaction_conflict_reason(entity_transaction)
+      reason = context_conflict_for(entity_transaction) || transaction_conflict_reason(entity_transaction)
       if reason
         conflict << row_plan(entity_transaction, :conflict, reason)
-      elsif entity_transaction.transactable.nil? || destination_transaction_exists?(entity_transaction)
-        collapse << row_plan(entity_transaction, :collapse)
+      elsif (destination_row = destination_transaction(entity_transaction))
+        collapse << row_plan(entity_transaction, :collapse, nil, destination_row_id: destination_row.id)
       else
         transfer << row_plan(entity_transaction, :transfer)
       end
     end
   end
 
-  def classify_budget_entities(transfer, collapse)
+  def classify_budget_entities(transfer, collapse, conflict)
     BudgetEntity.where(entity: source).find_each do |budget_entity|
-      if destination_budget_entity_exists?(budget_entity)
-        collapse << row_plan(budget_entity, :collapse)
+      reason = context_conflict_for(budget_entity)
+      if reason
+        conflict << row_plan(budget_entity, :conflict, reason)
+      elsif (destination_row = destination_budget_entity(budget_entity))
+        collapse << row_plan(budget_entity, :collapse, nil, destination_row_id: destination_row.id)
       else
         transfer << row_plan(budget_entity, :transfer)
       end
@@ -124,26 +133,29 @@ class EntityMerges::Planner
     entity_txn.transactable.piggy_bank_source? || entity_txn.transactable.piggy_bank_return?
   end
 
-  def destination_transaction_exists?(entity_txn)
-    @dest_et_map ||= EntityTransaction
-                     .where(entity: destination)
-                     .pluck(:transactable_type, :transactable_id)
-                     .to_set
+  def context_conflict_for(row)
+    identity = MasterRecordMerges::AllocationOwner.resolve(row)
+    return :unsupported_owner unless identity.supported?
+    return :unowned_allocation unless identity.user_id == actor.id
+    return :cross_context_allocation unless identity.context_id == context.id
 
-    @dest_et_map.include?([ entity_txn.transactable_type, entity_txn.transactable_id ])
+    nil
   end
 
-  def destination_budget_entity_exists?(budget_entity)
-    @dest_be_map ||= BudgetEntity
-                     .where(entity: destination)
-                     .pluck(:budget_id)
-                     .to_set
-
-    @dest_be_map.include?(budget_entity.budget_id)
+  def destination_transaction(entity_txn)
+    EntityTransaction.find_by(
+      entity: destination,
+      transactable_type: entity_txn.transactable_type,
+      transactable_id: entity_txn.transactable_id
+    )
   end
 
-  def row_plan(row, status, reason_code = nil)
-    EntityMerges::Plan::RowPlan.new(row:, status:, reason_code:)
+  def destination_budget_entity(budget_entity)
+    BudgetEntity.find_by(entity: destination, budget_id: budget_entity.budget_id)
+  end
+
+  def row_plan(row, status, reason_code = nil, details = {})
+    EntityMerges::Plan::RowPlan.new(row:, status:, reason_code:, details:)
   end
 
   # --- Top-level Helpers ------------------------------------------------------
@@ -159,6 +171,7 @@ class EntityMerges::Planner
   def conflict(reason_code)
     EntityMerges::Plan.new(
       actor:,
+      context:,
       source: source || stub_entity(source_id),
       destination: destination || stub_entity(destination_id),
       mode:,
@@ -170,6 +183,7 @@ class EntityMerges::Planner
   def noop(reason_code)
     EntityMerges::Plan.new(
       actor:,
+      context:,
       source: stub_entity(source_id),
       destination: stub_entity(destination_id),
       mode:,

@@ -11,7 +11,7 @@ RSpec.describe "Entity merges" do
   before { sign_in user }
 
   describe "POST /entities/:id/merge" do
-    let(:plan) { EntityMerges::Planner.new(actor: user, source_id: source.id, destination_id: destination.id).call }
+    let(:plan) { EntityMerges::Planner.new(actor: user, context:, source_id: source.id, destination_id: destination.id, mode: :strict).call }
     let(:token) { EntityMerges::PreviewToken.generate(plan) }
     let(:merge_params) { { merge_token: token, mode: "strict", return_to: "/custom" } }
 
@@ -44,6 +44,14 @@ RSpec.describe "Entity merges" do
       # Should include flash alert
       expect(response.body).to include('turbo-stream action="update" target="notification"')
 
+      expect(Entity.exists?(source.id)).to be(true)
+    end
+
+    it "rejects an apply request without the previewed mode" do
+      post merge_entity_path(source), params: merge_params.except(:mode), headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("entity_merges.reasons.invalid_mode"))
       expect(Entity.exists?(source.id)).to be(true)
     end
 

@@ -11,6 +11,7 @@ class EntityMerges::PreviewToken
     def generate(plan)
       payload = {
         "actor_id" => plan.actor.id,
+        "context_id" => plan.context.id,
         "source_id" => plan.source.id,
         "destination_id" => plan.destination.id,
         "mode" => plan.mode.to_s,

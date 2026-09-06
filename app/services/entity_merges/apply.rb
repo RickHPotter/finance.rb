@@ -22,15 +22,16 @@ class EntityMerges::Apply
     end
   end
 
-  attr_reader :actor, :context, :token, :request_id
+  attr_reader :actor, :context, :source_id, :token, :request_id
 
-  def initialize(actor:, token:, **options)
+  def initialize(actor:, context:, source_id:, token:, **options)
     @actor      = actor
-    @context    = options[:context]
+    @context    = context
+    @source_id  = source_id.to_i
     @token      = token
     @request_id = options[:request_id]
     @confirmed  = ActiveModel::Type::Boolean.new.cast(options.fetch(:confirmed, false))
-    @mode       = options[:mode]&.to_sym || :strict
+    @mode       = options[:mode]&.to_sym
   end
 
   def call
@@ -53,10 +54,19 @@ class EntityMerges::Apply
 
   def validate_request!
     reject!(:confirmation_required) unless @confirmed
+    reject!(:context_not_owned) unless context&.user_id == actor.id
+    reject!(:invalid_mode) unless mode.in?(EntityMerges::Planner::VALID_MODES)
 
     @token_payload = EntityMerges::PreviewToken.verify(token)
-    reject!(:invalid_token)        if token_payload.blank?
+    validate_token_scope!
+  end
+
+  def validate_token_scope!
+    reject!(:invalid_token) if token_payload.blank?
     reject!(:token_actor_mismatch) unless token_payload["actor_id"] == actor.id
+    reject!(:token_context_mismatch) unless token_payload["context_id"] == context.id
+    reject!(:token_source_mismatch) unless token_payload["source_id"] == source_id
+    reject!(:token_mode_mismatch) unless token_payload["mode"] == mode.to_s
   end
 
   def apply_inside_transaction
@@ -72,35 +82,17 @@ class EntityMerges::Apply
   def fresh_plan
     EntityMerges::Planner.new(
       actor:,
+      context:,
       source_id: token_payload["source_id"],
       destination_id: token_payload["destination_id"],
-      mode: mode # Use the requested mode, not necessarily the token's mode, because the token just proves the digests match the source state
+      mode:
     ).call
   rescue ActiveRecord::RecordNotFound
     reject!(:source_not_found)
   end
 
   def validate_plan!(plan)
-    # The token digest contains the mode it was planned with. We must check the digest of a plan run with that mode.
-    # Wait, the apply request passes the chosen mode (strict or eligible_only). The token was signed with the mode from the preview.
-    # We should trust the mode the user chose, but we need to ensure the underlying state hasn't changed.
-    # So we compare the digest of the fresh plan matching the token's mode.
-    token_mode = token_payload["mode"].to_sym
-
-    # If the user is submitting eligible_only, we check if the plan is actually available for eligible_only.
-    # The digest check is strictly to ensure the rows haven't changed.
-    digest_plan = if mode == token_mode
-                    plan
-                  else
-                    EntityMerges::Planner.new(
-                      actor:,
-                      source_id: token_payload["source_id"],
-                      destination_id: token_payload["destination_id"],
-                      mode: token_mode
-                    ).call
-                  end
-
-    reject!(:stale_preview) unless digest_plan.digest == token_payload["digest"]
+    reject!(:stale_preview) unless plan.digest == token_payload["digest"]
     reject!(:merge_ineligible) unless plan.apply_available?
   end
 

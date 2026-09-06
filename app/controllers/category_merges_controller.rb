@@ -10,6 +10,7 @@ class CategoryMergesController < ApplicationController
     result = CategoryMerges::Apply.new(
       actor: current_user,
       context: current_context,
+      source_id: @source.id,
       request_id: request.request_id,
       token: params[:merge_token],
       confirmed: true

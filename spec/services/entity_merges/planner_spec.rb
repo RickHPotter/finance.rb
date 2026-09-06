@@ -11,18 +11,26 @@ RSpec.describe "EntityMerges::Planner" do
   let(:user_bank_account) { create(:user_bank_account, user:, bank:) }
 
   def plan(mode: :strict)
-    EntityMerges::Planner.new(actor: user, source_id: source.id, destination_id: destination.id, mode:).call
+    EntityMerges::Planner.new(actor: user, context:, source_id: source.id, destination_id: destination.id, mode:).call
   end
 
   describe "validation" do
+    it "rejects a missing or unknown mode" do
+      missing = EntityMerges::Planner.new(actor: user, context:, source_id: source.id, destination_id: destination.id, mode: nil).call
+      unknown = EntityMerges::Planner.new(actor: user, context:, source_id: source.id, destination_id: destination.id, mode: :best_effort).call
+
+      expect(missing).to have_attributes(outcome: :conflict, reason_code: :invalid_mode)
+      expect(unknown).to have_attributes(outcome: :conflict, reason_code: :invalid_mode)
+    end
+
     it "returns conflict if source is missing" do
-      result = EntityMerges::Planner.new(actor: user, source_id: 0, destination_id: destination.id).call
+      result = EntityMerges::Planner.new(actor: user, context:, source_id: 0, destination_id: destination.id, mode: :strict).call
       expect(result.outcome).to eq(:conflict)
       expect(result.reason_code).to eq(:source_not_found)
     end
 
     it "returns noop if source and destination are the same" do
-      result = EntityMerges::Planner.new(actor: user, source_id: source.id, destination_id: source.id).call
+      result = EntityMerges::Planner.new(actor: user, context:, source_id: source.id, destination_id: source.id, mode: :strict).call
       expect(result.outcome).to eq(:noop)
       expect(result.reason_code).to eq(:same_entity)
     end
@@ -33,6 +41,13 @@ RSpec.describe "EntityMerges::Planner" do
       result = plan
       expect(result.outcome).to eq(:conflict)
       expect(result.reason_code).to eq(:cross_user_friend_entity)
+    end
+
+    it "rejects another user's context" do
+      other_context = create(:context, user: create(:user, :random))
+      result = EntityMerges::Planner.new(actor: user, context: other_context, source_id: source.id, destination_id: destination.id, mode: :strict).call
+
+      expect(result).to have_attributes(outcome: :conflict, reason_code: :context_not_owned)
     end
   end
 
@@ -82,6 +97,30 @@ RSpec.describe "EntityMerges::Planner" do
       result = plan
       expect(result.collapse_rows.size).to eq(1)
       expect(result.transfer_rows.size).to eq(0)
+    end
+
+    it "blocks the whole merge when the source is allocated in another context" do
+      neutral_txn
+      other_context = create(:context, user:, source_context: context)
+      other_transaction = create(:cash_transaction, user:, context: other_context, user_bank_account:, price: 0)
+      other_transaction.entity_transactions.create!(entity: source, price: 0, is_payer: false)
+
+      result = plan(mode: :eligible_only)
+
+      expect(result.conflict_rows.map(&:reason_code)).to include(:cross_context_allocation)
+      expect(result.apply_available?).to be(false)
+      expect(result.eligible_only_available?).to be(false)
+    end
+
+    it "changes the digest when an affected row is replaced without changing aggregate counts" do
+      neutral_txn
+      original_plan = plan
+      neutral_txn.entity_transactions.find_by!(entity: source).destroy!
+      replacement = create(:cash_transaction, user:, context:, user_bank_account:, price: 0)
+      replacement.entity_transactions.create!(entity: source, price: 0, is_payer: false)
+
+      expect(plan.digest).not_to eq(original_plan.digest)
+      expect(plan.transfer_rows.size).to eq(original_plan.transfer_rows.size)
     end
 
     describe "eligible_only mode" do

@@ -10,12 +10,12 @@ RSpec.describe CategoryMerges::Apply do
   let(:uba)         { create(:user_bank_account, :random, user:) }
 
   def valid_token(source_id: source.id, destination_id: destination.id)
-    plan = CategoryMerges::Planner.new(actor: user, source_id:, destination_id:).call
+    plan = CategoryMerges::Planner.new(actor: user, context:, source_id:, destination_id:).call
     CategoryMerges::PreviewToken.generate(plan)
   end
 
   def apply(token:, actor: user, confirmed: true)
-    described_class.new(actor:, context:, token:, confirmed:).call
+    described_class.new(actor:, context:, source_id: source.id, token:, confirmed:).call
   end
 
   # ---------------------------------------------------------------------------
@@ -136,9 +136,25 @@ RSpec.describe CategoryMerges::Apply do
 
     it "rejects when the token belongs to a different actor" do
       other_user = create(:user, :different)
-      result = apply(token: valid_token, actor: other_user)
+      result = described_class.new(actor: other_user, context: other_user.main_context, source_id: source.id, token: valid_token, confirmed: true).call
       expect(result.status).to eq(:rejected)
       expect(result.reason_code).to eq("token_actor_mismatch")
+    end
+
+    it "rejects when the token belongs to a different context" do
+      other_context = create(:context, user:, source_context: context)
+      result = described_class.new(actor: user, context: other_context, source_id: source.id, token: valid_token, confirmed: true).call
+
+      expect(result).to be_rejected
+      expect(result.reason_code).to eq("token_context_mismatch")
+    end
+
+    it "rejects when the request path names a different source" do
+      other_source = create(:category, user:)
+      result = described_class.new(actor: user, context:, source_id: other_source.id, token: valid_token, confirmed: true).call
+
+      expect(result).to be_rejected
+      expect(result.reason_code).to eq("token_source_mismatch")
     end
 
     it "rejects with stale_preview when the plan digest changed after token generation" do

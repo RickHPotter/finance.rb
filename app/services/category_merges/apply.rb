@@ -37,11 +37,12 @@ class CategoryMerges::Apply
     end
   end
 
-  attr_reader :actor, :context, :token, :request_id
+  attr_reader :actor, :context, :source_id, :token, :request_id
 
-  def initialize(actor:, token:, **options)
+  def initialize(actor:, context:, source_id:, token:, **options)
     @actor      = actor
-    @context    = options[:context]
+    @context    = context
+    @source_id  = source_id.to_i
     @token      = token
     @request_id = options[:request_id]
     @confirmed  = ActiveModel::Type::Boolean.new.cast(options.fetch(:confirmed, false))
@@ -68,10 +69,14 @@ class CategoryMerges::Apply
 
   def validate_request!
     reject!(:confirmation_required) unless @confirmed
+    reject!(:context_not_owned) unless context&.user_id == actor.id
 
     @token_payload = CategoryMerges::PreviewToken.verify(token)
     reject!(:invalid_token)        if token_payload.blank?
     reject!(:token_actor_mismatch) unless token_payload["actor_id"] == actor.id
+    reject!(:token_context_mismatch) unless token_payload["context_id"] == context.id
+    reject!(:token_source_mismatch) unless token_payload["source_id"] == source_id
+    reject!(:invalid_mode) unless token_payload["mode"] == "strict"
   end
 
   # --- Transaction ------------------------------------------------------------
@@ -89,6 +94,7 @@ class CategoryMerges::Apply
   def fresh_plan
     CategoryMerges::Planner.new(
       actor:,
+      context:,
       source_id: token_payload["source_id"],
       destination_id: token_payload["destination_id"]
     ).call

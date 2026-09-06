@@ -78,6 +78,7 @@ class Views::CategoryMerges::Preview < Views::Base
     div(class: "mt-4 space-y-3") do
       outcome_badge
       counts_grid
+      conflict_reasons if plan.conflict_rows.any?
       apply_form if plan.eligible?
       cancel_link
     end
@@ -95,6 +96,21 @@ class Views::CategoryMerges::Preview < Views::Base
       count_metric("transaction_dedup",    plan.transaction_dedup_count)
       count_metric("budget_reassign",      plan.budget_reassign_count)
       count_metric("budget_dedup",         plan.budget_dedup_count)
+      count_metric("conflict",             plan.conflict_rows.size)
+    end
+  end
+
+  def conflict_reasons
+    div(class: "mt-3 rounded-md bg-red-50 p-3 dark:bg-red-900/30") do
+      h3(class: "text-sm font-medium text-red-800 dark:text-red-200") { I18n.t("category_merges.preview.conflicts_title") }
+      ul(class: "mt-2 list-disc pl-5 text-sm text-red-700 dark:text-red-300") do
+        plan.conflict_rows.map(&:reason_code).tally.each do |reason, count|
+          li do
+            plain I18n.t("category_merges.reasons.#{reason}")
+            plain " (#{count})"
+          end
+        end
+      end
     end
   end
 

@@ -8,7 +8,7 @@ RSpec.describe CategoryMerges::Planner do
   let(:destination) { create(:category, user:, category_name: "DESTINATION") }
 
   def plan(source_id: source.id, destination_id: destination.id)
-    described_class.new(actor: user, source_id:, destination_id:).call
+    described_class.new(actor: user, context: user.main_context, source_id:, destination_id:).call
   end
 
   # ---------------------------------------------------------------------------
@@ -72,6 +72,28 @@ RSpec.describe CategoryMerges::Planner do
       expect(result.transaction_reassign_count).to eq(0)
       expect(result.transaction_dedup_count).to    eq(0)
     end
+
+    it "blocks the whole merge when the source is allocated in another context" do
+      other_context = create(:context, user:, source_context: context)
+      other_transaction = create(:cash_transaction, user:, context: other_context, user_bank_account: uba)
+      other_transaction.category_transactions.create!(category: source)
+
+      result = plan
+
+      expect(result).to be_conflict
+      expect(result).not_to be_eligible
+      expect(result.conflict_rows.map(&:reason_code)).to include(:cross_context_allocation)
+    end
+
+    it "changes the digest when an affected row is replaced without changing aggregate counts" do
+      original_plan = plan
+      txn_reassign.category_transactions.find_by!(category: source).destroy!
+      replacement = create(:cash_transaction, user:, context:, user_bank_account: uba)
+      replacement.category_transactions.create!(category: source)
+
+      expect(plan.digest).not_to eq(original_plan.digest)
+      expect(plan.transaction_total_count).to eq(original_plan.transaction_total_count)
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -124,6 +146,14 @@ RSpec.describe CategoryMerges::Planner do
   # ---------------------------------------------------------------------------
 
   describe "conflicts" do
+    it "returns conflict :context_not_owned for another user's context" do
+      other_context = create(:context, user: create(:user, :random))
+      result = described_class.new(actor: user, context: other_context, source_id: source.id, destination_id: destination.id).call
+
+      expect(result).to be_conflict
+      expect(result.reason_code).to eq(:context_not_owned)
+    end
+
     it "returns conflict :source_not_found when source belongs to another user" do
       other_category = create(:category, :different)
       result = plan(source_id: other_category.id)

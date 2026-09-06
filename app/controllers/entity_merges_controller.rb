@@ -7,11 +7,12 @@ class EntityMergesController < ApplicationController
   before_action :set_basic_tabs
 
   def create
-    mode = (params[:mode].presence || "strict").to_sym
+    mode = params[:mode]&.to_sym
 
     result = EntityMerges::Apply.new(
       actor: current_user,
       context: current_context,
+      source_id: @source.id,
       request_id: request.request_id,
       token: params[:merge_token],
       mode:,

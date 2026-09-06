@@ -11,7 +11,7 @@ RSpec.describe "Category merges" do
   before { sign_in user }
 
   describe "POST /categories/:id/merge" do
-    let(:plan) { CategoryMerges::Planner.new(actor: user, source_id: source.id, destination_id: destination.id).call }
+    let(:plan) { CategoryMerges::Planner.new(actor: user, context:, source_id: source.id, destination_id: destination.id).call }
     let(:token) { CategoryMerges::PreviewToken.generate(plan) }
     let(:merge_params) { { merge_token: token, return_to: "/custom" } }
 
