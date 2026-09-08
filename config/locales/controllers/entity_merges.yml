@@ -27,6 +27,10 @@ en:
       monetary_entity: "Source entity has a monetary value greater than 0."
       exchange_entity: "Source entity is used in a currency exchange."
       piggy_bank_entity: "Source entity is the shared Piggy Bank."
+      subscription_owned_entity: "Source entity is managed by a Subscription and must be changed there."
+      generated_family_entity: "Source entity belongs to a generated financial structure."
+      entity_allocation_not_neutral: "Source entity has financial allocation data."
+      invalid_final_state: "The merge would leave an invalid or duplicate Budget."
       same_transaction_conflict: "Source and destination appear in the same transaction with different scopes."
       cross_user_friend_entity: "Source is a friend entity from a different user."
     preview:
@@ -79,6 +83,10 @@ pt-BR:
       monetary_entity: "A entidade de origem tem um valor monetário maior que 0."
       exchange_entity: "A entidade de origem é usada em uma conversão de moeda."
       piggy_bank_entity: "A entidade de origem é o cofrinho compartilhado."
+      subscription_owned_entity: "A entidade de origem é gerenciada por uma Assinatura e deve ser alterada nela."
+      generated_family_entity: "A entidade de origem pertence a uma estrutura financeira gerada."
+      entity_allocation_not_neutral: "A entidade de origem possui dados de alocação financeira."
+      invalid_final_state: "A mescla deixaria um Orçamento inválido ou duplicado."
       same_transaction_conflict: "A origem e o destino aparecem na mesma transação."
       cross_user_friend_entity: "A origem é um amigo de outro usuário."
     preview:

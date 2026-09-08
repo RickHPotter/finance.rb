@@ -37,7 +37,10 @@ class EntityMerges::Plan
     return false if outcome == :conflict
     return false if conflict_rows.any? { |row_plan| row_plan.reason_code.in?(HARD_CONFLICT_REASONS) }
 
-    AllocationMutations::IndependenceClassifier.new(plans: row_plans).eligible_only_available?
+    AllocationMutations::IndependenceClassifier.new(
+      plans: row_plans,
+      dependency_keys: ->(row_plan) { row_plan.details[:graph_keys] }
+    ).eligible_only_available?
   end
 
   def apply_available?
