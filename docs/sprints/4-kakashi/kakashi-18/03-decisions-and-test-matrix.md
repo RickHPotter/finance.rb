@@ -4,27 +4,31 @@
 
 ### D1 — Ranking is client-side only
 
-The combobox controller handles all tier computation and DOM reordering. No
-server round trip is needed for ranking. The server renders options in localized
-alphabetical order; the client re-sorts during live search.
+The pure normalization, ranking, and keyboard-index contract lives in
+`app/javascript/lib/combobox_search.mjs`; the combobox controller applies its
+result to the DOM. No server round trip is needed for ranking. The server
+renders options in localized alphabetical order; the client re-sorts during
+live search.
 
 ### D2 — Normalization strips diacritics and case; punctuation is preserved
 
-`normalize()` applies NFKD + combining-mark removal + lowercase + whitespace
-collapse. Punctuation characters are left intact in V1. The same function is
-applied to both the query and every item label.
+`normalizeComboboxText()` applies NFKD + combining-mark removal + lowercase +
+whitespace collapse. Punctuation characters are left intact. The same function
+is applied to the query, item labels, and aliases.
 
 ### D3 — Aliases are pre-normalized at render time
 
-`data-alias` values written by Ruby helpers are already normalized (downcased,
-diacritics stripped). The client reads them directly without re-normalizing.
+Pipe-delimited `data-alias` values written by Ruby helpers are already
+normalized (downcased, diacritics stripped). The shared JavaScript core
+normalizes each token defensively as well, keeping direct callers inside the
+same contract.
 
 ### D4 — Alias tier cannot outrank a primary-label tier
 
-An item whose alias matches at tier 3 (word-start) is placed below an item
-whose primary label matches at tier 2 (starts-with), even if the alias provides
-a closer match. Aliases supplement discovery; they do not reweight primary
-labels.
+Primary labels occupy tiers 1–4 and aliases occupy tiers 5–8, each using exact,
+starts-with, word-start, and substring classification. Therefore even an exact
+alias remains below a primary-label substring. Aliases supplement discovery;
+they do not reweight primary labels.
 
 ### D5 — Category merge is all-or-nothing in V1
 
@@ -120,19 +124,19 @@ complete.
 
 | Query | Primary label | Alias | Shown? | Tier |
 |-------|--------------|-------|--------|------|
-| `"4567"` | `Nubank Checking` | `"nubank 4567"` | yes | alias-boosted |
-| `"nu"` | `Nubank Checking` | `"nubank 4567"` | yes | tier 2 (primary label starts-with) |
-| `"xyz"` | `Nubank Checking` | `"nubank 4567"` | no | hidden |
-| `"4567"` | `Nubank 4567` (primary contains suffix) | `"nubank 4567"` | yes | tier 4 (primary) beats tier 3 (alias) |
+| `"4567"` | `Nubank Checking` | `"nubank | 1234 | 1234567 | 4567"` | yes | tier 5 (alias exact) |
+| `"nu"` | `Nubank Checking` | `"nubank | 1234 | 1234567 | 4567"` | yes | tier 2 (primary label starts-with) |
+| `"xyz"` | `Nubank Checking` | `"nubank | 1234 | 1234567 | 4567"` | no | hidden |
+| `"4567"` | `Nubank 4567` (primary contains suffix) | `"nubank | 4567"` | yes | tier 4 (primary) beats tier 5 (alias) |
 
 #### Invariants
 
 | Invariant | Verified by |
 |-----------|-------------|
 | Permanently hidden items remain hidden regardless of alias | `filterItems` test |
-| Empty-state shows when ranked set is empty | existing empty-state test |
-| Keyboard navigation follows ranked visible list | existing arrow-key test |
-| `reorderItems` not called during active search | `filterItems` unit test |
+| Empty-state shows when ranked set is empty | ranking/controller request contract |
+| Keyboard navigation follows ranked visible list | `combobox_search_test.mjs` |
+| Empty search restores stable server or selected-first order | `combobox_search_test.mjs` and controller contract |
 
 ---
 
@@ -143,9 +147,9 @@ complete.
 | Scenario | Source | Destination | Expected plan |
 |----------|--------|-------------|---------------|
 | Same record | category A | category A | `apply_available? false`, no rows planned |
-| Built-in source | built-in category | custom category | `apply_available? false`, conflict: `:built_in_source` |
-| Built-in destination | custom category | built-in category | `apply_available? false`, conflict: `:built_in_destination` |
-| Family conflict | Exchange-family category | custom category | `apply_available? false`, conflict: `:family_conflict` |
+| Built-in source | built-in category | custom category | `eligible? false`, conflict: `:source_protected` |
+| Built-in destination | custom category | built-in category | `eligible? false`, conflict: `:destination_protected` |
+| Family conflict | Exchange-family category | custom category | `eligible? false`, structural policy reason surfaced |
 | Clean transfer | category A (3 CT rows) | category B (0 CT rows) | 3 `transfer_rows`, 0 conflicts |
 | Collapse duplicate | category A (3 CT rows, 1 already on destination) | category B | 2 `transfer_rows`, 1 `collapse_row` |
 | Subscription-owned row | category A (1 CT, 1 subscription CT) | category B | 1 `transfer_row`, 1 conflict: `:subscription_owned` |
@@ -172,9 +176,9 @@ complete.
 | Valid preview | POST merge_preview (Turbo) | replace frame with preview summary |
 | Preview — built-in destination selected | POST merge_preview | preview shows conflict, apply disabled |
 | Apply — valid token | POST merge (Turbo) | Drive visit to index, success flash |
-| Apply — stale token | POST merge (Turbo) | replace frame with staleness error |
+| Apply — stale token | POST merge (Turbo) | keep preview and stream a staleness notification |
 | Non-Turbo apply | POST merge | 303 redirect to index |
-| Apply — no destination param | POST merge_preview | 422 |
+| Open — no destination selected | POST merge_preview (Turbo) | render the in-place destination chooser without a false conflict |
 
 ---
 
@@ -238,9 +242,8 @@ All specs run under `spec/services/category_merges/`,
 `spec/requests/entity_merges_spec.rb`.
 
 JavaScript ranking behaviour is verified through focused unit tests in
-`spec/javascript/combobox_controller_spec.js` (or equivalent test file for the
-project's JS test runner).
+`spec/javascript/combobox_search_test.mjs`.
 
 CI path: request and service specs are in the CI-required subset
-(`spec/requests`, `spec/services`). JavaScript tests run in the `yarn test`
-step if configured.
+(`spec/requests`, `spec/services`). All `spec/javascript/*_test.mjs` files run
+through the dedicated Node test step in `bin/ci`.

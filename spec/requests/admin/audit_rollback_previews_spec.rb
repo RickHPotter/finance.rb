@@ -72,13 +72,13 @@ RSpec.describe "Admin audit rollback previews", type: :request do
       operation:,
       owner_id: user.id,
       context_id: context.id,
-      item_type: "Category",
-      item_subtype: "Category",
+      item_type: "Bank",
+      item_subtype: "Bank",
       item_id: 49,
       event: :update,
       mutation_source: :web,
-      object: { "id" => 49, "user_id" => user.id, "category_name" => "Unsupported category" },
-      object_changes: { "category_name" => [ "Unsupported category", "Unknown category" ] },
+      object: { "id" => 49, "bank_name" => "Unsupported bank" },
+      object_changes: { "bank_name" => [ "Unsupported bank", "Unknown bank" ] },
       metadata: {}
     )
     sign_in admin
