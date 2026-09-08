@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class Views::Categories::Category < Views::Base
+  include Phlex::Rails::Helpers::ButtonTo
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::Cycle
@@ -20,6 +21,7 @@ class Views::Categories::Category < Views::Base
     turbo_frame_tag dom_id(category) do
       mobile ? mobile_row : desktop_row
     end
+    turbo_frame_tag merge_preview_frame_id if merge_source?
   end
 
   private
@@ -89,6 +91,8 @@ class Views::Categories::Category < Views::Base
                                                             title: action_message(:edit),
                                                             aria: { label: action_message(:edit) },
                                                             data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
+
+          merge_trigger
 
           if category.built_in == false
             LinkWithConfirmation(
@@ -195,8 +199,39 @@ class Views::Categories::Category < Views::Base
             end
           end
         end
+
+        div(class: "mt-3 flex justify-end") { merge_trigger(mobile: true) } if merge_source?
       end
     end
+  end
+
+  def merge_trigger(mobile: false)
+    return unless merge_source?
+
+    button_to(
+      merge_preview_category_path(category),
+      method: :post,
+      params: { category_merge: { return_to: } },
+      id: "merge_category_#{category.id}",
+      class: mobile ? mobile_merge_button_class : merge_action_button_class,
+      title: I18n.t("category_merges.preview.title"),
+      aria: { label: I18n.t("category_merges.preview.title") },
+      form: {
+        class: "inline-flex",
+        data: { turbo_frame: merge_preview_frame_id }
+      }
+    ) do
+      cached_icon(:merge)
+      span(class: "ml-2") { I18n.t("category_merges.preview.title") } if mobile
+    end
+  end
+
+  def merge_source?
+    category.active? && !category.built_in?
+  end
+
+  def merge_preview_frame_id
+    "category_merge_preview_#{category.id}"
   end
 
   def action_button_class
@@ -209,6 +244,18 @@ class Views::Categories::Category < Views::Base
     "inline-flex size-6 items-center justify-center rounded-sm border border-red-200 bg-white text-red-700 " \
       "shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
       "dark:text-red-300 dark:hover:border-red-500 dark:hover:bg-slate-800 [&_svg]:size-4 [&_svg]:!text-current"
+  end
+
+  def merge_action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-amber-300 bg-amber-50 text-amber-700 " \
+      "shadow-sm transition hover:border-amber-600 hover:bg-amber-500 hover:text-white dark:border-amber-700 dark:bg-slate-900 " \
+      "dark:text-amber-300 dark:hover:border-amber-500 dark:hover:bg-slate-800 [&_svg]:size-4"
+  end
+
+  def mobile_merge_button_class
+    "inline-flex items-center justify-center rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 " \
+      "shadow-sm transition hover:border-amber-500 hover:bg-amber-500 hover:text-white dark:border-amber-700 dark:bg-slate-900 " \
+      "dark:text-amber-300 dark:hover:border-amber-500 dark:hover:bg-slate-800 [&_svg]:size-4"
   end
 
   def status_badge

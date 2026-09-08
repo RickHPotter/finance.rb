@@ -26,6 +26,7 @@ en:
     preview:
       title: "Merge category"
       eyebrow: "Category merge"
+      source_label: "Source"
       destination_label: "Merge into"
       choose_destination: "Choose a destination category"
       submit_preview: "Preview merge"
@@ -71,6 +72,7 @@ pt-BR:
     preview:
       title: "Mesclar categoria"
       eyebrow: "Mescla de categoria"
+      source_label: "Origem"
       destination_label: "Mesclar em"
       choose_destination: "Escolha uma categoria de destino"
       submit_preview: "Pré-visualizar mescla"

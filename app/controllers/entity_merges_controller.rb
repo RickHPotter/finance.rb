@@ -80,7 +80,7 @@ class EntityMergesController < ApplicationController
   end
 
   def return_to_path
-    params[:return_to].presence || entities_path
+    Navigation::Entities.new(raw: params[:return_to], fallback: entities_path, current_user:).destination
   end
 
   def set_basic_tabs

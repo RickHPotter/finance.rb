@@ -12,12 +12,7 @@ class CategoryMergePreviewsController < ApplicationController
                                 .where.not(id: @source.id)
                                 .order(:category_name)
 
-    plan = CategoryMerges::Planner.new(
-      actor: current_user,
-      context: current_context,
-      source_id: @source.id,
-      destination_id: merge_params[:destination_id]
-    ).call
+    plan = build_plan if merge_params[:destination_id].present?
 
     respond_to do |format|
       format.html { render Views::CategoryMerges::Preview.new(source: @source, plan:, destinations: @destinations, return_to: return_to_path) }
@@ -27,13 +22,22 @@ class CategoryMergePreviewsController < ApplicationController
           Views::CategoryMerges::Preview.new(source: @source, plan:, destinations: @destinations, return_to: return_to_path, frame_only: true)
         )
       end
-      format.json { render json: plan_payload(plan) }
+      format.json { plan ? render(json: plan_payload(plan)) : head(:bad_request) }
     end
   rescue ActionController::ParameterMissing, ArgumentError
     head :bad_request
   end
 
   private
+
+  def build_plan
+    CategoryMerges::Planner.new(
+      actor: current_user,
+      context: current_context,
+      source_id: @source.id,
+      destination_id: merge_params[:destination_id]
+    ).call
+  end
 
   def set_source_category
     @source = current_user.categories.find(params[:id])
@@ -46,7 +50,7 @@ class CategoryMergePreviewsController < ApplicationController
   end
 
   def return_to_path
-    merge_params[:return_to].presence || categories_path
+    Navigation::Categories.new(raw: merge_params[:return_to], fallback: categories_path, current_user:).destination
   end
 
   def plan_payload(plan)

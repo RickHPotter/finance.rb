@@ -32,18 +32,60 @@ RSpec.describe "Category and entity navigation", type: :request do
     end
   end
 
-  it "keeps index merge entry points withheld until the V2 execution path is safe" do
+  it "renders in-place merge entry points for eligible desktop and mobile index rows" do
     category = create(:category, :random, user:, built_in: false)
     entity = create(:entity, :random, user:, built_in: false, entity_user: nil)
+    inactive_category = create(:category, :random, user:, built_in: false, active: false)
+    inactive_entity = create(:entity, :random, user:, built_in: false, active: false, entity_user: nil)
+    mobile_headers = { "HTTP_USER_AGENT" => "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)" }
 
-    {
-      categories_path => [ "#merge_category_#{category.id}", "#category_merge_preview_#{category.id}" ],
-      entities_path => [ "#merge_entity_#{entity.id}", "#entity_merge_preview_#{entity.id}" ]
-    }.each do |index_path, selectors|
+    [ {}, mobile_headers ].each do |request_headers|
+      get categories_path, headers: request_headers
+      category_document = Nokogiri::HTML.parse(response.body)
+      category_trigger = category_document.at_css("#merge_category_#{category.id}")
+      category_form = category_trigger.parent
+
+      expect(category_trigger).to be_present
+      expect(category_form["action"]).to eq(merge_preview_category_path(category))
+      expect(category_form["data-turbo-frame"]).to eq("category_merge_preview_#{category.id}")
+      expect(category_document.at_css("#category_merge_preview_#{category.id}")).to be_present
+      expect(category_document.at_css("#merge_category_#{user.categories.find_by!(built_in: true).id}")).to be_nil
+      expect(category_document.at_css("#merge_category_#{inactive_category.id}")).to be_nil
+
+      get entities_path, headers: request_headers
+      entity_document = Nokogiri::HTML.parse(response.body)
+      entity_trigger = entity_document.at_css("#merge_entity_#{entity.id}")
+      entity_form = entity_trigger.parent
+
+      expect(entity_trigger).to be_present
+      expect(entity_form["action"]).to eq(merge_preview_entity_path(entity))
+      expect(entity_form["data-turbo-frame"]).to eq("entity_merge_preview_#{entity.id}")
+      expect(entity_document.at_css("#entity_merge_preview_#{entity.id}")).to be_present
+      expect(entity_document.at_css("#merge_entity_#{user.built_in_entity.id}")).to be_nil
+      expect(entity_document.at_css("#merge_entity_#{inactive_entity.id}")).to be_nil
+    end
+  end
+
+  it "keeps canonical filtered index state in merge forms without changing browser history" do
+    category = create(:category, :random, user:, built_in: false)
+    entity = create(:entity, :random, user:, built_in: false, entity_user: nil)
+    category_return = Navigation::Categories.new(
+      raw: categories_path(search_term: category.category_name, category: { status: [ "active" ] }),
+      fallback: categories_path,
+      current_user: user
+    ).destination
+    entity_return = Navigation::Entities.new(
+      raw: entities_path(search_term: entity.entity_name, entity: { status: [ "active" ] }),
+      fallback: entities_path,
+      current_user: user
+    ).destination
+
+    { category_return => [ "category", category.id ], entity_return => [ "entity", entity.id ] }.each do |index_path, (resource, id)|
       get index_path
+      form = Nokogiri::HTML.parse(response.body).at_css("#merge_#{resource}_#{id}").parent
 
-      document = Nokogiri::HTML.parse(response.body)
-      selectors.each { |selector| expect(document.at_css(selector)).to be_nil }
+      expect(form.at_css(%[input[name="#{resource}_merge[return_to]"]])["value"]).to eq(index_path)
+      expect(form["data-turbo-action"]).to be_nil
     end
   end
 

@@ -30,6 +30,7 @@ class Views::EntityMerges::Preview < Views::Base
         header_section
         destination_form
         plan_summary if plan.present?
+        cancel_link
       end
     end
   end
@@ -42,7 +43,7 @@ class Views::EntityMerges::Preview < Views::Base
       I18n.t("entity_merges.preview.title", default: "Merge Entity")
     end
     p(class: "mt-1 text-sm text-slate-500 dark:text-slate-400") do
-      plain "Source: "
+      plain "#{I18n.t('entity_merges.preview.source_label')}: "
       strong { source.name }
     end
   end
@@ -55,7 +56,7 @@ class Views::EntityMerges::Preview < Views::Base
     ) do |f|
       div(class: "flex flex-col gap-3 sm:flex-row sm:items-end") do
         div(class: "flex-1") do
-          label(for: "entity_merge_destination_id", class: label_class) do
+          label(for: destination_select_id, class: label_class) do
             I18n.t("entity_merges.preview.destination_label", default: "Destination Entity")
           end
           f.select(
@@ -63,7 +64,7 @@ class Views::EntityMerges::Preview < Views::Base
             destinations.map { |e| [ e.name, e.id ] },
             { prompt: I18n.t("entity_merges.preview.choose_destination", default: "Choose destination..."),
               selected: plan&.destination&.id },
-            { id: "entity_merge_destination_id", class: select_class }
+            { id: destination_select_id, class: select_class }
           )
         end
         f.hidden_field :"entity_merge[return_to]", value: return_to
@@ -79,9 +80,8 @@ class Views::EntityMerges::Preview < Views::Base
     div(class: "mt-4 space-y-3") do
       outcome_badge
       counts_grid
-      conflict_reasons if plan.conflict_rows.any?
+      conflict_reasons if conflict_reason_counts.any?
       apply_forms
-      cancel_link
     end
   end
 
@@ -116,8 +116,7 @@ class Views::EntityMerges::Preview < Views::Base
         I18n.t("entity_merges.preview.conflicts_title", default: "Conflicts detected:")
       end
       ul(class: "mt-2 list-disc pl-5 text-sm text-red-700 dark:text-red-300") do
-        reasons = plan.conflict_rows.map(&:reason_code).tally
-        reasons.each do |reason, count|
+        conflict_reason_counts.each do |reason, count|
           li do
             plain I18n.t("entity_merges.reasons.#{reason}", default: reason.to_s.humanize)
             plain " (#{count})"
@@ -135,6 +134,18 @@ class Views::EntityMerges::Preview < Views::Base
 
       eligible_only_apply_form if plan.eligible_only_available?
     end
+  end
+
+  def conflict_reason_counts
+    @conflict_reason_counts ||= begin
+      reasons = plan.conflict_rows.map(&:reason_code)
+      reasons << plan.reason_code if plan.outcome == :conflict && plan.reason_code.present?
+      reasons.tally
+    end
+  end
+
+  def destination_select_id
+    "entity_merge_destination_id_#{source.id}"
   end
 
   def strict_apply_form

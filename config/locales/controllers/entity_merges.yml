@@ -36,6 +36,7 @@ en:
     preview:
       title: "Merge entity"
       eyebrow: "Entity merge"
+      source_label: "Source"
       destination_label: "Merge into"
       choose_destination: "Choose a destination entity"
       submit_preview: "Preview merge"
@@ -92,6 +93,7 @@ pt-BR:
     preview:
       title: "Mesclar entidade"
       eyebrow: "Mescla de entidade"
+      source_label: "Origem"
       destination_label: "Mesclar em"
       choose_destination: "Escolha uma entidade de destino"
       submit_preview: "Pré-visualizar mescla"
