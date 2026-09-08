@@ -10,6 +10,7 @@ CI.run do
   step "Style: ERuby", "bin/erblint -la"
 
   step "Specs: Rspec", "#{TEST_ENV}; bin/rspec"
+  step "Specs: JavaScript", "node --test spec/javascript/*_test.mjs"
 
   step "Security: Gem audit", "bin/bundler-audit --update"
   step "Security: Brakeman code analysis", "bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error"
