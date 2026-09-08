@@ -2,26 +2,29 @@
 
 class Audit::Rollback::LockSet
   LOCKABLE_TYPES = %w[
-    CashTransaction CardTransaction CashInstallment CardInstallment CategoryTransaction EntityTransaction
+    Friendship Category Entity CashTransaction CardTransaction CashInstallment CardInstallment CategoryTransaction EntityTransaction
     Budget BudgetCategory BudgetEntity Reference UserCard UserBankAccount Subscription Investment Exchange PiggyBank
   ].freeze
   LOCK_ORDER = {
-    "CashTransaction" => 0,
-    "CardTransaction" => 1,
-    "CashInstallment" => 2,
-    "CardInstallment" => 3,
-    "CategoryTransaction" => 4,
-    "EntityTransaction" => 5,
-    "Budget" => 6,
-    "BudgetCategory" => 7,
-    "BudgetEntity" => 8,
-    "Reference" => 9,
-    "UserCard" => 10,
-    "UserBankAccount" => 11,
-    "Subscription" => 12,
-    "Investment" => 13,
-    "Exchange" => 14,
-    "PiggyBank" => 15
+    "Friendship" => 0,
+    "Category" => 1,
+    "Entity" => 2,
+    "CashTransaction" => 3,
+    "CardTransaction" => 4,
+    "CashInstallment" => 5,
+    "CardInstallment" => 6,
+    "CategoryTransaction" => 7,
+    "EntityTransaction" => 8,
+    "Budget" => 9,
+    "BudgetCategory" => 10,
+    "BudgetEntity" => 11,
+    "Reference" => 12,
+    "UserCard" => 13,
+    "UserBankAccount" => 14,
+    "Subscription" => 15,
+    "Investment" => 16,
+    "Exchange" => 17,
+    "PiggyBank" => 18
   }.freeze
 
   attr_reader :preview

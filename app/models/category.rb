@@ -7,6 +7,9 @@ class Category < ApplicationRecord
   # @includes .................................................................
   include HasActive
   include TranslateHelper
+  include FinancialAuditable
+
+  audits_financial_changes skip: %i[card_transactions_count card_transactions_total cash_transactions_count cash_transactions_total], on: %i[destroy]
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................

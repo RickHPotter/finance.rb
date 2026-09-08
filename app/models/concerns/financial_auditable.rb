@@ -6,8 +6,8 @@ module FinancialAuditable
   BASE_SKIPPED_ATTRIBUTES = %i[created_at updated_at].freeze
 
   class_methods do
-    def audits_financial_changes(skip: [])
-      has_paper_trail(
+    def audits_financial_changes(skip: [], on: nil)
+      options = {
         skip: (BASE_SKIPPED_ATTRIBUTES + skip).uniq,
         meta: {
           operation_id: ->(_) { Audit::Operation.ensure_persisted!.id },
@@ -16,7 +16,9 @@ module FinancialAuditable
           mutation_source: ->(_) { Audit::Current.mutation_source.presence || "unknown" },
           metadata: ->(record) { Audit::VersionMetadata.for(record) }
         }
-      )
+      }
+      options[:on] = on if on
+      has_paper_trail(**options)
     end
   end
 end
