@@ -10,7 +10,26 @@ RSpec.describe "Category merge previews" do
   before { sign_in user }
 
   describe "POST /categories/:id/merge_preview" do
-    let(:preview_params) { { category_merge: { destination_id: destination.id, return_to: "/custom" } } }
+    let(:return_to) do
+      Navigation::Categories.new(
+        raw: categories_path(search_term: "source", category: { status: [ "active" ] }),
+        fallback: categories_path,
+        current_user: user
+      ).destination
+    end
+    let(:preview_params) { { category_merge: { destination_id: destination.id, return_to: } } }
+
+    it "opens a destination chooser without manufacturing a missing-destination conflict" do
+      post merge_preview_category_path(source), params: { category_merge: { return_to: } }, headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+      document = Nokogiri::HTML.parse(response.body)
+      frame = document.at_css("#category_merge_preview_#{source.id}")
+
+      expect(response).to have_http_status(:ok)
+      expect(frame.at_css("#category_merge_destination_id_#{source.id}")).to be_present
+      expect(frame.text).not_to include(I18n.t("category_merges.preview.outcome.conflict"))
+      expect(frame.at_css(%[a[href="#{return_to}"]])).to be_present
+    end
 
     it "renders the preview frame via Turbo Stream" do
       post merge_preview_category_path(source), params: preview_params, headers: { "Accept" => "text/vnd.turbo-stream.html" }
@@ -51,6 +70,22 @@ RSpec.describe "Category merge previews" do
     it "returns 400 if category_merge param is missing" do
       post merge_preview_category_path(source)
       expect(response).to have_http_status(:bad_request)
+    end
+
+    it "excludes inactive and protected destinations and reports a forged protected source" do
+      inactive = create(:category, :random, user:, active: false, built_in: false)
+      protected_category = user.categories.find_by!(built_in: true)
+      destination
+
+      post merge_preview_category_path(source), params: { category_merge: { return_to: } }, headers: { "Accept" => "text/vnd.turbo-stream.html" }
+      document = Nokogiri::HTML.parse(response.body)
+      option_values = document.css("option").map { |option| option["value"] }
+
+      expect(option_values).to include(destination.id.to_s)
+      expect(option_values).not_to include(source.id.to_s, inactive.id.to_s, protected_category.id.to_s)
+
+      post merge_preview_category_path(protected_category), params: preview_params, headers: { "Accept" => "text/vnd.turbo-stream.html" }
+      expect(response.body).to include(I18n.t("category_merges.reasons.source_protected"))
     end
   end
 end

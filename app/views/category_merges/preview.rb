@@ -30,6 +30,7 @@ class Views::CategoryMerges::Preview < Views::Base
         header_section
         destination_form
         plan_summary if plan.present?
+        cancel_link
       end
     end
   end
@@ -42,7 +43,7 @@ class Views::CategoryMerges::Preview < Views::Base
       I18n.t("category_merges.preview.title")
     end
     p(class: "mt-1 text-sm text-slate-500 dark:text-slate-400") do
-      plain "Source: "
+      plain "#{I18n.t('category_merges.preview.source_label')}: "
       strong { source.category_name }
     end
   end
@@ -55,7 +56,7 @@ class Views::CategoryMerges::Preview < Views::Base
     ) do |f|
       div(class: "flex flex-col gap-3 sm:flex-row sm:items-end") do
         div(class: "flex-1") do
-          label(for: "category_merge_destination_id", class: label_class) do
+          label(for: destination_select_id, class: label_class) do
             I18n.t("category_merges.preview.destination_label")
           end
           f.select(
@@ -63,7 +64,7 @@ class Views::CategoryMerges::Preview < Views::Base
             destinations.map { |c| [ c.category_name, c.id ] },
             { prompt: I18n.t("category_merges.preview.choose_destination"),
               selected: plan&.destination&.id },
-            { id: "category_merge_destination_id", class: select_class }
+            { id: destination_select_id, class: select_class }
           )
         end
         f.hidden_field :"category_merge[return_to]", value: return_to
@@ -78,8 +79,8 @@ class Views::CategoryMerges::Preview < Views::Base
     div(class: "mt-4 space-y-3") do
       outcome_badge
       counts_grid
+      conflict_reasons if conflict_reason_counts.any?
       apply_form if plan.eligible?
-      cancel_link
     end
   end
 
@@ -95,6 +96,21 @@ class Views::CategoryMerges::Preview < Views::Base
       count_metric("transaction_dedup",    plan.transaction_dedup_count)
       count_metric("budget_reassign",      plan.budget_reassign_count)
       count_metric("budget_dedup",         plan.budget_dedup_count)
+      count_metric("conflict",             plan.conflict_rows.size)
+    end
+  end
+
+  def conflict_reasons
+    div(class: "mt-3 rounded-md bg-red-50 p-3 dark:bg-red-900/30") do
+      h3(class: "text-sm font-medium text-red-800 dark:text-red-200") { I18n.t("category_merges.preview.conflicts_title") }
+      ul(class: "mt-2 list-disc pl-5 text-sm text-red-700 dark:text-red-300") do
+        conflict_reason_counts.each do |reason, count|
+          li do
+            plain I18n.t("category_merges.reasons.#{reason}")
+            plain " (#{count})"
+          end
+        end
+      end
     end
   end
 
@@ -105,6 +121,18 @@ class Views::CategoryMerges::Preview < Views::Base
       end
       dd(class: "mt-1 text-lg font-bold") { value.to_s }
     end
+  end
+
+  def conflict_reason_counts
+    @conflict_reason_counts ||= begin
+      reasons = plan.conflict_rows.map(&:reason_code)
+      reasons << plan.reason_code if plan.conflict? && plan.reason_code.present?
+      reasons.tally
+    end
+  end
+
+  def destination_select_id
+    "category_merge_destination_id_#{source.id}"
   end
 
   def apply_form

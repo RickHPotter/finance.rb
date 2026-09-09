@@ -29,6 +29,8 @@ RSpec.describe Audit::OwnershipResolver do
   it "resolves user cards and bank accounts without a record context" do
     expect_ownership(UserCard.new(user_id: owner_id), expected_context_id: nil)
     expect_ownership(UserBankAccount.new(user_id: owner_id), expected_context_id: nil)
+    expect_ownership(Category.new(user_id: owner_id), expected_context_id: nil)
+    expect_ownership(Entity.new(user_id: owner_id), expected_context_id: nil)
   end
 
   it "inherits installment ownership from its transaction" do

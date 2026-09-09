@@ -10,6 +10,7 @@ class CategoryMergesController < ApplicationController
     result = CategoryMerges::Apply.new(
       actor: current_user,
       context: current_context,
+      source_id: @source.id,
       request_id: request.request_id,
       token: params[:merge_token],
       confirmed: true
@@ -76,7 +77,7 @@ class CategoryMergesController < ApplicationController
   end
 
   def return_to_path
-    params[:return_to].presence || categories_path
+    Navigation::Categories.new(raw: params[:return_to], fallback: categories_path, current_user:).destination
   end
 
   def set_basic_tabs

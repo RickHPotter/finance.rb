@@ -567,13 +567,9 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   def exchange_return_cash_installment_ids
     return [ 0 ] unless budget.persisted?
 
-    relevant_card_trx_ids =
-      current_context.card_transactions
-                     .joins(:category_transactions)
-                     .where(category_transactions: { category_id: budget.categories.ids })
-                     .ids
+    relevant_card_trx_ids = budget.matching_card_installments.select(:card_transaction_id)
 
-    return [ 0 ] if relevant_card_trx_ids.empty?
+    return [ 0 ] unless relevant_card_trx_ids.exists?
 
     exchange_return_cash_installments =
       current_context.cash_installments

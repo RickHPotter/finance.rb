@@ -125,13 +125,13 @@ class UserBankAccountsController < ApplicationController
     scope = current_user.user_bank_accounts
     scope = scope.where(active: status_values) if @index_context[:status].present?
 
-    if @index_context[:search_term].present?
-      search_term = "%#{@index_context[:search_term].strip}%"
-      scope = scope.where(
-        "user_bank_account_name ILIKE :search OR agency_number::text ILIKE :search OR account_number::text ILIKE :search",
-        search: search_term
-      )
-    end
+    scope = Search::NormalizedText.apply(
+      scope,
+      @index_context[:search_term],
+      "user_bank_accounts.user_bank_account_name",
+      "user_bank_accounts.agency_number",
+      "user_bank_accounts.account_number"
+    )
 
     scope.order(active: :desc, user_bank_account_name: :asc)
   end

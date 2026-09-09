@@ -14,6 +14,15 @@ RSpec.describe "UserBankAccounts", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "finds accounts with normalized text" do
+      account = create(:user_bank_account, :random, user:, bank:, user_bank_account_name: "POUPÁNÇA   FÁCIL")
+
+      get user_bank_accounts_path(search_term: "  poupanca facil ")
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.at_css("#user_bank_account_#{account.id}")).to be_present
+    end
   end
 
   describe "[ #show ]" do

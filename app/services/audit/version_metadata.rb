@@ -8,6 +8,8 @@ class Audit::VersionMetadata
     "CardInstallment" => %w[card_transaction_id cash_transaction_id],
     "CategoryTransaction" => %w[transactable_type transactable_id category_id],
     "EntityTransaction" => %w[transactable_type transactable_id entity_id],
+    "Category" => [],
+    "Entity" => %w[friendship_id],
     "Exchange" => %w[entity_transaction_id cash_transaction_id],
     "Reference" => %w[user_card_id],
     "UserCard" => %w[card_id],

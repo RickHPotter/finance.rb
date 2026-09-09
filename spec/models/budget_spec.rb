@@ -106,6 +106,67 @@ RSpec.describe Budget, type: :model do
       expect(budget.description).to eq("[ HEALTH ] && ( BRUNO )")
     end
 
+    it "matches card installments using its inclusive category and entity rule" do
+      user = create(:user, :random)
+      bank = create(:bank, :random)
+      user_card = create(:user_card, :random, user:, card: create(:card, :random, bank:))
+      category = create(:category, :random, user:)
+      matching_entity = create(:entity, :random, user:)
+      other_entity = create(:entity, :random, user:)
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        month: 10,
+        year: 2026,
+        inclusive: true,
+        budget_categories: [ build(:budget_category, category:) ],
+        budget_entities: [ build(:budget_entity, entity: matching_entity) ]
+      )
+      matching = create(:card_transaction, user:, context: user.main_context, user_card:, date: Date.new(2026, 9, 10), month: 10, year: 2026)
+      category_only = create(:card_transaction, user:, context: user.main_context, user_card:, date: Date.new(2026, 9, 11), month: 10, year: 2026)
+      matching.categories = [ category ]
+      matching.entities = [ matching_entity ]
+      category_only.categories = [ category ]
+      category_only.entities = [ other_entity ]
+      [ matching, category_only ].each { |transaction| transaction.card_installments.update_all(month: 10, year: 2026) }
+
+      expect(budget.matching_card_installments).to contain_exactly(*matching.card_installments)
+    end
+
+    it "matches either allocation for an exclusive budget and supports entity-only budgets" do
+      user = create(:user, :random)
+      bank = create(:bank, :random)
+      user_card = create(:user_card, :random, user:, card: create(:card, :random, bank:))
+      category = create(:category, :random, user:)
+      entity = create(:entity, :random, user:)
+      other_category = create(:category, :random, user:)
+      other_entity = create(:entity, :random, user:)
+      by_category = create(:card_transaction, user:, context: user.main_context, user_card:, date: Date.new(2026, 9, 10), month: 10, year: 2026)
+      by_entity = create(:card_transaction, user:, context: user.main_context, user_card:, date: Date.new(2026, 9, 11), month: 10, year: 2026)
+      by_category.categories = [ category ]
+      by_category.entities = [ other_entity ]
+      by_entity.categories = [ other_category ]
+      by_entity.entities = [ entity ]
+      [ by_category, by_entity ].each { |transaction| transaction.card_installments.update_all(month: 10, year: 2026) }
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        month: 10,
+        year: 2026,
+        inclusive: false,
+        budget_categories: [ build(:budget_category, category:) ],
+        budget_entities: [ build(:budget_entity, entity:) ]
+      )
+
+      expect(budget.matching_card_installments).to contain_exactly(*by_category.card_installments, *by_entity.card_installments)
+
+      budget.budget_categories.destroy_all
+
+      expect(budget.reload.matching_card_installments).to contain_exactly(*by_entity.card_installments)
+    end
+
     it "recalculates balances from the previous month when moving a budget forward" do
       budget = create(:budget, month: 8, year: 2026)
       recalculator = instance_double(Logic::RecalculateBalancesService, call: true)

@@ -1177,6 +1177,20 @@ References:
 - Issues:
   - [#62](https://github.com/RickHPotter/finance.rb/issues/62)
 
+Status: complete as of 2026-09-08.
+
+Delivery notes:
+
+- all eight V2 completion slices are implemented and verified
+- Category and Entity merges are available from eligible desktop and mobile
+  index rows, while show pages remain free of merge actions
+- previews bind the exact context-owned graph; apply replans under deterministic
+  locks and records one guarded, reversible audit operation
+- Category merges remain strict; Entity merges additionally support an
+  independently verified eligible-only subset
+- combobox aliases use the complete subordinate ranking matrix, and JavaScript
+  specs now run in `bin/ci`
+
 Goal: make financial selectors rank the user's intended result predictably and provide
 transaction-safe category/entity consolidation directly from their indexes.
 
@@ -1234,6 +1248,9 @@ References:
 - [selector ranking and merge contract](docs/sprints/4-kakashi/kakashi-18/01-selector-ranking-and-merge-contract.md)
 - [implementation slices](docs/sprints/4-kakashi/kakashi-18/02-implementation-slices.md)
 - [decisions and test matrix](docs/sprints/4-kakashi/kakashi-18/03-decisions-and-test-matrix.md)
+- [V2 completion contract](docs/sprints/4-kakashi/kakashi-18/04-v2-completion-contract.md)
+- [V2 implementation slices](docs/sprints/4-kakashi/kakashi-18/05-v2-implementation-slices.md)
+- [V2 closure report](docs/sprints/4-kakashi/kakashi-18/06-v2-closure-report.md)
 
 ### KAKASHI-19: Harden internal and external entity ledgers
 

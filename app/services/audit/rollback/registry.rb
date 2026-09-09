@@ -8,6 +8,8 @@ class Audit::Rollback::Registry
     "CardInstallment" => Audit::Rollback::Adapters::Installment,
     "CategoryTransaction" => Audit::Rollback::Adapters::CategoryTransaction,
     "EntityTransaction" => Audit::Rollback::Adapters::EntityTransaction,
+    "Category" => Audit::Rollback::Adapters::Category,
+    "Entity" => Audit::Rollback::Adapters::Entity,
     "Budget" => Audit::Rollback::Adapters::Budget,
     "BudgetCategory" => Audit::Rollback::Adapters::BudgetCategory,
     "BudgetEntity" => Audit::Rollback::Adapters::BudgetEntity,

@@ -39,7 +39,10 @@ preference for the closer match.
 | 2 — Starts-with | Normalized label starts with normalized query |
 | 3 — Word-start | Any word inside the normalized label starts with the normalized query |
 | 4 — Substring | Normalized label contains the normalized query anywhere |
-| 5 — Alias-boosted | A `data-alias` token satisfies a higher tier than the primary label |
+| 5 — Alias exact | A normalized alias token equals the normalized query |
+| 6 — Alias starts-with | A normalized alias token starts with the normalized query |
+| 7 — Alias word-start | A word inside a normalized alias token starts with the normalized query |
+| 8 — Alias substring | A normalized alias token contains the normalized query anywhere |
 
 Within each tier, items are ordered by their original server-rendered position
 (localized alphabetical, the same stable tie-breaker used at page load).
@@ -49,7 +52,8 @@ above an item whose primary label satisfies a higher tier.
 
 #### Normalization Contract
 
-A single `normalize(str)` utility applies the following steps in order:
+A single `normalizeComboboxText(value)` utility applies the following steps in
+order:
 
 1. Unicode NFKD decomposition (`str.normalize("NFKD")`)
 2. Remove combining diacritical marks (`/\p{Mn}/u`)
@@ -68,26 +72,32 @@ stripped in V1.
 Some combobox items carry domain-specific searchable aliases that should
 improve discoverability without outranking a primary label:
 
-- **UserBankAccount**: bank name and account number suffix (e.g. `"nubank 0042"`)
-- **UserCard**: card brand and last-four digits (e.g. `"visa 1234"`)
+- **UserBankAccount**: bank name, agency number, full account number, and the
+  account number's last four digits
+- **UserCard**: card brand; the schema has no card-number or last-four field, so
+  the user-defined `user_card_name` remains the stable identifying primary label
 - **Category**: no alias in V1 — category name is the only searchable label
 - **Entity**: no alias in V1 — entity name is the only searchable label
 
-Aliases are exposed through a `data-alias` attribute on the `ComboboxItem`
-wrapper (or the hidden input). The ranking algorithm checks alias tokens only
-after all primary-label tiers. A weak alias match (substring only) cannot bump
-an item above one whose primary label matches at a higher tier.
+Aliases are exposed as pipe-delimited tokens through a `data-alias` attribute
+on the `ComboboxItem` wrapper. Each alias receives the same exact,
+starts-with, word-start, and substring classification as a primary label, but
+all four alias tiers remain below every primary-label tier. A weak alias match
+cannot bump an item above a primary-label match.
 
 The Ruby side adds `data: { alias: "..." }` when rendering combobox items for
-UserBankAccount and UserCard. The alias string is pre-normalized at render time
-so the client does not need to re-normalize it.
+UserBankAccount and UserCard. Alias strings are pre-normalized at render time;
+the shared JavaScript core normalizes them again defensively so direct callers
+obey the same contract.
 
 #### Implementation Location
 
-Ranking lives entirely in `combobox_controller.js#filterItems`. No server round
-trip is required during a live search session. The server continues to render
-options in localized alphabetical order. The client re-sorts visible items into
-tier order after each keypress.
+The pure ranking and keyboard-index functions live in
+`app/javascript/lib/combobox_search.mjs`; `combobox_controller.js#filterItems`
+applies their result to the DOM. No server round trip is required during a live
+search session. The server continues to render options in localized
+alphabetical order. The client re-sorts visible items into tier order after each
+keypress.
 
 When the search input is cleared, items return to their server-rendered order
 (the `reorderItems`/`selectedOrder` checked-items-first logic takes over).

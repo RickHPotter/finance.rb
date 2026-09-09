@@ -12,7 +12,9 @@ RSpec.describe Audit::Rollback::Registry do
       CardTransaction
       CashInstallment
       CashTransaction
+      Category
       CategoryTransaction
+      Entity
       EntityTransaction
       Exchange
       Friendship
@@ -34,6 +36,8 @@ RSpec.describe Audit::Rollback::Registry do
       "CardInstallment" => Audit::Rollback::Adapters::Installment,
       "CategoryTransaction" => Audit::Rollback::Adapters::CategoryTransaction,
       "EntityTransaction" => Audit::Rollback::Adapters::EntityTransaction,
+      "Category" => Audit::Rollback::Adapters::Category,
+      "Entity" => Audit::Rollback::Adapters::Entity,
       "Budget" => Audit::Rollback::Adapters::Budget,
       "BudgetCategory" => Audit::Rollback::Adapters::BudgetCategory,
       "BudgetEntity" => Audit::Rollback::Adapters::BudgetEntity,

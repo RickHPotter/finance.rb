@@ -46,7 +46,6 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
         dashboard_action(I18n.t("dashboards.actions.view_cash_transactions"), cash_transactions_index_path, variant: :outline) if scoped_cash_transactions.exists?
         dashboard_action(I18n.t("dashboards.actions.view_card_transactions"), card_transactions_index_path, variant: :outline) if scoped_card_transactions.exists?
         dashboard_action(action_message(:edit), edit_category_path(category, return_to:), variant: :edit)
-        merge_action
         destroy_action
       end
     end
@@ -170,17 +169,6 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
         data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
       }
     )
-  end
-
-  def merge_action
-    return if category.built_in?
-
-    Button(
-      link: merge_preview_category_path(category, category_merge: { return_to: category_path(category) }),
-      variant: :outline,
-      class: dashboard_action_class(:outline),
-      data: { turbo_method: :post, turbo_frame: "_top", turbo_action: "replace" }
-    ) { I18n.t("category_merges.preview.title") }
   end
 
   def cash_transactions_index_path

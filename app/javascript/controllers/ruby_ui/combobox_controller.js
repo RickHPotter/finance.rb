@@ -1,35 +1,11 @@
 import { Controller } from "@hotwired/stimulus";
 import { computePosition, autoUpdate, offset, flip } from "@floating-ui/dom";
-
-// Normalizes a string for consistent combobox search comparison:
-//   1. NFKD Unicode decomposition
-//   2. Strip combining diacritical marks (accents)
-//   3. Lowercase
-//   4. Collapse repeated whitespace and trim
-// Used by filterItems so that accented characters, case differences, and
-// extra whitespace never block a valid match.
-function normalize(str) {
-  return (str || "")
-    .normalize("NFKD")
-    .replace(/\p{Mn}/gu, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim()
-}
-
-// Returns the ranking tier of a normalized text string against a normalized
-// query. Lower tier = better match. Returns Infinity when there is no match.
-//   1 — exact:      text equals query exactly
-//   2 — starts-with: text begins with query
-//   3 — word-start: any whitespace-delimited word in text begins with query
-//   4 — substring:  text contains query anywhere
-function rankTier(text, query) {
-  if (text === query) { return 1 }
-  if (text.startsWith(query)) { return 2 }
-  if (text.split(/\s+/).some(word => word.startsWith(query))) { return 3 }
-  if (text.includes(query)) { return 4 }
-  return Infinity
-}
+import {
+  nextComboboxSelectionIndex,
+  normalizeComboboxText,
+  rankVisibleComboboxItems,
+  sortComboboxMatches
+} from "../../lib/combobox_search.mjs";
 
 // Connects to data-controller="ruby-ui--combobox"
 export default class extends Controller {
@@ -196,51 +172,27 @@ export default class extends Controller {
       return
     }
 
-    const filterTerm = normalize(this.searchInputTarget.value)
+    const filterTerm = normalizeComboboxText(this.searchInputTarget.value)
 
     if (this.hasToggleAllTarget) {
       if (filterTerm) this.toggleAllTarget.parentElement.classList.add("hidden")
       else this.toggleAllTarget.parentElement.classList.remove("hidden")
     }
 
-    let resultCount = 0
-    const rankedItems = []
+    const rankedItems = rankVisibleComboboxItems(this.inputTargets.map(input => ({
+      element: input.parentElement,
+      label: this.inputContent(input),
+      aliases: input.parentElement.dataset.alias,
+      permanentlyHidden: input.parentElement.dataset.comboboxPermanentlyHidden === "true",
+      originalIndex: this.originalItemOrder.get(input.parentElement) ?? 0
+    })), filterTerm)
+    const visibleElements = new Set(rankedItems.map(item => item.element))
 
-    this.inputTargets.forEach((input) => {
-      if (input.parentElement.dataset.comboboxPermanentlyHidden === "true") {
-        input.parentElement.classList.add("hidden")
-        return
-      }
+    this.inputTargets.forEach(input => input.parentElement.classList.toggle("hidden", !visibleElements.has(input.parentElement)))
+    if (rankedItems.length > 1) { this.rankItems(rankedItems) }
+    if (!filterTerm && this.reorderValue) { this.reorderItems() }
 
-      const text = normalize(this.inputContent(input))
-      // Alias is pre-normalized server-side; no need to run normalize() on it.
-      const alias = input.parentElement.dataset.alias || ""
-
-      let tier = filterTerm ? rankTier(text, filterTerm) : 0
-      if (filterTerm && tier === Infinity && alias && alias.includes(filterTerm)) {
-        tier = 5
-      }
-
-      if (!filterTerm || tier < Infinity) {
-        input.parentElement.classList.remove("hidden")
-        resultCount++
-        if (filterTerm) {
-          rankedItems.push({
-            element: input.parentElement,
-            tier,
-            originalIndex: this.originalItemOrder.get(input.parentElement) ?? 0
-          })
-        }
-      } else {
-        input.parentElement.classList.add("hidden")
-      }
-    })
-
-    if (filterTerm && rankedItems.length > 1) {
-      this.rankItems(rankedItems)
-    }
-
-    this.emptyStateTarget.classList.toggle("hidden", resultCount !== 0)
+    this.emptyStateTarget.classList.toggle("hidden", rankedItems.length !== 0)
     this.highlightFirstVisibleItem()
   }
 
@@ -250,11 +202,7 @@ export default class extends Controller {
       return
     }
 
-    if (this.selectedItemIndex !== null) {
-      this.selectedItemIndex++
-    } else {
-      this.selectedItemIndex = 0
-    }
+    this.selectedItemIndex = nextComboboxSelectionIndex(this.selectedItemIndex, this.visibleInputs().length, 1)
 
     this.focusSelectedInput()
   }
@@ -265,11 +213,7 @@ export default class extends Controller {
       return
     }
 
-    if (this.selectedItemIndex !== null) {
-      this.selectedItemIndex--
-    } else {
-      this.selectedItemIndex = -1
-    }
+    this.selectedItemIndex = nextComboboxSelectionIndex(this.selectedItemIndex, this.visibleInputs().length, -1)
 
     this.focusSelectedInput()
   }
@@ -281,8 +225,6 @@ export default class extends Controller {
       this.itemTargets.forEach(item => item.ariaCurrent = "false")
       return
     }
-
-    this.wrapSelectedInputIndex(visibleInputs.length)
 
     visibleInputs.forEach((input, index) => {
       if (index == this.selectedItemIndex) {
@@ -334,10 +276,6 @@ export default class extends Controller {
     if (this.pointerDownInsidePopover) { return }
 
     this.closePopover()
-  }
-
-  wrapSelectedInputIndex(length) {
-    this.selectedItemIndex = ((this.selectedItemIndex % length) + length) % length
   }
 
   updatePopoverPosition() {
@@ -457,10 +395,10 @@ export default class extends Controller {
   // DOM by tier ascending, then by originalIndex ascending (stable sort).
   // Only appends elements that already share the same parent list node.
   rankItems(items) {
-    items.sort((a, b) => a.tier - b.tier || a.originalIndex - b.originalIndex)
-    const list = items[0]?.element.parentElement
+    const rankedItems = sortComboboxMatches(items)
+    const list = rankedItems[0]?.element.parentElement
     if (!list) { return }
-    items.forEach(({ element }) => list.appendChild(element))
+    rankedItems.forEach(({ element }) => list.appendChild(element))
   }
 
   initializeOrderTracking() {

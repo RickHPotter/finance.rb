@@ -11,14 +11,21 @@ RSpec.describe "Category merges" do
   before { sign_in user }
 
   describe "POST /categories/:id/merge" do
-    let(:plan) { CategoryMerges::Planner.new(actor: user, source_id: source.id, destination_id: destination.id).call }
+    let(:plan) { CategoryMerges::Planner.new(actor: user, context:, source_id: source.id, destination_id: destination.id).call }
     let(:token) { CategoryMerges::PreviewToken.generate(plan) }
-    let(:merge_params) { { merge_token: token, return_to: "/custom" } }
+    let(:return_to) do
+      Navigation::Categories.new(
+        raw: categories_path(search_term: "food", category: { status: [ "active" ] }),
+        fallback: categories_path,
+        current_user: user
+      ).destination
+    end
+    let(:merge_params) { { merge_token: token, return_to: } }
 
     it "applies the merge and redirects for Turbo Stream requests" do
       post merge_category_path(source), params: merge_params, headers: { "Accept" => "text/vnd.turbo-stream.html" }
 
-      expect(response).to redirect_to("/custom")
+      expect(response).to redirect_to(return_to)
       expect(flash[:notice]).to eq(I18n.t("category_merges.applied"))
       expect(Category.exists?(source.id)).to be(false)
     end
@@ -26,7 +33,7 @@ RSpec.describe "Category merges" do
     it "applies the merge and redirects via HTML" do
       post merge_category_path(source), params: merge_params
 
-      expect(response).to redirect_to("/custom")
+      expect(response).to redirect_to(return_to)
       expect(flash[:notice]).to eq(I18n.t("category_merges.applied"))
       expect(Category.exists?(source.id)).to be(false)
     end
@@ -53,6 +60,12 @@ RSpec.describe "Category merges" do
 
       post merge_category_path(other_source), params: merge_params
       expect(response).to have_http_status(:not_found)
+    end
+
+    it "rejects an unsafe return path in favor of the canonical category index" do
+      post merge_category_path(source), params: merge_params.merge(return_to: "https://example.test/escape")
+
+      expect(response).to redirect_to(categories_path)
     end
   end
 end

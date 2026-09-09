@@ -321,6 +321,25 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
       expect(created_transaction.entity_transactions.first.exchanges.first).to have_attributes(exchange_type: "monetary", price: 100)
       expect(loan_message.reload).to be_auto_applied
     end
+
+    it "creates the receiver entity allocation from a card-return replay payload" do
+      card_return_payload = payload.merge(
+        type: "CardTransaction",
+        category_ids: recipient.built_in_category("BORROW RETURN").id,
+        entity_ids: recipient_entity.id
+      )
+      card_return_message = build_message(action: "create", payload: card_return_payload)
+      existing_ids = recipient.ensure_main_context!.cash_transaction_ids
+
+      described_class.new(card_return_message).call
+
+      created_transaction = recipient.ensure_main_context!.cash_transactions.where.not(id: existing_ids).find_by!(description: "Dinner")
+      expect(created_transaction.categories.pluck(:category_name)).to eq([ "BORROW RETURN" ])
+      expect(created_transaction.entity_transactions).to contain_exactly(
+        have_attributes(entity: recipient_entity, price: 0, price_to_be_returned: 0, is_payer: false, exchanges_count: 0)
+      )
+      expect(card_return_message.reload).to be_auto_applied
+    end
   end
 
   # ─── Update action ────────────────────────────────────────────────────────────

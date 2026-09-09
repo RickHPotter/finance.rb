@@ -71,17 +71,15 @@ RSpec.describe "Resource dashboard navigation", type: :request do
     end
   end
 
-  it "renders exact typed collection and merge actions on category and entity dashboards" do
+  it "renders exact typed collection actions without merge actions on category and entity dashboards" do
     expectations = {
       category_path(category) => [
         cash_transactions_path(all_month_years: true, cash_transaction: { category_id: [ category.id ] }, return_to: category_path(category)),
-        card_transactions_path(all_month_years: true, card_transaction: { category_id: [ category.id ] }, return_to: category_path(category)),
-        merge_preview_category_path(category, category_merge: { return_to: category_path(category) })
+        card_transactions_path(all_month_years: true, card_transaction: { category_id: [ category.id ] }, return_to: category_path(category))
       ],
       entity_path(entity) => [
         cash_transactions_path(all_month_years: true, cash_transaction: { entity_id: [ entity.id ] }, return_to: entity_path(entity)),
-        card_transactions_path(all_month_years: true, card_transaction: { entity_id: [ entity.id ] }, return_to: entity_path(entity)),
-        merge_preview_entity_path(entity, entity_merge: { return_to: entity_path(entity) })
+        card_transactions_path(all_month_years: true, card_transaction: { entity_id: [ entity.id ] }, return_to: entity_path(entity))
       ]
     }
 
@@ -90,9 +88,7 @@ RSpec.describe "Resource dashboard navigation", type: :request do
       links = parsed_document.css("a")
 
       expect(links.map { |link| link["href"] }).to include(*expected_hrefs)
-      expected_hrefs.last.then do |merge_href|
-        expect(links.find { |link| link["href"] == merge_href }&.[]("data-turbo-method")).to eq("post")
-      end
+      expect(links.map { |link| link["href"] }).not_to include(a_string_matching(%r{/merge_preview}))
     end
   end
 

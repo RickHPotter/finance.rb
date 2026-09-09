@@ -129,10 +129,34 @@ class Budget < ApplicationRecord
     end.sum
   end
 
+  def matching_card_installments
+    relation = context.card_installments.where(month:, year:)
+    relation = relation.where(number: 1) if first_installment_only?
+
+    filter_installments_by_allocations(relation)
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 
   private
+
+  def filter_installments_by_allocations(relation)
+    category_ids = active_budget_categories.filter_map(&:category_id)
+    entity_ids = active_budget_entities.filter_map(&:entity_id)
+
+    if inclusive? && category_ids.present? && entity_ids.present?
+      relation.by_categories_and_entities(category_ids, entity_ids)
+    elsif category_ids.present? && entity_ids.present?
+      relation.by_categories_or_entities(category_ids, entity_ids)
+    elsif category_ids.present?
+      relation.by_categories(category_ids)
+    elsif entity_ids.present?
+      relation.by_entities(entity_ids)
+    else
+      relation.none
+    end
+  end
 
   def description_dependencies_changed?
     return false if skip_description_refresh

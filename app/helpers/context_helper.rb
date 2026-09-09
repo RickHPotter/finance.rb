@@ -13,7 +13,8 @@ module ContextHelper
   def set_user_bank_accounts
     @user_bank_accounts = current_user.user_bank_accounts.active.includes(:bank).order(:agency_number, :account_number).map do |uba|
       label = "#{uba.user_bank_account_name} [#{uba.bank.bank_name}]"
-      alias_str = combobox_alias(uba.bank.bank_name, uba.account_number.to_s.presence)
+      account_number = uba.account_number.to_s.presence
+      alias_str = combobox_alias(uba.bank.bank_name, uba.agency_number.to_s.presence, account_number, account_number&.last(4))
       [ label, uba.id, { alias: alias_str } ]
     end
   end
@@ -46,15 +47,16 @@ module ContextHelper
 
   private
 
-  # Returns a pre-normalized alias string suitable for data-alias on a combobox item.
-  # Applies the same normalization pipeline as the JS normalize() utility:
+  # Returns independently ranked, pre-normalized aliases for a combobox item.
+  # Applies the same normalization pipeline as the JS normalizeComboboxText() utility:
   #   NFKD decomposition → strip combining marks → downcase → collapse whitespace
   def combobox_alias(*parts)
-    parts.compact.join(" ")
-         .unicode_normalize(:nfkd)
-         .gsub(/\p{Mn}/, "")
-         .downcase
-         .gsub(/\s+/, " ")
-         .strip
+    parts.compact_blank.map do |part|
+      part.to_s.unicode_normalize(:nfkd)
+          .gsub(/\p{Mn}/, "")
+          .downcase
+          .gsub(/\s+/, " ")
+          .strip
+    end.uniq.join(" | ")
   end
 end

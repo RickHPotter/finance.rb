@@ -49,7 +49,6 @@ class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
         dashboard_action(I18n.t("dashboards.actions.view_cash_transactions"), cash_transactions_index_path, variant: :outline) if scoped_cash_transactions.exists?
         dashboard_action(I18n.t("dashboards.actions.view_card_transactions"), card_transactions_index_path, variant: :outline) if scoped_card_transactions.exists?
         dashboard_action(action_message(:edit), edit_entity_path(entity, return_to:), variant: :edit)
-        merge_action
         destroy_action
       end
     end
@@ -172,17 +171,6 @@ class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
         data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
       }
     )
-  end
-
-  def merge_action
-    return if entity.built_in? || entity.entity_user_id.present?
-
-    Button(
-      link: merge_preview_entity_path(entity, entity_merge: { return_to: entity_path(entity) }),
-      variant: :outline,
-      class: dashboard_action_class(:outline),
-      data: { turbo_method: :post, turbo_frame: "_top", turbo_action: "replace" }
-    ) { I18n.t("entity_merges.preview.title", default: "Merge Entity") }
   end
 
   def cash_transactions_index_path

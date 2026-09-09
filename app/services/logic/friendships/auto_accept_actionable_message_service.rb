@@ -191,7 +191,7 @@ module Logic
       end
 
       def replay_entity_transactions_attributes(payload)
-        attributes = Array(payload["entity_transactions_attributes"]).map do |entity_attributes|
+        attributes = replayed_entity_transaction_attributes(payload).map do |entity_attributes|
           entity_attributes = entity_attributes.with_indifferent_access
           exchanges_attributes = Array(entity_attributes[:exchanges_attributes]).map do |exchange_attributes|
             exchange_attributes.with_indifferent_access.except(:paid)
@@ -216,6 +216,13 @@ module Logic
         end
 
         attributes.presence
+      end
+
+      def replayed_entity_transaction_attributes(payload)
+        nested_attributes = Array(payload["entity_transactions_attributes"])
+        return nested_attributes if nested_attributes.present?
+
+        Array(payload["entity_ids"]).map { |entity_id| { entity_id: } }
       end
 
       def synchronize_replayed_exchanges(attributes, entity_transaction)

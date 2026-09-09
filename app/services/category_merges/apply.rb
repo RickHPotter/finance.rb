@@ -4,15 +4,13 @@
 #
 # Execution order inside a single transaction + audit operation:
 #   1. Verify token (actor match, not expired)
-#   2. Re-run Planner with a fresh read to catch concurrent changes
-#   3. Compare fresh digest against token digest → reject if stale
-#   4. Delete dedup CategoryTransactions (source txns whose transactable already has destination)
-#   5. Update remaining source CategoryTransactions → destination
-#   6. Delete dedup BudgetCategories (budgets that have both source and destination)
-#   7. Update remaining source BudgetCategories → destination
-#   8. Refresh destination category counter-caches
-#   9. Destroy source category
-#  10. Persist AuditOperation
+#   2. Serialize the category pair and lock both masters in ID order
+#   3. Inventory and lock the exact source and duplicate-destination joins
+#   4. Re-plan under lock and reject any digest drift
+#   5. Transfer or collapse only the previewed joins
+#   6. Refresh and validate affected Budgets and the final allocation graph
+#   7. Destroy the source and recalculate allocation totals and Budget balances
+#   8. Persist the AuditOperation
 #
 # All write operations use Audit::BulkMutation helpers so PaperTrail versions are
 # recorded for every row touched, maintaining full financial audit trail.
@@ -37,11 +35,12 @@ class CategoryMerges::Apply
     end
   end
 
-  attr_reader :actor, :context, :token, :request_id
+  attr_reader :actor, :context, :source_id, :token, :request_id
 
-  def initialize(actor:, token:, **options)
+  def initialize(actor:, context:, source_id:, token:, **options)
     @actor      = actor
-    @context    = options[:context]
+    @context    = context
+    @source_id  = source_id.to_i
     @token      = token
     @request_id = options[:request_id]
     @confirmed  = ActiveModel::Type::Boolean.new.cast(options.fetch(:confirmed, false))
@@ -68,10 +67,14 @@ class CategoryMerges::Apply
 
   def validate_request!
     reject!(:confirmation_required) unless @confirmed
+    reject!(:context_not_owned) unless context&.user_id == actor.id
 
     @token_payload = CategoryMerges::PreviewToken.verify(token)
     reject!(:invalid_token)        if token_payload.blank?
     reject!(:token_actor_mismatch) unless token_payload["actor_id"] == actor.id
+    reject!(:token_context_mismatch) unless token_payload["context_id"] == context.id
+    reject!(:token_source_mismatch) unless token_payload["source_id"] == source_id
+    reject!(:invalid_mode) unless token_payload["mode"] == "strict"
   end
 
   # --- Transaction ------------------------------------------------------------
@@ -79,6 +82,9 @@ class CategoryMerges::Apply
   def apply_inside_transaction
     applied = nil
     ApplicationRecord.transaction do
+      acquire_advisory_lock!
+      lock_categories!
+      lock_planned_rows!(fresh_plan)
       plan = fresh_plan
       validate_plan!(plan)
       applied = execute_merge!(plan)
@@ -89,6 +95,7 @@ class CategoryMerges::Apply
   def fresh_plan
     CategoryMerges::Planner.new(
       actor:,
+      context:,
       source_id: token_payload["source_id"],
       destination_id: token_payload["destination_id"]
     ).call
@@ -120,44 +127,126 @@ class CategoryMerges::Apply
       # always find a valid operation FK rather than triggering
       # create_unknown_operation! (which would persist with empty metadata).
       operation = Audit::Operation.ensure_persisted!
-      merge_transactions!(source, destination)
-      merge_budget_categories!(source, destination)
-      destination.update_cash_transactions_count_and_total
-      destination.update_card_transactions_count_and_total
+      impacts = impacts_before_merge(plan)
+      apply_exact_rows!(plan, destination)
+      refresh_affected_budgets!(plan, impacts)
+      validate_final_graph!(plan, destination)
       source.destroy!
+      AllocationMutations::ImpactRecalculator.new(actor:, context:, impacts:).call
     end
 
     result(status: :applied, operation:, plan:)
   end
 
-  # Handles CategoryTransaction deduplication then reassignment.
-  def merge_transactions!(source, destination)
-    dedup_scope = CategoryTransaction
-                  .where(category: source)
-                  .where(
-                    "EXISTS (
-          SELECT 1 FROM category_transactions ct2
-          WHERE ct2.category_id = ?
-            AND ct2.transactable_type = category_transactions.transactable_type
-            AND ct2.transactable_id   = category_transactions.transactable_id
-        )",
-                    destination.id
-                  )
-
-    dedup_scope.find_each(&:destroy!)
-    Audit::BulkMutation.update_all!(CategoryTransaction.where(category: source), category_id: destination.id)
+  def apply_exact_rows!(plan, destination)
+    destroy_exact_rows!(plan.collapse_rows)
+    transfer_exact_rows!(plan.transfer_rows, destination)
   end
 
-  # Handles BudgetCategory deduplication then reassignment.
-  def merge_budget_categories!(source, destination)
-    conflicting_budget_ids = BudgetCategory
-                             .where(category: destination)
-                             .where(budget_id: BudgetCategory.where(category: source).select(:budget_id))
-                             .pluck(:budget_id)
+  def destroy_exact_rows!(row_plans)
+    row_plans.group_by { |row_plan| row_plan.row.class.base_class }.each do |model, plans|
+      model.where(id: plans.map { |row_plan| row_plan.row.id }).order(:id).each(&:destroy!)
+    end
+  end
 
-    BudgetCategory.where(category: source, budget_id: conflicting_budget_ids).find_each(&:destroy!) if conflicting_budget_ids.any?
+  def transfer_exact_rows!(row_plans, destination)
+    row_plans.group_by { |row_plan| row_plan.row.class.base_class }.each do |model, plans|
+      Audit::BulkMutation.update_all!(model.where(id: plans.map { |row_plan| row_plan.row.id }), category_id: destination.id)
+    end
+  end
 
-    Audit::BulkMutation.update_all!(BudgetCategory.where(category: source), category_id: destination.id)
+  def impacts_before_merge(plan)
+    policy_owners(plan).filter_map do |owner|
+      next unless owner.is_a?(CashTransaction) || owner.is_a?(CardTransaction) || owner.is_a?(Budget)
+
+      category_ids_before = AllocationMutations::OwnerAdapter.for(owner).category_ids
+      AllocationMutations::Impact.build(
+        owner:,
+        category_ids_before:,
+        category_ids_after: (category_ids_before - [ plan.source.id ]) | [ plan.destination.id ]
+      )
+    end
+  end
+
+  def refresh_affected_budgets!(plan, impacts)
+    budget_impacts = impacts.select { |impact| impact.owner_type == "Budget" }.index_by(&:owner_id)
+    policy_owners(plan).grep(Budget).each do |budget|
+      inputs_before = [ budget.value, budget.remaining_value ]
+      budget.reload
+      budget.refresh_description_from_allocations
+      budget.recalculate_balance = false
+      budget.save!
+      impact = budget_impacts.fetch(budget.id)
+      budget_impacts[budget.id] = impact.with(balance_recalculation_required: inputs_before != [ budget.value, budget.remaining_value ])
+    end
+
+    impacts.replace(
+      impacts.map do |impact|
+        impact.owner_type == "Budget" ? budget_impacts.fetch(impact.owner_id) : impact
+      end
+    )
+  end
+
+  def policy_owners(plan)
+    plan.row_plans.filter_map { |row_plan| MasterRecordMerges::AllocationOwner.resolve(row_plan.row).record }.uniq { |owner| [ owner.class.base_class.name, owner.id ] }
+  end
+
+  def validate_final_graph!(plan, destination)
+    reject!(:stale_preview) if CategoryTransaction.where(category_id: plan.source.id).exists? || BudgetCategory.where(category_id: plan.source.id).exists?
+
+    plan.row_plans.each do |row_plan|
+      row = row_plan.row.class.base_class.find_by(id: row_plan.row.id)
+      if row_plan.status == :collapse
+        reject!(:validation_failed) if row.present?
+      elsif row.blank? || row.category_id != destination.id
+        reject!(:validation_failed)
+      end
+    end
+
+    validate_category_transaction_uniqueness!(plan)
+    validate_budget_category_uniqueness!(plan)
+  end
+
+  def validate_category_transaction_uniqueness!(plan)
+    owner_keys = plan.row_plans.filter_map do |row_plan|
+      row = row_plan.row
+      [ row.transactable_type, row.transactable_id ] if row.is_a?(CategoryTransaction)
+    end
+    duplicates = owner_keys.any? do |transactable_type, transactable_id|
+      CategoryTransaction.where(category_id: plan.destination.id, transactable_type:, transactable_id:).count != 1
+    end
+    reject!(:validation_failed) if duplicates
+  end
+
+  def validate_budget_category_uniqueness!(plan)
+    budget_ids = plan.row_plans.filter_map { |row_plan| row_plan.row.budget_id if row_plan.row.is_a?(BudgetCategory) }
+    duplicates = budget_ids.any? { |budget_id| BudgetCategory.where(category_id: plan.destination.id, budget_id:).count != 1 }
+    reject!(:validation_failed) if duplicates
+  end
+
+  # --- Locking ---------------------------------------------------------------
+
+  def acquire_advisory_lock!
+    connection = Category.connection
+    category_ids = [ token_payload["source_id"], token_payload["destination_id"] ].sort.join(":")
+    lock_key = connection.quote("category-merge:#{actor.id}:#{context.id}:#{category_ids}")
+    connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(#{lock_key}, 0))")
+  end
+
+  def lock_categories!
+    locked_ids = Category.where(id: [ token_payload["source_id"], token_payload["destination_id"] ]).order(:id).lock.ids
+    reject!(:stale_preview) unless locked_ids.sort == [ token_payload["source_id"], token_payload["destination_id"] ].sort
+  end
+
+  def lock_planned_rows!(plan)
+    lock_row_model!(CategoryTransaction, plan)
+    lock_row_model!(BudgetCategory, plan)
+  end
+
+  def lock_row_model!(model, plan)
+    row_ids = plan.row_plans.filter_map { |row_plan| row_plan.row.id if row_plan.row.is_a?(model) }
+    destination_ids = plan.row_plans.filter_map { |row_plan| row_plan.details[:destination_row_id] if row_plan.row.is_a?(model) }
+    model.where(id: row_ids + destination_ids).order(:id).lock.load
   end
 
   # --- Audit metadata ---------------------------------------------------------

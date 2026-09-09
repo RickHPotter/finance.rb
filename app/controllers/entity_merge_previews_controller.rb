@@ -8,7 +8,7 @@ class EntityMergePreviewsController < ApplicationController
 
   def create
     @destinations = load_destinations
-    plan = build_plan
+    plan = build_plan if merge_params[:destination_id].present?
 
     respond_to do |format|
       format.html { render Views::EntityMerges::Preview.new(source: @source, plan:, destinations: @destinations, return_to: return_to_path) }
@@ -18,7 +18,7 @@ class EntityMergePreviewsController < ApplicationController
           Views::EntityMerges::Preview.new(source: @source, plan:, destinations: @destinations, return_to: return_to_path, frame_only: true)
         )
       end
-      format.json { render json: plan_payload(plan) }
+      format.json { plan ? render(json: plan_payload(plan)) : head(:bad_request) }
     end
   rescue ActionController::ParameterMissing, ArgumentError
     head :bad_request
@@ -27,16 +27,20 @@ class EntityMergePreviewsController < ApplicationController
   private
 
   def load_destinations
-    current_user.entities
-                .where(active: true, built_in: false)
-                .where.not(id: @source.id)
-                .order(:entity_name)
+    scope = current_user.entities.where(active: true, built_in: false).where.not(id: @source.id)
+    scope = if @source.friendship_id.present?
+              scope.where_entity_user_id(@source.entity_user_id)
+            else
+              scope.where(friendship_id: nil)
+            end
+    scope.order(:entity_name)
   end
 
   def build_plan
     mode = (merge_params[:mode].presence || "strict").to_sym
     EntityMerges::Planner.new(
       actor: current_user,
+      context: current_context,
       source_id: @source.id,
       destination_id: merge_params[:destination_id],
       mode:
@@ -54,7 +58,7 @@ class EntityMergePreviewsController < ApplicationController
   end
 
   def return_to_path
-    merge_params[:return_to].presence || entities_path
+    Navigation::Entities.new(raw: merge_params[:return_to], fallback: entities_path, current_user:).destination
   end
 
   def plan_payload(plan)
@@ -63,7 +67,8 @@ class EntityMergePreviewsController < ApplicationController
       transaction_reassign_count: plan.transaction_reassign_count,
       transaction_dedup_count: plan.transaction_dedup_count,
       budget_reassign_count: plan.budget_reassign_count,
-      budget_dedup_count: plan.budget_dedup_count
+      budget_dedup_count: plan.budget_dedup_count,
+      conflict_count: plan.conflict_rows.size
     }
   end
 

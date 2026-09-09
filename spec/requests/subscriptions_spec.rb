@@ -91,6 +91,21 @@ RSpec.describe "Subscriptions", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "finds subscriptions with normalized description or comment text" do
+      by_description = create(:subscription, user:, context: user.main_context, description: "MÚSICA   CLÁSSICA", comment: "Other")
+      by_comment = create(:subscription, user:, context: user.main_context, description: "Other", comment: "EDIÇÃO   ANUAL")
+
+      get subscriptions_path(search_term: "  musica classica ")
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.at_css("#show_subscription_#{by_description.id}")).to be_present
+      expect(response.parsed_body.at_css("#show_subscription_#{by_comment.id}")).to be_nil
+
+      get subscriptions_path(search_term: "edicao anual")
+
+      expect(response.parsed_body.at_css("#show_subscription_#{by_comment.id}")).to be_present
+    end
+
     it "renders destroy action only for subscriptions without linked transactions" do
       destroyable_subscription = create(:subscription, user:, context: user.main_context)
       locked_subscription = create(:subscription, user:, context: user.main_context)

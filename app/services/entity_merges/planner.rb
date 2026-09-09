@@ -6,16 +6,21 @@
 # for monetary, payer, exchange, piggy bank, and structural conflicts.
 # Supports both :strict and :eligible_only modes.
 class EntityMerges::Planner
-  attr_reader :actor, :source_id, :destination_id, :mode
+  VALID_MODES = %i[strict eligible_only].freeze
 
-  def initialize(actor:, source_id:, destination_id:, mode: :strict)
+  attr_reader :actor, :context, :source_id, :destination_id, :mode
+
+  def initialize(actor:, context:, source_id:, destination_id:, mode:)
     @actor = actor
+    @context = context
     @source_id = source_id.to_i
     @destination_id = destination_id.to_i
-    @mode = mode.to_sym
+    @mode = mode&.to_sym
   end
 
   def call
+    return conflict(:context_not_owned) unless context&.user_id == actor.id
+    return conflict(:invalid_mode) unless mode.in?(VALID_MODES)
     return noop(:same_entity) if source_id == destination_id
 
     err = validate_entities
@@ -43,11 +48,8 @@ class EntityMerges::Planner
   end
 
   def validate_friend_guard
-    # Merging friend-backed entity into a non-friend entity (or vice versa),
-    # or merging friends that represent different users is a hard conflict.
     return unless source.friendship_id.present? || destination.friendship_id.present?
-
-    return conflict(:cross_user_friend_entity) unless source.friendship_id == destination.friendship_id
+    return conflict(:cross_user_friend_entity) unless source.entity_user_id.present? && source.entity_user_id == destination.entity_user_id
 
     nil
   end
@@ -60,10 +62,11 @@ class EntityMerges::Planner
     conflict_rows = []
 
     classify_entity_transactions(transfer_rows, collapse_rows, conflict_rows)
-    classify_budget_entities(transfer_rows, collapse_rows)
+    classify_budget_entities(transfer_rows, collapse_rows, conflict_rows)
 
     EntityMerges::Plan.new(
       actor:,
+      context:,
       source:,
       destination:,
       mode:,
@@ -75,75 +78,151 @@ class EntityMerges::Planner
   end
 
   def classify_entity_transactions(transfer, collapse, conflict)
-    # Preload exchanges to avoid N+1 during neutrality check
     source.entity_transactions.includes(:exchanges, :transactable).find_each do |entity_transaction|
-      reason = transaction_conflict_reason(entity_transaction)
-      if reason
-        conflict << row_plan(entity_transaction, :conflict, reason)
-      elsif entity_transaction.transactable.nil? || destination_transaction_exists?(entity_transaction)
-        collapse << row_plan(entity_transaction, :collapse)
+      destination_row = destination_transaction(entity_transaction)
+      policy_conflict = conflict_for(entity_transaction, destination_row:)
+      if policy_conflict
+        conflict << row_plan(entity_transaction, :conflict, policy_conflict.fetch(:reason_code), policy_conflict.fetch(:details, {}))
+      elsif destination_row
+        collapse << row_plan(entity_transaction, :collapse, nil, row_details(entity_transaction, destination_row_id: destination_row.id))
       else
-        transfer << row_plan(entity_transaction, :transfer)
+        transfer << row_plan(entity_transaction, :transfer, nil, row_details(entity_transaction))
       end
     end
   end
 
-  def classify_budget_entities(transfer, collapse)
-    BudgetEntity.where(entity: source).find_each do |budget_entity|
-      if destination_budget_entity_exists?(budget_entity)
-        collapse << row_plan(budget_entity, :collapse)
+  def classify_budget_entities(transfer, collapse, conflict)
+    BudgetEntity.where(entity: source).includes(:budget).find_each do |budget_entity|
+      destination_row = destination_budget_entity(budget_entity)
+      policy_conflict = conflict_for(budget_entity, destination_row:)
+      if policy_conflict
+        conflict << row_plan(budget_entity, :conflict, policy_conflict.fetch(:reason_code), policy_conflict.fetch(:details, {}))
+      elsif destination_row
+        collapse << row_plan(budget_entity, :collapse, nil, row_details(budget_entity, destination_row_id: destination_row.id))
       else
-        transfer << row_plan(budget_entity, :transfer)
+        transfer << row_plan(budget_entity, :transfer, nil, row_details(budget_entity))
       end
     end
   end
 
   # --- Conflict Rules ---------------------------------------------------------
 
-  def transaction_conflict_reason(entity_txn)
-    return :payer_entity if entity_txn.is_payer?
-    return :monetary_entity if entity_txn.price.to_i.nonzero? || entity_txn.price_to_be_returned.to_i.nonzero?
-    return :exchange_entity if entity_txn.exchanges.any?
-    return :piggy_bank_entity if piggy_bank_entity?(entity_txn)
+  def conflict_for(row, destination_row:)
+    reason_code = context_conflict_for(row)
+    return conflict_details(row, reason_code) if reason_code
 
-    # If source is neutral (passed above checks), but destination is also present
-    # on this transaction and is NON-NEUTRAL, it's fine. We just collapse the source.
-    # However, if both were non-neutral, it would fail the above checks anyway.
-    # So we don't need a specific :same_transaction_conflict check here,
-    # unless we want to prioritize that reason code. The contract says:
-    # "Both source and destination exist on the same transaction as non-neutral rows -> :same_transaction_conflict"
-    # But since we evaluate per-row, if the source is non-neutral it will already be caught by :payer/:monetary.
+    owner = MasterRecordMerges::AllocationOwner.resolve(row).record
+    owner_policy_conflict(row, owner, destination_row:)
+  end
+
+  def owner_policy_conflict(row, owner, destination_row:)
+    return conflict_details(row, :subscription_owned_entity, subscription_id: owner.id) if owner.is_a?(Subscription)
+    return budget_policy_conflict(row, owner) if owner.is_a?(Budget)
+    return conflict_details(row, :unsupported_owner) unless owner.is_a?(CashTransaction) || owner.is_a?(CardTransaction)
+
+    transaction_policy_conflict(row, owner, destination_row:)
+  end
+
+  def transaction_policy_conflict(row, owner, destination_row:)
+    structural_family = protected_structural_family(owner)
+    return conflict_details(row, structural_reason(structural_family), family: structural_family) if structural_family
+
+    source_reasons = AllocationMutations::EntityNeutrality.reasons(row)
+    destination_reasons = destination_row.is_a?(EntityTransaction) ? AllocationMutations::EntityNeutrality.reasons(destination_row) : []
+    if destination_reasons.any?
+      return conflict_details(row, :same_transaction_conflict, destination_row_id: destination_row.id, source_reasons:, destination_reasons:)
+    end
+    return if source_reasons.empty?
+
+    conflict_details(row, neutrality_reason(source_reasons), reasons: source_reasons)
+  end
+
+  def protected_structural_family(owner)
+    AllocationMutations::StructuralFamily.call(owner).find do |family|
+      family.in?(AllocationMutations::EntityPlanner::STRUCTURAL_FAMILIES) || family == :subscription_owned
+    end
+  end
+
+  def structural_reason(family)
+    return :subscription_owned_entity if family.in?(%i[subscription subscription_owned])
+    return :piggy_bank_entity if family.in?(%i[piggy_bank piggy_bank_return])
+    return :exchange_entity if family.in?(%i[exchange exchange_return borrow_return failed_return])
+
+    :generated_family_entity
+  end
+
+  def neutrality_reason(reasons)
+    return :payer_entity if reasons.include?(:payer)
+    return :monetary_entity if reasons.intersect?(%i[price return])
+    return :exchange_entity if reasons.include?(:exchanges)
+
+    :entity_allocation_not_neutral
+  end
+
+  def budget_policy_conflict(row, budget)
+    adapter = AllocationMutations::OwnerAdapter.for(budget)
+    final_state = AllocationMutations::BudgetFinalState.new(
+      budget:,
+      category_ids: adapter.category_ids,
+      entity_ids: (adapter.entity_ids - [ source_id ]) | [ destination_id ]
+    )
+    return if final_state.valid?
+
+    conflict_details(row, :invalid_final_state, errors: final_state.errors)
+  end
+
+  def conflict_details(row, reason_code, details = {})
+    {
+      reason_code:,
+      details: row_details(row, **details)
+    }
+  end
+
+  def row_details(row, **details)
+    identity = MasterRecordMerges::AllocationOwner.resolve(row)
+    details.merge(graph_keys: graph_keys_for(identity.record))
+  end
+
+  def graph_keys_for(owner)
+    graph_keys = Set.new
+    append_graph_keys(graph_keys, owner)
+    graph_keys.to_a.sort.freeze
+  end
+
+  def append_graph_keys(graph_keys, owner)
+    return if owner.blank?
+
+    owner_key = "#{owner.class.base_class.name}:#{owner.id}"
+    return unless graph_keys.add?(owner_key)
+
+    graph_keys << "Subscription:#{owner.subscription_id}" if owner.respond_to?(:subscription_id) && owner.subscription_id.present?
+    append_graph_keys(graph_keys, owner.reference_transactable) if owner.respond_to?(:reference_transactable)
+    append_graph_keys(graph_keys, owner.advance_cash_transaction) if owner.is_a?(CardTransaction) && owner.advance_cash_transaction_id.present?
+  end
+
+  def context_conflict_for(row)
+    identity = MasterRecordMerges::AllocationOwner.resolve(row)
+    return :unsupported_owner unless identity.supported?
+    return :unowned_allocation unless identity.user_id == actor.id
+    return :cross_context_allocation unless identity.context_id == context.id
 
     nil
   end
 
-  def piggy_bank_entity?(entity_txn)
-    # KAKASHI-18 contract: Source row is the Piggy Bank shared entity.
-    return false unless entity_txn.transactable.is_a?(CashTransaction)
-
-    entity_txn.transactable.piggy_bank_source? || entity_txn.transactable.piggy_bank_return?
+  def destination_transaction(entity_txn)
+    EntityTransaction.find_by(
+      entity: destination,
+      transactable_type: entity_txn.transactable_type,
+      transactable_id: entity_txn.transactable_id
+    )
   end
 
-  def destination_transaction_exists?(entity_txn)
-    @dest_et_map ||= EntityTransaction
-                     .where(entity: destination)
-                     .pluck(:transactable_type, :transactable_id)
-                     .to_set
-
-    @dest_et_map.include?([ entity_txn.transactable_type, entity_txn.transactable_id ])
+  def destination_budget_entity(budget_entity)
+    BudgetEntity.find_by(entity: destination, budget_id: budget_entity.budget_id)
   end
 
-  def destination_budget_entity_exists?(budget_entity)
-    @dest_be_map ||= BudgetEntity
-                     .where(entity: destination)
-                     .pluck(:budget_id)
-                     .to_set
-
-    @dest_be_map.include?(budget_entity.budget_id)
-  end
-
-  def row_plan(row, status, reason_code = nil)
-    EntityMerges::Plan::RowPlan.new(row:, status:, reason_code:)
+  def row_plan(row, status, reason_code = nil, details = {})
+    EntityMerges::Plan::RowPlan.new(row:, status:, reason_code:, details:)
   end
 
   # --- Top-level Helpers ------------------------------------------------------
@@ -159,6 +238,7 @@ class EntityMerges::Planner
   def conflict(reason_code)
     EntityMerges::Plan.new(
       actor:,
+      context:,
       source: source || stub_entity(source_id),
       destination: destination || stub_entity(destination_id),
       mode:,
@@ -170,6 +250,7 @@ class EntityMerges::Planner
   def noop(reason_code)
     EntityMerges::Plan.new(
       actor:,
+      context:,
       source: stub_entity(source_id),
       destination: stub_entity(destination_id),
       mode:,

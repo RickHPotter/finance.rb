@@ -7,11 +7,12 @@ class EntityMergesController < ApplicationController
   before_action :set_basic_tabs
 
   def create
-    mode = (params[:mode].presence || "strict").to_sym
+    mode = params[:mode]&.to_sym
 
     result = EntityMerges::Apply.new(
       actor: current_user,
       context: current_context,
+      source_id: @source.id,
       request_id: request.request_id,
       token: params[:merge_token],
       mode:,
@@ -79,7 +80,7 @@ class EntityMergesController < ApplicationController
   end
 
   def return_to_path
-    params[:return_to].presence || entities_path
+    Navigation::Entities.new(raw: params[:return_to], fallback: entities_path, current_user:).destination
   end
 
   def set_basic_tabs

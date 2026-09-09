@@ -19,8 +19,10 @@ class CategoryMerges::PreviewToken
       verifier.generate(
         {
           actor_id: plan.actor.id,
+          context_id: plan.context.id,
           source_id: plan.source.id,
           destination_id: plan.destination.id,
+          mode: "strict",
           digest: plan.digest
         },
         expires_in: EXPIRES_IN,

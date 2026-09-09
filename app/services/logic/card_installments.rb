@@ -32,8 +32,9 @@ module Logic
                                 .includes(inclusions)
                                 .left_joins(joins)
                                 .where(conditions)
-                                .where("card_transactions.description ILIKE ?", "%#{search_term}%")
                                 .where("installments.year = ? AND installments.month = ?", year, month)
+
+      relation = Search::NormalizedText.apply(relation, search_term, "card_transactions.description")
 
       relation = relation.where(card_transaction_id: financial_scope.card_transactions.subscription_candidates.select(:id)) if attach_to_subscription_id.present?
 
@@ -139,7 +140,7 @@ module Logic
       relation = financial_scope.card_installments
                                 .left_joins({ card_transaction: %i[categories entities] })
                                 .where(conditions)
-                                .where("card_transactions.description ILIKE ?", "%#{search_term}%")
+      relation = Search::NormalizedText.apply(relation, search_term, "card_transactions.description")
 
       relation = relation.where(card_transaction_id: financial_scope.card_transactions.subscription_candidates.select(:id)) if attach_to_subscription_id.present?
 
