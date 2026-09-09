@@ -31,7 +31,7 @@ RSpec.describe "Entities", type: :request do
   end
 
   describe "[ #show ]" do
-    it "renders entity details and the pie sections scoped to the current context" do
+    it "renders entity details with a restorable lazy trend and context-scoped report data" do
       entity = create(:entity, user:, entity_name: "GIGI")
       scenario_context = create(:context, user:, name: "Scenario Entity", source_context: user.main_context)
       scenario_category = create(
@@ -64,21 +64,37 @@ RSpec.describe "Entities", type: :request do
       create(:category_transaction, transactable: scenario_card, category: scenario_category)
 
       patch switch_context_path(scenario_context)
-      get entity_path(entity)
+      report_params = {
+        from_date: "2026-04-01",
+        to_date: "2026-04-30",
+        granularity: "day",
+        paid_state: "all",
+        direction: "outcome"
+      }
+      get entity_path(entity), params: report_params
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Details")
-      expect(response.body).to include("Scenario Category")
-      expect(response.body).not_to include("Main Category")
       expect(response.body).to include("User Bank Accounts")
       expect(response.body).to include("User Cards")
 
-      counterpart_payload = pie_payloads(response.body).fetch("counterpart")
-      expect(counterpart_payload.fetch("filterOptions").pluck("label")).to include("Bank Account: 99PAY", "User Card: 99PAY")
-      expect(counterpart_payload.fetch("entries").pluck("name")).to include("Scenario Category")
-      scenario_entry = counterpart_payload.fetch("entries").find { |entry| entry.fetch("name") == "Scenario Category" }
+      trend = response.parsed_body.at_css("[data-controller~='allocation-trend']")
+      expect(trend).to be_present
+      expect(trend["data-allocation-trend-url-value"]).to eq(entity_trend_path(entity))
+      expect(trend.at_css("#entity_#{entity.id}_trend_from_date")["value"]).to eq("2026-04-01")
+      expect(trend.at_css("#entity_#{entity.id}_trend_to_date")["value"]).to eq("2026-04-30")
+      expect(trend.at_css("#entity_#{entity.id}_trend_granularity option[selected]")["value"]).to eq("day")
+      expect(trend.at_css("#entity_#{entity.id}_trend_direction option[selected]")["value"]).to eq("outcome")
+      expect(response.parsed_body.at_css("[data-pie-breakdown-chart-data-value*='counterpart']")).to be_nil
+
+      get entity_trend_path(entity), params: report_params
+
+      payload = response.parsed_body
+      expect(payload.dig("summary", "net_cents")).to eq(-8_000)
+      expect(payload.fetch("breakdowns").pluck("label")).to all(include("Scenario Category"))
+      expect(payload.to_json).not_to include("Main Category")
+      scenario_entry = payload.fetch("breakdowns").find { |entry| entry.fetch("label") == "Scenario Category" }
       expect(scenario_entry).to include(
-        "colour" => "#ffffff",
         "background" => "#ffffff",
         "foreground" => "#767676"
       )
@@ -191,13 +207,6 @@ RSpec.describe "Entities", type: :request do
       expect do
         delete entity_path(entity), headers: turbo_stream_headers
       end.not_to change(Entity, :count)
-    end
-  end
-
-  def pie_payloads(body)
-    body.scan(/data-pie-breakdown-chart-data-value="([^"]+)"/).to_h do |(value)|
-      payload = JSON.parse(CGI.unescapeHTML(value))
-      [ payload.fetch("kind"), payload ]
     end
   end
 end

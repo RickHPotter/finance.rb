@@ -1,5 +1,40 @@
 en:
   reports:
+    allocation_trend:
+      title: "Income and outcome trend"
+      timeline: "Movement over time"
+      chart_label: "Income and outcome by selected period"
+      buckets: "Period breakdown"
+      breakdowns: "Allocation breakdown"
+      income: "Income"
+      outcome: "Outcome"
+      net: "Net"
+      cash: "Cash"
+      card: "Card"
+      chunk: "part"
+      no_sources: "No source records"
+      loading: "Loading report…"
+      empty: "No ordinary movement matches this report range."
+      error: "The report could not be loaded."
+      retry: "Try again"
+      controls:
+        from_date: "From"
+        to_date: "To"
+        granularity: "Group by"
+        paid_state: "Payment state"
+        direction: "Direction"
+      options:
+        granularity:
+          day: "Day"
+          month: "Month"
+        paid_state:
+          all: "All"
+          paid: "Paid"
+          pending: "Pending"
+        direction:
+          all: "Income and outcome"
+          income: "Income"
+          outcome: "Outcome"
     errors:
       invalid_date: "Use a valid date in YYYY-MM-DD format."
       invalid_range: "The report start date must be on or before its end date."
@@ -10,6 +45,41 @@ en:
       invalid_sort: "Select a valid report order."
 pt-BR:
   reports:
+    allocation_trend:
+      title: "Tendência de receitas e despesas"
+      timeline: "Movimentação ao longo do tempo"
+      chart_label: "Receitas e despesas por período selecionado"
+      buckets: "Detalhamento por período"
+      breakdowns: "Detalhamento por alocação"
+      income: "Receitas"
+      outcome: "Despesas"
+      net: "Saldo"
+      cash: "Dinheiro"
+      card: "Cartão"
+      chunk: "parte"
+      no_sources: "Nenhum registro de origem"
+      loading: "Carregando relatório…"
+      empty: "Nenhuma movimentação comum corresponde ao período selecionado."
+      error: "Não foi possível carregar o relatório."
+      retry: "Tentar novamente"
+      controls:
+        from_date: "De"
+        to_date: "Até"
+        granularity: "Agrupar por"
+        paid_state: "Situação do pagamento"
+        direction: "Direção"
+      options:
+        granularity:
+          day: "Dia"
+          month: "Mês"
+        paid_state:
+          all: "Todos"
+          paid: "Pago"
+          pending: "Pendente"
+        direction:
+          all: "Receitas e despesas"
+          income: "Receitas"
+          outcome: "Despesas"
     errors:
       invalid_date: "Use uma data válida no formato AAAA-MM-DD."
       invalid_range: "A data inicial do relatório deve ser anterior ou igual à data final."
@@ -18,4 +88,3 @@ pt-BR:
       invalid_paid_state: "Selecione uma situação de pagamento válida."
       invalid_direction: "Selecione uma direção de movimentação válida."
       invalid_sort: "Selecione uma ordenação válida para o relatório."
-
