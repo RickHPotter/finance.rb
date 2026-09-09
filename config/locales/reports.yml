@@ -1,0 +1,21 @@
+en:
+  reports:
+    errors:
+      invalid_date: "Use a valid date in YYYY-MM-DD format."
+      invalid_range: "The report start date must be on or before its end date."
+      range_too_large: "The selected report range is too large."
+      invalid_granularity: "Select a valid report granularity."
+      invalid_paid_state: "Select a valid payment state."
+      invalid_direction: "Select a valid movement direction."
+      invalid_sort: "Select a valid report order."
+pt-BR:
+  reports:
+    errors:
+      invalid_date: "Use uma data válida no formato AAAA-MM-DD."
+      invalid_range: "A data inicial do relatório deve ser anterior ou igual à data final."
+      range_too_large: "O período selecionado para o relatório é muito extenso."
+      invalid_granularity: "Selecione uma granularidade válida para o relatório."
+      invalid_paid_state: "Selecione uma situação de pagamento válida."
+      invalid_direction: "Selecione uma direção de movimentação válida."
+      invalid_sort: "Selecione uma ordenação válida para o relatório."
+
