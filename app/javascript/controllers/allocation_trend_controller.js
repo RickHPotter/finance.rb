@@ -27,7 +27,9 @@ export default class extends Controller {
     "summaryNet",
     "chartCanvas",
     "bucketList",
-    "breakdownList"
+    "breakdownList",
+    "paymentStateList",
+    "balanceContext"
   ]
 
   connect() {
@@ -127,6 +129,8 @@ export default class extends Controller {
     }
 
     this.renderSummary(payload.summary)
+    if (this.hasPaymentStateListTarget) this.renderEntries(this.paymentStateListTarget, payload.payment_states || [], "breakdown")
+    if (this.hasBalanceContextTarget) this.renderBalanceContext(payload.balance_context)
     this.renderChart(payload.buckets)
     this.renderEntries(this.bucketListTarget, payload.buckets, "bucket")
     this.renderEntries(this.breakdownListTarget, payload.breakdowns, "breakdown")
@@ -237,6 +241,47 @@ export default class extends Controller {
     })
   }
 
+  renderBalanceContext(context) {
+    this.balanceContextTarget.replaceChildren()
+    this.balanceContextTarget.appendChild(this.balanceCard(this.label("current_account_balance"), context?.account_balance_cents))
+
+    if (!context?.first_recorded) {
+      this.balanceContextTarget.appendChild(this.balanceCard(this.label("no_recorded_balance"), null))
+      return
+    }
+
+    this.balanceContextTarget.append(
+      this.recordedBalanceCard(this.label("first_recorded"), context.first_recorded),
+      this.recordedBalanceCard(this.label("latest_recorded"), context.latest_recorded)
+    )
+  }
+
+  balanceCard(labelText, amountCents, detail = null) {
+    const card = document.createElement("div")
+    card.className = "rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900"
+    const label = document.createElement("p")
+    label.className = "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
+    label.textContent = labelText
+    const amount = document.createElement("p")
+    amount.className = "mt-2 text-lg font-bold text-slate-950 dark:text-slate-100"
+    amount.textContent = amountCents === null || amountCents === undefined ? "—" : this.formatCents(amountCents)
+    card.append(label, amount)
+
+    if (detail) {
+      const description = document.createElement("p")
+      description.className = "mt-1 text-xs text-slate-500 dark:text-slate-400"
+      description.textContent = detail
+      card.appendChild(description)
+    }
+
+    return card
+  }
+
+  recordedBalanceCard(labelText, record) {
+    const detail = `${this.label("recorded_on")} ${this.formatDate(record.occurred_on)}`
+    return this.balanceCard(labelText, record.amount_cents, detail)
+  }
+
   entryLabel(entry, kind) {
     const wrapper = document.createElement("div")
     wrapper.className = "flex min-w-0 items-center gap-2"
@@ -325,21 +370,33 @@ export default class extends Controller {
     return new Intl.DateTimeFormat(this.localeValue, options).format(date)
   }
 
+  formatDate(value) {
+    return new Intl.DateTimeFormat(this.localeValue, { dateStyle: "medium" }).format(new Date(`${value}T12:00:00`))
+  }
+
   formatCents(value) {
     return this.formatCurrency((Number(value) || 0) / 100)
   }
 
   formatCurrency(value) {
-    return new Intl.NumberFormat(this.localeValue, { style: "currency", currency: this.currencyValue }).format(Number(value) || 0)
+    const number = Number(value) || 0
+    const currency = new Intl.NumberFormat(this.localeValue, { style: "currency", currency: this.currencyValue })
+      .formatToParts(0)
+      .find((part) => part.type === "currency")?.value || this.currencyValue
+    const amount = new Intl.NumberFormat(this.localeValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(number))
+    return `${currency} ${number < 0 ? "-" : ""}${amount}`
   }
 
   formatCompactCurrency(value) {
-    return new Intl.NumberFormat(this.localeValue, {
-      style: "currency",
-      currency: this.currencyValue,
+    const number = Number(value) || 0
+    const currency = new Intl.NumberFormat(this.localeValue, { style: "currency", currency: this.currencyValue })
+      .formatToParts(0)
+      .find((part) => part.type === "currency")?.value || this.currencyValue
+    const amount = new Intl.NumberFormat(this.localeValue, {
       notation: "compact",
       maximumFractionDigits: 1
-    }).format(Number(value) || 0)
+    }).format(Math.abs(number))
+    return `${currency} ${number < 0 ? "-" : ""}${amount}`
   }
 
   applyNetTone(element, value) {
@@ -432,4 +489,3 @@ export default class extends Controller {
     return this.labelsValue[key] || key
   }
 }
-

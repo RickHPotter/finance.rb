@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 class Views::Shared::AllocationTrend < Views::Base
-  attr_reader :url, :query_state, :prefix
+  attr_reader :url, :query_state, :prefix, :translation_scope, :supplementary_sections
 
-  def initialize(url:, query_state:, prefix:)
+  def initialize(url:, query_state:, prefix:, translation_scope: "reports.allocation_trend", supplementary_sections: [])
     @url = url
     @query_state = query_state
     @prefix = prefix
+    @translation_scope = translation_scope
+    @supplementary_sections = supplementary_sections.map(&:to_sym)
   end
 
   def view_template
@@ -46,7 +48,7 @@ class Views::Shared::AllocationTrend < Views::Base
     id = "#{prefix}_#{name}"
 
     div do
-      label(for: id, class: control_label_class) { I18n.t("reports.allocation_trend.controls.#{name}") }
+      label(for: id, class: control_label_class) { translate("controls.#{name}") }
       input(
         id:,
         type: :date,
@@ -64,7 +66,7 @@ class Views::Shared::AllocationTrend < Views::Base
     id = "#{prefix}_#{name}"
 
     div do
-      label(for: id, class: control_label_class) { I18n.t("reports.allocation_trend.controls.#{name}") }
+      label(for: id, class: control_label_class) { translate("controls.#{name}") }
       select(
         id:,
         class: control_input_class,
@@ -74,7 +76,7 @@ class Views::Shared::AllocationTrend < Views::Base
         }
       ) do
         values.each do |value|
-          option(value:, selected: value == selected) { I18n.t("reports.allocation_trend.options.#{name}.#{value}") }
+          option(value:, selected: value == selected) { translate("options.#{name}.#{value}") }
         end
       end
     end
@@ -86,7 +88,7 @@ class Views::Shared::AllocationTrend < Views::Base
              "dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-400",
       role: :status,
       data: { allocation_trend_target: "loadingState" }
-    ) { I18n.t("reports.allocation_trend.loading") }
+    ) { translate(:loading) }
   end
 
   def error_state
@@ -97,14 +99,14 @@ class Views::Shared::AllocationTrend < Views::Base
       data: { allocation_trend_target: "errorState" }
     ) do
       p(class: "text-sm font-semibold text-rose-700 dark:text-rose-300", data: { allocation_trend_target: "errorMessage" }) do
-        I18n.t("reports.allocation_trend.error")
+        translate(:error)
       end
       button(
         type: :button,
         class: "rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 " \
                "dark:border-rose-800 dark:bg-slate-900 dark:text-rose-300 dark:hover:bg-rose-950/50",
         data: { action: "allocation-trend#retry" }
-      ) { I18n.t("reports.allocation_trend.retry") }
+      ) { translate(:retry) }
     end
   end
 
@@ -113,7 +115,7 @@ class Views::Shared::AllocationTrend < Views::Base
       class: "hidden min-h-64 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/70 px-4 text-center text-sm text-slate-500 " \
              "dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-400",
       data: { allocation_trend_target: "emptyState" }
-    ) { I18n.t("reports.allocation_trend.empty") }
+    ) { translate(:empty) }
   end
 
   def report_content
@@ -124,14 +126,16 @@ class Views::Shared::AllocationTrend < Views::Base
         summary_card(:net, "text-slate-950 dark:text-slate-100")
       end
 
+      supplementary_report_sections
+
       div(class: "rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950") do
         h3(class: "text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") do
-          I18n.t("reports.allocation_trend.timeline")
+          translate(:timeline)
         end
         div(class: "mt-3 h-80") do
           canvas(
             role: :img,
-            aria: { label: I18n.t("reports.allocation_trend.chart_label") },
+            aria: { label: translate(:chart_label) },
             data: { allocation_trend_target: "chartCanvas" }
           )
         end
@@ -145,26 +149,45 @@ class Views::Shared::AllocationTrend < Views::Base
   def summary_card(name, tone)
     div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900") do
       p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") do
-        I18n.t("reports.allocation_trend.#{name}")
+        translate(name)
       end
       p(class: "mt-2 text-xl font-bold #{tone}", data: { allocation_trend_target: "summary#{name.to_s.camelize}" }) { "--" }
     end
   end
 
-  def report_list(kind, target)
-    section(aria: { labelledby: "#{prefix}_#{kind}_title" }) do
-      h3(id: "#{prefix}_#{kind}_title", class: "text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") do
-        I18n.t("reports.allocation_trend.#{kind}")
+  def supplementary_report_sections
+    report_list(:payment_states_heading, "paymentStateList") if supplementary_sections.include?(:payment_states)
+
+    return unless supplementary_sections.include?(:balance_context)
+
+    section(aria: { labelledby: "#{prefix}_balance_context_heading" }) do
+      h3(id: "#{prefix}_balance_context_heading", class: "text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") do
+        translate(:balance_context_heading)
+      end
+      div(class: "mt-3 grid gap-3 sm:grid-cols-3", data: { allocation_trend_target: "balanceContext" })
+    end
+  end
+
+  def report_list(title_key, target)
+    section(aria: { labelledby: "#{prefix}_#{title_key}" }) do
+      h3(id: "#{prefix}_#{title_key}", class: "text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") do
+        translate(title_key)
       end
       ol(class: "mt-3 grid gap-3", data: { allocation_trend_target: target })
     end
   end
 
   def labels
-    %i[income outcome net cash card no_sources error].index_with { |key| I18n.t("reports.allocation_trend.#{key}") }.merge(
-      chunk: I18n.t("reports.allocation_trend.chunk"),
+    %i[
+      income outcome net cash card no_sources error current_account_balance first_recorded latest_recorded no_recorded_balance recorded_on
+    ].index_with { |key| translate(key, default: key.to_s.humanize) }.merge(
+      chunk: translate(:chunk),
       locale: I18n.locale.to_s
     )
+  end
+
+  def translate(key, **)
+    I18n.t("#{translation_scope}.#{key}", **)
   end
 
   def camelize_target(name)

@@ -44,7 +44,9 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :user_bank_accounts
+  resources :user_bank_accounts do
+    resource :movement, only: :show, controller: "reports/bank_account_movements", defaults: { format: :json }
+  end
   resources :categories do
     resource :trend, only: :show, controller: "reports/category_trends", defaults: { format: :json }
 

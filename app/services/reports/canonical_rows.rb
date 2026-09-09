@@ -2,11 +2,13 @@
 
 module Reports
   class CanonicalRows
-    attr_reader :context, :query_state
+    attr_reader :context, :query_state, :cash_relation, :card_relation
 
-    def initialize(context:, query_state:)
+    def initialize(context:, query_state:, cash_relation: context.cash_installments, card_relation: context.card_installments)
       @context = context
       @query_state = query_state
+      @cash_relation = cash_relation
+      @card_relation = card_relation
     end
 
     def call
@@ -16,15 +18,19 @@ module Reports
     private
 
     def cash_rows
+      return [] if cash_relation.nil?
+
       rows_for(
-        query_state.apply(context.cash_installments).includes(cash_transaction: %i[categories entities]),
+        query_state.apply(cash_relation).includes(cash_transaction: %i[categories entities]),
         transaction_method: :cash_transaction
       )
     end
 
     def card_rows
+      return [] if card_relation.nil?
+
       rows_for(
-        query_state.apply(context.card_installments).includes(card_transaction: %i[categories entities]),
+        query_state.apply(card_relation).includes(card_transaction: %i[categories entities]),
         transaction_method: :card_transaction
       )
     end

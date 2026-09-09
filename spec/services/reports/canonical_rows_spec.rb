@@ -74,6 +74,16 @@ RSpec.describe Reports::CanonicalRows do
     expect(rows.fetch(piggy_bank.id).movement_family).to eq(:piggy_bank)
   end
 
+  it "accepts a bounded cash relation without loading card rows" do
+    included = create_cash_transaction(price: -1_000)
+    create_card_transaction(price: -2_000)
+    cash_relation = context.cash_installments.joins(:cash_transaction).where(cash_transactions: { user_bank_account_id: account.id })
+
+    rows = described_class.new(context:, query_state: month_state, cash_relation:, card_relation: nil).call
+
+    expect(rows.map(&:identity)).to eq([ [ "CashInstallment", included.cash_installments.sole.id ] ])
+  end
+
   private
 
   def month_state
