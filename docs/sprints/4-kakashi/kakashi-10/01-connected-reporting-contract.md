@@ -191,12 +191,15 @@ separate labelled drill-downs:
 - `Card — amount (count)` opens the exact card installments/transactions.
 
 If only one source type contributes, the amount may link directly to that index. A
-combined total must not pretend that one index explains both types.
+combined total must not pretend that one index explains both types. When a finite
+source set exceeds the navigation value limit, it is split into labelled, reconciled
+chunks; the application never emits one oversized URL or truncates the reported
+amount.
 
 Drill-down links use existing bounded relationship filters where possible. A finite
-calculated set uses explicit installment or transaction IDs, subject to the existing
-navigation size limits. Every destination receives a sanitized `return_to` pointing
-to the source dashboard with its validated report state.
+calculated set uses explicit installment or transaction IDs in chunks subject to the
+existing navigation size limits. Every destination receives a sanitized `return_to`
+pointing to the source dashboard with its validated report state.
 
 The following reconciliation must always hold:
 
@@ -260,4 +263,3 @@ calculate financial totals or classify rows.
 - new allocation/proration semantics;
 - changes to transaction or actionable-message mutation rules; and
 - cosmetic replacement of every existing chart before its data contract is migrated.
-

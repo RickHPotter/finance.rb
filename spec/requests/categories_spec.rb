@@ -98,6 +98,36 @@ RSpec.describe "Categories", type: :request do
     end
   end
 
+  describe "[ #trend ]" do
+    it "returns a context-scoped category trend payload" do
+      category = create(:category, user:, category_name: "REPORT FOOD")
+      transaction = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, date: Date.new(2026, 7, 10), month: 7, year: 2026,
+                                              price: -1_500)
+      create(:category_transaction, transactable: transaction, category:)
+
+      get category_trend_path(category), params: { from_date: "2026-07-01", to_date: "2026-07-31" }
+
+      expect(response).to have_http_status(:success)
+      expect(response.media_type).to eq("application/json")
+      expect(response.parsed_body).to include(
+        "resource" => { "type" => "Category", "id" => category.id, "label" => "REPORT FOOD" },
+        "summary" => include("net_cents" => -1_500)
+      )
+    end
+
+    it "rejects invalid report state and categories owned by another user" do
+      category = create(:category, user:)
+      foreign_category = create(:category, user: create(:user, :random))
+
+      get category_trend_path(category), params: { from_date: "2026-09-01", to_date: "2026-01-01" }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to include("code" => "invalid_range")
+
+      get category_trend_path(foreign_category)
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
   describe "[ #new ]" do
     it "renders the accessible colour controls and complete live preview surface" do
       get new_category_path

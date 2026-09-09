@@ -40,7 +40,8 @@ installments.
 
 There is no invented combined editable ledger. A mixed cash/card amount exposes cash
 and card subtotals and destinations separately, and those subtotals reconcile to the
-combined value.
+combined value. Sets above the navigation limit are represented by bounded chunks
+whose amounts and counts reconcile to the same typed subtotal.
 
 ### D8 — Counts mean unique installments
 
@@ -239,4 +240,3 @@ favor bounded queries, existing index destinations, and compatibility with
 KAKASHI-06/KAKASHI-17. If manual review shows that a rolling twelve-month default is
 not the desired daily view, that single default can change without altering the data
 or navigation contract.
-

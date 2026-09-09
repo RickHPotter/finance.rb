@@ -99,6 +99,36 @@ RSpec.describe "Entities", type: :request do
     end
   end
 
+  describe "[ #trend ]" do
+    it "returns a context-scoped entity trend payload" do
+      entity = create(:entity, user:, entity_name: "REPORT ANA")
+      transaction = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, date: Date.new(2026, 7, 10), month: 7, year: 2026,
+                                              price: 2_500)
+      create(:entity_transaction, transactable: transaction, entity:)
+
+      get entity_trend_path(entity), params: { from_date: "2026-07-01", to_date: "2026-07-31" }
+
+      expect(response).to have_http_status(:success)
+      expect(response.media_type).to eq("application/json")
+      expect(response.parsed_body).to include(
+        "resource" => { "type" => "Entity", "id" => entity.id, "label" => "REPORT ANA" },
+        "summary" => include("net_cents" => 2_500)
+      )
+    end
+
+    it "rejects invalid report state and entities owned by another user" do
+      entity = create(:entity, user:)
+      foreign_entity = create(:entity, user: create(:user, :random))
+
+      get entity_trend_path(entity), params: { granularity: "week" }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to include("code" => "invalid_granularity")
+
+      get entity_trend_path(foreign_entity)
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
   describe "[ #create ]" do
     it "creates an entity" do
       expect do

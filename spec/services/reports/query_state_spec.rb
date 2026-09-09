@@ -86,4 +86,12 @@ RSpec.describe Reports::QueryState do
       described_class.new({}, allowed_sorts: %w[amount_desc], default_sort: "date_asc")
     end.to raise_error(ArgumentError, "default sort must be allowlisted")
   end
+
+  it "enumerates stable empty-capable day and month periods" do
+    month_state = described_class.new({ from_date: "2026-07-10", to_date: "2026-09-09" })
+    day_state = described_class.new({ from_date: "2026-09-07", to_date: "2026-09-09", granularity: "day" })
+
+    expect(month_state.periods).to eq([ Date.new(2026, 7, 1), Date.new(2026, 8, 1), Date.new(2026, 9, 1) ])
+    expect(day_state.periods).to eq([ Date.new(2026, 9, 7), Date.new(2026, 9, 8), Date.new(2026, 9, 9) ])
+  end
 end

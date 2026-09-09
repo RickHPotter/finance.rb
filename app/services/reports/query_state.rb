@@ -58,6 +58,14 @@ module Reports
       granularity == "day" ? date.iso8601 : date.strftime("%Y-%m")
     end
 
+    def periods
+      return (from_date..to_date).to_a if granularity == "day"
+
+      first = from_date.beginning_of_month
+      last = to_date.beginning_of_month
+      Enumerator.produce(first, &:next_month).take_while { |date| date <= last }
+    end
+
     private
 
     attr_reader :params, :today, :allowed_sorts, :default_sort
