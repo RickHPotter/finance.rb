@@ -123,10 +123,7 @@ class CategoriesController < ApplicationController
     scope = current_user.categories
     scope = scope.where(active: status_values) if @index_context[:status].present?
 
-    if @index_context[:search_term].present?
-      search_term = "%#{@index_context[:search_term].strip}%"
-      scope = scope.where("category_name ILIKE ?", search_term)
-    end
+    scope = Search::NormalizedText.apply(scope, @index_context[:search_term], "categories.category_name")
 
     scope.order(active: :desc, category_name: :asc)
   end

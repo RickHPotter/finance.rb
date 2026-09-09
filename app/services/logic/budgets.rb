@@ -30,7 +30,7 @@ module Logic
     def self.find_by_ref_month_year(financial_scope, month, year, raw_conditions)
       return [] if raw_conditions[:skip_budgets]
 
-      search_term_condition = "description ILIKE '%#{raw_conditions[:search_term]}%'" if raw_conditions[:search_term].present?
+      search_term_condition = Search::NormalizedText.condition_for(raw_conditions[:search_term], "budgets.description")
 
       conditions = {
         id: raw_conditions[:id],
@@ -74,10 +74,9 @@ module Logic
       search_term = search_params.delete(:search_term) || ""
       raw_conditions = build_conditions_from_params(budget_params.is_a?(Hash) ? budget_params.dup : budget_params.to_unsafe_h)
 
-      relation = budgets_relation(financial_scope)
-                 .left_joins(:categories, :entities)
-                 .where(raw_conditions[:associations])
-                 .where("budgets.description ILIKE ?", "%#{search_term}%")
+      relation = budgets_relation(financial_scope).left_joins(:categories, :entities).where(raw_conditions[:associations])
+
+      relation = Search::NormalizedText.apply(relation, search_term, "budgets.description")
 
       relation = relation.where(id: raw_conditions[:id]) if raw_conditions[:id].present?
 

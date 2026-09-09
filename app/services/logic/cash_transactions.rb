@@ -197,10 +197,9 @@ module Logic
 
       conditions.merge!(paid:) if paid.in?([ true, false ])
 
-      relation = financial_scope.cash_installments
-                                .left_joins({ cash_transaction: %i[categories entities] })
-                                .where(conditions)
-                                .where("cash_transactions.description ILIKE ?", "%#{search_term}%")
+      relation = financial_scope.cash_installments.left_joins({ cash_transaction: %i[categories entities] }).where(conditions)
+
+      relation = Search::NormalizedText.apply(relation, search_term, "cash_transactions.description")
 
       relation = relation.where(cash_transaction_id: financial_scope.cash_transactions.subscription_candidates.select(:id)) if attach_to_subscription_id.present?
 

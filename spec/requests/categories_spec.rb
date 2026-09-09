@@ -20,6 +20,15 @@ RSpec.describe "Categories", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "finds categories with normalized text" do
+      category = create(:category, user:, category_name: "CRÍSTIAN   PENS")
+
+      get categories_path(search_term: "  cristian pens ")
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.at_css("#show_category_#{category.id}")).to be_present
+    end
+
     it "renders category links with the complete resolved pair" do
       category = create(:category, user:, category_name: "Dark category", colour: "#4b5563")
 

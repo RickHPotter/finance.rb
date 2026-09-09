@@ -132,10 +132,7 @@ class UserCardsController < ApplicationController
     scope = current_user.user_cards.includes(:card).left_outer_joins(:card)
     scope = scope.where(active: status_values) if @index_context[:status].present?
 
-    if @index_context[:search_term].present?
-      search_term = "%#{@index_context[:search_term].strip}%"
-      scope = scope.where("user_card_name ILIKE :search OR cards.card_name ILIKE :search", search: search_term)
-    end
+    scope = Search::NormalizedText.apply(scope, @index_context[:search_term], "user_cards.user_card_name", "cards.card_name")
 
     scope.distinct.order(active: :desc, user_card_name: :asc)
   end

@@ -3,7 +3,7 @@
 module Logic
   class CashInstallments
     def self.find_by_ref_month_year(financial_scope, month, year, raw_conditions)
-      search_term_condition = "cash_transactions.description ILIKE '%#{raw_conditions[:search_term]}%'" if raw_conditions[:search_term].present?
+      search_term_condition = Search::NormalizedText.condition_for(raw_conditions[:search_term], "cash_transactions.description")
       paid_filters = IndexState::CashTransactions.resolve_paid_filters(
         paid_state: raw_conditions[:paid_state],
         paid: raw_conditions[:paid],
@@ -38,10 +38,11 @@ module Logic
     end
 
     def self.find_by_query(financial_scope, entity_id, query)
-      cash_installments_relation(financial_scope)
-        .includes(cash_transaction: %i[category_transactions entity_transactions])
-        .where(cash_transaction: { entity_transactions: { entity_id: } })
-        .where("cash_transaction.description ILIKE ?", "%#{query}%")
+      relation = cash_installments_relation(financial_scope)
+                 .includes(cash_transaction: %i[category_transactions entity_transactions])
+                 .where(cash_transaction: { entity_transactions: { entity_id: } })
+
+      Search::NormalizedText.apply(relation, query, "cash_transactions.description")
     end
 
     def self.fetch_cash_installments(financial_scope, month, year, options)

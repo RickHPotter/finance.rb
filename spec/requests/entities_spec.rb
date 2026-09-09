@@ -19,6 +19,15 @@ RSpec.describe "Entities", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "finds entities with normalized text" do
+      entity = create(:entity, user:, entity_name: "CRÍSTIAN   PENS")
+
+      get entities_path(search_term: "  cristian pens ")
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.at_css("#show_entity_#{entity.id}")).to be_present
+    end
   end
 
   describe "[ #show ]" do

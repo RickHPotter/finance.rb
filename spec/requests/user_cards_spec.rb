@@ -16,6 +16,15 @@ RSpec.describe "UserCards", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "finds cards with normalized text" do
+      user_card = create(:user_card, :random, user:, card:, user_card_name: "CRÉDITO   FÁCIL")
+
+      get user_cards_path(search_term: "  credito facil ")
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.at_css("#show_user_card_#{user_card.id}")).to be_present
+    end
   end
 
   describe "[ #show ]" do

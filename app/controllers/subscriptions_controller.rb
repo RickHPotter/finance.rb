@@ -127,10 +127,12 @@ class SubscriptionsController < ApplicationController
     scope = scope.where(categories: { id: @index_context[:category_id] }) if @index_context[:category_id].present?
     scope = scope.where(entities: { id: @index_context[:entity_id] }) if @index_context[:entity_id].present?
 
-    if @index_context[:search_term].present?
-      search_term = "%#{@index_context[:search_term].strip}%"
-      scope = scope.where("finance_subscriptions.description ILIKE :search OR finance_subscriptions.comment ILIKE :search", search: search_term)
-    end
+    scope = Search::NormalizedText.apply(
+      scope,
+      @index_context[:search_term],
+      "finance_subscriptions.description",
+      "finance_subscriptions.comment"
+    )
 
     scope.distinct.order(:status, :description)
   end
