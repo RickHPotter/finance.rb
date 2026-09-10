@@ -75,7 +75,7 @@ class Views::UserBankAccounts::Show < Views::Base
         query_state: report_query_state,
         prefix: "user_bank_account_#{user_bank_account.id}_movement",
         translation_scope: "reports.bank_account_movement",
-        supplementary_sections: %i[payment_states balance_context]
+        supplementary_sections: %i[payment_states interactive_breakdowns balance_context]
       )
     end
   end

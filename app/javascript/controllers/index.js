@@ -118,6 +118,9 @@ application.register("partial-pay-multiple", PartialPayMultipleController)
 import PieBreakdownChartController from "./pie_breakdown_chart_controller"
 application.register("pie-breakdown-chart", PieBreakdownChartController)
 
+import InteractiveBreakdownDashboardController from "./interactive_breakdown_dashboard_controller"
+application.register("interactive-breakdown-dashboard", InteractiveBreakdownDashboardController)
+
 import PriceMaskController from "./price_mask_controller"
 application.register("price-mask", PriceMaskController)
 

@@ -158,6 +158,7 @@ class Views::Shared::AllocationTrend < Views::Base
 
   def supplementary_report_sections
     report_list(:payment_states_heading, "paymentStateList") if supplementary_sections.include?(:payment_states)
+    interactive_breakdown_sections if supplementary_sections.include?(:interactive_breakdowns)
 
     return unless supplementary_sections.include?(:balance_context)
 
@@ -166,6 +167,21 @@ class Views::Shared::AllocationTrend < Views::Base
         translate(:balance_context_heading)
       end
       div(class: "mt-3 grid gap-3 sm:grid-cols-3", data: { allocation_trend_target: "balanceContext" })
+    end
+  end
+
+  def interactive_breakdown_sections
+    div(class: "grid gap-5 xl:grid-cols-2") do
+      render Views::Shared::InteractiveBreakdownDashboard.new(
+        prefix: "#{prefix}_interactive_category",
+        kind: :category,
+        allocation_target: "interactiveCategory"
+      )
+      render Views::Shared::InteractiveBreakdownDashboard.new(
+        prefix: "#{prefix}_interactive_entity",
+        kind: :entity,
+        allocation_target: "interactiveEntity"
+      )
     end
   end
 

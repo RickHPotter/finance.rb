@@ -62,6 +62,10 @@ RSpec.describe "Allocation trend dashboards", type: :feature do
     bank = create(:bank, :random)
     account = create(:user_bank_account, user:, bank:)
     ordinary = create_cash_transaction(account:, price: 1_000, description: "Ordinary report movement")
+    food = create(:category, user:, category_name: "Interactive food")
+    ana = create(:entity, user:, entity_name: "Interactive Ana")
+    create(:category_transaction, transactable: ordinary, category: food)
+    create(:entity_transaction, transactable: ordinary, entity: ana)
     transfer = create_cash_transaction(account:, price: -500, description: "Transfer report movement")
     create(:category_transaction, transactable: transfer, category: user.built_in_category("EXCHANGE"))
     account.update_columns(balance: 12_345)
@@ -88,6 +92,8 @@ RSpec.describe "Allocation trend dashboards", type: :feature do
     expect(report).to have_text("R$ -5.00")
     expect(report).to have_css("[data-allocation-trend-target='paymentStateList'] li", count: 2)
     expect(report).to have_css("a[href*='/cash_transactions']")
+    expect(report).to have_select("user_bank_account_#{account.id}_movement_interactive_category_primary", with_options: [ "Interactive food" ])
+    expect(report).to have_text("Interactive Ana")
   end
 
   it "renders card billing metadata and generated identities without duplicate spend" do
@@ -101,6 +107,10 @@ RSpec.describe "Allocation trend dashboards", type: :feature do
       purchase_date: Date.new(2026, 6, 20),
       installment_date: Date.new(2026, 6, 28)
     )
+    food = create(:category, user:, category_name: "Interactive card food")
+    ana = create(:entity, user:, entity_name: "Interactive card Ana")
+    create(:category_transaction, transactable: purchase, category: food)
+    create(:entity_transaction, transactable: purchase, entity: ana)
     advance = create_card_report_transaction(
       user_card:,
       description: "Visible card advance",
@@ -134,6 +144,9 @@ RSpec.describe "Allocation trend dashboards", type: :feature do
     expect(report).to have_text("CashTransaction ##{advance.advance_cash_transaction_id}")
     expect(report).to have_css("[data-allocation-trend-target='detailList'] li", count: 2)
     expect(report).to have_css("a[href*='/card_transactions']", minimum: 1)
+    expect(report).to have_select("user_card_#{user_card.id}_movement_interactive_entity_primary", with_options: [ "Interactive card Ana" ])
+    find("#user_card_#{user_card.id}_movement_interactive_entity_primary").select("Interactive card Ana")
+    expect(report).to have_text("Interactive card food")
   end
 
   def create_cash_transaction(account:, price:, description:)

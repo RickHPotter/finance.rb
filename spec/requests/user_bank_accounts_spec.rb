@@ -82,7 +82,7 @@ RSpec.describe "UserBankAccounts", type: :request do
       trend = response.parsed_body.at_css("#user_bank_account_#{user_bank_account.id}_movement")
       expect(trend["data-allocation-trend-url-value"]).to eq(user_bank_account_movement_path(user_bank_account))
       expect(trend.at_css("#user_bank_account_#{user_bank_account.id}_movement_from_date")["value"]).to eq("2026-04-01")
-      expect(response.parsed_body.at_css("[data-controller~='interactive-breakdown-dashboard']")).to be_nil
+      expect(response.parsed_body.css("[data-controller~='interactive-breakdown-dashboard']").size).to eq(2)
 
       get user_bank_account_movement_path(user_bank_account), params: report_params
 

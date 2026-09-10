@@ -1,5 +1,18 @@
 en:
   reports:
+    interactive_breakdown:
+      category_title: "Category Interactive Dashboard"
+      entity_title: "Entity Interactive Dashboard"
+      category_chart_label: "Selected category and entity movement over time"
+      entity_chart_label: "Selected entity and category movement over time"
+      category: "Category"
+      entity: "Entity"
+      category_groups: "Category combinations"
+      entity_groups: "Entity combinations"
+      select_all: "Select all"
+      unselect_all: "Unselect all"
+      only: "Only %{name}"
+      empty: "No allocation movement matches this selection."
     allocation_trend:
       title: "Income and outcome trend"
       timeline: "Movement over time"
@@ -183,6 +196,19 @@ en:
       invalid_sort: "Select a valid report order."
 pt-BR:
   reports:
+    interactive_breakdown:
+      category_title: "Painel interativo de categorias"
+      entity_title: "Painel interativo de entidades"
+      category_chart_label: "Movimentação das categorias e entidades selecionadas ao longo do tempo"
+      entity_chart_label: "Movimentação das entidades e categorias selecionadas ao longo do tempo"
+      category: "Categoria"
+      entity: "Entidade"
+      category_groups: "Combinações de categorias"
+      entity_groups: "Combinações de entidades"
+      select_all: "Selecionar todos"
+      unselect_all: "Desmarcar todos"
+      only: "Somente %{name}"
+      empty: "Nenhuma movimentação alocada corresponde a esta seleção."
     allocation_trend:
       title: "Tendência de receitas e despesas"
       timeline: "Movimentação ao longo do tempo"

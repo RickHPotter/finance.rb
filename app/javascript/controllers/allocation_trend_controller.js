@@ -37,7 +37,9 @@ export default class extends Controller {
     "breakdownList",
     "paymentStateList",
     "balanceContext",
-    "detailList"
+    "detailList",
+    "interactiveCategory",
+    "interactiveEntity"
   ]
 
   connect() {
@@ -122,6 +124,7 @@ export default class extends Controller {
     this.renderSummary(payload.summary)
     if (this.hasPaymentStateListTarget) this.renderEntries(this.paymentStateListTarget, payload.payment_states || [], "breakdown")
     if (this.hasBalanceContextTarget) this.renderBalanceContext(payload.balance_context)
+    this.renderInteractiveBreakdowns(payload.interactive_breakdowns)
     this.renderChart(payload.buckets)
     this.renderEntries(this.bucketListTarget, payload.buckets, "bucket")
     this.renderEntries(this.breakdownListTarget, payload.breakdowns, "breakdown")
@@ -246,6 +249,17 @@ export default class extends Controller {
       this.recordedBalanceCard(this.label("first_recorded"), context.first_recorded),
       this.recordedBalanceCard(this.label("latest_recorded"), context.latest_recorded)
     )
+  }
+
+  renderInteractiveBreakdowns(breakdowns) {
+    if (!breakdowns) return
+
+    if (this.hasInteractiveCategoryTarget) {
+      this.interactiveCategoryTarget.dataset.interactiveBreakdownDashboardDataValue = JSON.stringify(breakdowns.category)
+    }
+    if (this.hasInteractiveEntityTarget) {
+      this.interactiveEntityTarget.dataset.interactiveBreakdownDashboardDataValue = JSON.stringify(breakdowns.entity)
+    }
   }
 
   renderDetails(details) {

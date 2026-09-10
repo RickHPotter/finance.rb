@@ -22,7 +22,8 @@ module Reports
         payment_states: payment_state_payloads,
         balance_context: balance_context_payload,
         buckets: bucket_payloads(rows),
-        breakdowns: family_payloads(rows)
+        breakdowns: family_payloads(rows),
+        interactive_breakdowns: interactive_breakdown_payloads(rows)
       }
     end
 
@@ -138,6 +139,12 @@ module Reports
         first_recorded: recorded_balance_payload(ordered.first),
         latest_recorded: recorded_balance_payload(ordered.last)
       }
+    end
+
+    def interactive_breakdown_payloads(rows)
+      %i[category entity].index_with do |dimension|
+        InteractiveAllocationBreakdown.new(rows:, query_state:, primary_dimension: dimension).call
+      end
     end
 
     def recorded_balance_payload(row)

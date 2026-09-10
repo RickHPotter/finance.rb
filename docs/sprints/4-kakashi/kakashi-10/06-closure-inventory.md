@@ -29,6 +29,8 @@ generic report-builder screen was introduced.
   controls, summary cards, chart, accessible textual lists, and stable states.
 - `report_presentation.mjs` owns identical lazy visibility, JSON request, stale-panel
   cleanup, and localized currency presentation used by report controllers.
+- `Reports::InteractiveAllocationBreakdown` restores the category-first and
+  entity-first account/card dashboards with bounded server-owned totals and points.
 - Financial aggregation remains server-side in integer cents. Monthly Analysis now
   receives `total_failed`; JavaScript no longer totals failed rows.
 
@@ -81,6 +83,9 @@ generic report-builder screen was introduced.
   transitions, and currency formatting were consolidated.
 - Entity show no longer eagerly loads categories for the removed inline counterpart
   pie; category-colour enforcement now targets the shared allocation report boundary.
+- Bank Account and User Card retain their interactive cross-allocation dashboards;
+  their former unbounded Phlex aggregation and client-side all-group summation remain
+  removed.
 - Currency presentation now uses one report convention in English and Brazilian
   Portuguese.
 - Chart lifecycle was consolidated only within genuinely identical ownership models;

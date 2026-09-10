@@ -22,6 +22,10 @@ RSpec.describe Reports::UserCardMovement do
       date: Date.new(2026, 6, 28),
       installments: [ installment(number: 1, price: -1_000, date: Date.new(2026, 6, 28), month: 7, paid: true) ]
     )
+    food = create(:category, user:, category_name: "FOOD")
+    ana = create(:entity, user:, entity_name: "ANA")
+    create(:category_transaction, transactable: one_off, category: food)
+    create(:entity_transaction, transactable: one_off, entity: ana)
     spread = create_transaction(
       description: "Spread purchase",
       price: -600,
@@ -98,6 +102,16 @@ RSpec.describe Reports::UserCardMovement do
     expect(advance_detail.dig(:generated_payment, :cash_transaction_id)).not_to eq(advance.advance_cash_transaction_id)
     expect(payload[:details].pluck(:identity)).to eq(payload[:details].pluck(:identity).uniq)
     expect(context.cash_installments.count).to be > payload[:details].size
+
+    entity_dashboard = payload.dig(:interactive_breakdowns, :entity)
+    expect(entity_dashboard).to include(primary_kind: :entity, secondary_kind: :category, granularity: "month")
+    expect(entity_dashboard.dig(:items, 0)).to include(id: ana.id.to_s, name: "ANA")
+    expect(entity_dashboard.dig(:items, 0, :groups, 0, :secondary_items, 0)).to include(
+      id: food.id.to_s,
+      name: "FOOD",
+      total_cents: -1_000,
+      points: [ { x: "2026-07-01", amount_cents: -1_000 } ]
+    )
 
     exact_query = Rack::Utils.parse_nested_query(URI.parse(advance_detail[:path]).query)
     expect(exact_query.dig("card_transaction", "card_installment_ids")).to eq([ advance.card_installments.sole.id.to_s ])

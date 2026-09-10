@@ -10,6 +10,10 @@ RSpec.describe Reports::BankAccountMovement do
 
   it "reconciles payment state, movement families, exact sources, and stored balance observations" do
     ordinary = create_transaction(price: 1_000, paid: true, balance: 10_000, order_id: 1)
+    food = create(:category, user:, category_name: "FOOD")
+    ana = create(:entity, user:, entity_name: "ANA")
+    create(:category_transaction, transactable: ordinary, category: food)
+    create(:entity_transaction, transactable: ordinary, entity: ana)
     transfer = create_transaction(price: -2_000, paid: false, category_name: "EXCHANGE", balance: 8_000, order_id: 2)
     create_transaction(price: 3_000, paid: true, category_name: "FAILED LEND/BORROW RETURN")
     create_transaction(price: -4_000, paid: false, category_name: "PIGGY BANK", cash_transaction_type: "PiggyBank")
@@ -38,6 +42,17 @@ RSpec.describe Reports::BankAccountMovement do
     expect(payload[:balance_context]).to include(account_balance_cents: 7_777, recorded_count: 2)
     expect(payload.dig(:balance_context, :first_recorded)).to include(amount_cents: 10_000, installment_id: ordinary.cash_installments.sole.id, order_id: 1)
     expect(payload.dig(:balance_context, :latest_recorded)).to include(amount_cents: 8_000, installment_id: transfer.cash_installments.sole.id, order_id: 2)
+
+    category_dashboard = payload.dig(:interactive_breakdowns, :category)
+    expect(category_dashboard).to include(primary_kind: :category, secondary_kind: :entity, granularity: "month")
+    expect(category_dashboard[:periods]).to eq([ "2026-07-01" ])
+    expect(category_dashboard.dig(:items, 0)).to include(id: food.id.to_s, name: "FOOD")
+    expect(category_dashboard.dig(:items, 0, :groups, 0, :secondary_items, 0)).to include(
+      id: ana.id.to_s,
+      name: "ANA",
+      total_cents: 1_000,
+      points: [ { x: "2026-07-01", amount_cents: 1_000 } ]
+    )
 
     transfer_family = payload[:breakdowns].find { |family| family[:key] == :transfer }
     source_path = transfer_family.dig(:outcome, :sources, :cash, :chunks, 0, :path)

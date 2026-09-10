@@ -58,6 +58,10 @@ Page: `/user_bank_accounts/:id`.
   are not recomputed by the report.
 - Confirm an account belonging to another context cannot be requested by changing the
   report ID.
+- In both restored interactive dashboards, switch the primary category/entity,
+  select one combination, select all combinations, and select/unselect secondary
+  series. Confirm the chart and textual totals follow the current bounded report
+  filters.
 
 ## User Card Movement
 
@@ -70,6 +74,8 @@ Page: `/user_cards/:id`.
 - Confirm paid-state filtering follows card installments.
 - Confirm advances, invoices, and generated payment identities remain explicit.
 - Confirm the generated cash payment is not counted as a second card expense.
+- Repeat the category-first and entity-first interactive selections. Confirm their
+  points follow billing periods and that Select All is server-reconciled.
 
 ## Budget Performance
 
@@ -125,4 +131,3 @@ how any mutation is sent, applied, audited, corrected, superseded, or reverted.
 - [ ] Monthly Analysis transfers, failed returns, and Piggy Banks reconcile.
 - [ ] Mutation regression shows no behavior change.
 - [ ] `bin/ci` passes on the deployment candidate.
-

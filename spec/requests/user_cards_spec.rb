@@ -90,7 +90,7 @@ RSpec.describe "UserCards", type: :request do
       report = response.parsed_body.at_css("#user_card_#{user_card.id}_movement")
       expect(report["data-allocation-trend-url-value"]).to eq(user_card_movement_path(user_card))
       expect(report.at_css("#user_card_#{user_card.id}_movement_from_date")["value"]).to eq("2026-04-01")
-      expect(response.parsed_body.at_css("[data-controller~='interactive-breakdown-dashboard']")).to be_nil
+      expect(response.parsed_body.css("[data-controller~='interactive-breakdown-dashboard']").size).to eq(2)
 
       get user_card_movement_path(user_card), params: report_params
 

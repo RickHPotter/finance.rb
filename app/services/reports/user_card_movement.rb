@@ -22,7 +22,8 @@ module Reports
         payment_states: payment_state_payloads,
         buckets: bucket_payloads(rows),
         breakdowns: family_payloads(rows),
-        details: detail_payloads(rows)
+        details: detail_payloads(rows),
+        interactive_breakdowns: interactive_breakdown_payloads(rows)
       }
     end
 
@@ -159,6 +160,12 @@ module Reports
           advance: { active: advance?(transaction), cash_transaction_id: transaction.advance_cash_transaction_id },
           path: exact_source_path(row)
         }
+      end
+    end
+
+    def interactive_breakdown_payloads(rows)
+      %i[category entity].index_with do |dimension|
+        InteractiveAllocationBreakdown.new(rows:, query_state:, primary_dimension: dimension).call
       end
     end
 

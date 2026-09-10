@@ -150,7 +150,7 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
         query_state: report_query_state,
         prefix: "user_card_#{user_card.id}_movement",
         translation_scope: "reports.user_card_movement",
-        supplementary_sections: %i[payment_states details]
+        supplementary_sections: %i[payment_states interactive_breakdowns details]
       )
     end
   end
