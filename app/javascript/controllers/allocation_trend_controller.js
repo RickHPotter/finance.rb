@@ -1,5 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 import { BarController, BarElement, CategoryScale, Chart, LinearScale, Tooltip } from "chart.js"
+import {
+  fetchReportJson,
+  formatCompactReportCurrency,
+  formatReportCurrency,
+  observeReportVisibility,
+  showReportState
+} from "../lib/report_presentation.mjs"
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
 
@@ -59,18 +66,7 @@ export default class extends Controller {
   }
 
   observeVisibility() {
-    if (!("IntersectionObserver" in window)) {
-      this.load()
-      return
-    }
-
-    this.visibilityObserver = new IntersectionObserver((entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return
-
-      this.visibilityObserver.disconnect()
-      this.load()
-    }, { rootMargin: "160px" })
-    this.visibilityObserver.observe(this.element)
+    this.visibilityObserver = observeReportVisibility(this.element, () => this.load())
   }
 
   async load() {
@@ -80,13 +76,7 @@ export default class extends Controller {
     this.showLoading()
 
     try {
-      const response = await fetch(this.requestUrl(), {
-        headers: { Accept: "application/json" },
-        signal: this.abortController.signal
-      })
-      const payload = await response.json()
-
-      if (!response.ok) throw new Error(payload.error || this.label("error"))
+      const payload = await fetchReportJson(this.requestUrl(), this.abortController.signal, this.label("error"))
       if (sequence !== this.requestSequence) return
 
       this.payload = payload
@@ -451,24 +441,11 @@ export default class extends Controller {
   }
 
   formatCurrency(value) {
-    const number = Number(value) || 0
-    const currency = new Intl.NumberFormat(this.localeValue, { style: "currency", currency: this.currencyValue })
-      .formatToParts(0)
-      .find((part) => part.type === "currency")?.value || this.currencyValue
-    const amount = new Intl.NumberFormat(this.localeValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(number))
-    return `${currency} ${number < 0 ? "-" : ""}${amount}`
+    return formatReportCurrency(value, this.localeValue, this.currencyValue)
   }
 
   formatCompactCurrency(value) {
-    const number = Number(value) || 0
-    const currency = new Intl.NumberFormat(this.localeValue, { style: "currency", currency: this.currencyValue })
-      .formatToParts(0)
-      .find((part) => part.type === "currency")?.value || this.currencyValue
-    const amount = new Intl.NumberFormat(this.localeValue, {
-      notation: "compact",
-      maximumFractionDigits: 1
-    }).format(Math.abs(number))
-    return `${currency} ${number < 0 ? "-" : ""}${amount}`
+    return formatCompactReportCurrency(value, this.localeValue, this.currencyValue)
   }
 
   applyNetTone(element, value) {
@@ -485,41 +462,29 @@ export default class extends Controller {
   }
 
   showLoading() {
-    this.element.setAttribute("aria-busy", "true")
-    this.toggleState(this.loadingStateTarget, true)
-    this.toggleState(this.errorStateTarget, false)
-    this.toggleState(this.emptyStateTarget, false)
-    this.contentTarget.classList.add("hidden")
+    showReportState(this.element, this.reportStateTargets(), "loading")
   }
 
   showError(message) {
-    this.element.setAttribute("aria-busy", "false")
     this.errorMessageTarget.textContent = message || this.label("error")
-    this.toggleState(this.loadingStateTarget, false)
-    this.toggleState(this.errorStateTarget, true)
-    this.toggleState(this.emptyStateTarget, false)
-    this.contentTarget.classList.add("hidden")
+    showReportState(this.element, this.reportStateTargets(), "error")
   }
 
   showEmpty() {
-    this.element.setAttribute("aria-busy", "false")
-    this.toggleState(this.loadingStateTarget, false)
-    this.toggleState(this.errorStateTarget, false)
-    this.toggleState(this.emptyStateTarget, true)
-    this.contentTarget.classList.add("hidden")
+    showReportState(this.element, this.reportStateTargets(), "empty")
   }
 
   showContent() {
-    this.element.setAttribute("aria-busy", "false")
-    this.toggleState(this.loadingStateTarget, false)
-    this.toggleState(this.errorStateTarget, false)
-    this.toggleState(this.emptyStateTarget, false)
-    this.contentTarget.classList.remove("hidden")
+    showReportState(this.element, this.reportStateTargets(), "content")
   }
 
-  toggleState(target, visible) {
-    target.classList.toggle("hidden", !visible)
-    target.classList.toggle("flex", visible)
+  reportStateTargets() {
+    return {
+      loading: this.loadingStateTarget,
+      error: this.errorStateTarget,
+      empty: this.emptyStateTarget,
+      content: this.contentTarget
+    }
   }
 
   redrawChart() {

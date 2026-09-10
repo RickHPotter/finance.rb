@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { fetchReportJson, formatReportCurrency, observeReportVisibility, showReportState } from "../lib/report_presentation.mjs"
 
 export default class extends Controller {
   static values = {
@@ -42,18 +43,7 @@ export default class extends Controller {
   }
 
   observeVisibility() {
-    if (!("IntersectionObserver" in window)) {
-      this.load()
-      return
-    }
-
-    this.visibilityObserver = new IntersectionObserver((entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return
-
-      this.visibilityObserver.disconnect()
-      this.load()
-    }, { rootMargin: "160px" })
-    this.visibilityObserver.observe(this.element)
+    this.visibilityObserver = observeReportVisibility(this.element, () => this.load())
   }
 
   async load() {
@@ -63,13 +53,7 @@ export default class extends Controller {
     this.showLoading()
 
     try {
-      const response = await fetch(this.urlValue, {
-        headers: { Accept: "application/json" },
-        signal: this.abortController.signal
-      })
-      const payload = await response.json()
-
-      if (!response.ok) throw new Error(payload.error || this.label("error"))
+      const payload = await fetchReportJson(this.urlValue, this.abortController.signal, this.label("error"))
       if (sequence !== this.requestSequence) return
 
       this.renderPayload(payload)
@@ -187,12 +171,7 @@ export default class extends Controller {
   }
 
   formatCents(value) {
-    const number = (Number(value) || 0) / 100
-    const currency = new Intl.NumberFormat(this.localeValue, { style: "currency", currency: this.currencyValue })
-      .formatToParts(0)
-      .find((part) => part.type === "currency")?.value || this.currencyValue
-    const amount = new Intl.NumberFormat(this.localeValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(number))
-    return `${currency} ${number < 0 ? "-" : ""}${amount}`
+    return formatReportCurrency((Number(value) || 0) / 100, this.localeValue, this.currencyValue)
   }
 
   formatPercentage(value) {
@@ -200,27 +179,20 @@ export default class extends Controller {
   }
 
   showLoading() {
-    this.element.setAttribute("aria-busy", "true")
-    this.loadingStateTarget.classList.remove("hidden")
-    this.loadingStateTarget.classList.add("flex")
-    this.errorStateTarget.classList.add("hidden")
-    this.contentTarget.classList.add("hidden")
+    showReportState(this.element, this.reportStateTargets(), "loading")
   }
 
   showError(message) {
-    this.element.setAttribute("aria-busy", "false")
     this.errorMessageTarget.textContent = message || this.label("error")
-    this.loadingStateTarget.classList.add("hidden")
-    this.errorStateTarget.classList.remove("hidden")
-    this.errorStateTarget.classList.add("flex")
-    this.contentTarget.classList.add("hidden")
+    showReportState(this.element, this.reportStateTargets(), "error")
   }
 
   showContent() {
-    this.element.setAttribute("aria-busy", "false")
-    this.loadingStateTarget.classList.add("hidden")
-    this.errorStateTarget.classList.add("hidden")
-    this.contentTarget.classList.remove("hidden")
+    showReportState(this.element, this.reportStateTargets(), "content")
+  }
+
+  reportStateTargets() {
+    return { loading: this.loadingStateTarget, error: this.errorStateTarget, content: this.contentTarget }
   }
 
   label(key) {

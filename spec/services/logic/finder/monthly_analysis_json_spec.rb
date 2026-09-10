@@ -198,7 +198,7 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
         include(identity: { record_type: "CashTransaction", record_id: failed_return.id }, role: "failed_return", origin: "return",
                 amount_cents: 7_500, path: include("/cash_transactions/#{failed_return.id}"))
       )
-      expect(payload[:transfers]).to include(total_sent: 0.0, total_received: 0.0, items: [])
+      expect(payload[:transfers]).to include(total_sent: 0.0, total_received: 0.0, total_failed: 75.0, items: [])
       expect(payload.dig(:ordinary, :income, :total)).to eq(0.0)
       expect(payload.dig(:ordinary, :outcome, :total)).to eq(0.0)
     end

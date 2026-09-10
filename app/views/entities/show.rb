@@ -230,11 +230,11 @@ class Views::Entities::Show < Views::Base
   end
 
   def scoped_cash_transactions_for_payload
-    @scoped_cash_transactions_for_payload ||= scoped_cash_transactions.includes(:user_bank_account, :categories).to_a
+    @scoped_cash_transactions_for_payload ||= scoped_cash_transactions.includes(:user_bank_account).to_a
   end
 
   def scoped_card_transactions_for_payload
-    @scoped_card_transactions_for_payload ||= scoped_card_transactions.includes(:user_card, :categories).to_a
+    @scoped_card_transactions_for_payload ||= scoped_card_transactions.includes(:user_card).to_a
   end
 
   def user_bank_accounts_pie_payload

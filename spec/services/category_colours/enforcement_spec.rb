@@ -17,7 +17,6 @@ RSpec.describe "Category colour presentation enforcement", type: :service do
       app/views/cash_transactions/show.rb
       app/views/categories/category.rb
       app/views/category_transactions/fields.rb
-      app/views/entities/show.rb
       app/views/investments/month_year.rb
       app/views/lalas/card_installments/index.rb
       app/views/lalas/cash_installments/index.rb
@@ -25,6 +24,7 @@ RSpec.describe "Category colour presentation enforcement", type: :service do
       app/views/transactions/standalone_transactions_sheet.rb
       app/views/user_bank_accounts/show.rb
       app/views/user_cards/show.rb
+      app/services/reports/allocation_trend.rb
     ]
   end
 

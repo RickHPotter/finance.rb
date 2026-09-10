@@ -1,6 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 import { BarController, BarElement, CategoryScale, Chart, LinearScale, Tooltip } from "chart.js"
 import { resolveCategoryChartPresentation } from "../lib/category_chart_presentation.mjs"
+import { fetchReportJson, formatCompactReportCurrency, formatReportCurrency, showReportState } from "../lib/report_presentation.mjs"
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
 
@@ -116,13 +117,7 @@ export default class extends Controller {
     try {
       const url = new URL(this.urlValue, window.location.origin)
       url.searchParams.set("month", selectedMonth)
-      const response = await fetch(url, {
-        headers: { Accept: "application/json" },
-        signal: this.abortController.signal
-      })
-      const payload = await response.json()
-
-      if (!response.ok) throw new Error(payload.error || this.label("error"))
+      const payload = await fetchReportJson(url, this.abortController.signal, this.label("error"))
       if (sequence !== this.requestSequence) return
 
       this.payload = payload
@@ -267,7 +262,7 @@ export default class extends Controller {
 
     this.transferSentTotalTarget.textContent = this.formatCurrency(transfers.total_sent)
     this.transferReceivedTotalTarget.textContent = this.formatCurrency(transfers.total_received)
-    this.transferFailedTotalTarget.textContent = this.formatCurrency(this.sum(failed, "amount"))
+    this.transferFailedTotalTarget.textContent = this.formatCurrency(transfers.total_failed)
     this.renderActivityList(this.transferSentListTarget, sent, "entity_label")
     this.renderActivityList(this.transferReceivedListTarget, received, "entity_label")
     this.renderActivityList(this.transferFailedListTarget, failed, "entity_label")
@@ -400,41 +395,29 @@ export default class extends Controller {
   }
 
   showLoading() {
-    this.element.setAttribute("aria-busy", "true")
-    this.toggleState(this.loadingStateTarget, true)
-    this.toggleState(this.errorStateTarget, false)
-    this.toggleState(this.emptyStateTarget, false)
-    this.contentTarget.classList.add("hidden")
+    showReportState(this.element, this.reportStateTargets(), "loading")
   }
 
   showError(message) {
-    this.element.setAttribute("aria-busy", "false")
     this.errorMessageTarget.textContent = message || this.label("error")
-    this.toggleState(this.loadingStateTarget, false)
-    this.toggleState(this.errorStateTarget, true)
-    this.toggleState(this.emptyStateTarget, false)
-    this.contentTarget.classList.add("hidden")
+    showReportState(this.element, this.reportStateTargets(), "error")
   }
 
   showEmpty() {
-    this.element.setAttribute("aria-busy", "false")
-    this.toggleState(this.loadingStateTarget, false)
-    this.toggleState(this.errorStateTarget, false)
-    this.toggleState(this.emptyStateTarget, true)
-    this.contentTarget.classList.add("hidden")
+    showReportState(this.element, this.reportStateTargets(), "empty")
   }
 
   showContent() {
-    this.element.setAttribute("aria-busy", "false")
-    this.toggleState(this.loadingStateTarget, false)
-    this.toggleState(this.errorStateTarget, false)
-    this.toggleState(this.emptyStateTarget, false)
-    this.contentTarget.classList.remove("hidden")
+    showReportState(this.element, this.reportStateTargets(), "content")
   }
 
-  toggleState(target, visible) {
-    target.classList.toggle("hidden", !visible)
-    target.classList.toggle("flex", visible)
+  reportStateTargets() {
+    return {
+      loading: this.loadingStateTarget,
+      error: this.errorStateTarget,
+      empty: this.emptyStateTarget,
+      content: this.contentTarget
+    }
   }
 
   hasActivity(payload) {
@@ -465,19 +448,11 @@ export default class extends Controller {
   }
 
   formatCurrency(value) {
-    return new Intl.NumberFormat(this.localeValue, {
-      style: "currency",
-      currency: this.currencyValue
-    }).format(Number(value) || 0)
+    return formatReportCurrency(value, this.localeValue, this.currencyValue)
   }
 
   formatCompactCurrency(value) {
-    return new Intl.NumberFormat(this.localeValue, {
-      style: "currency",
-      currency: this.currencyValue,
-      notation: "compact",
-      maximumFractionDigits: 1
-    }).format(Number(value) || 0)
+    return formatCompactReportCurrency(value, this.localeValue, this.currencyValue)
   }
 
   chartTheme() {
@@ -516,7 +491,4 @@ export default class extends Controller {
     return this.labelsValue[key] || key
   }
 
-  sum(items, key) {
-    return items.reduce((total, item) => total + (Number(item[key]) || 0), 0)
-  }
 }

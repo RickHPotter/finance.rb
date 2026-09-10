@@ -13,12 +13,14 @@ class Logic::Finder::MonthlyAnalysis::Transfers
 
   def call
     items = transfer_items
+    failed = failed_transfer_items
 
     {
       total_sent: serialize_cents(items.sum { |item| item[:direction] == "sent" ? item[:amount] : 0 }),
       total_received: serialize_cents(items.sum { |item| item[:direction] == "received" ? item[:amount] : 0 }),
+      total_failed: failed.sum { |item| item[:amount] },
       items: items.map { |item| item.merge(amount: serialize_cents(item[:amount])) },
-      failed: failed_transfer_items
+      failed:
     }
   end
 
