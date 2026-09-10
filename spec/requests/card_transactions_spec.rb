@@ -183,6 +183,35 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include(I18n.t("actions.add_to_subscription"))
     end
 
+    it "keeps exact installment ids in every drill-down month request" do
+      selected = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026
+      )
+      installment_ids = selected.card_installments.ids
+
+      get card_transactions_path, params: {
+        all_month_years: true,
+        card_transaction: { card_installment_ids: installment_ids }
+      }
+
+      document = Nokogiri::HTML.fragment(response.body)
+      month_frame = document.at_css("turbo-frame#month_year_container_202604")
+      month_button = document.at_css("[data-month-year='202604']")
+      query = Rack::Utils.parse_nested_query(URI.parse(month_frame["src"]).query)
+
+      expect(response).to have_http_status(:success)
+      expect(query.dig("card_transaction", "card_installment_ids")).to eq(installment_ids.map(&:to_s))
+      expect(month_button["data-count"]).to eq("1")
+      expect(month_button.at_css("span > span")["class"]).to include("bg-green-400")
+      expect(document.css('input[name="card_transaction[card_installment_ids][]"]').map { |input| input["value"] }).to eq(installment_ids.map(&:to_s))
+    end
+
     it "uses canonical sort fields instead of the legacy order select on the index" do
       user_card_one
 
@@ -1842,6 +1871,37 @@ RSpec.describe "CardTransactions", type: :request do
   end
 
   describe "[ #month_year ]" do
+    it "renders exact installment selections only in their own month" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Multi-month report source",
+        price: -3_000,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -1_000, date: Date.new(2026, 4, 10), month: 4, year: 2026),
+          build(:card_installment, number: 2, price: -2_000, date: Date.new(2026, 5, 10), month: 5, year: 2026)
+        ]
+      )
+      april_installment, may_installment = transaction.card_installments.order(:number)
+
+      get month_year_card_transactions_path, params: {
+        month_year: "202604",
+        card_transaction: { card_installment_ids: transaction.card_installments.ids }
+      }
+
+      document = Nokogiri::HTML.fragment(response.body)
+
+      expect(response).to have_http_status(:success)
+      expect(document.at_css("[data-datatable-target~='row'][data-id='#{april_installment.id}']")).to be_present
+      expect(document.at_css("[data-datatable-target~='row'][data-id='#{may_installment.id}']")).to be_nil
+      expect(document.at_css("#priceSum")["data-price"]).to eq("-1000")
+    end
+
     it "renders single and multiple category allocations through either display mode" do
       dark_category = create(:category, user:, category_name: "LEISURE", colour: "#4b5563")
       light_category = create(:category, user:, category_name: "ASSINATURA", colour: "#fde68a")

@@ -6,6 +6,25 @@ RSpec.describe IndexState::CashTransactions do
   include ActiveSupport::Testing::TimeHelpers
 
   describe "#to_h" do
+    it "activates only months containing explicitly selected installments" do
+      user = create(:user, :random)
+      bank = create(:bank, :random)
+      account = create(:user_bank_account, :random, user:, bank:)
+      selected = create(:cash_transaction, user:, context: user.main_context, user_bank_account: account, date: Date.new(2026, 4, 10), month: 4, year: 2026)
+      create(:cash_transaction, user:, context: user.main_context, user_bank_account: account, date: Date.new(2026, 5, 10), month: 5, year: 2026)
+
+      state = described_class.new(
+        current_user: user,
+        current_context: user.main_context,
+        params: ActionController::Parameters.new(all_month_years: true),
+        cash_installments: user.main_context.cash_installments,
+        transaction_filters: { cash_installment_ids: selected.cash_installments.ids }
+      ).to_h
+
+      expect(state[:active_month_years]).to eq([ 202_604 ])
+      expect(state[:count_by_month_year].transform_values(&:count)).to eq(202_604 => 1)
+    end
+
     it "does not activate a previous month when its only unpaid row is a zeroed failed return" do
       travel_to Time.zone.local(2026, 6, 10, 12) do
         user = create(:user, :random)

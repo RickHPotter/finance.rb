@@ -12,7 +12,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
   attr_reader :url,
               :index_context, :current_user,
               :default_year, :years, :active_month_years, :search_term,
-              :category_id, :entity_id, :id, :subscription_id,
+              :category_id, :entity_id, :card_installment_ids, :id, :subscription_id,
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
@@ -32,6 +32,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
     @search_term = index_context[:search_term]
     @category_id = index_context[:category_id]
     @entity_id = index_context[:entity_id]
+    @card_installment_ids = index_context[:card_installment_ids]
     @id = index_context[:id]
     @subscription_id = index_context[:subscription_id]
     @from_ct_price = index_context[:from_ct_price]
@@ -63,7 +64,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
       build_month_year_selector
 
       TextFieldTag :user_card_id, class: :hidden, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || user_card&.id
-      exact_scope_inputs("card_transaction", id:, subscription_id:)
+      exact_scope_inputs("card_transaction", card_installment_ids:, id:, subscription_id:)
       input type: "hidden", name: "return_to", value: return_to if return_to.present?
       input type: "hidden", name: :attach_to_subscription_id, value: attach_to_subscription_id if attach_to_subscription_id.present?
       input type: "hidden", name: :sort, value: sort, id: "card_transactions_sort"

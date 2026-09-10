@@ -326,6 +326,35 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(I18n.t("actions.add_to_subscription"))
     end
 
+    it "keeps exact installment ids in every drill-down month request" do
+      selected = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026
+      )
+      installment_ids = selected.cash_installments.ids
+
+      get cash_transactions_path, params: {
+        all_month_years: true,
+        cash_transaction: { cash_installment_ids: installment_ids }
+      }
+
+      document = Nokogiri::HTML.fragment(response.body)
+      month_frame = document.at_css("turbo-frame#month_year_container_202604")
+      month_button = document.at_css("[data-month-year='202604']")
+      query = Rack::Utils.parse_nested_query(URI.parse(month_frame["src"]).query)
+
+      expect(response).to have_http_status(:success)
+      expect(query.dig("cash_transaction", "cash_installment_ids")).to eq(installment_ids.map(&:to_s))
+      expect(month_button["data-count"]).to eq("1")
+      expect(month_button.at_css("span > span")["class"]).to include("bg-green-400")
+      expect(document.css('input[name="cash_transaction[cash_installment_ids][]"]').map { |input| input["value"] }).to eq(installment_ids.map(&:to_s))
+    end
+
     it "renders budget bulk action controls on the index" do
       get cash_transactions_path
 
@@ -5146,6 +5175,48 @@ RSpec.describe "CashTransactions", type: :request do
   end
 
   describe "[ #month_year ]" do
+    it "renders only the selected installments and excludes unrelated budgets for an exact drill-down" do
+      selected = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Exact report source",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        price: 12_345
+      )
+      create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Unrelated cash source",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        price: 54_321
+      )
+      create(
+        :budget,
+        user:,
+        context: user.main_context,
+        description: "Unrelated exact drill-down budget",
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { cash_installment_ids: selected.cash_installments.ids }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Exact report source")
+      expect(response.body).not_to include("Unrelated cash source", "Unrelated exact drill-down budget")
+    end
+
     it "responds successfully for an existing month_year" do
       post cash_transactions_path, params: cash_transaction.params, headers: turbo_stream_headers
       month_year = Time.zone.today.strftime("%Y%m")

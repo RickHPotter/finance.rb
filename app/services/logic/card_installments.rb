@@ -23,8 +23,7 @@ module Logic
       inclusions = joins
       inclusions[:card_transaction] << :user_card if card_transaction_params[:user_card_id].blank?
 
-      card_installment_ids = card_transaction_params[:card_installment_ids]
-      return financial_scope.card_installments.includes(inclusions).where(id: card_installment_ids) if card_installment_ids.present?
+      card_installment_ids = card_transaction_params.delete(:card_installment_ids)
 
       conditions = build_conditions_from_params(card_transaction_params, search_params)
 
@@ -33,6 +32,7 @@ module Logic
                                 .left_joins(joins)
                                 .where(conditions)
                                 .where("installments.year = ? AND installments.month = ?", year, month)
+      relation = relation.where(id: card_installment_ids) if card_installment_ids.present?
 
       relation = Search::NormalizedText.apply(relation, search_term, "card_transactions.description")
 
@@ -132,7 +132,11 @@ module Logic
       entity_ids   = [ entity_ids ].flatten.compact_blank if entity_ids.present?
 
       card_installment_ids = card_transaction_params[:card_installment_ids]
-      return financial_scope.card_installments.where(id: card_installment_ids) if card_installment_ids.present?
+      if card_installment_ids.present?
+        return financial_scope.card_installments.where(id: card_installment_ids).group_by do |record|
+          Date.new(record.year, record.month, 1).strftime("%Y%m").to_i
+        end
+      end
 
       conditions = build_conditions_from_params(card_transaction_params, search_params)
       conditions[:card_transaction] = conditions[:card_transaction].except("date") if conditions[:card_transaction].present?
