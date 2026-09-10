@@ -28,6 +28,9 @@ application.register("blinking-placeholder", BlinkingPlaceholderController)
 import BudgetValueHelperController from "./budget_value_helper_controller"
 application.register("budget-value-helper", BudgetValueHelperController)
 
+import BudgetPerformanceController from "./budget_performance_controller"
+application.register("budget-performance", BudgetPerformanceController)
+
 import CalculatorController from "./calculator_controller"
 application.register("calculator", CalculatorController)
 

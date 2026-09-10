@@ -223,19 +223,21 @@ RSpec.describe "Budgets", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Budget dashboard details")
-      expect(response.body).to include("Groceries for budget")
+      expect(response.body).not_to include("Groceries for budget")
       expect(response.body).to include(I18n.t("dashboards.budgets.consumption"))
       expect(response.body).to include(I18n.t("dashboards.budgets.definition"))
       expect(response.body).to include(I18n.t("dashboards.sections.summary"))
+      expect(response.body).to include('data-controller="budget-performance"')
+      expect(response.body).to include(budget_performance_path(budget))
       expect(response.body).to include(edit_budget_path(budget))
       expect(response.body).to include(duplicate_budget_path(budget))
-      expect(response.body).to include(cash_transaction_path(cash_transaction))
+      expect(response.body).not_to include(cash_transaction_path(cash_transaction))
       expect(response.body).to include("delete_budget_#{budget.id}")
       expect(response.body).to include(category.name)
       expect(response.body).to include("background-color: #4b5563", "color: #ffffff")
     end
 
-    it "shows Available for expense budgets that still have room remaining" do
+    it "leaves the reconciled financial status to the lazy performance report" do
       create(
         :cash_transaction,
         user:,
@@ -265,8 +267,56 @@ RSpec.describe "Budgets", type: :request do
       get budget_path(budget)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(I18n.t("dashboards.budgets.status.available"))
-      expect(response.body).not_to include(I18n.t("dashboards.budgets.status.exceeded"))
+      expect(response.body).to include('data-controller="budget-performance"')
+    end
+  end
+
+  describe "[ #performance ]" do
+    it "returns a read-only reconciled report for a budget in the current context" do
+      cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Budget report source",
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        price: -2_500,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -2_500, paid: true)
+        ],
+        category_transactions: [ build(:category_transaction, category:) ]
+      )
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        month: 3,
+        year: 2026,
+        value: -10_000,
+        budget_categories: [ build(:budget_category, category:) ]
+      )
+      timestamps = [ budget.reload.updated_at, cash_transaction.reload.updated_at ]
+
+      expect { get budget_performance_path(budget) }.not_to change(AuditVersion, :count)
+
+      payload = response.parsed_body.deep_symbolize_keys
+      expect(response).to have_http_status(:success)
+      expect(payload.dig(:performance, :actual_cents)).to eq(-2_500)
+      expect(payload.dig(:performance, :status)).to eq("available")
+      expect(payload.dig(:sources, :cash, :count)).to eq(1)
+      expect(payload.dig(:sources, :cash, :chunks, 0, :path)).to include("return_to=%2Fbudgets%2F#{budget.id}")
+      expect([ budget.reload.updated_at, cash_transaction.reload.updated_at ]).to eq(timestamps)
+    end
+
+    it "rejects a budget outside the current context" do
+      other_context = create(:context, user:)
+      budget = create(:budget, user:, context: other_context, budget_categories: [ build(:budget_category, category:) ])
+
+      get budget_performance_path(budget)
+
+      expect(response).to have_http_status(:not_found)
     end
   end
 

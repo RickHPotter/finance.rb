@@ -125,6 +125,8 @@ Rails.application.routes.draw do
   end
 
   resources :budgets do
+    resource :performance, only: :show, controller: "reports/budget_performances", defaults: { format: :json }
+
     member do
       get :duplicate
     end
