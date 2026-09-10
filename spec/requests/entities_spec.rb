@@ -75,6 +75,7 @@ RSpec.describe "Entities", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Details")
+      expect(response.body).to include(Category.model_name.human(count: 2))
       expect(response.body).to include("User Bank Accounts")
       expect(response.body).to include("User Cards")
 
@@ -85,7 +86,15 @@ RSpec.describe "Entities", type: :request do
       expect(trend.at_css("#entity_#{entity.id}_trend_to_date")["value"]).to eq("2026-04-30")
       expect(trend.at_css("#entity_#{entity.id}_trend_granularity option[selected]")["value"]).to eq("day")
       expect(trend.at_css("#entity_#{entity.id}_trend_direction option[selected]")["value"]).to eq("outcome")
-      expect(response.parsed_body.at_css("[data-pie-breakdown-chart-data-value*='counterpart']")).to be_nil
+      counterpart_payload = pie_payloads(response.body).fetch("counterpart")
+      expect(counterpart_payload.fetch("filterOptions").pluck("label")).to include("Bank Account: 99PAY", "User Card: 99PAY")
+      expect(counterpart_payload.fetch("entries").pluck("name")).to include("Scenario Category")
+      expect(counterpart_payload.to_json).not_to include("Main Category")
+      scenario_counterpart = counterpart_payload.fetch("entries").find { |entry| entry.fetch("name") == "Scenario Category" }
+      expect(scenario_counterpart).to include(
+        "background" => "#ffffff",
+        "foreground" => "#767676"
+      )
 
       get entity_trend_path(entity), params: report_params
 
@@ -207,6 +216,13 @@ RSpec.describe "Entities", type: :request do
       expect do
         delete entity_path(entity), headers: turbo_stream_headers
       end.not_to change(Entity, :count)
+    end
+  end
+
+  def pie_payloads(body)
+    body.scan(/data-pie-breakdown-chart-data-value="([^"]+)"/).to_h do |(value)|
+      payload = JSON.parse(CGI.unescapeHTML(value))
+      [ payload.fetch("kind"), payload ]
     end
   end
 end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::Entities::Show < Views::Base
+class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
@@ -22,6 +22,7 @@ class Views::Entities::Show < Views::Base
         div(class: "mt-6 space-y-4") do
           details_section
           trend_section
+          counterpart_section
           user_bank_accounts_section
           user_cards_section
         end
@@ -77,6 +78,15 @@ class Views::Entities::Show < Views::Base
         prefix: "entity_#{entity.id}_trend"
       )
     end
+  end
+
+  def counterpart_section
+    pie_chart_section(
+      title: Category.model_name.human(count: 2),
+      payload: counterpart_pie_payload,
+      select_id: "entity_category_source_filter",
+      select_label: "Sources"
+    )
   end
 
   def user_bank_accounts_section
@@ -230,11 +240,57 @@ class Views::Entities::Show < Views::Base
   end
 
   def scoped_cash_transactions_for_payload
-    @scoped_cash_transactions_for_payload ||= scoped_cash_transactions.includes(:user_bank_account).to_a
+    @scoped_cash_transactions_for_payload ||= scoped_cash_transactions.includes(:user_bank_account, :categories).to_a
   end
 
   def scoped_card_transactions_for_payload
-    @scoped_card_transactions_for_payload ||= scoped_card_transactions.includes(:user_card).to_a
+    @scoped_card_transactions_for_payload ||= scoped_card_transactions.includes(:user_card, :categories).to_a
+  end
+
+  def counterpart_pie_payload
+    @counterpart_pie_payload ||= begin
+      entries = {}
+      filter_options = {}
+
+      scoped_cash_transactions_for_payload.each do |transaction|
+        append_category_counterparts(entries, filter_options, transaction, source_filter_for_bank_account(transaction.user_bank_account))
+      end
+
+      scoped_card_transactions_for_payload.each do |transaction|
+        append_category_counterparts(entries, filter_options, transaction, source_filter_for_user_card(transaction.user_card))
+      end
+
+      {
+        kind: "counterpart",
+        filterOptions: filter_options.values.sort_by { |option| option[:label] },
+        entries: serialize_filterable_entries(entries.values)
+      }
+    end
+  end
+
+  def append_category_counterparts(entries, filter_options, transaction, source)
+    filter_options[source[:id]] = source
+    transaction.categories.uniq(&:id).each do |category_record|
+      entry = entries[category_record.id] ||= category_counterpart_entry(category_record)
+      entry[:totalsBySource][source[:id]] += absolute_price(transaction.price)
+    end
+  end
+
+  def category_counterpart_entry(category_record)
+    presentation = CategoryColours::Presentation.for(category_record)
+    {
+      id: category_record.id.to_s,
+      name: category_record.name,
+      colour: presentation.background,
+      **presentation.chart_payload,
+      totalsBySource: Hash.new(0)
+    }
+  end
+
+  def serialize_filterable_entries(entries)
+    entries.sort_by { |entry| entry[:name] }.map do |entry|
+      entry.slice(:id, :name, :colour, :background, :foreground, :totalsBySource).compact
+    end
   end
 
   def user_bank_accounts_pie_payload
@@ -286,6 +342,18 @@ class Views::Entities::Show < Views::Base
         foreground: entry[:foreground]
       }.compact
     end
+  end
+
+  def source_filter_for_bank_account(user_bank_account)
+    return { id: "bank_account_unassigned", label: "Bank Account: Unassigned" } if user_bank_account.blank?
+
+    { id: "bank_account_#{user_bank_account.id}", label: "Bank Account: #{user_bank_account.user_bank_account_name}" }
+  end
+
+  def source_filter_for_user_card(user_card)
+    return { id: "user_card_unassigned", label: "User Card: Unassigned" } if user_card.blank?
+
+    { id: "user_card_#{user_card.id}", label: "User Card: #{user_card.user_card_name}" }
   end
 
   def absolute_price(value)

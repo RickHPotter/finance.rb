@@ -80,6 +80,7 @@ RSpec.describe "Categories", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Details")
+      expect(response.body).to include(Entity.model_name.human(count: 2))
       expect(response.body).to include("User Bank Accounts")
       expect(response.body).to include("User Cards")
 
@@ -90,7 +91,10 @@ RSpec.describe "Categories", type: :request do
       expect(trend.at_css("#category_#{category.id}_trend_to_date")["value"]).to eq("2026-04-30")
       expect(trend.at_css("#category_#{category.id}_trend_granularity option[selected]")["value"]).to eq("day")
       expect(trend.at_css("#category_#{category.id}_trend_direction option[selected]")["value"]).to eq("outcome")
-      expect(response.parsed_body.at_css("[data-pie-breakdown-chart-data-value*='counterpart']")).to be_nil
+      counterpart_payload = pie_payloads(response.body).fetch("counterpart")
+      expect(counterpart_payload.fetch("filterOptions").pluck("label")).to include("Bank Account: 99PAY", "User Card: 99PAY")
+      expect(counterpart_payload.fetch("entries").pluck("name")).to include("Scenario Entity")
+      expect(counterpart_payload.to_json).not_to include("Main Entity")
 
       get category_trend_path(category), params: report_params
 
@@ -283,6 +287,13 @@ RSpec.describe "Categories", type: :request do
       expect do
         delete category_path(category), headers: turbo_stream_headers
       end.to change(Category, :count).by(-1)
+    end
+  end
+
+  def pie_payloads(body)
+    body.scan(/data-pie-breakdown-chart-data-value="([^"]+)"/).to_h do |(value)|
+      payload = JSON.parse(CGI.unescapeHTML(value))
+      [ payload.fetch("kind"), payload ]
     end
   end
 end

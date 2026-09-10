@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::Categories::Show < Views::Base
+class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::AssetPath
 
@@ -21,6 +21,7 @@ class Views::Categories::Show < Views::Base
         div(class: "mt-6 space-y-4") do
           details_section
           trend_section
+          counterpart_section
           user_bank_accounts_section
           user_cards_section
         end
@@ -75,6 +76,15 @@ class Views::Categories::Show < Views::Base
         prefix: "category_#{category.id}_trend"
       )
     end
+  end
+
+  def counterpart_section
+    pie_chart_section(
+      title: Entity.model_name.human(count: 2),
+      payload: counterpart_pie_payload,
+      select_id: "category_entity_source_filter",
+      select_label: "Sources"
+    )
   end
 
   def user_bank_accounts_section
@@ -246,6 +256,41 @@ class Views::Categories::Show < Views::Base
     @scoped_card_transactions_for_payload ||= scoped_card_transactions.includes(:user_card, entity_transactions: :entity).to_a
   end
 
+  def counterpart_pie_payload
+    @counterpart_pie_payload ||= begin
+      entries = {}
+      filter_options = {}
+
+      scoped_cash_transactions_for_payload.each do |transaction|
+        append_entity_counterparts(entries, filter_options, transaction, source_filter_for_bank_account(transaction.user_bank_account))
+      end
+
+      scoped_card_transactions_for_payload.each do |transaction|
+        append_entity_counterparts(entries, filter_options, transaction, source_filter_for_user_card(transaction.user_card))
+      end
+
+      {
+        kind: "counterpart",
+        filterOptions: filter_options.values.sort_by { |option| option[:label] },
+        entries: serialize_filterable_entries(entries.values)
+      }
+    end
+  end
+
+  def append_entity_counterparts(entries, filter_options, transaction, source)
+    filter_options[source[:id]] = source
+    transaction.entity_transactions.filter_map(&:entity).uniq(&:id).each do |entity_record|
+      entry = entries[entity_record.id] ||= { id: entity_record.id.to_s, name: entity_record.name, totalsBySource: Hash.new(0) }
+      entry[:totalsBySource][source[:id]] += absolute_price(transaction.price)
+    end
+  end
+
+  def serialize_filterable_entries(entries)
+    entries.sort_by { |entry| entry[:name] }.map do |entry|
+      { id: entry[:id], name: entry[:name], totalsBySource: entry[:totalsBySource] }
+    end
+  end
+
   def user_bank_accounts_pie_payload
     @user_bank_accounts_pie_payload ||= begin
       entries = {}
@@ -293,6 +338,18 @@ class Views::Categories::Show < Views::Base
         colour: entry[:colour]
       }.compact
     end
+  end
+
+  def source_filter_for_bank_account(user_bank_account)
+    return { id: "bank_account_unassigned", label: "Bank Account: Unassigned" } if user_bank_account.blank?
+
+    { id: "bank_account_#{user_bank_account.id}", label: "Bank Account: #{user_bank_account.user_bank_account_name}" }
+  end
+
+  def source_filter_for_user_card(user_card)
+    return { id: "user_card_unassigned", label: "User Card: Unassigned" } if user_card.blank?
+
+    { id: "user_card_#{user_card.id}", label: "User Card: #{user_card.user_card_name}" }
   end
 
   def absolute_price(value)
