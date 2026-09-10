@@ -90,6 +90,52 @@ RSpec.describe "Allocation trend dashboards", type: :feature do
     expect(report).to have_css("a[href*='/cash_transactions']")
   end
 
+  it "renders card billing metadata and generated identities without duplicate spend" do
+    user_card = create(:user_card, :random, user:)
+    reference = create(:reference, user_card:, context: user.main_context, month: 7, year: 2026, reference_date: Date.new(2026, 7, 12))
+    reference.update_columns(reference_closing_date: Date.new(2026, 7, 5))
+    purchase = create_card_report_transaction(
+      user_card:,
+      description: "Visible card purchase",
+      price: -1_000,
+      purchase_date: Date.new(2026, 6, 20),
+      installment_date: Date.new(2026, 6, 28)
+    )
+    advance = create_card_report_transaction(
+      user_card:,
+      description: "Visible card advance",
+      price: -500,
+      purchase_date: Date.new(2026, 6, 21),
+      installment_date: Date.new(2026, 6, 29),
+      categories: [ user.built_in_category("CARD ADVANCE") ]
+    )
+    path = user_card_path(
+      user_card,
+      from_date: "2026-07-01",
+      to_date: "2026-07-31",
+      granularity: "month",
+      paid_state: "all",
+      direction: "all"
+    )
+
+    visit path
+    report = find("#user_card_#{user_card.id}_movement")
+    page.execute_script("arguments[0].scrollIntoView({ block: 'center' })", report)
+
+    expect(report).to have_css("[data-allocation-trend-target='content']:not(.hidden)")
+    expect(report).to have_text(I18n.t("reports.user_card_movement.families.advance"))
+    expect(report).to have_text("Visible card purchase")
+    expect(report).to have_text("Visible card advance")
+    expect(report).to have_text("Jun 20, 2026")
+    expect(report).to have_text("Jun 28, 2026")
+    expect(report).to have_text("Jul 5, 2026")
+    expect(report).to have_text("Jul 12, 2026")
+    expect(report).to have_text("CashTransaction ##{purchase.card_installments.sole.cash_transaction_id}")
+    expect(report).to have_text("CashTransaction ##{advance.advance_cash_transaction_id}")
+    expect(report).to have_css("[data-allocation-trend-target='detailList'] li", count: 2)
+    expect(report).to have_css("a[href*='/card_transactions']", minimum: 1)
+  end
+
   def create_cash_transaction(account:, price:, description:)
     create(
       :cash_transaction,
@@ -102,6 +148,32 @@ RSpec.describe "Allocation trend dashboards", type: :feature do
       year: 2026,
       price:,
       cash_installments: [ build(:cash_installment, number: 1, price:, date: Date.new(2026, 7, 10), month: 7, year: 2026, paid: false) ]
+    )
+  end
+
+  def create_card_report_transaction(user_card:, description:, price:, purchase_date:, installment_date:, categories: [])
+    attributes = {
+      user_card:,
+      description:,
+      date: purchase_date,
+      month: 7,
+      year: 2026,
+      price:,
+      card_installments: [ build(:card_installment, number: 1, price:, date: installment_date, month: 7, year: 2026, paid: false) ]
+    }
+    if categories.any? { |category| category.category_name == "CARD ADVANCE" }
+      transaction = CardTransaction.new_advanced_payment(user, attributes, context: user.main_context)
+      transaction.save!
+      return transaction
+    end
+
+    create(
+      :card_transaction,
+      user:,
+      context: user.main_context,
+      **attributes,
+      category_transactions: [],
+      entity_transactions: []
     )
   end
 end

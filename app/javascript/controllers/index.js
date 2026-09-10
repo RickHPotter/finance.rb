@@ -91,9 +91,6 @@ application.register("installment-lock", InstallmentLockController)
 import InstallmentsDisplayController from "./installments_display_controller"
 application.register("installments-display", InstallmentsDisplayController)
 
-import InteractiveBreakdownDashboardController from "./interactive_breakdown_dashboard_controller"
-application.register("interactive-breakdown-dashboard", InteractiveBreakdownDashboardController)
-
 import LazyTabsController from "./lazy_tabs_controller"
 application.register("lazy-tabs", LazyTabsController)
 

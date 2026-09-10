@@ -22,8 +22,7 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
         div(class: "mt-6 space-y-4") do
           summary_grid
           references_section
-          interactive_category_dashboard_section
-          interactive_entity_dashboard_section
+          movement_section
           categories_section
           entities_section
         end
@@ -144,6 +143,18 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
     end
   end
 
+  def movement_section
+    section_card(I18n.t("reports.user_card_movement.title")) do
+      render Views::Shared::AllocationTrend.new(
+        url: user_card_movement_path(user_card),
+        query_state: report_query_state,
+        prefix: "user_card_#{user_card.id}_movement",
+        translation_scope: "reports.user_card_movement",
+        supplementary_sections: %i[payment_states details]
+      )
+    end
+  end
+
   def categories_section
     section_card(model_attribute(CardTransaction, :categories), open: false) do
       if category_breakdowns.present?
@@ -171,90 +182,6 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
                 title: entry[:record].name) do
               image_tag(asset_path("avatars/#{entry[:record].avatar_name}"), class: "h-6 w-6 rounded-full") if entry[:record].avatar_name.present?
               span(class: "wrap-break-word") { entry[:record].name }
-            end
-          end
-        end
-      else
-        empty_state
-      end
-    end
-  end
-
-  def interactive_category_dashboard_section
-    interactive_breakdown_dashboard_section(
-      title: "Category Interactive Dashboard",
-      payload: interactive_category_dashboard_payload,
-      select: { id: "interactive_card_category_select", label: model_attribute(CardTransaction, :category_id) },
-      groups_label: model_attribute(CardTransaction, :categories),
-      secondary_label: model_attribute(CardTransaction, :entities)
-    )
-  end
-
-  def interactive_entity_dashboard_section
-    interactive_breakdown_dashboard_section(
-      title: "Entity Interactive Dashboard",
-      payload: interactive_entity_dashboard_payload,
-      select: { id: "interactive_card_entity_select", label: model_attribute(CardTransaction, :entity_id) },
-      groups_label: model_attribute(CardTransaction, :entities),
-      secondary_label: model_attribute(CardTransaction, :categories)
-    )
-  end
-
-  def interactive_breakdown_dashboard_section(title:, payload:, select:, groups_label:, secondary_label:)
-    section_card(title) do
-      if payload[:items].present?
-        div(
-          class: "space-y-4",
-          data: {
-            controller: "interactive-breakdown-dashboard",
-            interactive_breakdown_dashboard_data_value: payload.to_json
-          }
-        ) do
-          div(class: "w-full") do
-            div(class: "w-full") do
-              label(for: select[:id], class: "mb-2 block text-center font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400") do
-                select[:label]
-              end
-
-              select(
-                id: select[:id],
-                class: "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm " \
-                       "outline-hidden transition focus:border-sky-400 focus:ring-1 focus:ring-sky-400 dark:border-slate-700 " \
-                       "dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-500/50 dark:focus:ring-sky-500/60",
-                data: {
-                  interactive_breakdown_dashboard_target: "primarySelect",
-                  action: "change->interactive-breakdown-dashboard#changePrimary"
-                }
-              ) do
-                payload[:items].each do |item|
-                  option(value: item[:id]) { item[:name] }
-                end
-              end
-            end
-          end
-
-          div(class: "space-y-2") do
-            p(class: "text-center font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400") { groups_label }
-            div(class: "space-y-2") do
-              div(class: "flex flex-wrap gap-2", data: { interactive_breakdown_dashboard_target: "groupActions" })
-              div(class: "flex flex-wrap gap-2", data: { interactive_breakdown_dashboard_target: "groupOptions" })
-            end
-          end
-
-          div(class: "space-y-2 pb-2 sm:pb-3") do
-            p(class: "text-center font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400") { secondary_label }
-            div(class: "space-y-2") do
-              div(class: "flex flex-wrap gap-2", data: { interactive_breakdown_dashboard_target: "secondaryActions" })
-              div(class: "flex flex-wrap gap-2", data: { interactive_breakdown_dashboard_target: "secondaryOptions" })
-            end
-          end
-
-          div(class: "mt-5 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950 sm:mt-6") do
-            div(class: "h-80") do
-              canvas(class: "h-full w-full", data: { interactive_breakdown_dashboard_target: "chartCanvas" })
-            end
-            p(class: "hidden py-10 text-center text-sm text-slate-500", data: { interactive_breakdown_dashboard_target: "emptyState" }) do
-              I18n.t("dashboards.empty")
             end
           end
         end
@@ -502,229 +429,10 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
     @reference_years ||= reference_records.map(&:year).uniq.sort
   end
 
-  def interactive_category_dashboard_payload
-    @interactive_category_dashboard_payload ||= begin
-      categories = {}
-
-      scoped_card_transactions_for_dashboard.each do |card_transaction|
-        append_interactive_dashboard_card_transaction!(categories, card_transaction)
-      end
-
-      {
-        primaryKind: "category",
-        secondaryKind: "entity",
-        rangeStart: interactive_dashboard_range_start,
-        items: serialize_interactive_dashboard_entries(categories.values)
-      }
-    end
-  end
-
-  def interactive_entity_dashboard_payload
-    @interactive_entity_dashboard_payload ||= begin
-      entities = {}
-
-      scoped_card_transactions_for_dashboard.each do |card_transaction|
-        append_interactive_entity_dashboard_card_transaction!(entities, card_transaction)
-      end
-
-      {
-        primaryKind: "entity",
-        secondaryKind: "category",
-        rangeStart: interactive_dashboard_range_start,
-        items: serialize_interactive_dashboard_entries(entities.values)
-      }
-    end
-  end
-
-  def append_interactive_dashboard_card_transaction!(categories, card_transaction)
-    selectable_categories = card_transaction.categories.reject { |category| interactive_dashboard_base_category_excluded?(category) }
-    return if selectable_categories.blank? || card_transaction.entity_transactions.blank? || card_transaction.card_installments.blank?
-
-    visible_entities = card_transaction.entity_transactions.filter_map(&:entity).uniq(&:id)
-
-    selectable_categories.each do |base_category|
-      category_entry = ensure_interactive_dashboard_category_entry!(categories, base_category)
-      aggregate_group_entry = ensure_interactive_dashboard_aggregate_group_entry!(category_entry, base_category, type: :category)
-      extra_categories = card_transaction.categories.reject do |category|
-        category.id == base_category.id || interactive_dashboard_group_category_excluded?(category)
-      end.sort_by(&:name)
-      group_entry = ensure_interactive_dashboard_group_entry!(category_entry, extra_categories, type: :category)
-
-      if extra_categories.blank?
-        aggregate_entity_entry = ensure_interactive_dashboard_entity_secondary_entry!(aggregate_group_entry, visible_entities)
-        append_interactive_dashboard_installments!(aggregate_entity_entry, card_transaction.card_installments)
-      end
-
-      next if group_entry.blank?
-
-      entity_entry = ensure_interactive_dashboard_entity_secondary_entry!(group_entry, visible_entities)
-      append_interactive_dashboard_installments!(entity_entry, card_transaction.card_installments)
-    end
-  end
-
-  def append_interactive_entity_dashboard_card_transaction!(entities, card_transaction)
-    selectable_categories = card_transaction.categories.reject { |category| interactive_dashboard_group_category_excluded?(category) }
-    visible_entities = card_transaction.entity_transactions.filter_map(&:entity).uniq(&:id)
-    return if visible_entities.blank? || selectable_categories.blank? || card_transaction.card_installments.blank?
-
-    visible_entities.each do |base_entity|
-      entity_entry = ensure_interactive_dashboard_entity_entry!(entities, base_entity)
-      aggregate_group_entry = ensure_interactive_dashboard_aggregate_group_entry!(entity_entry, base_entity, type: :entity)
-      extra_entities = visible_entities.reject { |entity| entity.id == base_entity.id }.sort_by(&:name)
-      group_entry = ensure_interactive_dashboard_group_entry!(entity_entry, extra_entities, type: :entity)
-
-      if extra_entities.blank?
-        aggregate_category_entry = ensure_interactive_dashboard_category_secondary_entry!(aggregate_group_entry, selectable_categories)
-        append_interactive_dashboard_installments!(aggregate_category_entry, card_transaction.card_installments)
-      end
-
-      next if group_entry.blank?
-
-      category_entry = ensure_interactive_dashboard_category_secondary_entry!(group_entry, selectable_categories)
-      append_interactive_dashboard_installments!(category_entry, card_transaction.card_installments)
-    end
-  end
-
-  def ensure_interactive_dashboard_category_entry!(categories, category)
-    categories[category.id] ||= {
-      id: category.id.to_s,
-      record: category,
-      name: category.name,
-      groups: {},
-      type: :category
-    }
-  end
-
-  def ensure_interactive_dashboard_entity_entry!(entities, entity)
-    entities[entity.id] ||= {
-      id: entity.id.to_s,
-      record: entity,
-      name: entity.name,
-      groups: {},
-      type: :entity
-    }
-  end
-
-  def ensure_interactive_dashboard_group_entry!(primary_entry, extra_records, type:)
-    return if extra_records.blank?
-
-    group_id = extra_records.map(&:id).join("-")
-
-    primary_entry[:groups][group_id] ||= {
-      id: group_id,
-      label: interactive_dashboard_group_label(extra_records),
-      memberIds: [ primary_entry[:record].id, *extra_records.map(&:id) ].sort.map(&:to_s),
-      rank: 1,
-      secondaryItems: {},
-      type:
-    }
-  end
-
-  def ensure_interactive_dashboard_aggregate_group_entry!(primary_entry, base_record, type:)
-    primary_entry[:groups]["__all__"] ||= {
-      id: "__all__",
-      label: "ONLY #{base_record.name}",
-      memberIds: [ base_record.id.to_s ],
-      rank: -1,
-      secondaryItems: {},
-      type:
-    }
-  end
-
-  def interactive_dashboard_group_label(extra_records)
-    "+ #{extra_records.map(&:name).join(' & ')}"
-  end
-
-  def ensure_interactive_dashboard_entity_secondary_entry!(group_entry, entities)
-    sorted_entities = entities.sort_by(&:name)
-    entity_ids = sorted_entities.map(&:id)
-    entity_id = entity_ids.join("-")
-
-    group_entry[:secondaryItems][entity_id] ||= {
-      record: sorted_entities.first,
-      id: entity_id,
-      memberIds: entity_ids.map(&:to_s),
-      name: sorted_entities.map(&:name).join(" / "),
-      avatarPaths: sorted_entities.filter_map { |entity| entity.avatar_name.present? ? asset_path("avatars/#{entity.avatar_name}") : nil },
-      rank: sorted_entities.length,
-      total: 0,
-      points: Hash.new(0)
-    }
-  end
-
-  def ensure_interactive_dashboard_category_secondary_entry!(group_entry, categories)
-    sorted_categories = categories.sort_by(&:name)
-    category_ids = sorted_categories.map(&:id)
-    category_id = category_ids.join("-")
-    chart_presentation = CategoryColours::Presentation.bundle(sorted_categories).chart_payload
-    swatches = chart_presentation[:segments].first(3)
-
-    group_entry[:secondaryItems][category_id] ||= {
-      record: sorted_categories.first,
-      id: category_id,
-      memberIds: category_ids.map(&:to_s),
-      name: sorted_categories.map(&:name).join(" / "),
-      chartPresentation: chart_presentation.except(:segments),
-      swatches:,
-      swatchHexes: swatches.pluck(:background),
-      rank: sorted_categories.length,
-      total: 0,
-      points: Hash.new(0)
-    }
-  end
-
-  def append_interactive_dashboard_installments!(entry, card_installments)
-    card_installments.each do |card_installment|
-      amount = card_installment.price.to_i
-      month_key = card_installment.date.to_date.beginning_of_month.iso8601
-
-      entry[:total] += amount
-      entry[:points][month_key] += amount
-    end
-  end
-
-  def serialize_interactive_dashboard_entries(entries)
-    entries.sort_by { |entry| entry[:name] }.map do |entry|
-      {
-        id: entry[:id],
-        name: entry[:name],
-        groups: entry[:groups].values.sort_by { |group| [ group[:rank], group[:label] ] }.map do |group|
-          {
-            id: group[:id],
-            label: group[:label],
-            memberIds: group[:memberIds],
-            secondaryItems: sort_breakdowns(group[:secondaryItems].values).map do |item|
-              item.except(:record, :rank).merge(
-                points: item[:points].sort_by { |month_year, _| month_year }.map { |month_year, value| { x: month_year, y: value } }
-              )
-            end
-          }
-        end
-      }
-    end
-  end
-
-  def interactive_dashboard_range_start
-    earliest_date = scoped_card_transactions.joins(:card_installments, :categories)
-                                            .where.not(categories: { category_name: [ "EXCHANGE", "EXCHANGE RETURN" ] })
-                                            .minimum("installments.date")
-    return if earliest_date.blank?
-
-    earliest_date.to_date.beginning_of_month.iso8601
-  end
-
-  def scoped_card_transactions_for_dashboard
-    @scoped_card_transactions_for_dashboard ||= scoped_card_transactions
-                                                .includes(:card_installments, :categories, entity_transactions: :entity)
-                                                .to_a
-  end
-
-  def interactive_dashboard_base_category_excluded?(category)
-    category.built_in? && category.attributes["category_name"].in?([ "EXCHANGE", "EXCHANGE RETURN" ])
-  end
-
-  def interactive_dashboard_group_category_excluded?(category)
-    category.built_in? && category.attributes["category_name"] == "EXCHANGE RETURN"
+  def report_query_state
+    @report_query_state ||= Reports::QueryState.new(params.permit(:from_date, :to_date, :granularity, :paid_state, :direction, :sort))
+  rescue Reports::QueryState::InvalidState
+    Reports::QueryState.new
   end
 
   def empty_state

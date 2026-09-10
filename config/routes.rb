@@ -32,6 +32,8 @@ Rails.application.routes.draw do
   end
 
   resources :user_cards do
+    resource :movement, only: :show, controller: "reports/user_card_movements", defaults: { format: :json }
+
     member do
       get :reference_date
     end

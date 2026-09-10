@@ -29,7 +29,8 @@ export default class extends Controller {
     "bucketList",
     "breakdownList",
     "paymentStateList",
-    "balanceContext"
+    "balanceContext",
+    "detailList"
   ]
 
   connect() {
@@ -134,6 +135,7 @@ export default class extends Controller {
     this.renderChart(payload.buckets)
     this.renderEntries(this.bucketListTarget, payload.buckets, "bucket")
     this.renderEntries(this.breakdownListTarget, payload.breakdowns, "breakdown")
+    if (this.hasDetailListTarget) this.renderDetails(payload.details || [])
     this.showContent()
   }
 
@@ -254,6 +256,76 @@ export default class extends Controller {
       this.recordedBalanceCard(this.label("first_recorded"), context.first_recorded),
       this.recordedBalanceCard(this.label("latest_recorded"), context.latest_recorded)
     )
+  }
+
+  renderDetails(details) {
+    this.detailListTarget.replaceChildren()
+    details.forEach((detail) => this.detailListTarget.appendChild(this.detailCard(detail)))
+  }
+
+  detailCard(detail) {
+    const row = document.createElement("li")
+    row.className = "rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+
+    const header = document.createElement("div")
+    header.className = "flex min-w-0 items-start justify-between gap-3"
+    const description = document.createElement("p")
+    description.className = "min-w-0 break-words text-sm font-bold text-slate-950 dark:text-slate-100"
+    description.textContent = detail.description
+    const amount = document.createElement("span")
+    amount.className = "shrink-0 text-sm font-bold text-slate-950 dark:text-slate-100"
+    amount.textContent = this.formatCents(detail.amount_cents)
+    header.append(description, amount)
+    row.appendChild(header)
+
+    const metadata = document.createElement("dl")
+    metadata.className = "mt-3 grid gap-2 text-xs sm:grid-cols-2 xl:grid-cols-3"
+    metadata.append(
+      this.metadataItem("purchase_date", this.formatDate(detail.purchase_date)),
+      this.metadataItem("installment_date", this.formatDate(detail.installment_date)),
+      this.metadataItem("billing_period", this.formatPeriod(detail.billing_period)),
+      this.metadataItem("closing_date", this.optionalDate(detail.invoice?.closing_date)),
+      this.metadataItem("due_date", this.optionalDate(detail.invoice?.due_date)),
+      this.metadataItem("installment", `#${detail.installment_number}`),
+      this.metadataItem(detail.paid ? "paid" : "pending", `#${detail.identity.installment_id}`),
+      this.metadataItem("invoice", this.identityLabel("Reference", detail.invoice?.reference_id)),
+      this.metadataItem("generated_payment", this.identityLabel("CashTransaction", detail.generated_payment?.cash_transaction_id))
+    )
+    if (detail.advance?.active) {
+      metadata.appendChild(this.metadataItem("advance", this.identityLabel("CashTransaction", detail.advance.cash_transaction_id)))
+    }
+    row.appendChild(metadata)
+
+    const link = document.createElement("a")
+    link.href = detail.path
+    link.className = "mt-3 inline-flex rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-100 " +
+      "dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300 dark:hover:bg-sky-900/50"
+    link.dataset.turboFrame = "_top"
+    link.dataset.turboPrefetch = "false"
+    link.textContent = this.label("view_source")
+    row.appendChild(link)
+    return row
+  }
+
+  metadataItem(labelKey, value) {
+    const wrapper = document.createElement("div")
+    wrapper.className = "rounded-lg bg-slate-50 px-2.5 py-2 dark:bg-slate-950/70"
+    const term = document.createElement("dt")
+    term.className = "font-semibold text-slate-500 dark:text-slate-400"
+    term.textContent = this.label(labelKey)
+    const description = document.createElement("dd")
+    description.className = "mt-0.5 break-words font-medium text-slate-900 dark:text-slate-100"
+    description.textContent = value
+    wrapper.append(term, description)
+    return wrapper
+  }
+
+  optionalDate(value) {
+    return value ? this.formatDate(value) : this.label("unavailable")
+  }
+
+  identityLabel(type, id) {
+    return id ? `${type} #${id}` : this.label("unavailable")
   }
 
   balanceCard(labelText, amountCents, detail = null) {
