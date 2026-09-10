@@ -37,6 +37,14 @@ RSpec.describe AllocationMutations::PaidHistoryEnvelope do
     expect(described_class.new(transaction).safe?).to be(true)
   end
 
+  it "accepts clearing legacy import metadata" do
+    transaction = paid_card_transaction
+    transaction.update_column(:imported, true)
+    transaction.reload.imported = false
+
+    expect(described_class.new(transaction).safe?).to be(true)
+  end
+
   it "rejects parent and installment price changes" do
     transaction = paid_cash_transaction
     installment = transaction.cash_installments.load.first

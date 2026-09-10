@@ -133,6 +133,7 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include('data-controller="form-loading"')
       expect(response.body).to include('id="card_transaction_form_submission_skeleton"')
       expect(response.body).to include('name="card_transaction[historical_correction_confirmation]"')
+      expect(response.body).to include('data-reactive-form-preserve-installment-prices-value="true"')
     end
 
     it "renders card-bound exchange datetimes as read-only while keeping their canonical values enabled" do
@@ -1621,6 +1622,51 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include(I18n.t("notification.history_workarounds.paid_history_locked.card_transaction"))
       expect(response.body).to include('data-notification-sticky-value="true"')
       expect(locked_transaction.reload.card_installments.find_by!(number: 2).date.to_date).to eq(Date.new(2026, 4, 10))
+    end
+
+    it "corrects an imported paid allocation without redistributing uneven installment prices" do
+      transaction = create_card_transaction_with_history(
+        description: "Imported allocation correction",
+        installments: [
+          { number: 1, price: -2_866, date: Time.zone.local(2022, 2, 14), month: 3, year: 2022, paid: true },
+          { number: 2, price: -2_866, date: Time.zone.local(2022, 2, 14), month: 4, year: 2022, paid: true },
+          { number: 3, price: -2_865, date: Time.zone.local(2022, 2, 14), month: 5, year: 2022, paid: true }
+        ]
+      )
+      transaction.update_columns(price: -8_597, starting_price: -8_597, imported: true, paid: true, date: Time.zone.local(2022, 2, 14), month: 3, year: 2022)
+      original_category_transaction = transaction.category_transactions.first
+      replacement_category = create(:category, user:, category_name: "ASSETS")
+
+      put card_transaction_path(transaction), params: {
+        card_transaction: {
+          description: transaction.description,
+          comment: "",
+          price: -8_597,
+          date: Time.zone.local(2022, 2, 14),
+          user_id: user.id,
+          user_card_id: user_card_one.id,
+          category_transactions_attributes: {
+            "0" => { id: original_category_transaction.id, category_id: original_category_transaction.category_id, _destroy: true },
+            "1" => { category_id: replacement_category.id, _destroy: false }
+          },
+          card_installments_attributes: transaction.card_installments.order(:number).map.with_index do |installment, index|
+            [ index.to_s, {
+              id: installment.id,
+              number: installment.number,
+              date: installment.date,
+              month: installment.month,
+              year: installment.year,
+              price: installment.price,
+              _destroy: false
+            } ]
+          end.to_h
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      expect(transaction.reload.imported).to be(false)
+      expect(transaction.categories).to contain_exactly(replacement_category)
+      expect(transaction.card_installments.order(:number).pluck(:price)).to eq([ -2_866, -2_866, -2_865 ])
     end
 
     it "allows a same-cycle paid date correction without confirmation" do
