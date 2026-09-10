@@ -2703,6 +2703,62 @@ RSpec.describe "CashTransactions", type: :request do
       expect(locked_transaction.reload.cash_installments.find_by!(number: 2).date.to_date).to eq(Date.new(2026, 4, 10))
     end
 
+    it "extends a fully paid transaction with a future pending installment" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Extended event expense",
+        price: -35_000,
+        date: Date.new(2026, 9, 10),
+        month: 9,
+        year: 2026
+      )
+      paid_installment = transaction.cash_installments.first
+      paid_installment.update!(price: -35_000, starting_price: -35_000, date: Date.new(2026, 9, 10), month: 9, year: 2026, paid: true)
+      transaction.update_columns(price: -35_000, starting_price: -35_000, paid: true)
+
+      put cash_transaction_path(transaction), params: {
+        cash_installments_count: 2,
+        cash_transaction: {
+          description: transaction.description,
+          price: -70_000,
+          date: transaction.date,
+          month: transaction.month,
+          year: transaction.year,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          cash_installments_attributes: {
+            "0" => {
+              id: paid_installment.id,
+              number: 1,
+              price: -35_000,
+              date: Date.new(2026, 9, 10),
+              month: 9,
+              year: 2026,
+              paid: true
+            },
+            "1" => {
+              number: 2,
+              price: -35_000,
+              date: Date.new(2026, 10, 10),
+              month: 10,
+              year: 2026,
+              paid: false
+            }
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      expect(transaction.reload).to have_attributes(price: -70_000, paid: false, cash_installments_count: 2)
+      expect(transaction.cash_installments.order(:number).pluck(:price, :paid, :date)).to eq([
+                                                                                               [ -35_000, true, Time.zone.local(2026, 9, 10) ],
+                                                                                               [ -35_000, false, Time.zone.local(2026, 10, 10) ]
+                                                                                             ])
+    end
+
     it "shows the historical workaround when trying to unpay an old paid installment" do
       locked_transaction = create_cash_transaction_with_paid_history(description: "Old paid installment")
       first_installment = locked_transaction.cash_installments.find_by!(number: 1)
