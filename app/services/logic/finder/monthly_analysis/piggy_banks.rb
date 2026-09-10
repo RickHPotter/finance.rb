@@ -63,30 +63,51 @@ class Logic::Finder::MonthlyAnalysis::PiggyBanks
     return if return_transaction.blank?
 
     field = installment.paid? ? :contributed : :projected_contribution
-    group_for(groups, return_transaction)[field] += installment.price.to_i.abs
+    group = group_for(groups, return_transaction)
+    group[field] += installment.price.to_i.abs
+    group[:sources][field] << source_navigation(
+      installment.cash_transaction,
+      installment:,
+      role: field,
+      origin: :source,
+      amount_cents: installment.price.to_i.abs
+    )
   end
 
   def add_withdrawal(groups, installment)
     field = installment.paid? ? :withdrawn : :projected_withdrawal
-    group_for(groups, installment.cash_transaction)[field] += installment.price.to_i.abs
+    group = group_for(groups, installment.cash_transaction)
+    group[field] += installment.price.to_i.abs
+    group[:sources][field] << source_navigation(
+      installment.cash_transaction,
+      installment:,
+      role: field,
+      origin: :generated_return,
+      amount_cents: installment.price.to_i.abs
+    )
   end
 
   def add_valuation(groups, investment)
     return_transaction = investment.piggy_bank_return_cash_transaction
     return if return_transaction.blank?
 
-    group_for(groups, return_transaction)[:recognized_profit_loss] += investment.price.to_i
+    group = group_for(groups, return_transaction)
+    group[:recognized_profit_loss] += investment.price.to_i
+    group[:sources][:recognized_profit_loss] << source_navigation(investment, role: :valuation, origin: :valuation, amount_cents: investment.price.to_i)
   end
 
   def group_for(groups, return_transaction)
     groups[return_transaction.id] ||= {
       return_cash_transaction_id: return_transaction.id,
+      return_identity: { record_type: return_transaction.class.name, record_id: return_transaction.id },
+      return_path: source_navigation(return_transaction, role: :piggy_bank_return, origin: :generated_return).fetch(:path),
       label: return_transaction.description,
       contributed: 0,
       projected_contribution: 0,
       withdrawn: 0,
       projected_withdrawal: 0,
-      recognized_profit_loss: 0
+      recognized_profit_loss: 0,
+      sources: TOTAL_FIELDS.index_with { [] }
     }
   end
 
@@ -104,5 +125,13 @@ class Logic::Finder::MonthlyAnalysis::PiggyBanks
 
   def serialize_cents(amount)
     amount.fdiv(100)
+  end
+
+  def source_navigation(record, role:, origin:, installment: nil, amount_cents: nil)
+    Reports::SourceNavigation.new(record:, installment:, role:, origin:, amount_cents:, return_to: analysis_return_path).call
+  end
+
+  def analysis_return_path
+    @analysis_return_path ||= Rails.application.routes.url_helpers.balances_path(tab: "monthly_analysis", month: @month.strftime("%Y-%m"))
   end
 end

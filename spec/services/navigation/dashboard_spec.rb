@@ -72,4 +72,18 @@ RSpec.describe Navigation::Dashboard do
 
     expect(rejected.map { |path| destination(path) }).to all(be_nil)
   end
+
+  it "accepts only a validated Monthly Analysis return destination" do
+    expect(destination("/balances?tab=monthly_analysis&month=2026-07")).to eq("/balances?month=2026-07&tab=monthly_analysis")
+
+    rejected = [
+      "/balances",
+      "/balances?tab=overview&month=2026-07",
+      "/balances?tab=monthly_analysis&month=2026-13",
+      "https://example.com/balances?tab=monthly_analysis&month=2026-07"
+    ]
+
+    expect(rejected.map { |path| destination(path) }).to all(be_nil)
+    expect(destination("/balances?tab=monthly_analysis&month=2026-07&unsafe=true")).to eq("/balances?month=2026-07&tab=monthly_analysis")
+  end
 end

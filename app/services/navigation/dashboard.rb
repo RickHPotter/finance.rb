@@ -28,6 +28,7 @@ module Navigation
 
       uri = URI.parse(raw.to_s)
       return unless uri.fragment.blank?
+      return monthly_analysis_destination(uri) if uri.path == "/balances"
 
       resource, id = route_identity(uri.path)
       return if resource.blank? || !owned?(resource, id)
@@ -43,6 +44,22 @@ module Navigation
     end
 
     private
+
+    def monthly_analysis_destination(_uri)
+      state = State.new(
+        raw:,
+        fallback: "/",
+        allowed_paths: [ "/balances" ],
+        query_schema: { tab: :scalar, month: :scalar }
+      )
+      return unless state.accepted?
+
+      query = Rack::Utils.parse_nested_query(URI.parse(state.destination).query)
+      return unless query["tab"] == "monthly_analysis"
+      return unless /\A\d{4}-(0[1-9]|1[0-2])\z/.match?(query["month"].to_s)
+
+      state.destination
+    end
 
     def route_identity(path)
       match = ROUTE_PATTERN.match(path)

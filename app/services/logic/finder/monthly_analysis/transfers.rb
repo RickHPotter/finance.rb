@@ -26,15 +26,15 @@ class Logic::Finder::MonthlyAnalysis::Transfers
 
   def transfer_items
     accumulator = {}
-    add_installment_transfers(accumulator, cash_transfer_installments(SENT_EXCHANGE_CATEGORY_NAME), "sent")
-    add_installment_transfers(accumulator, card_transfer_installments(SENT_EXCHANGE_CATEGORY_NAME), "sent")
-    add_installment_transfers(accumulator, cash_transfer_installments(SENT_INSTALLMENT_CATEGORY_NAME), "sent")
-    add_installment_transfers(accumulator, cash_transfer_installments(RECEIVED_INSTALLMENT_CATEGORY_NAME), "received")
+    add_installment_transfers(accumulator, cash_transfer_installments(SENT_EXCHANGE_CATEGORY_NAME), "sent", :exchange)
+    add_installment_transfers(accumulator, card_transfer_installments(SENT_EXCHANGE_CATEGORY_NAME), "sent", :exchange)
+    add_installment_transfers(accumulator, cash_transfer_installments(SENT_INSTALLMENT_CATEGORY_NAME), "sent", :borrow_return)
+    add_installment_transfers(accumulator, cash_transfer_installments(RECEIVED_INSTALLMENT_CATEGORY_NAME), "received", :exchange_return)
 
     accumulator.values.sort_by { |item| [ -item[:amount], item[:entity_label], item[:direction], item[:entity_id].to_s ] }
   end
 
-  def add_installment_transfers(accumulator, installments, direction)
+  def add_installment_transfers(accumulator, installments, direction, role)
     installments.each do |installment|
       bundle = entity_bundle(installment.transactable)
       bundle[:key] = "entity:#{bundle[:id]}" if bundle[:id]
@@ -42,15 +42,17 @@ class Logic::Finder::MonthlyAnalysis::Transfers
         accumulator,
         entity: bundle,
         direction:,
-        amount: installment.price
+        amount: installment.price,
+        source: transfer_source(installment, role)
       )
     end
   end
 
-  def add_transfer_amount(accumulator, entity:, direction:, amount:)
+  def add_transfer_amount(accumulator, entity:, direction:, amount:, source:)
     key = [ entity[:key], direction ]
-    accumulator[key] ||= { entity_id: entity[:id], entity_label: entity[:label], direction:, amount: 0 }
+    accumulator[key] ||= { entity_id: entity[:id], entity_label: entity[:label], direction:, amount: 0, sources: [] }
     accumulator[key][:amount] += amount.to_i.abs
+    accumulator[key][:sources] << source
   end
 
   def failed_transaction_ids(relation)
@@ -82,21 +84,34 @@ class Logic::Finder::MonthlyAnalysis::Transfers
   end
 
   def failed_transfer_items
-    accumulator = failed_installments.each_with_object({}) do |installment, result|
-      bundle = entity_bundle(installment.cash_transaction)
-      result[bundle[:key]] ||= {
-        key: bundle[:key],
-        entity_label: bundle[:label],
-        amount: 0,
-        state: "failed",
-        amount_source: "starting_price"
-      }
-      result[bundle[:key]][:amount] += installment.starting_price.to_i.abs
-    end
+    accumulator = failed_installments.each_with_object({}) { |installment, result| add_failed_transfer(result, installment) }
 
     accumulator.values
                .sort_by { |item| [ -item[:amount], item[:entity_label], item[:key] ] }
                .map { |item| item.merge(amount: serialize_cents(item[:amount])) }
+  end
+
+  def add_failed_transfer(accumulator, installment)
+    bundle = entity_bundle(installment.cash_transaction)
+    accumulator[bundle[:key]] ||= failed_transfer_group(bundle)
+    accumulator[bundle[:key]][:amount] += installment.starting_price.to_i.abs
+    accumulator[bundle[:key]][:sources] << source_navigation(
+      installment,
+      :failed_return,
+      return_origin(installment),
+      amount_cents: installment.starting_price.to_i.abs
+    )
+  end
+
+  def failed_transfer_group(bundle)
+    {
+      key: bundle[:key],
+      entity_label: bundle[:label],
+      amount: 0,
+      state: "failed",
+      amount_source: "starting_price",
+      sources: []
+    }
   end
 
   def failed_installments
@@ -124,6 +139,31 @@ class Logic::Finder::MonthlyAnalysis::Transfers
       id: entities.one? ? entities.first.id : nil,
       label: entities.map(&:name).join(" + ")
     }
+  end
+
+  def transfer_source(installment, role)
+    origin = role == :exchange ? :source : return_origin(installment)
+
+    source_navigation(installment, role, origin, amount_cents: installment.price.to_i.abs)
+  end
+
+  def return_origin(installment)
+    installment.transactable.reference_transactable_id.present? ? :generated_return : :return
+  end
+
+  def source_navigation(installment, role, origin, amount_cents:)
+    Reports::SourceNavigation.new(
+      record: installment.transactable,
+      installment:,
+      role:,
+      origin:,
+      amount_cents:,
+      return_to: analysis_return_path
+    ).call
+  end
+
+  def analysis_return_path
+    @analysis_return_path ||= Rails.application.routes.url_helpers.balances_path(tab: "monthly_analysis", month: @month.strftime("%Y-%m"))
   end
 
   def serialize_cents(amount)

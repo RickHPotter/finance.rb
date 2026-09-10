@@ -280,7 +280,7 @@ export default class extends Controller {
       return
     }
 
-    items.forEach((item) => list.appendChild(this.amountRow(item[labelKey], item.amount)))
+    items.forEach((item) => list.appendChild(this.amountRow(item[labelKey], item.amount, item.sources || [])))
   }
 
   renderPiggyBanks(piggyBanks) {
@@ -308,6 +308,15 @@ export default class extends Controller {
     title.textContent = group.label
     item.appendChild(title)
 
+    if (group.return_path) {
+      item.appendChild(this.sourceLink({
+        identity: group.return_identity,
+        origin: "generated_return",
+        role: "piggy_bank_return",
+        path: group.return_path
+      }))
+    }
+
     const metrics = document.createElement("dl")
     metrics.className = "mt-3 grid grid-cols-2 gap-3 lg:grid-cols-5"
     const values = [
@@ -318,12 +327,14 @@ export default class extends Controller {
       ["recognized_profit_loss", group.recognized_profit_loss, false]
     ]
 
-    values.forEach(([key, value, projected]) => metrics.appendChild(this.metricDefinition(this.label(key), value, projected)))
+    values.forEach(([key, value, projected]) => {
+      metrics.appendChild(this.metricDefinition(this.label(key), value, projected, group.sources?.[key] || []))
+    })
     item.appendChild(metrics)
     return item
   }
 
-  metricDefinition(labelText, value, projected) {
+  metricDefinition(labelText, value, projected, sources) {
     const wrapper = document.createElement("div")
     wrapper.className = projected ? "border-l-2 border-dashed border-amber-500 pl-2" : "border-l-2 border-stone-300 pl-2 dark:border-slate-600"
 
@@ -336,12 +347,16 @@ export default class extends Controller {
     amount.textContent = this.formatCurrency(value)
 
     wrapper.append(label, amount)
+    if (sources.length) wrapper.appendChild(this.sourceLinks(sources))
     return wrapper
   }
 
-  amountRow(labelText, value) {
+  amountRow(labelText, value, sources = []) {
     const row = document.createElement("li")
-    row.className = "flex min-w-0 items-start justify-between gap-3 border-t border-stone-100 pt-2 text-sm dark:border-slate-800"
+    row.className = "min-w-0 border-t border-stone-100 pt-2 text-sm dark:border-slate-800"
+
+    const summary = document.createElement("div")
+    summary.className = "flex min-w-0 items-start justify-between gap-3"
 
     const label = document.createElement("span")
     label.className = "min-w-0 break-words text-stone-700 dark:text-slate-300"
@@ -351,8 +366,30 @@ export default class extends Controller {
     amount.className = "shrink-0 font-semibold text-stone-900 dark:text-slate-100"
     amount.textContent = this.formatCurrency(value)
 
-    row.append(label, amount)
+    summary.append(label, amount)
+    row.appendChild(summary)
+    if (sources.length) row.appendChild(this.sourceLinks(sources))
     return row
+  }
+
+  sourceLinks(sources) {
+    const links = document.createElement("div")
+    links.className = "mt-2 flex flex-wrap gap-1.5"
+    sources.forEach((source) => links.appendChild(this.sourceLink(source)))
+    return links
+  }
+
+  sourceLink(source) {
+    const link = document.createElement("a")
+    link.href = source.path
+    link.className = "inline-flex max-w-full items-center rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-2xs font-semibold text-sky-800 " +
+      "hover:bg-sky-100 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300 dark:hover:bg-sky-900/50"
+    link.dataset.turboFrame = "_top"
+    link.dataset.turboPrefetch = "false"
+    link.title = this.label("view_source")
+    const amount = source.amount_cents === null || source.amount_cents === undefined ? "" : ` — ${this.formatCurrency(source.amount_cents / 100)}`
+    link.textContent = `${this.label(source.origin)} · ${source.identity.record_type} #${source.identity.record_id}${amount}`
+    return link
   }
 
   emptyListItem() {

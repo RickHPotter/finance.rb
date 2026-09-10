@@ -45,6 +45,11 @@ en:
       projected_withdrawal: Projected withdrawal
       recognized_profit_loss: Recognized profit/loss
       no_items: No activity
+      view_source: View source
+      source: Source
+      return: Return
+      generated_return: Generated return
+      valuation: Valuation
       unassigned: Unassigned
       invalid_month: Month must use the YYYY-MM format.
     types:
@@ -97,6 +102,11 @@ pt-BR:
       projected_withdrawal: Retirada projetada
       recognized_profit_loss: Lucro/prejuízo reconhecido
       no_items: Nenhuma atividade
+      view_source: Ver origem
+      source: Origem
+      return: Retorno
+      generated_return: Retorno gerado
+      valuation: Valorização
       unassigned: Não atribuído
       invalid_month: O mês deve usar o formato AAAA-MM.
     types:
