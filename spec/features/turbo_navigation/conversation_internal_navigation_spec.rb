@@ -60,9 +60,9 @@ RSpec.describe "Conversation and internal-screen Turbo navigation", type: :featu
   end
 
   it "keeps internal ledger scope and filter state in the refreshable URL" do
-    create(:entity, user:, entity_name: "LALA")
+    ledger_entity = create(:entity, user:, entity_name: "LALA")
     initial_path = internal_cash_transactions_path(
-      entity_slug: "lala",
+      entity_public_id: ledger_entity.public_id,
       active_month_years: [ 202_607 ].to_json
     )
 
@@ -74,11 +74,11 @@ RSpec.describe "Conversation and internal-screen Turbo navigation", type: :featu
 
     current_uri = URI.parse(page.current_url)
     query = Rack::Utils.parse_nested_query(current_uri.query)
-    expect(current_uri.path).to eq(internal_cash_transactions_path(entity_slug: "lala"))
+    expect(current_uri.path).to eq(internal_cash_transactions_path(entity_public_id: ledger_entity.public_id))
     expect(query).to include("search_term" => "SCOPED FILTER", "active_month_years" => [ 202_607 ].to_json)
 
     refresh_browser_at(current_uri.request_uri)
     lazy_frame = find("turbo-frame#month_year_container_202607", visible: :all)
-    expect(URI.parse(lazy_frame["src"]).path).to eq(month_year_internal_cash_transactions_path(entity_slug: "lala"))
+    expect(URI.parse(lazy_frame["src"]).path).to eq(month_year_internal_cash_transactions_path(entity_public_id: ledger_entity.public_id))
   end
 end

@@ -767,7 +767,8 @@ CREATE TABLE public.entities (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     built_in boolean DEFAULT false NOT NULL,
-    friendship_id bigint
+    friendship_id bigint,
+    public_id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -2596,6 +2597,13 @@ CREATE INDEX index_entities_on_friendship_id ON public.entities USING btree (fri
 
 
 --
+-- Name: index_entities_on_public_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_entities_on_public_id ON public.entities USING btree (public_id);
+
+
+--
 -- Name: index_entities_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3644,6 +3652,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260911090000'),
 ('20260909090000'),
 ('20260820220000'),
 ('20260820210000'),

@@ -7,17 +7,16 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
   let(:other_user) { create(:user, :random) }
   let!(:friendship) { create(:friendship, :accepted, user:, friend: other_user) }
   let(:conversation) { resolve_human_conversation(user, other_user) }
+  let(:ledger_entity) { create(:entity, user:, entity_name: "LALA") }
 
   before { sign_in user }
 
   it "renders conversation and scoped internal entries as canonical HTML" do
-    create(:entity, user:, entity_name: "LALA")
-
     [
       conversations_path,
       conversation_path(conversation),
-      internal_cash_transactions_path(entity_slug: "lala"),
-      internal_card_transactions_path(entity_slug: "lala")
+      internal_cash_transactions_path(entity_public_id: ledger_entity.public_id),
+      internal_card_transactions_path(entity_public_id: ledger_entity.public_id)
     ].each do |path|
       get path, headers: html_headers
 
@@ -29,13 +28,13 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
   end
 
   it "canonicalizes obsolete stream-format conversation and internal entry URLs" do
-    create(:entity, user:, entity_name: "LALA")
-
     {
       conversations_path(format: :turbo_stream) => conversations_path,
       conversation_path(conversation, format: :turbo_stream) => conversation_path(conversation),
-      internal_cash_transactions_path(entity_slug: "lala", format: :turbo_stream) => internal_cash_transactions_path(entity_slug: "lala"),
-      internal_card_transactions_path(entity_slug: "lala", format: :turbo_stream) => internal_card_transactions_path(entity_slug: "lala")
+      internal_cash_transactions_path(entity_public_id: ledger_entity.public_id, format: :turbo_stream) =>
+        internal_cash_transactions_path(entity_public_id: ledger_entity.public_id),
+      internal_card_transactions_path(entity_public_id: ledger_entity.public_id, format: :turbo_stream) =>
+        internal_card_transactions_path(entity_public_id: ledger_entity.public_id)
     }.each do |stream_path, canonical_path|
       get stream_path
 
@@ -93,11 +92,10 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
   end
 
   it "retains internal and external route scope in filters and lazy month URLs" do
-    create(:entity, user:, entity_name: "LALA")
     active_months = [ 202_607 ].to_json
 
     get internal_cash_transactions_path(
-      entity_slug: "lala",
+      entity_public_id: ledger_entity.public_id,
       search_term: "scoped",
       active_month_years: active_months
     )
@@ -105,13 +103,13 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
     document = Nokogiri::HTML(response.body)
     form = document.at_css("form#search_form")
     lazy_frame = document.at_css("turbo-frame#month_year_container_202607")
-    expect(form["action"]).to eq(internal_cash_transactions_path(entity_slug: "lala"))
+    expect(form["action"]).to eq(internal_cash_transactions_path(entity_public_id: ledger_entity.public_id))
     expect(form["data-turbo-frame"]).to eq("_top")
     expect(form["data-turbo-action"]).to eq("replace")
-    expect_scoped_path(lazy_frame["src"], month_year_internal_cash_transactions_path(entity_slug: "lala"))
+    expect_scoped_path(lazy_frame["src"], month_year_internal_cash_transactions_path(entity_public_id: ledger_entity.public_id))
 
     get internal_card_transactions_path(
-      entity_slug: "lala",
+      entity_public_id: ledger_entity.public_id,
       search_term: "scoped",
       active_month_years: active_months
     )
@@ -119,10 +117,10 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
     document = Nokogiri::HTML(response.body)
     form = document.at_css("form#search_form")
     lazy_frame = document.at_css("turbo-frame#month_year_container_202607")
-    expect(form["action"]).to eq(internal_card_transactions_path(entity_slug: "lala"))
+    expect(form["action"]).to eq(internal_card_transactions_path(entity_public_id: ledger_entity.public_id))
     expect(form["data-turbo-frame"]).to eq("_top")
     expect(form["data-turbo-action"]).to eq("replace")
-    expect_scoped_path(lazy_frame["src"], month_year_internal_card_transactions_path(entity_slug: "lala"))
+    expect_scoped_path(lazy_frame["src"], month_year_internal_card_transactions_path(entity_public_id: ledger_entity.public_id))
 
     get external_cash_transactions_path(
       user_slug: "rikki",

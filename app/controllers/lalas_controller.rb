@@ -39,13 +39,15 @@ class LalasController < ApplicationController
   end
 
   def lala
-    @lala ||= begin
-      target_slug = external_entity_slug.to_s.parameterize
-      entity = Entity.where(user_id: user.id).find_each.detect { |record| external_slug_for(record.entity_name) == target_slug }
-      raise ActiveRecord::RecordNotFound, "External entity not found" if entity.blank? && scoped_entity_request?
+    @lala ||= if internal_request?
+                user.entities.find_by!(public_id: params[:entity_public_id])
+              else
+                target_slug = external_entity_slug.to_s.parameterize
+                entity = Entity.where(user_id: user.id).find_each.detect { |record| external_slug_for(record.entity_name) == target_slug }
+                raise ActiveRecord::RecordNotFound, "External entity not found" if entity.blank? && scoped_entity_request?
 
-      entity
-    end
+                entity
+              end
   end
 
   def lala_context
@@ -97,7 +99,7 @@ class LalasController < ApplicationController
   def internal_route_params
     return nil unless internal_request?
 
-    { entity_slug: params[:entity_slug] }
+    { entity_public_id: params[:entity_public_id] }
   end
 
   def external_request?
@@ -105,7 +107,7 @@ class LalasController < ApplicationController
   end
 
   def internal_request?
-    request.path.start_with?("/internal/") && params[:entity_slug].present?
+    request.path.start_with?("/internal/") && params[:entity_public_id].present?
   end
 
   def scoped_entity_request?

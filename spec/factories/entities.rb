@@ -40,11 +40,13 @@ end
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
 #  friendship_id           :bigint           indexed
+#  public_id               :uuid             not null, uniquely indexed
 #  user_id                 :bigint           not null, indexed, uniquely indexed => [entity_name]
 #
 # Indexes
 #
 #  index_entities_on_friendship_id     (friendship_id)
+#  index_entities_on_public_id         (public_id) UNIQUE
 #  index_entities_on_user_id           (user_id)
 #  index_entity_name_on_composite_key  (user_id,entity_name) UNIQUE
 #

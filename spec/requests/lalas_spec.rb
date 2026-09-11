@@ -147,7 +147,7 @@ RSpec.describe "Lalas", type: :request do
 
       sign_in owner
 
-      get month_year_internal_cash_transactions_path(entity_slug: "sograo"), params: { month_year: "202604" }
+      get month_year_internal_cash_transactions_path(entity_public_id: owner_sograo.public_id), params: { month_year: "202604" }
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("OWNER SOGRAO CASH")
@@ -264,13 +264,44 @@ RSpec.describe "Lalas", type: :request do
 
     it "renders the authenticated internal root for the current user's entity ledger" do
       user = create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-internal-root@example.com")
-      create(:entity, user:, entity_name: "LALA")
+      lala = create(:entity, user:, entity_name: "LALA")
       sign_in user
 
-      get internal_root_path(entity_slug: "lala")
+      get internal_root_path(entity_public_id: lala.public_id)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include(internal_cash_transactions_path(entity_slug: "lala"))
+      expect(response.body).to include(internal_cash_transactions_path(entity_public_id: lala.public_id))
+    end
+
+    it "authenticates before resolving an internal entity identity" do
+      user = create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-protected-ledger@example.com")
+      entity = create(:entity, user:, entity_name: "LALA")
+
+      get internal_root_path(entity_public_id: entity.public_id)
+
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "keeps internal ledger identity stable across entity renames and rejects foreign identities" do
+      owner = create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-stable-ledger@example.com")
+      other_user = create(:user, first_name: "Other", last_name: "Person", email: "other-stable-ledger@example.com")
+      entity = create(:entity, user: owner, entity_name: "ORIGINAL NAME")
+      foreign_entity = create(:entity, user: other_user, entity_name: "ORIGINAL NAME")
+      stable_path = internal_root_path(entity_public_id: entity.public_id)
+      sign_in owner
+
+      get stable_path
+      expect(response).to have_http_status(:ok)
+
+      entity.update!(entity_name: "RENAMED ENTITY")
+      get stable_path
+      expect(response).to have_http_status(:ok)
+
+      get internal_root_path(entity_public_id: foreign_entity.public_id)
+      expect(response).to have_http_status(:not_found)
+
+      get internal_root_path(entity_public_id: "original-name")
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

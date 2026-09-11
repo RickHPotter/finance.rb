@@ -220,7 +220,7 @@ Rails.application.routes.draw do
     end
   end
 
-  scope "/internal/:entity_slug", as: :internal, module: :lalas do
+  scope "/internal/:entity_public_id", as: :internal, module: :lalas do
     root "cash_transactions#index"
 
     resources :card_transactions, only: %i[index] do
