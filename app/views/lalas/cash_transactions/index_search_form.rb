@@ -91,8 +91,7 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
 
   def cash_transactions_path
     return internal_cash_transactions_path(**internal_route_params) if internal_route_params.present?
-    return external_cash_transactions_path(**external_route_params) if external_route_params.present?
 
-    lalas_cash_transactions_path
+    external_cash_transactions_path(**external_route_params)
   end
 end

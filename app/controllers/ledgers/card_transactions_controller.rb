@@ -1,24 +1,22 @@
 # frozen_string_literal: true
 
-# Controller for Unauthenticated User Lala
-class Lalas::CardTransactionsController < LalasController
-  include TranslateHelper
-
+class Ledgers::CardTransactionsController < LedgersController
   def index
     @user_card = user.user_cards.find_by(id: params[:user_card_id]) if params[:user_card_id]
     @user_card ||= user.user_cards.find_by(id: card_transaction_params[:user_card_id])
-
     build_index_context(card_installments_scope)
     set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
-
     render Views::Lalas::CardTransactions::Index.new(index_context: @index_context)
+  end
+
+  def search
+    index
   end
 
   def month_year
     mobile = search_card_transaction_params[:force_mobile] || @mobile
     month_year = search_card_transaction_params[:month_year]
     user_card_id = card_transaction_params[:user_card_id].presence
-
     card_installments = Logic::CardInstallments.find_ref_month_year_by_params(lala_context, external_card_transaction_params, search_card_transaction_params)
 
     render Views::Lalas::CardTransactions::MonthYear.new(
@@ -30,15 +28,16 @@ class Lalas::CardTransactionsController < LalasController
     )
   end
 
+  private
+
   def build_index_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
     min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || (Time.zone.today + 1.month)
     max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || (Time.zone.today + 1.month)
     default_active_month_years = [ [ max_date, Time.zone.today + 1.month ].min.strftime("%Y%m").to_i ]
     years = (min_date.year..max_date.year)
-
     card_installment_ids = [ card_transaction_params[:card_installment_ids] ].flatten&.compact_blank
     category_id = external_card_category_ids
-    entity_id = external_entity_ids
+    entity_id = [ lala.id ]
     search_term = search_card_transaction_params[:search_term]
     from_ct_price = search_card_transaction_params[:from_ct_price]
     to_ct_price = search_card_transaction_params[:to_ct_price]
@@ -47,10 +46,8 @@ class Lalas::CardTransactionsController < LalasController
     from_installments_count = search_card_transaction_params[:from_installments_count]
     to_installments_count = search_card_transaction_params[:to_installments_count]
     force_mobile = search_card_transaction_params[:force_mobile]
-
     active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
     default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
-
     count_by_month_year = Logic::CardInstallments.find_count_based_on_search(
       lala_context,
       card_transaction_params.merge(user_card_id: @user_card&.id || [], category_id:, entity_id:),
@@ -80,21 +77,12 @@ class Lalas::CardTransactionsController < LalasController
     }
   end
 
-  private
-
   def external_card_transaction_params
-    card_transaction_params.merge(
-      category_id: external_card_category_ids,
-      entity_id: external_entity_ids
-    )
+    card_transaction_params.merge(category_id: external_card_category_ids, entity_id: [ lala.id ])
   end
 
   def external_card_category_ids
     user.categories.where(category_name: [ "EXCHANGE" ]).ids
-  end
-
-  def external_entity_ids
-    [ lala&.id ].compact
   end
 
   def card_installments_scope
@@ -104,7 +92,6 @@ class Lalas::CardTransactionsController < LalasController
     scope.where(card_transactions: { user_card_id: @user_card.id })
   end
 
-  # Only allow a list of trusted parameters through.
   def card_transaction_params
     return {} if params[:card_transaction].blank?
 
@@ -121,12 +108,6 @@ class Lalas::CardTransactionsController < LalasController
   end
 
   def search_card_transaction_params
-    params.permit(
-      %i[
-        search_term
-        month_year
-        force_mobile
-      ]
-    )
+    params.permit(%i[search_term month_year force_mobile])
   end
 end

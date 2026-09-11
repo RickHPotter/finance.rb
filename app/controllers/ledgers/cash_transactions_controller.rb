@@ -1,20 +1,19 @@
 # frozen_string_literal: true
 
-# Controller for Unauthenticated User Lala
-class Lalas::CashTransactionsController < LalasController
-  include TranslateHelper
-
+class Ledgers::CashTransactionsController < LedgersController
   def index
     build_index_context(lala_context.cash_installments)
-
     render Views::Lalas::CashTransactions::Index.new(index_context: @index_context)
+  end
+
+  def search
+    index
   end
 
   def month_year
     mobile = search_cash_transaction_params[:force_mobile] || @mobile
     month_year = search_cash_transaction_params[:month_year]
     month_year_str = I18n.l(Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01"), format: "%B %Y")
-
     cash_installments, = Logic::CashTransactions.find_by_ref_month_year(lala_context, external_cash_transaction_params, search_cash_transaction_params)
 
     render Views::Lalas::CashTransactions::MonthYear.new(
@@ -26,24 +25,23 @@ class Lalas::CashTransactionsController < LalasController
     )
   end
 
+  private
+
   def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
     min_date = cash_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
     max_date = cash_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
     default_active_month_years = [ Time.zone.today.clamp(min_date, max_date).strftime("%Y%m").to_i ]
     years = (min_date.year..max_date.year)
-
     category_id = external_cash_category_ids
-    entity_id = external_entity_ids
+    entity_id = [ lala.id ]
     user_bank_account_id = [ cash_transaction_params[:user_bank_account_id] ].flatten&.compact_blank
     search_term = search_cash_transaction_params[:search_term]
     paid = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:paid])
     pending = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:pending])
     skip_budgets = search_cash_transaction_params[:skip_budgets]
     force_mobile = search_cash_transaction_params[:force_mobile]
-
     active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
     default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
-
     count_by_month_year = Logic::CashTransactions.find_count_based_on_search(
       lala_context,
       cash_transaction_params.merge(category_id:, entity_id:),
@@ -70,24 +68,14 @@ class Lalas::CashTransactionsController < LalasController
     }
   end
 
-  private
-
   def external_cash_transaction_params
-    cash_transaction_params.merge(
-      category_id: external_cash_category_ids,
-      entity_id: external_entity_ids
-    )
+    cash_transaction_params.merge(category_id: external_cash_category_ids, entity_id: [ lala.id ])
   end
 
   def external_cash_category_ids
     user.categories.where(category_name: [ "EXCHANGE RETURN", "BORROW RETURN" ]).ids
   end
 
-  def external_entity_ids
-    [ lala&.id ].compact
-  end
-
-  # Only allow a list of trusted parameters through.
   def cash_transaction_params
     return {} if params[:cash_transaction].blank?
 
@@ -104,15 +92,6 @@ class Lalas::CashTransactionsController < LalasController
   end
 
   def search_cash_transaction_params
-    params.permit(
-      %i[
-        search_term
-        paid
-        pending
-        month_year
-        skip_budgets
-        force_mobile
-      ]
-    )
+    params.permit(%i[search_term paid pending month_year skip_budgets force_mobile])
   end
 end

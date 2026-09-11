@@ -9,7 +9,7 @@ class Views::Lalas::CardTransactions::Index < Views::Base
 
   def initialize(index_context: {})
     @index_context = index_context
-    @current_user = User.first
+    @current_user = index_context[:current_user]
     @user_card = index_context[:user_card]
   end
 

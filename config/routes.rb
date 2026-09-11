@@ -202,7 +202,7 @@ Rails.application.routes.draw do
     end
   end
 
-  namespace :lalas do
+  scope "/internal/:entity_public_id", as: :internal, module: "ledgers/internal" do
     root "cash_transactions#index"
 
     resources :card_transactions, only: %i[index] do
@@ -220,25 +220,7 @@ Rails.application.routes.draw do
     end
   end
 
-  scope "/internal/:entity_public_id", as: :internal, module: :lalas do
-    root "cash_transactions#index"
-
-    resources :card_transactions, only: %i[index] do
-      collection do
-        get :month_year
-        get :search
-      end
-    end
-
-    resources :cash_transactions, only: %i[index] do
-      collection do
-        get :month_year
-        get :search
-      end
-    end
-  end
-
-  scope "/:user_slug/external/:entity_slug", as: :external, module: :lalas do
+  scope "/shared/:share_token", as: :external, module: "ledgers/external" do
     root "cash_transactions#index"
 
     resources :card_transactions, only: %i[index] do

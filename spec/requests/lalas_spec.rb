@@ -4,14 +4,15 @@ require "rails_helper"
 
 RSpec.describe "Lalas", type: :request do
   describe "context scoping" do
-    it "renders the dynamic external root for an entity ledger" do
+    it "renders the token-authorized external root for an entity ledger" do
       user = create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-external-root@example.com")
-      create(:entity, user:, entity_name: "LALA")
+      entity = create(:entity, user:, entity_name: "LALA")
+      share = Ledgers::Shares::Create.call(entity:, context: user.main_context)
 
-      get external_root_path(user_slug: "rikki", entity_slug: "lala")
+      get external_root_path(share_token: share.token)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include(external_cash_transactions_path(user_slug: "rikki", entity_slug: "lala"))
+      expect(response.body).to include(external_cash_transactions_path(share_token: share.token))
     end
 
     it "shows only main-context cash transactions in the month view" do
@@ -20,6 +21,7 @@ RSpec.describe "Lalas", type: :request do
       account = create(:user_bank_account, :random, user:, bank:)
       derived_context = create(:context, user:, source_context: user.main_context, name: "Derived")
       lala = create(:entity, user:, entity_name: "LALA")
+      share = Ledgers::Shares::Create.call(entity: lala, context: user.main_context)
       exchange_return = user.built_in_category("EXCHANGE RETURN")
 
       create(
@@ -52,19 +54,20 @@ RSpec.describe "Lalas", type: :request do
         cash_installments_attributes: [ { number: 1, date: Time.zone.local(2026, 4, 7, 12), month: 4, year: 2026, price: -1000, paid: false } ]
       )
 
-      get month_year_lalas_cash_transactions_path, params: { month_year: "202604" }
+      get month_year_external_cash_transactions_path(share_token: share.token), params: { month_year: "202604" }
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("LALA CASH MAIN")
       expect(response.body).not_to include("LALA CASH DERIVED")
     end
 
-    it "supports dynamic external cash routes scoped by user and entity slugs" do
+    it "supports external cash routes scoped by the share capability" do
       user = create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-external-cash@example.com")
       bank = create(:bank, :random)
       account = create(:user_bank_account, :random, user:, bank:)
       sograo = create(:entity, user:, entity_name: "SOGRAO")
       lala = create(:entity, user:, entity_name: "LALA")
+      share = Ledgers::Shares::Create.call(entity: sograo, context: user.main_context)
       exchange_return = user.built_in_category("EXCHANGE RETURN")
 
       create(
@@ -97,14 +100,14 @@ RSpec.describe "Lalas", type: :request do
         cash_installments_attributes: [ { number: 1, date: Time.zone.local(2026, 4, 7, 12), month: 4, year: 2026, price: -1000, paid: false } ]
       )
 
-      get month_year_external_cash_transactions_path(user_slug: "rikki", entity_slug: "sograo"), params: { month_year: "202604" }
+      get month_year_external_cash_transactions_path(share_token: share.token), params: { month_year: "202604" }
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("SOGRAO CASH MAIN")
       expect(response.body).not_to include("LALA CASH MAIN")
     end
 
-    it "supports authenticated internal cash routes scoped by current user and entity slug" do
+    it "supports authenticated internal cash routes scoped by current user and Entity identity" do
       owner = create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-internal-cash@example.com")
       other_user = create(:user, first_name: "Other", last_name: "Person", email: "other-internal-cash@example.com")
       bank = create(:bank, :random)
@@ -161,6 +164,7 @@ RSpec.describe "Lalas", type: :request do
       user_card = create(:user_card, :random, user:, card:, due_date_day: 10)
       derived_context = create(:context, user:, source_context: user.main_context, name: "Derived")
       lala = create(:entity, user:, entity_name: "LALA")
+      share = Ledgers::Shares::Create.call(entity: lala, context: user.main_context)
       exchange = user.built_in_category("EXCHANGE")
 
       main_transaction = create(
@@ -195,7 +199,7 @@ RSpec.describe "Lalas", type: :request do
       derived_transaction.category_transactions.create!(category: exchange)
       derived_transaction.entity_transactions.create!(entity: lala, is_payer: false, price: 0, price_to_be_returned: 0)
 
-      get month_year_lalas_card_transactions_path, params: {
+      get month_year_external_card_transactions_path(share_token: share.token), params: {
         month_year: "202605",
         card_transaction: { user_card_id: user_card.id }
       }
@@ -205,13 +209,14 @@ RSpec.describe "Lalas", type: :request do
       expect(response.body).not_to include("LALA CARD DERIVED")
     end
 
-    it "supports dynamic external card routes scoped by user and entity slugs" do
+    it "supports external card routes scoped by the share capability" do
       user = create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-external-card@example.com")
       bank = create(:bank, :random)
       card = create(:card, :random, bank:)
       user_card = create(:user_card, :random, user:, card:, due_date_day: 10)
       sograo = create(:entity, user:, entity_name: "SOGRAO")
       lala = create(:entity, user:, entity_name: "LALA")
+      share = Ledgers::Shares::Create.call(entity: sograo, context: user.main_context)
       exchange = user.built_in_category("EXCHANGE")
 
       sograo_transaction = create(
@@ -252,7 +257,7 @@ RSpec.describe "Lalas", type: :request do
       lala_transaction.category_transactions.create!(category: exchange)
       lala_transaction.entity_transactions.create!(entity: lala, is_payer: false, price: 0, price_to_be_returned: 0)
 
-      get month_year_external_card_transactions_path(user_slug: "rikki", entity_slug: "sograo"), params: {
+      get month_year_external_card_transactions_path(share_token: share.token), params: {
         month_year: "202605",
         card_transaction: { user_card_id: user_card.id }
       }

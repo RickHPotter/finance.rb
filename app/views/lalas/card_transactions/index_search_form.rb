@@ -72,8 +72,7 @@ class Views::Lalas::CardTransactions::IndexSearchForm < Views::Base
 
   def card_transactions_path
     return internal_card_transactions_path(**internal_route_params) if internal_route_params.present?
-    return external_card_transactions_path(**external_route_params) if external_route_params.present?
 
-    lalas_card_transactions_path
+    external_card_transactions_path(**external_route_params)
   end
 end

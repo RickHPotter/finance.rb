@@ -44,8 +44,7 @@ class Views::Lalas::CardTransactions::MonthYearContainer < Views::Base
 
   def month_year_card_transactions_path(params)
     return month_year_internal_card_transactions_path(**internal_route_params, **params) if internal_route_params.present?
-    return month_year_external_card_transactions_path(**external_route_params, **params) if external_route_params.present?
 
-    month_year_lalas_card_transactions_path(params)
+    month_year_external_card_transactions_path(**external_route_params, **params)
   end
 end

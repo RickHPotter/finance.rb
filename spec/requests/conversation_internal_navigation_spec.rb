@@ -93,6 +93,7 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
 
   it "retains internal and external route scope in filters and lazy month URLs" do
     active_months = [ 202_607 ].to_json
+    share = Ledgers::Shares::Create.call(entity: ledger_entity, context: user.main_context)
 
     get internal_cash_transactions_path(
       entity_public_id: ledger_entity.public_id,
@@ -123,8 +124,7 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
     expect_scoped_path(lazy_frame["src"], month_year_internal_card_transactions_path(entity_public_id: ledger_entity.public_id))
 
     get external_cash_transactions_path(
-      user_slug: "rikki",
-      entity_slug: "lala",
+      share_token: share.token,
       search_term: "scoped",
       active_month_years: active_months
     )
@@ -132,14 +132,13 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
     document = Nokogiri::HTML(response.body)
     form = document.at_css("form#search_form")
     lazy_frame = document.at_css("turbo-frame#month_year_container_202607")
-    expect(form["action"]).to eq(external_cash_transactions_path(user_slug: "rikki", entity_slug: "lala"))
+    expect(form["action"]).to eq(external_cash_transactions_path(share_token: share.token))
     expect(form["data-turbo-frame"]).to eq("_top")
     expect(form["data-turbo-action"]).to eq("replace")
-    expect_scoped_path(lazy_frame["src"], month_year_external_cash_transactions_path(user_slug: "rikki", entity_slug: "lala"))
+    expect_scoped_path(lazy_frame["src"], month_year_external_cash_transactions_path(share_token: share.token))
 
     get external_card_transactions_path(
-      user_slug: "rikki",
-      entity_slug: "lala",
+      share_token: share.token,
       search_term: "scoped",
       active_month_years: active_months
     )
@@ -147,10 +146,10 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
     document = Nokogiri::HTML(response.body)
     form = document.at_css("form#search_form")
     lazy_frame = document.at_css("turbo-frame#month_year_container_202607")
-    expect(form["action"]).to eq(external_card_transactions_path(user_slug: "rikki", entity_slug: "lala"))
+    expect(form["action"]).to eq(external_card_transactions_path(share_token: share.token))
     expect(form["data-turbo-frame"]).to eq("_top")
     expect(form["data-turbo-action"]).to eq("replace")
-    expect_scoped_path(lazy_frame["src"], month_year_external_card_transactions_path(user_slug: "rikki", entity_slug: "lala"))
+    expect_scoped_path(lazy_frame["src"], month_year_external_card_transactions_path(share_token: share.token))
   end
 
   private
