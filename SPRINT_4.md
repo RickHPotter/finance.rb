@@ -1306,6 +1306,13 @@ Coverage:
   field redaction, context/entity isolation, route preservation, filters, month loading,
   mobile layout, browser history, and absence of external mutation actions
 
+References:
+
+- [ledger product and security contract](docs/sprints/4-kakashi/kakashi-19/01-ledger-product-and-security-contract.md)
+- [current behavior and gap inventory](docs/sprints/4-kakashi/kakashi-19/02-current-behavior-and-gap-inventory.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-19/03-decisions-and-test-matrix.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-19/04-implementation-slices.md)
+
 ### KAKASHI-20: Audit spec quality and application performance
 
 - Issues:
