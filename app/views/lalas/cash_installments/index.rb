@@ -17,14 +17,14 @@ class Views::Lalas::CashInstallments::Index < Views::Base
   def view_template
     if mobile
       cash_installments.each do |cash_installment|
-        cash_transaction = cash_installment.cash_transaction.reload
+        cash_transaction = cash_installment.cash_transaction
         presentation = row_presentation(cash_transaction)
 
         render_mobile_cash_installment(cash_installment, cash_transaction, presentation)
       end
     else
       cash_installments.each do |cash_installment|
-        cash_transaction = cash_installment.cash_transaction.reload
+        cash_transaction = cash_installment.cash_transaction
         presentation = row_presentation(cash_transaction)
 
         render_cash_installment(cash_installment, cash_transaction, presentation)

@@ -2,7 +2,9 @@
 
 class Ledgers::CashTransactionsController < LedgersController
   def index
-    build_index_context(lala_context.cash_installments)
+    state = ledger_query_state(:cash)
+    result = ledger_query(state, include_rows: false)
+    build_index_context(state, result)
     render Views::Lalas::CashTransactions::Index.new(index_context: @index_context)
   end
 
@@ -11,42 +13,34 @@ class Ledgers::CashTransactionsController < LedgersController
   end
 
   def month_year
-    mobile = search_cash_transaction_params[:force_mobile] || @mobile
-    month_year = search_cash_transaction_params[:month_year]
+    state = ledger_query_state(:cash)
+    raise ActiveRecord::RecordNotFound if state.month_year.blank?
+
+    result = ledger_query(state)
+    mobile = state.force_mobile || @mobile
+    month_year = state.month_year.to_s
     month_year_str = I18n.l(Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01"), format: "%B %Y")
-    cash_installments, = Logic::CashTransactions.find_by_ref_month_year(lala_context, external_cash_transaction_params, search_cash_transaction_params)
 
     render Views::Lalas::CashTransactions::MonthYear.new(
       mobile:,
       month_year:,
       month_year_str:,
-      cash_installments:,
+      cash_installments: result.rows,
+      total_amount: result.total_amount,
       category_colour_display_mode: CategoryColours::DisplayMode.for(user)
     )
   end
 
   private
 
-  def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-    min_date = cash_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
-    max_date = cash_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
+  def build_index_context(state, result) # rubocop:disable Metrics/AbcSize
+    min_date, max_date = ledger_date_bounds(result, fallback: Time.zone.today)
     default_active_month_years = [ Time.zone.today.clamp(min_date, max_date).strftime("%Y%m").to_i ]
     years = (min_date.year..max_date.year)
     category_id = external_cash_category_ids
     entity_id = [ lala.id ]
-    user_bank_account_id = [ cash_transaction_params[:user_bank_account_id] ].flatten&.compact_blank
-    search_term = search_cash_transaction_params[:search_term]
-    paid = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:paid])
-    pending = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:pending])
-    skip_budgets = search_cash_transaction_params[:skip_budgets]
-    force_mobile = search_cash_transaction_params[:force_mobile]
-    active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
-    default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
-    count_by_month_year = Logic::CashTransactions.find_count_based_on_search(
-      lala_context,
-      cash_transaction_params.merge(category_id:, entity_id:),
-      search_cash_transaction_params
-    )
+    active_month_years = state.active_month_years.presence || default_active_month_years
+    default_year = state.default_year || active_month_years.max.to_s.first(4).to_i
 
     @index_context = {
       current_user: user,
@@ -55,43 +49,32 @@ class Ledgers::CashTransactionsController < LedgersController
       years:,
       default_year:,
       active_month_years:,
-      search_term:,
+      search_term: state.search_term,
       category_id:,
       entity_id:,
-      user_bank_account_id:,
+      user_bank_account_id: [ result.user_bank_account&.id ].compact,
       user_card: @user_card,
-      paid:,
-      pending:,
-      skip_budgets:,
-      force_mobile:,
-      count_by_month_year:
+      paid: state.paid,
+      pending: state.pending,
+      skip_budgets: state.skip_budgets,
+      force_mobile: state.force_mobile,
+      sort: state.sort,
+      direction: state.direction,
+      page: state.page,
+      per_page: state.per_page,
+      count_by_month_year: result.count_by_month_year
     }
   end
 
-  def external_cash_transaction_params
-    cash_transaction_params.merge(category_id: external_cash_category_ids, entity_id: [ lala.id ])
+  def ledger_date_bounds(result, fallback:)
+    return [ fallback, fallback ] if result.months.empty?
+
+    [ result.months.first.month_year, result.months.last.month_year ].map do |month_year|
+      Date.new(month_year / 100, month_year % 100, 1)
+    end
   end
 
   def external_cash_category_ids
     user.categories.where(category_name: [ "EXCHANGE RETURN", "BORROW RETURN" ]).ids
-  end
-
-  def cash_transaction_params
-    return {} if params[:cash_transaction].blank?
-
-    params.require(:cash_transaction).permit(
-      %i[id description comment date month year price paid user_id user_bank_account_id category_id entity_id],
-      user_bank_account_id: [], category_id: [], entity_id: [],
-      category_transactions_attributes: %i[id category_id _destroy],
-      cash_installments_attributes: %i[id number date month year price _destroy],
-      entity_transactions_attributes: [
-        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
-        { exchanges_attributes: %i[id number exchange_type bound_type price _destroy] }
-      ]
-    )
-  end
-
-  def search_cash_transaction_params
-    params.permit(%i[search_term paid pending month_year skip_budgets force_mobile])
   end
 end

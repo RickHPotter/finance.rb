@@ -2,9 +2,10 @@
 
 class Ledgers::CardTransactionsController < LedgersController
   def index
-    @user_card = user.user_cards.find_by(id: params[:user_card_id]) if params[:user_card_id]
-    @user_card ||= user.user_cards.find_by(id: card_transaction_params[:user_card_id])
-    build_index_context(card_installments_scope)
+    state = ledger_query_state(:card)
+    result = ledger_query(state, include_rows: false)
+    @user_card = result.user_card
+    build_index_context(state, result)
     set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
     render Views::Lalas::CardTransactions::Index.new(index_context: @index_context)
   end
@@ -14,45 +15,33 @@ class Ledgers::CardTransactionsController < LedgersController
   end
 
   def month_year
-    mobile = search_card_transaction_params[:force_mobile] || @mobile
-    month_year = search_card_transaction_params[:month_year]
-    user_card_id = card_transaction_params[:user_card_id].presence
-    card_installments = Logic::CardInstallments.find_ref_month_year_by_params(lala_context, external_card_transaction_params, search_card_transaction_params)
+    state = ledger_query_state(:card)
+    raise ActiveRecord::RecordNotFound if state.month_year.blank?
+
+    result = ledger_query(state)
+    mobile = state.force_mobile || @mobile
+    month_year = state.month_year.to_s
 
     render Views::Lalas::CardTransactions::MonthYear.new(
       mobile:,
       month_year:,
-      user_card_id:,
-      card_installments:,
+      user_card_id: result.user_card&.id,
+      card_installments: result.rows,
+      total_amount: result.total_amount,
       category_colour_display_mode: CategoryColours::DisplayMode.for(user)
     )
   end
 
   private
 
-  def build_index_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || (Time.zone.today + 1.month)
-    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || (Time.zone.today + 1.month)
+  def build_index_context(state, result) # rubocop:disable Metrics/AbcSize
+    min_date, max_date = ledger_date_bounds(result, fallback: Time.zone.today + 1.month)
     default_active_month_years = [ [ max_date, Time.zone.today + 1.month ].min.strftime("%Y%m").to_i ]
     years = (min_date.year..max_date.year)
-    card_installment_ids = [ card_transaction_params[:card_installment_ids] ].flatten&.compact_blank
     category_id = external_card_category_ids
     entity_id = [ lala.id ]
-    search_term = search_card_transaction_params[:search_term]
-    from_ct_price = search_card_transaction_params[:from_ct_price]
-    to_ct_price = search_card_transaction_params[:to_ct_price]
-    from_price = search_card_transaction_params[:from_price]
-    to_price = search_card_transaction_params[:to_price]
-    from_installments_count = search_card_transaction_params[:from_installments_count]
-    to_installments_count = search_card_transaction_params[:to_installments_count]
-    force_mobile = search_card_transaction_params[:force_mobile]
-    active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
-    default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
-    count_by_month_year = Logic::CardInstallments.find_count_based_on_search(
-      lala_context,
-      card_transaction_params.merge(user_card_id: @user_card&.id || [], category_id:, entity_id:),
-      search_card_transaction_params
-    )
+    active_month_years = state.active_month_years.presence || default_active_month_years
+    default_year = state.default_year || active_month_years.max.to_s.first(4).to_i
 
     @index_context = {
       current_user: user,
@@ -61,53 +50,35 @@ class Ledgers::CardTransactionsController < LedgersController
       years:,
       default_year:,
       active_month_years:,
-      search_term:,
-      card_installment_ids:,
+      search_term: state.search_term,
+      card_installment_ids: [],
       category_id:,
       entity_id:,
-      from_ct_price:,
-      to_ct_price:,
-      from_price:,
-      to_price:,
-      from_installments_count:,
-      to_installments_count:,
+      from_ct_price: nil,
+      to_ct_price: nil,
+      from_price: nil,
+      to_price: nil,
+      from_installments_count: nil,
+      to_installments_count: nil,
       user_card: @user_card,
-      force_mobile:,
-      count_by_month_year:
+      force_mobile: state.force_mobile,
+      sort: state.sort,
+      direction: state.direction,
+      page: state.page,
+      per_page: state.per_page,
+      count_by_month_year: result.count_by_month_year
     }
   end
 
-  def external_card_transaction_params
-    card_transaction_params.merge(category_id: external_card_category_ids, entity_id: [ lala.id ])
+  def ledger_date_bounds(result, fallback:)
+    return [ fallback, fallback ] if result.months.empty?
+
+    [ result.months.first.month_year, result.months.last.month_year ].map do |month_year|
+      Date.new(month_year / 100, month_year % 100, 1)
+    end
   end
 
   def external_card_category_ids
     user.categories.where(category_name: [ "EXCHANGE" ]).ids
-  end
-
-  def card_installments_scope
-    scope = lala_context.card_installments.joins(:card_transaction)
-    return scope unless @user_card.present?
-
-    scope.where(card_transactions: { user_card_id: @user_card.id })
-  end
-
-  def card_transaction_params
-    return {} if params[:card_transaction].blank?
-
-    params.require(:card_transaction).permit(
-      %i[id description comment date month year price paid user_id user_card_id category_id entity_id],
-      card_installment_ids: [], category_id: [], entity_id: [],
-      category_transactions_attributes: %i[id category_id _destroy],
-      card_installments_attributes: %i[id number date month year price _destroy],
-      entity_transactions_attributes: [
-        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
-        { exchanges_attributes: %i[id number exchange_type bound_type price _destroy] }
-      ]
-    )
-  end
-
-  def search_card_transaction_params
-    params.permit(%i[search_term month_year force_mobile])
   end
 end

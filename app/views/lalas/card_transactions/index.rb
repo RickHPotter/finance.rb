@@ -25,6 +25,7 @@ class Views::Lalas::CardTransactions::Index < Views::Base
               end
 
               render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id, :user_card, :active_month_years,
+                                                                               :sort, :direction, :page, :per_page,
                                                                                :external_route_params, :internal_route_params))
             end
           end

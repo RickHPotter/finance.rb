@@ -5,13 +5,13 @@ class Views::Lalas::CashTransactions::MonthYear < Views::Base
 
   attr_reader :mobile, :month_year, :month_year_str, :cash_installments, :total_amount, :category_colour_display_mode
 
-  def initialize(mobile:, month_year:, month_year_str:, cash_installments:,
+  def initialize(mobile:, month_year:, month_year_str:, cash_installments:, total_amount: nil,
                  category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @month_year = month_year
     @mobile = mobile
     @month_year_str = month_year_str
     @cash_installments = cash_installments
-    @total_amount = cash_installments.sum(&:price)
+    @total_amount = total_amount || cash_installments.sum(&:price)
     @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
   end
 

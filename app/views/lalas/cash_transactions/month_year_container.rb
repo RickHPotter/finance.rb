@@ -4,7 +4,8 @@ class Views::Lalas::CashTransactions::MonthYearContainer < Views::Base
   attr_reader :search_term,
               :category_id, :entity_id,
               :user_bank_account_id, :paid, :pending, :active_month_years,
-              :skip_budgets, :force_mobile, :external_route_params, :internal_route_params
+              :skip_budgets, :force_mobile, :sort, :direction, :page, :per_page,
+              :external_route_params, :internal_route_params
 
   def initialize(index_context: {})
     @search_term = index_context[:search_term]
@@ -16,6 +17,10 @@ class Views::Lalas::CashTransactions::MonthYearContainer < Views::Base
     @active_month_years = index_context[:active_month_years]
     @skip_budgets = index_context[:skip_budgets]
     @force_mobile = index_context[:force_mobile]
+    @sort = index_context[:sort]
+    @direction = index_context[:direction]
+    @page = index_context[:page]
+    @per_page = index_context[:per_page]
     @external_route_params = index_context[:external_route_params]
     @internal_route_params = index_context[:internal_route_params]
   end
@@ -31,7 +36,11 @@ class Views::Lalas::CashTransactions::MonthYearContainer < Views::Base
       paid:,
       pending:,
       skip_budgets:,
-      force_mobile:
+      force_mobile:,
+      sort:,
+      direction:,
+      page:,
+      per_page:
     }
 
     render Views::Shared::MonthYearContainer.new(

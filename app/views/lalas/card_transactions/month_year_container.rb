@@ -7,7 +7,8 @@ class Views::Lalas::CardTransactions::MonthYearContainer < Views::Base
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
               :user_card_id, :active_month_years,
-              :force_mobile, :external_route_params, :internal_route_params
+              :force_mobile, :sort, :direction, :page, :per_page,
+              :external_route_params, :internal_route_params
 
   def initialize(index_context: {})
     @search_term = index_context[:search_term]
@@ -17,6 +18,10 @@ class Views::Lalas::CardTransactions::MonthYearContainer < Views::Base
     @user_card_id = index_context[:user_card]&.id
     @active_month_years = index_context[:active_month_years]
     @force_mobile = index_context[:force_mobile]
+    @sort = index_context[:sort]
+    @direction = index_context[:direction]
+    @page = index_context[:page]
+    @per_page = index_context[:per_page]
     @external_route_params = index_context[:external_route_params]
     @internal_route_params = index_context[:internal_route_params]
   end
@@ -30,7 +35,11 @@ class Views::Lalas::CardTransactions::MonthYearContainer < Views::Base
         entity_id:
       },
       search_term:,
-      force_mobile:
+      force_mobile:,
+      sort:,
+      direction:,
+      page:,
+      per_page:
     }
 
     render Views::Shared::MonthYearContainer.new(

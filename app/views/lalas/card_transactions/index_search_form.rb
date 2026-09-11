@@ -12,6 +12,7 @@ class Views::Lalas::CardTransactions::IndexSearchForm < Views::Base
               :default_year, :years, :active_month_years, :search_term,
               :category_id, :entity_id,
               :user_card,
+              :sort, :direction, :per_page,
               :count_by_month_year, :external_route_params, :internal_route_params
 
   def initialize(index_context: {})
@@ -24,6 +25,9 @@ class Views::Lalas::CardTransactions::IndexSearchForm < Views::Base
     @category_id = index_context[:category_id]
     @entity_id = index_context[:entity_id]
     @user_card = index_context[:user_card]
+    @sort = index_context[:sort]
+    @direction = index_context[:direction]
+    @per_page = index_context[:per_page]
     @count_by_month_year = index_context[:count_by_month_year] || {}
     @external_route_params = index_context[:external_route_params]
     @internal_route_params = index_context[:internal_route_params]
@@ -51,6 +55,9 @@ class Views::Lalas::CardTransactions::IndexSearchForm < Views::Base
       end
 
       TextFieldTag :user_card_id, class: :hidden, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || user_card&.id
+      TextFieldTag :sort, class: :hidden, value: sort
+      TextFieldTag :direction, class: :hidden, value: direction
+      TextFieldTag :per_page, class: :hidden, value: per_page
 
       div(class: "flex justify-between items-center gap-2") do
         div(class: "flex-1") do

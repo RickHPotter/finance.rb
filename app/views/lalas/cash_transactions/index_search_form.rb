@@ -12,6 +12,7 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
               :default_year, :years, :active_month_years, :search_term,
               :category_id, :entity_id, :paid, :pending,
               :user_bank_account_id, :categories, :entities,
+              :sort, :direction, :per_page,
               :count_by_month_year, :external_route_params, :internal_route_params
 
   def initialize(index_context: {})
@@ -26,6 +27,9 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
     @paid = index_context[:paid]
     @pending = index_context[:pending]
     @user_bank_account_id = index_context[:user_bank_account_id]
+    @sort = index_context[:sort]
+    @direction = index_context[:direction]
+    @per_page = index_context[:per_page]
     @count_by_month_year = index_context[:count_by_month_year] || {}
     @external_route_params = index_context[:external_route_params]
     @internal_route_params = index_context[:internal_route_params]
@@ -55,6 +59,9 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
       form.text_field :user_bank_account_id,
                       value: params[:user_bank_account_id] || params.dig(:cash_transaction, :user_bank_account_id) || user_bank_account_id,
                       class: :hidden
+      form.hidden_field :sort, value: sort
+      form.hidden_field :direction, value: direction
+      form.hidden_field :per_page, value: per_page
 
       div(class: "flex justify-between items-center gap-2") do
         div(class: "flex-1") do

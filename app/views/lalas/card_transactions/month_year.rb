@@ -7,7 +7,7 @@ class Views::Lalas::CardTransactions::MonthYear < Views::Base
               :card_installments, :total_amount, :modal_id,
               :min_date, :max_date, :category_colour_display_mode
 
-  def initialize(mobile:, month_year:, user_card_id:, card_installments:,
+  def initialize(mobile:, month_year:, user_card_id:, card_installments:, total_amount: nil,
                  category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @mobile = mobile
     @month_year = month_year
@@ -16,7 +16,7 @@ class Views::Lalas::CardTransactions::MonthYear < Views::Base
     @year = month_year_date.year
     @user_card_id = user_card_id
     @card_installments = card_installments
-    @total_amount = card_installments.sum(&:price)
+    @total_amount = total_amount || card_installments.sum(&:price)
     @modal_id = "cardTransactionModal_#{user_card_id}_#{month}_#{year}"
     @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
 

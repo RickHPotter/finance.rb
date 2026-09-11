@@ -88,4 +88,13 @@ class LedgersController < ApplicationController
 
     internal_card_transactions_path(**internal_route_params, **query_params)
   end
+
+  def ledger_query_state(kind)
+    @ledger_query_states ||= {}
+    @ledger_query_states[kind] ||= Ledgers::QueryState.new(kind:, params:)
+  end
+
+  def ledger_query(state, include_rows: true)
+    Ledgers::Query.call(access: ledger_access, state:, include_rows:)
+  end
 end
