@@ -17,6 +17,7 @@ class Entity < ApplicationRecord
   belongs_to :friendship, optional: true
 
   has_many :entity_transactions, dependent: :destroy
+  has_many :ledger_shares, dependent: :destroy
   has_many :card_transactions, through: :entity_transactions, source: :transactable, source_type: "CardTransaction"
   has_many :cash_transactions, through: :entity_transactions, source: :transactable, source_type: "CashTransaction"
 

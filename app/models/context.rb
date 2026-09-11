@@ -13,6 +13,7 @@ class Context < ApplicationRecord
   has_many :cash_installments, through: :cash_transactions
   has_many :health_check_runs, dependent: :destroy
   has_many :investments, dependent: :destroy
+  has_many :ledger_shares, dependent: :destroy
   has_many :references, dependent: :destroy
   has_many :subscriptions, class_name: "Subscription", dependent: :destroy
   has_many :derived_contexts, class_name: "Context", foreign_key: :source_context_id, dependent: :nullify, inverse_of: :source_context

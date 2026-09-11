@@ -1,0 +1,45 @@
+en:
+  activerecord:
+    models:
+      ledger_share:
+        one: Ledger Share
+        other: Ledger Shares
+    attributes:
+      ledger_share:
+        context_id: Context
+        entity_id: Entity
+        expires_at: Expires at
+        revoked_at: Revoked at
+        last_accessed_at: Last accessed at
+        access_count: Access count
+    errors:
+      models:
+        ledger_share:
+          attributes:
+            context:
+              owner_mismatch: must belong to the Entity owner
+            expires_at:
+              must_be_future: must be in the future
+
+pt-BR:
+  activerecord:
+    models:
+      ledger_share:
+        one: Compartilhamento do Livro-Razão
+        other: Compartilhamentos do Livro-Razão
+    attributes:
+      ledger_share:
+        context_id: Contexto
+        entity_id: Entidade
+        expires_at: Expira em
+        revoked_at: Revogado em
+        last_accessed_at: Último acesso em
+        access_count: Quantidade de acessos
+    errors:
+      models:
+        ledger_share:
+          attributes:
+            context:
+              owner_mismatch: deve pertencer ao proprietário da Entidade
+            expires_at:
+              must_be_future: deve estar no futuro
