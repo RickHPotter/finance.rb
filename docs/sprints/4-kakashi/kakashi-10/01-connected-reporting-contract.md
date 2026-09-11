@@ -47,8 +47,8 @@ generic report builder or a second finance home page.
 
 | Surface | Report | Scope |
 | --- | --- | --- |
-| Category show | income/outcome trend and counterpart breakdown | selected category in `current_context` |
-| Entity show | income/outcome trend and counterpart breakdown | selected entity in `current_context` |
+| Category show | income/outcome trend, counterpart breakdown, and reciprocal Entity pie | selected category in `current_context` |
+| Entity show | income/outcome trend, counterpart breakdown, and reciprocal Category pie | selected entity in `current_context` |
 | User bank account show | cash movement and balance contribution | selected account in `current_context` |
 | User card show | card movement, paid state, billing references, advances, and payments | selected card in `current_context` |
 | Budget show | definition, matched actual, remaining amount, and period completion | selected budget in `current_context` |
@@ -91,6 +91,26 @@ Rules:
 The rolling twelve-month default keeps existing all-history charts bounded while
 remaining useful for daily comparison. A resource with less history simply returns
 empty buckets where appropriate.
+
+## Companion Reciprocal Pies
+
+Category and Entity shows retain their resource-wide reciprocal allocation pies beside
+the bounded trend report:
+
+- Category show presents the Entities attached to the selected category's cash and
+  card transactions;
+- Entity show presents the Categories attached to the selected entity's cash and card
+  transactions;
+- both pies are restricted to `current_context`;
+- their source selector filters by bank account or user card; and
+- category slices use the canonical accessible category-colour presentation.
+
+These pies are allocation overviews, not another time-series report. Their population
+is the selected resource's full current-context transaction history and therefore does
+not change with the trend report's date, paid-state, direction, granularity, or sort
+controls. Each allocation receives the transaction's full absolute amount; entity
+allocation prices are not treated as proportional shares. The bounded trend and its
+textual counterpart bundles remain the reconcilable financial report.
 
 ## Canonical Source Row
 

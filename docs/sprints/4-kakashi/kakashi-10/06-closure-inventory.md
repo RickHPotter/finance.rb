@@ -10,8 +10,8 @@ generic report-builder screen was introduced.
 
 | Surface | Query contract | Presentation |
 | --- | --- | --- |
-| Category show | `Reports::CategoryTrend` | shared allocation trend controls, summary, chart, lists, and exact sources |
-| Entity show | `Reports::EntityTrend` | shared allocation trend controls, summary, chart, lists, and exact sources |
+| Category show | `Reports::CategoryTrend` plus reciprocal allocation overview | shared allocation trend controls, summary, chart, lists, exact sources, and a current-context Entities pie |
+| Entity show | `Reports::EntityTrend` plus reciprocal allocation overview | shared allocation trend controls, summary, chart, lists, exact sources, and a current-context Categories pie |
 | Bank Account show | `Reports::BankAccountMovement` | shared trend shell plus movement family and recorded-balance context |
 | User Card show | `Reports::UserCardMovement` | shared trend shell plus billing, payment-state, advance, invoice, and date detail |
 | Budget show | `Reports::BudgetPerformance` | definition, actual, remaining, utilization, period completion, rules, and typed sources |
@@ -31,12 +31,16 @@ generic report-builder screen was introduced.
   cleanup, and localized currency presentation used by report controllers.
 - `Reports::InteractiveAllocationBreakdown` restores the category-first and
   entity-first account/card dashboards with bounded server-owned totals and points.
+- Category and Entity shows retain their source-filterable reciprocal pies as
+  resource-wide current-context allocation overviews. These intentionally remain
+  separate from the bounded trend payload and controls.
 - Financial aggregation remains server-side in integer cents. Monthly Analysis now
   receives `total_failed`; JavaScript no longer totals failed rows.
 
 ## Lifecycle Boundaries
 
-- Category, Entity, Bank Account, User Card, and Budget payloads load lazily.
+- Category, Entity, Bank Account, User Card, and Budget bounded report payloads load
+  lazily. Category and Entity reciprocal overview pies render with the owning page.
 - Every controller aborts an old request and ignores a response whose sequence is no
   longer current.
 - Controllers abort on disconnect.
@@ -81,8 +85,10 @@ generic report-builder screen was introduced.
 - Client-side failed-transfer summation was removed in favor of a server-owned total.
 - Duplicated report fetch/error parsing, lazy visibility observation, panel-state
   transitions, and currency formatting were consolidated.
-- Entity show no longer eagerly loads categories for the removed inline counterpart
-  pie; category-colour enforcement now targets the shared allocation report boundary.
+- Category and Entity shows keep the reciprocal allocation pies alongside the bounded
+  reports. Their payloads remain current-context scoped, source-filterable, and covered
+  against cross-context leakage; category slices use the shared accessible colour
+  presentation.
 - Bank Account and User Card retain their interactive cross-allocation dashboards;
   their former unbounded Phlex aggregation and client-side all-group summation remain
   removed.

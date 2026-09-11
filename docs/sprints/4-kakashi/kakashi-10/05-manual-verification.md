@@ -45,6 +45,14 @@ Pages: `/categories/:id` and `/entities/:id`.
 - Confirm empty days/months remain visible as zero buckets.
 - Confirm Cash and Card source subtotals add to each mixed total.
 - Confirm category colors are identical in chart labels and textual rows.
+- On Category show, confirm the Entities pie is present and contains only Entities from
+  the selected category and current context.
+- On Entity show, confirm the Categories pie is present, uses accessible category
+  colours, and contains only Categories from the selected entity and current context.
+- Filter each reciprocal pie by one bank account and one user card, then restore Select
+  All. Confirm its legend and slices follow the selected sources.
+- Change the bounded trend filters and confirm the reciprocal pie retains its complete
+  current-context allocation overview rather than silently adopting the trend range.
 
 ## Bank Account Movement
 
@@ -126,6 +134,7 @@ how any mutation is sent, applied, audited, corrected, superseded, or reverted.
 
 - [ ] Shared checks pass in English and Brazilian Portuguese.
 - [ ] Category and Entity trends reconcile.
+- [ ] Category and Entity reciprocal allocation pies remain present and context-scoped.
 - [ ] Bank Account and User Card movement reconcile.
 - [ ] Budget Performance reconciles.
 - [ ] Monthly Analysis transfers, failed returns, and Piggy Banks reconcile.

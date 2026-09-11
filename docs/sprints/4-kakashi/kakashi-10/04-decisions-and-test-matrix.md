@@ -143,6 +143,9 @@ allowed only with coverage proving those rules remain identical.
 | cash breakdown clicked | exact cash destination only |
 | card breakdown clicked | exact card destination only |
 | combined amount displayed | cash subtotal + card subtotal = combined amount |
+| Category reciprocal pie | current-context Entities across the category's complete history; source filter remains available |
+| Entity reciprocal pie | current-context Categories across the entity's complete history with accessible category colours |
+| trend filters changed | bounded trend changes; companion reciprocal pie retains its resource-wide allocation scope |
 
 ## Bank Account Movement Matrix
 

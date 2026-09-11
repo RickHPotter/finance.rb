@@ -63,7 +63,8 @@ actionable-message behavior without explicit approval.
 
 ## Slice 3 — Category and Entity Trend UI
 
-**Goal:** replace display-only pie behavior with bounded, navigable analysis.
+**Goal:** add bounded, navigable analysis while retaining the reciprocal allocation
+overview on Category and Entity dashboards.
 
 ### Deliverables
 
@@ -72,13 +73,18 @@ actionable-message behavior without explicit approval.
 - Render accessible trend charts and matching textual breakdowns.
 - Link each eligible point/breakdown to its exact typed transaction destination.
 - Preserve report state across show -> drill-down -> show navigation.
-- Remove superseded inline payload construction only after parity coverage passes.
+- Retain the current-context Category -> Entities and Entity -> Categories pies as
+  resource-wide allocation overviews with bank-account/user-card source filtering.
+- Keep the reciprocal pies explicitly separate from the bounded trend state so their
+  all-history allocation semantics are not mistaken for report totals.
 
 ### Acceptance
 
 - URLs restore the same selected report state on refresh and return.
 - Stale responses cannot replace newer filter results.
 - Charts, text, and drill-downs use identical amounts and ordering.
+- Reciprocal pies remain present, context-scoped, source-filterable, and visually
+  distinct from the bounded report.
 - Mobile and dark mode remain usable without layout shifts.
 
 ### Suggested commit
@@ -204,11 +210,12 @@ stable.
 ### Acceptance
 
 - All migrated reports use one payload vocabulary and presentation language.
-- No financial total is calculated in Phlex or JavaScript.
+- No bounded, reconcilable report total is calculated in Phlex or JavaScript. The
+  explicitly separate resource-wide reciprocal allocation pies retain their
+  current-context overview aggregation.
 - No stale request, duplicate Chart.js instance, or disconnected controller leaks.
 - Full CI passes with explicit mutation-regression coverage.
 
 ### Suggested commit
 
 `test: close connected dashboard reporting coverage`
-
