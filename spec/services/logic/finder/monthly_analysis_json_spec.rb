@@ -132,10 +132,31 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
 
       expect(payload[:transfers]).to include(total_sent: 50.0, total_received: 62.5)
       expect(payload.dig(:transfers, :items)).to contain_exactly(
-        { entity_id: ana.id, entity_label: "ANA", direction: "sent", amount: 50.0 },
-        { entity_id: ana.id, entity_label: "ANA", direction: "received", amount: 50.0 },
-        { entity_id: bruno.id, entity_label: "BRUNO", direction: "received", amount: 12.5 }
+        include(entity_id: ana.id, entity_label: "ANA", direction: "sent", amount: 50.0),
+        include(entity_id: ana.id, entity_label: "ANA", direction: "received", amount: 50.0),
+        include(entity_id: bruno.id, entity_label: "BRUNO", direction: "received", amount: 12.5)
       )
+      sent_item = payload.dig(:transfers, :items).find { |item| item[:direction] == "sent" }
+      expect(sent_item[:sources]).to contain_exactly(
+        include(
+          identity: { record_type: "CardTransaction", record_id: sent_source.id },
+          installment_identity: { record_type: "CardInstallment", record_id: sent_source.card_installments.sole.id },
+          role: "exchange",
+          origin: "source",
+          amount_cents: 5_000,
+          path: include("/card_transactions/#{sent_source.id}", "month%3D2026-07", "tab%3Dmonthly_analysis")
+        )
+      )
+      received_sources = payload.dig(:transfers, :items).select { |item| item[:direction] == "received" }.flat_map { |item| item[:sources] }
+      expect(received_sources).to all(include(identity: include(record_type: "CashTransaction"), role: "exchange_return"))
+      generated_sources = received_sources.select { |source| source[:origin] == "generated_return" }
+      expect(generated_sources.size).to eq(2)
+      expect(generated_sources.sum { |source| source[:amount_cents] }).to eq(5_000)
+      expect(generated_sources.pluck(:reference_identity)).to all(eq(record_type: "CardTransaction", record_id: sent_source.id))
+      expect(received_sources).to include(include(identity: { record_type: "CashTransaction", record_id: received_source.id }, origin: "return"))
+      payload.dig(:transfers, :items).each do |item|
+        expect(item[:sources].sum { |source| source[:amount_cents] }).to eq((item[:amount] * 100).to_i)
+      end
       expect(payload.dig(:ordinary, :income, :total)).to eq(0.0)
       expect(payload.dig(:ordinary, :outcome, :total)).to eq(0.0)
     end
@@ -149,7 +170,10 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
 
       expect(payload[:transfers]).to include(total_sent: 0.0, total_received: 1.98)
       expect(payload.dig(:transfers, :items)).to contain_exactly(
-        { entity_id: itau.id, entity_label: "ITAU", direction: "received", amount: 1.98 }
+        include(entity_id: itau.id, entity_label: "ITAU", direction: "received", amount: 1.98)
+      )
+      expect(payload.dig(:transfers, :items, 0, :sources)).to contain_exactly(
+        include(role: "exchange_return", origin: "generated_return", reference_identity: { record_type: "CashTransaction", record_id: june_source.id })
       )
     end
 
@@ -162,15 +186,19 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       create(:category_transaction, transactable: failed_return, category: user.built_in_category("EXCHANGE RETURN"))
 
       expect(payload.dig(:transfers, :failed)).to contain_exactly(
-        {
+        include(
           key: "entities:#{ana.id}",
           entity_label: "ANA",
           amount: 75.0,
           state: "failed",
           amount_source: "starting_price"
-        }
+        )
       )
-      expect(payload[:transfers]).to include(total_sent: 0.0, total_received: 0.0, items: [])
+      expect(payload.dig(:transfers, :failed, 0, :sources)).to contain_exactly(
+        include(identity: { record_type: "CashTransaction", record_id: failed_return.id }, role: "failed_return", origin: "return",
+                amount_cents: 7_500, path: include("/cash_transactions/#{failed_return.id}"))
+      )
+      expect(payload[:transfers]).to include(total_sent: 0.0, total_received: 0.0, total_failed: 75.0, items: [])
       expect(payload.dig(:ordinary, :income, :total)).to eq(0.0)
       expect(payload.dig(:ordinary, :outcome, :total)).to eq(0.0)
     end
@@ -191,6 +219,15 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
         include(entity_id: ana.id, direction: "sent", amount: 14.0),
         include(entity_id: ana.id, direction: "received", amount: 16.0)
       )
+      sent_sources = payload.dig(:transfers, :items).find { |item| item[:direction] == "sent" }.fetch(:sources)
+      expect(sent_sources).to contain_exactly(
+        include(identity: { record_type: "CashTransaction", record_id: sent_source.id }, role: "exchange", origin: "source"),
+        include(identity: { record_type: "CashTransaction", record_id: repayment_source.id }, role: "borrow_return", origin: "return")
+      )
+      received_sources = payload.dig(:transfers, :items).find { |item| item[:direction] == "received" }.fetch(:sources)
+      expect(received_sources).to include(include(identity: { record_type: "CashTransaction", record_id: received_source.id }, role: "exchange_return"))
+      expect(received_sources).to include(include(role: "exchange_return", origin: "generated_return",
+                                                  reference_identity: { record_type: "CashTransaction", record_id: sent_source.id }))
     end
   end
 
@@ -199,7 +236,7 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       entity = create(:entity, user:, entity_name: "RESERVE BANK")
       first_source = create_piggy_bank_source(entity:, description: "Three-month reserve", price: -5_000, paid: true)
       grouped_return = first_source.piggy_bank.return_cash_transaction
-      create_piggy_bank_source(entity:, description: "July contribution", price: -2_000, paid: false, return_transaction: grouped_return)
+      projected_source = create_piggy_bank_source(entity:, description: "July contribution", price: -2_000, paid: false, return_transaction: grouped_return)
       investment_type = create(:investment_type, :random)
 
       create_valuation(grouped_return, investment_type:, price: 800)
@@ -221,7 +258,7 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
         recognized_profit_loss: 5.0
       )
       expect(payload.dig(:piggy_banks, :groups)).to contain_exactly(
-        {
+        include(
           return_cash_transaction_id: grouped_return.id,
           label: "Three-month reserve",
           contributed: 50.0,
@@ -229,8 +266,27 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
           withdrawn: 0.0,
           projected_withdrawal: 75.0,
           recognized_profit_loss: 5.0
-        }
+        )
       )
+      group = payload.dig(:piggy_banks, :groups).sole
+      expect(group).to include(
+        return_identity: { record_type: "CashTransaction", record_id: grouped_return.id },
+        return_path: include("/cash_transactions/#{grouped_return.id}", "month%3D2026-07", "tab%3Dmonthly_analysis")
+      )
+      expect(group.dig(:sources, :contributed)).to contain_exactly(
+        include(identity: { record_type: "CashTransaction", record_id: first_source.id }, role: "contributed", origin: "source")
+      )
+      expect(group.dig(:sources, :projected_contribution)).to contain_exactly(
+        include(identity: { record_type: "CashTransaction", record_id: projected_source.id }, role: "projected_contribution", origin: "source")
+      )
+      expect(group.dig(:sources, :projected_withdrawal)).to contain_exactly(
+        include(identity: { record_type: "CashTransaction", record_id: grouped_return.id }, role: "projected_withdrawal", origin: "generated_return")
+      )
+      expect(group.dig(:sources, :contributed).sum { |source| source[:amount_cents] }).to eq(5_000)
+      expect(group.dig(:sources, :projected_contribution).sum { |source| source[:amount_cents] }).to eq(2_000)
+      expect(group.dig(:sources, :projected_withdrawal).sum { |source| source[:amount_cents] }).to eq(7_500)
+      expect(group.dig(:sources, :recognized_profit_loss)).to all(include(identity: include(record_type: "Investment"), role: "valuation", origin: "valuation"))
+      expect(group.dig(:sources, :recognized_profit_loss).sum { |source| source[:amount_cents] }).to eq(500)
       expect(payload.dig(:ordinary, :income, :total)).to eq(0.0)
       expect(payload.dig(:ordinary, :outcome, :total)).to eq(0.0)
     end
@@ -251,6 +307,9 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
         recognized_profit_loss: 0.0
       )
       expect(payload.dig(:piggy_banks, :groups).first).to include(withdrawn: 10.0, projected_withdrawal: 40.0)
+      sources = payload.dig(:piggy_banks, :groups, 0, :sources)
+      expect(sources[:withdrawn]).to contain_exactly(include(role: "withdrawn", origin: "generated_return"))
+      expect(sources[:projected_withdrawal]).to contain_exactly(include(role: "projected_withdrawal", origin: "generated_return"))
     end
 
     it "keeps equal descriptions separated by return ID and excludes unrelated valuations" do
@@ -281,6 +340,9 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
         second.piggy_bank.return_cash_transaction_id
       )
       expect(payload.dig(:piggy_banks, :groups).pluck(:label)).to eq(%w[Reserve Reserve])
+      valuation_sources = payload.dig(:piggy_banks, :groups).flat_map { |group| group.dig(:sources, :recognized_profit_loss) }
+      expect(valuation_sources).to all(include(identity: include(record_type: "Investment"), role: "valuation", origin: "valuation",
+                                               path: include("/investments/")))
     end
   end
 

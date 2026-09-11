@@ -133,6 +133,7 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include('data-controller="form-loading"')
       expect(response.body).to include('id="card_transaction_form_submission_skeleton"')
       expect(response.body).to include('name="card_transaction[historical_correction_confirmation]"')
+      expect(response.body).to include('data-reactive-form-preserve-installment-prices-value="true"')
     end
 
     it "renders card-bound exchange datetimes as read-only while keeping their canonical values enabled" do
@@ -181,6 +182,35 @@ RSpec.describe "CardTransactions", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include(I18n.t("actions.add_to_subscription"))
+    end
+
+    it "keeps exact installment ids in every drill-down month request" do
+      selected = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026
+      )
+      installment_ids = selected.card_installments.ids
+
+      get card_transactions_path, params: {
+        all_month_years: true,
+        card_transaction: { card_installment_ids: installment_ids }
+      }
+
+      document = Nokogiri::HTML.fragment(response.body)
+      month_frame = document.at_css("turbo-frame#month_year_container_202604")
+      month_button = document.at_css("[data-month-year='202604']")
+      query = Rack::Utils.parse_nested_query(URI.parse(month_frame["src"]).query)
+
+      expect(response).to have_http_status(:success)
+      expect(query.dig("card_transaction", "card_installment_ids")).to eq(installment_ids.map(&:to_s))
+      expect(month_button["data-count"]).to eq("1")
+      expect(month_button.at_css("span > span")["class"]).to include("bg-green-400")
+      expect(document.css('input[name="card_transaction[card_installment_ids][]"]').map { |input| input["value"] }).to eq(installment_ids.map(&:to_s))
     end
 
     it "uses canonical sort fields instead of the legacy order select on the index" do
@@ -1594,6 +1624,51 @@ RSpec.describe "CardTransactions", type: :request do
       expect(locked_transaction.reload.card_installments.find_by!(number: 2).date.to_date).to eq(Date.new(2026, 4, 10))
     end
 
+    it "corrects an imported paid allocation without redistributing uneven installment prices" do
+      transaction = create_card_transaction_with_history(
+        description: "Imported allocation correction",
+        installments: [
+          { number: 1, price: -2_866, date: Time.zone.local(2022, 2, 14), month: 3, year: 2022, paid: true },
+          { number: 2, price: -2_866, date: Time.zone.local(2022, 2, 14), month: 4, year: 2022, paid: true },
+          { number: 3, price: -2_865, date: Time.zone.local(2022, 2, 14), month: 5, year: 2022, paid: true }
+        ]
+      )
+      transaction.update_columns(price: -8_597, starting_price: -8_597, imported: true, paid: true, date: Time.zone.local(2022, 2, 14), month: 3, year: 2022)
+      original_category_transaction = transaction.category_transactions.first
+      replacement_category = create(:category, user:, category_name: "ASSETS")
+
+      put card_transaction_path(transaction), params: {
+        card_transaction: {
+          description: transaction.description,
+          comment: "",
+          price: -8_597,
+          date: Time.zone.local(2022, 2, 14),
+          user_id: user.id,
+          user_card_id: user_card_one.id,
+          category_transactions_attributes: {
+            "0" => { id: original_category_transaction.id, category_id: original_category_transaction.category_id, _destroy: true },
+            "1" => { category_id: replacement_category.id, _destroy: false }
+          },
+          card_installments_attributes: transaction.card_installments.order(:number).map.with_index do |installment, index|
+            [ index.to_s, {
+              id: installment.id,
+              number: installment.number,
+              date: installment.date,
+              month: installment.month,
+              year: installment.year,
+              price: installment.price,
+              _destroy: false
+            } ]
+          end.to_h
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      expect(transaction.reload.imported).to be(false)
+      expect(transaction.categories).to contain_exactly(replacement_category)
+      expect(transaction.card_installments.order(:number).pluck(:price)).to eq([ -2_866, -2_866, -2_865 ])
+    end
+
     it "allows a same-cycle paid date correction without confirmation" do
       locked_transaction = create_card_transaction_with_paid_history(description: "Cycle correction request")
       first_installment = locked_transaction.card_installments.find_by!(number: 1)
@@ -1842,6 +1917,37 @@ RSpec.describe "CardTransactions", type: :request do
   end
 
   describe "[ #month_year ]" do
+    it "renders exact installment selections only in their own month" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Multi-month report source",
+        price: -3_000,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -1_000, date: Date.new(2026, 4, 10), month: 4, year: 2026),
+          build(:card_installment, number: 2, price: -2_000, date: Date.new(2026, 5, 10), month: 5, year: 2026)
+        ]
+      )
+      april_installment, may_installment = transaction.card_installments.order(:number)
+
+      get month_year_card_transactions_path, params: {
+        month_year: "202604",
+        card_transaction: { card_installment_ids: transaction.card_installments.ids }
+      }
+
+      document = Nokogiri::HTML.fragment(response.body)
+
+      expect(response).to have_http_status(:success)
+      expect(document.at_css("[data-datatable-target~='row'][data-id='#{april_installment.id}']")).to be_present
+      expect(document.at_css("[data-datatable-target~='row'][data-id='#{may_installment.id}']")).to be_nil
+      expect(document.at_css("#priceSum")["data-price"]).to eq("-1000")
+    end
+
     it "renders single and multiple category allocations through either display mode" do
       dark_category = create(:category, user:, category_name: "LEISURE", colour: "#4b5563")
       light_category = create(:category, user:, category_name: "ASSINATURA", colour: "#fde68a")

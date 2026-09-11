@@ -7,6 +7,9 @@ import { application } from "./application"
 import AllocationMutationController from "./allocation_mutation_controller"
 application.register("allocation-mutation", AllocationMutationController)
 
+import AllocationTrendController from "./allocation_trend_controller"
+application.register("allocation-trend", AllocationTrendController)
+
 import AutofocusController from "./autofocus_controller"
 application.register("autofocus", AutofocusController)
 
@@ -24,6 +27,9 @@ application.register("blinking-placeholder", BlinkingPlaceholderController)
 
 import BudgetValueHelperController from "./budget_value_helper_controller"
 application.register("budget-value-helper", BudgetValueHelperController)
+
+import BudgetPerformanceController from "./budget_performance_controller"
+application.register("budget-performance", BudgetPerformanceController)
 
 import CalculatorController from "./calculator_controller"
 application.register("calculator", CalculatorController)
@@ -88,9 +94,6 @@ application.register("installment-lock", InstallmentLockController)
 import InstallmentsDisplayController from "./installments_display_controller"
 application.register("installments-display", InstallmentsDisplayController)
 
-import InteractiveBreakdownDashboardController from "./interactive_breakdown_dashboard_controller"
-application.register("interactive-breakdown-dashboard", InteractiveBreakdownDashboardController)
-
 import LazyTabsController from "./lazy_tabs_controller"
 application.register("lazy-tabs", LazyTabsController)
 
@@ -114,6 +117,9 @@ application.register("partial-pay-multiple", PartialPayMultipleController)
 
 import PieBreakdownChartController from "./pie_breakdown_chart_controller"
 application.register("pie-breakdown-chart", PieBreakdownChartController)
+
+import InteractiveBreakdownDashboardController from "./interactive_breakdown_dashboard_controller"
+application.register("interactive-breakdown-dashboard", InteractiveBreakdownDashboardController)
 
 import PriceMaskController from "./price_mask_controller"
 application.register("price-mask", PriceMaskController)

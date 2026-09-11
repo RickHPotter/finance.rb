@@ -51,4 +51,39 @@ RSpec.describe Navigation::Dashboard do
 
     expect(rejected.map { |path| destination(path) }).to all(be_nil)
   end
+
+  it "accepts validated report state only on reportable owned dashboards" do
+    category = create(:category, :random, user:)
+    raw = "/categories/#{category.id}?to_date=2026-09-30&from_date=2026-01-01&paid_state=pending&granularity=month"
+
+    expect(destination(raw)).to eq(
+      "/categories/#{category.id}?from_date=2026-01-01&granularity=month&paid_state=pending&to_date=2026-09-30"
+    )
+  end
+
+  it "rejects invalid or oversized report state" do
+    category = create(:category, :random, user:)
+
+    rejected = [
+      "/categories/#{category.id}?from_date=2026-09-30&to_date=2026-01-01",
+      "/categories/#{category.id}?from_date=2024-01-01&to_date=2026-09-30",
+      "/categories/#{category.id}?granularity=week"
+    ]
+
+    expect(rejected.map { |path| destination(path) }).to all(be_nil)
+  end
+
+  it "accepts only a validated Monthly Analysis return destination" do
+    expect(destination("/balances?tab=monthly_analysis&month=2026-07")).to eq("/balances?month=2026-07&tab=monthly_analysis")
+
+    rejected = [
+      "/balances",
+      "/balances?tab=overview&month=2026-07",
+      "/balances?tab=monthly_analysis&month=2026-13",
+      "https://example.com/balances?tab=monthly_analysis&month=2026-07"
+    ]
+
+    expect(rejected.map { |path| destination(path) }).to all(be_nil)
+    expect(destination("/balances?tab=monthly_analysis&month=2026-07&unsafe=true")).to eq("/balances?month=2026-07&tab=monthly_analysis")
+  end
 end

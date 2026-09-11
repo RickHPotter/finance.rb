@@ -208,7 +208,7 @@ class Views::Balances::MonthlyAnalysis < Views::Base
   def labels
     %i[
       error retry no_items income outcome net sent received failed contributed projected_contribution withdrawn projected_withdrawal
-      recognized_profit_loss
+      recognized_profit_loss view_source source return generated_return valuation
     ].index_with { |key| I18n.t("balances.monthly_analysis.#{key}") }
   end
 end

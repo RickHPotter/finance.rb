@@ -47,7 +47,12 @@ class Views::CardTransactions::Form < Views::Base
         model: card_transaction,
         id: :transaction_form,
         class: "contents text-slate-100",
-        data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks", operation_type: card_transaction.operation_type }
+        data: {
+          controller: "reactive-form price-mask",
+          reactive_form_preserve_installment_prices_value: card_transaction.persisted?,
+          action: "submit->price-mask#removeMasks",
+          operation_type: card_transaction.operation_type
+        }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
         form.hidden_field :duplicate

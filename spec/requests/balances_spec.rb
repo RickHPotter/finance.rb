@@ -59,7 +59,11 @@ RSpec.describe "Balances", type: :request do
       expect(analysis["data-balances-monthly-analysis-url-value"]).to eq(monthly_analysis_json_balances_path(format: :json))
       expect(analysis["data-balances-monthly-analysis-locale-value"]).to eq("en")
       expect(analysis["data-balances-monthly-analysis-currency-value"]).to eq("BRL")
-      expect(JSON.parse(analysis["data-balances-monthly-analysis-labels-value"])).to include("retry" => "Retry")
+      expect(JSON.parse(analysis["data-balances-monthly-analysis-labels-value"])).to include(
+        "retry" => "Retry",
+        "view_source" => "View source",
+        "generated_return" => "Generated return"
+      )
       expect(document.css("canvas[data-balances-monthly-analysis-target$='Canvas']").size).to eq(4)
     end
 
@@ -82,7 +86,11 @@ RSpec.describe "Balances", type: :request do
       expect(response).to have_http_status(:ok)
       expect(analysis["data-balances-monthly-analysis-locale-value"]).to eq("pt-BR")
       expect(response.body).to include(I18n.t("balances.monthly_analysis.title", locale: "pt-BR"))
-      expect(JSON.parse(analysis["data-balances-monthly-analysis-labels-value"])).to include("retry" => "Tentar novamente")
+      expect(JSON.parse(analysis["data-balances-monthly-analysis-labels-value"])).to include(
+        "retry" => "Tentar novamente",
+        "view_source" => "Ver origem",
+        "generated_return" => "Retorno gerado"
+      )
     end
   end
 

@@ -82,81 +82,21 @@ class Budget < ApplicationRecord
     self.description = groups.join(inclusive? ? " && " : " || ")
   end
 
-  def set_remaining_value # rubocop:disable Metrics/AbcSize
-    category_ids = budget_categories.map(&:category_id)
-    entity_ids = budget_entities.map(&:entity_id)
-
-    cash_installments = context.cash_installments.includes(cash_transaction: { entity_transactions: :exchanges }).where(month:, year:)
-    card_installments = context.card_installments.includes(card_transaction: { entity_transactions: :exchanges }).where(month:, year:)
-
-    if first_installment_only
-      cash_installments = cash_installments.where(number: 1)
-      card_installments = card_installments.where(number: 1)
-    end
-
-    if inclusive && category_ids.present? && entity_ids.present?
-      inclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
-    else
-      exclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
-    end => installments
-
-    installments_price = total_price_without_exchanges(installments)
+  def set_remaining_value
+    installments_price = Logic::BudgetMatching.new(budget: self).call.sum(&:amount_cents)
 
     self.value = [ value, installments_price ].min
     self.remaining_value = value - installments_price
   end
 
-  def inclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
-    cash_installments.by_categories_and_entities(category_ids, entity_ids) + card_installments.by_categories_and_entities(category_ids, entity_ids)
-  end
-
-  def exclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
-    if category_ids.present? && entity_ids.present?
-      cash_installments.by_categories_or_entities(category_ids, entity_ids) + card_installments.by_categories_or_entities(category_ids, entity_ids)
-    elsif category_ids.present?
-      cash_installments.by_categories(category_ids) + card_installments.by_categories(category_ids)
-    elsif entity_ids.present?
-      cash_installments.by_entities(entity_ids) + card_installments.by_entities(entity_ids)
-    end
-  end
-
-  def total_price_without_exchanges(installments)
-    installments.map do |installment|
-      paying_entity_transactions  = installment.transactable.entity_transactions.where(exchanges_count: 1..)
-      installment_exchanges_price = paying_entity_transactions.map(&:exchanges).flatten.select { |e| e.year == year && e.month == month }.sum(&:price) * -1
-
-      installment.price - installment_exchanges_price
-    end.sum
-  end
-
   def matching_card_installments
-    relation = context.card_installments.where(month:, year:)
-    relation = relation.where(number: 1) if first_installment_only?
-
-    filter_installments_by_allocations(relation)
+    Logic::BudgetMatching.new(budget: self).matching_card_installments
   end
 
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 
   private
-
-  def filter_installments_by_allocations(relation)
-    category_ids = active_budget_categories.filter_map(&:category_id)
-    entity_ids = active_budget_entities.filter_map(&:entity_id)
-
-    if inclusive? && category_ids.present? && entity_ids.present?
-      relation.by_categories_and_entities(category_ids, entity_ids)
-    elsif category_ids.present? && entity_ids.present?
-      relation.by_categories_or_entities(category_ids, entity_ids)
-    elsif category_ids.present?
-      relation.by_categories(category_ids)
-    elsif entity_ids.present?
-      relation.by_entities(entity_ids)
-    else
-      relation.none
-    end
-  end
 
   def description_dependencies_changed?
     return false if skip_description_refresh

@@ -32,6 +32,8 @@ Rails.application.routes.draw do
   end
 
   resources :user_cards do
+    resource :movement, only: :show, controller: "reports/user_card_movements", defaults: { format: :json }
+
     member do
       get :reference_date
     end
@@ -44,14 +46,20 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :user_bank_accounts
+  resources :user_bank_accounts do
+    resource :movement, only: :show, controller: "reports/bank_account_movements", defaults: { format: :json }
+  end
   resources :categories do
+    resource :trend, only: :show, controller: "reports/category_trends", defaults: { format: :json }
+
     member do
       post :merge_preview, to: "category_merge_previews#create"
       post :merge,         to: "category_merges#create"
     end
   end
   resources :entities do
+    resource :trend, only: :show, controller: "reports/entity_trends", defaults: { format: :json }
+
     member do
       post :merge_preview, to: "entity_merge_previews#create"
       post :merge,         to: "entity_merges#create"
@@ -117,6 +125,8 @@ Rails.application.routes.draw do
   end
 
   resources :budgets do
+    resource :performance, only: :show, controller: "reports/budget_performances", defaults: { format: :json }
+
     member do
       get :duplicate
     end

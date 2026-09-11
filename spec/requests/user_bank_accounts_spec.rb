@@ -26,7 +26,7 @@ RSpec.describe "UserBankAccounts", type: :request do
   end
 
   describe "[ #show ]" do
-    it "renders a context-scoped dashboard with summary, details, and category/entity breakdowns" do
+    it "renders a restorable lazy movement report and context-scoped allocation summaries" do
       user_bank_account = create(:user_bank_account, user:, bank:)
       scenario_context = create(:context, user:, name: "Scenario A", source_context: user.main_context)
       main_category = create(:category, user:, category_name: "Main Food")
@@ -60,31 +60,39 @@ RSpec.describe "UserBankAccounts", type: :request do
       create(:entity_transaction, transactable: scenario_transaction, entity: scenario_entity)
 
       patch switch_context_path(scenario_context)
-      get user_bank_account_path(user_bank_account)
+      report_params = {
+        from_date: "2026-04-01",
+        to_date: "2026-04-30",
+        granularity: "day",
+        paid_state: "all",
+        direction: "all"
+      }
+      get user_bank_account_path(user_bank_account), params: report_params
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include(user_bank_account.user_bank_account_name)
       expect(response.body).to include("Summary")
-      expect(response.body).to include("Category Interactive Dashboard")
-      expect(response.body).to include("Entity Interactive Dashboard")
+      expect(response.body).to include("Bank account movement")
       expect(response.body).to include("Scenario Food")
       expect(response.body).to include("Scenario Entity")
       expect(response.body).not_to include("Main Food")
       expect(response.body).not_to include("Main Entity")
       expect(response.body).to include("background-color: #4b5563", "color: #ffffff")
 
-      entity_payload = interactive_dashboard_payloads(response.body).fetch("entity")
-      scenario_entity_entry = entity_payload.fetch("items").find { |entry| entry.fetch("name") == "Scenario Entity" }
-      scenario_category_item = scenario_entity_entry.fetch("groups").flat_map { |group| group.fetch("secondaryItems") }
-                                                    .find { |item| item.fetch("memberIds").include?(scenario_category.id.to_s) }
-      expect(scenario_category_item.fetch("chartPresentation")).to eq("background" => "#4b5563", "foreground" => "#ffffff")
-      expect(scenario_category_item.fetch("swatches")).to contain_exactly(
-        include("label" => "Scenario Food", "background" => "#4b5563", "foreground" => "#ffffff")
-      )
-      expect(scenario_category_item.fetch("swatchHexes")).to eq([ "#4b5563" ])
+      trend = response.parsed_body.at_css("#user_bank_account_#{user_bank_account.id}_movement")
+      expect(trend["data-allocation-trend-url-value"]).to eq(user_bank_account_movement_path(user_bank_account))
+      expect(trend.at_css("#user_bank_account_#{user_bank_account.id}_movement_from_date")["value"]).to eq("2026-04-01")
+      expect(response.parsed_body.css("[data-controller~='interactive-breakdown-dashboard']").size).to eq(2)
+
+      get user_bank_account_movement_path(user_bank_account), params: report_params
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.dig("summary", "source_count")).to be_nil
+      expect(response.parsed_body.dig("summary", "income", "source_count") + response.parsed_body.dig("summary", "outcome", "source_count")).to eq(1)
+      expect(response.body).not_to include("Main account transaction")
     end
 
-    it "includes future installment points in the interactive category dashboard payload" do
+    it "keeps future installments outside a bounded account report" do
       user_bank_account = create(:user_bank_account, user:, bank:)
       assets = create(:category, user:, category_name: "ASSETS")
       gigi = create(:entity, user:, entity_name: "GIGI")
@@ -105,16 +113,15 @@ RSpec.describe "UserBankAccounts", type: :request do
       create(:category_transaction, transactable: transaction, category: assets)
       create(:entity_transaction, transactable: transaction, entity: gigi)
 
-      get user_bank_account_path(user_bank_account)
+      get user_bank_account_movement_path(user_bank_account), params: { from_date: "2026-04-01", to_date: "2026-04-30" }
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("ASSETS")
-      expect(response.body).to include("GIGI")
-      expect(response.body).to include("2026-04-01")
-      expect(response.body).to include("2030-03-01")
+      expect(response.parsed_body.dig("summary", "outcome", "source_count") + response.parsed_body.dig("summary", "income", "source_count")).to eq(1)
+      expect(response.parsed_body.fetch("buckets").pluck("key")).to eq([ "2026-04" ])
+      expect(response.body).not_to include("2030-03")
     end
 
-    it "keeps only-category dashboard groups strict when transactions have extra categories" do
+    it "counts installments once when transactions have extra categories" do
       user_bank_account = create(:user_bank_account, user:, bank:)
       assets = create(:category, user:, category_name: "ASSETS")
       lend_request = user.built_in_category("EXCHANGE")
@@ -157,24 +164,17 @@ RSpec.describe "UserBankAccounts", type: :request do
       create(:entity_transaction, transactable: mixed_transaction, entity: gigi)
       create(:entity_transaction, transactable: mixed_transaction, entity: moi)
 
-      get user_bank_account_path(user_bank_account)
+      get user_bank_account_movement_path(user_bank_account), params: { from_date: "2026-01-01", to_date: "2026-05-31" }
 
-      category_payload = interactive_dashboard_payloads(response.body).fetch("category")
-      assets_entry = category_payload.fetch("items").find { |category| category.fetch("name") == "ASSETS" }
-      only_assets_group = assets_entry.fetch("groups").find { |group| group.fetch("id") == "__all__" }
-      mixed_assets_group = assets_entry.fetch("groups").find { |group| group.fetch("label") == "+ LEND REQUEST" }
-      gigi_moi_entity = mixed_assets_group.fetch("secondaryItems").find { |entity| entity.fetch("name") == "GIGI / MOI" }
-
-      expect(only_assets_group.fetch("memberIds")).to eq([ assets.id.to_s ])
-      expect(only_assets_group.fetch("secondaryItems").pluck("name")).not_to include("GIGI / MOI")
-      expect(mixed_assets_group.fetch("memberIds")).to eq([ assets.id, lend_request.id ].sort.map(&:to_s))
-      expect(only_assets_group.fetch("secondaryItems").sum { |entity| entity.fetch("total") }).to eq(1_000)
-      expect(mixed_assets_group.fetch("secondaryItems").sum { |entity| entity.fetch("total") }).to eq(9_000)
-      expect(gigi_moi_entity.fetch("memberIds").map(&:to_i).sort).to eq([ gigi.id, moi.id ].sort)
-      expect(gigi_moi_entity.fetch("points").pluck("x")).to eq(%w[2026-02-01 2026-04-01 2026-05-01 2026-06-01])
+      expect(response.parsed_body.dig("summary", "net_cents")).to eq(10_000)
+      expect(response.parsed_body.dig("summary", "income", "source_count")).to eq(5)
+      expect(response.parsed_body.fetch("breakdowns")).to contain_exactly(
+        include("key" => "ordinary", "net_cents" => 1_000),
+        include("key" => "transfer", "net_cents" => 9_000)
+      )
     end
 
-    it "keeps only-entity dashboard groups strict when transactions have extra entities" do
+    it "counts installments once when transactions have extra entities" do
       user_bank_account = create(:user_bank_account, user:, bank:)
       assets = create(:category, user:, category_name: "ASSETS")
       lend_request = user.built_in_category("EXCHANGE")
@@ -217,24 +217,17 @@ RSpec.describe "UserBankAccounts", type: :request do
       create(:entity_transaction, transactable: mixed_transaction, entity: gigi)
       create(:entity_transaction, transactable: mixed_transaction, entity: moi)
 
-      get user_bank_account_path(user_bank_account)
+      get user_bank_account_movement_path(user_bank_account), params: { from_date: "2026-01-01", to_date: "2026-05-31" }
 
-      entity_payload = interactive_dashboard_payloads(response.body).fetch("entity")
-      gigi_entry = entity_payload.fetch("items").find { |entity| entity.fetch("name") == "GIGI" }
-      only_gigi_group = gigi_entry.fetch("groups").find { |group| group.fetch("id") == "__all__" }
-      mixed_gigi_group = gigi_entry.fetch("groups").find { |group| group.fetch("label") == "+ MOI" }
-      assets_lend_request_category = mixed_gigi_group.fetch("secondaryItems").find { |category| category.fetch("name") == "ASSETS / LEND REQUEST" }
-
-      expect(only_gigi_group.fetch("memberIds")).to eq([ gigi.id.to_s ])
-      expect(only_gigi_group.fetch("secondaryItems").pluck("name")).not_to include("ASSETS / LEND REQUEST")
-      expect(mixed_gigi_group.fetch("memberIds")).to eq([ gigi.id, moi.id ].sort.map(&:to_s))
-      expect(only_gigi_group.fetch("secondaryItems").sum { |category| category.fetch("total") }).to eq(1_000)
-      expect(mixed_gigi_group.fetch("secondaryItems").sum { |category| category.fetch("total") }).to eq(9_000)
-      expect(assets_lend_request_category.fetch("memberIds").map(&:to_i).sort).to eq([ assets.id, lend_request.id ].sort)
-      expect(assets_lend_request_category.fetch("points").pluck("x")).to eq(%w[2026-02-01 2026-04-01 2026-05-01 2026-06-01])
+      expect(response.parsed_body.dig("summary", "net_cents")).to eq(10_000)
+      expect(response.parsed_body.dig("summary", "income", "source_count")).to eq(5)
+      expect(response.parsed_body.fetch("breakdowns")).to contain_exactly(
+        include("key" => "ordinary", "net_cents" => 1_000),
+        include("key" => "transfer", "net_cents" => 9_000)
+      )
     end
 
-    it "allows built-in exchange as a category group but not as a selectable base category" do
+    it "reports an exchange allocation only in the transfer family" do
       user_bank_account = create(:user_bank_account, user:, bank:)
       assets = create(:category, user:, category_name: "ASSETS")
       exchange = user.built_in_category("EXCHANGE")
@@ -257,15 +250,25 @@ RSpec.describe "UserBankAccounts", type: :request do
       create(:category_transaction, transactable: transaction, category: exchange)
       create(:entity_transaction, transactable: transaction, entity: gigi)
 
-      get user_bank_account_path(user_bank_account)
+      get user_bank_account_movement_path(user_bank_account), params: { from_date: "2026-04-01", to_date: "2026-04-30" }
 
-      payload = interactive_dashboard_payloads(response.body).fetch("category")
-      category_names = payload.fetch("items").pluck("name")
-      assets_entry = payload.fetch("items").find { |category| category.fetch("name") == "ASSETS" }
+      expect(response.parsed_body.fetch("breakdowns")).to contain_exactly(
+        include("key" => "transfer", "net_cents" => 1_000)
+      )
+    end
+  end
 
-      expect(category_names).to include("ASSETS")
-      expect(category_names).not_to include("LEND REQUEST")
-      expect(assets_entry.fetch("groups").pluck("label")).to include("+ LEND REQUEST")
+  describe "[ #movement ]" do
+    it "rejects invalid report state and accounts owned by another user" do
+      user_bank_account = create(:user_bank_account, user:, bank:)
+      foreign_account = create(:user_bank_account, :random, user: create(:user, :random))
+
+      get user_bank_account_movement_path(user_bank_account), params: { granularity: "week" }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to include("code" => "invalid_granularity")
+
+      get user_bank_account_movement_path(foreign_account)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -324,13 +327,6 @@ RSpec.describe "UserBankAccounts", type: :request do
       expect do
         delete user_bank_account_path(user_bank_account), headers: turbo_stream_headers
       end.to change(UserBankAccount, :count).by(-1)
-    end
-  end
-
-  def interactive_dashboard_payloads(body)
-    body.scan(/data-interactive-breakdown-dashboard-data-value="([^"]+)"/).to_h do |(value)|
-      payload = JSON.parse(CGI.unescapeHTML(value))
-      [ payload.fetch("primaryKind"), payload ]
     end
   end
 end

@@ -203,6 +203,8 @@ module IndexState
     def months_for_all_month_years
       associations = association_filters
       relation = card_installments
+      installment_ids = compact_array(source_context[:card_installment_ids])
+      relation = relation.where(id: installment_ids) if installment_ids.present?
       if source_context[:attach_to_subscription_id].present?
         relation = relation.where(card_transaction_id: current_context.card_transactions.subscription_candidates.select(:id))
       end

@@ -185,6 +185,8 @@ module IndexState
     def relation_for_all_month_years
       associations = association_filters
       relation = cash_installments
+      installment_ids = compact_array(source_context[:cash_installment_ids])
+      relation = relation.where(id: installment_ids) if installment_ids.present?
       if source_context[:attach_to_subscription_id].present?
         relation = relation.where(cash_transaction_id: current_context.cash_transactions.subscription_candidates.select(:id))
       end

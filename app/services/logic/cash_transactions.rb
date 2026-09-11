@@ -183,7 +183,11 @@ module Logic
       entity_ids   = [ entity_ids ].flatten.compact_blank if entity_ids.present?
 
       cash_installment_ids = cash_transaction_params[:cash_installment_ids]
-      return financial_scope.cash_installments.where(id: cash_installment_ids) if cash_installment_ids.present?
+      if cash_installment_ids.present?
+        return financial_scope.cash_installments.where(id: cash_installment_ids).group_by do |record|
+          Date.new(record.year, record.month, 1).strftime("%Y%m").to_i
+        end
+      end
 
       conditions = build_conditions_from_cash_transaction_params(cash_transaction_params)
       conditions[:cash_transaction] = conditions[:cash_transaction].except("date") if conditions[:cash_transaction].present?

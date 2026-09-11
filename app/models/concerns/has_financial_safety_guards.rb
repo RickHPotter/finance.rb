@@ -224,12 +224,13 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
     return false unless current_installment_total == price
     return false unless can_edit_unpaid_future_installments?(editable_installment_dates)
     return paid_installments_unchanged? if changed_installments.empty?
+    return false unless paid_installments_unchanged?
 
     changed_installments.all? do |installment|
-      installment.persisted? &&
-        !installment_previously_paid?(installment) &&
-        !installment.marked_for_destruction? &&
-        installment.changes.except("updated_at").keys == [ "price" ]
+      next false if installment_previously_paid?(installment) || installment.marked_for_destruction?
+      next is_a?(CashTransaction) && !installment.paid? if installment.new_record?
+
+      installment.changes.except("updated_at").keys == [ "price" ]
     end
   end
 

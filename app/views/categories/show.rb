@@ -20,6 +20,7 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
 
         div(class: "mt-6 space-y-4") do
           details_section
+          trend_section
           counterpart_section
           user_bank_accounts_section
           user_cards_section
@@ -64,6 +65,16 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
         dashboard_stat(pluralise_model(CardTransaction, 2), scoped_card_transactions.count)
         dashboard_stat(model_attribute(CardTransaction, :total_amount), money(scoped_card_transactions.sum(:price)), emphasis: true)
       end
+    end
+  end
+
+  def trend_section
+    section_card(I18n.t("reports.allocation_trend.title")) do
+      render Views::Shared::AllocationTrend.new(
+        url: category_trend_path(category),
+        query_state: report_query_state,
+        prefix: "category_#{category.id}_trend"
+      )
     end
   end
 
@@ -251,23 +262,11 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
       filter_options = {}
 
       scoped_cash_transactions_for_payload.each do |transaction|
-        source = source_filter_for_bank_account(transaction.user_bank_account)
-        filter_options[source[:id]] = source
-
-        transaction.entity_transactions.filter_map(&:entity).uniq(&:id).each do |entity|
-          entry = ensure_counterpart_entry!(entries, entity)
-          entry[:totalsBySource][source[:id]] += absolute_price(transaction.price)
-        end
+        append_entity_counterparts(entries, filter_options, transaction, source_filter_for_bank_account(transaction.user_bank_account))
       end
 
       scoped_card_transactions_for_payload.each do |transaction|
-        source = source_filter_for_user_card(transaction.user_card)
-        filter_options[source[:id]] = source
-
-        transaction.entity_transactions.filter_map(&:entity).uniq(&:id).each do |entity|
-          entry = ensure_counterpart_entry!(entries, entity)
-          entry[:totalsBySource][source[:id]] += absolute_price(transaction.price)
-        end
+        append_entity_counterparts(entries, filter_options, transaction, source_filter_for_user_card(transaction.user_card))
       end
 
       {
@@ -275,6 +274,20 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
         filterOptions: filter_options.values.sort_by { |option| option[:label] },
         entries: serialize_filterable_entries(entries.values)
       }
+    end
+  end
+
+  def append_entity_counterparts(entries, filter_options, transaction, source)
+    filter_options[source[:id]] = source
+    transaction.entity_transactions.filter_map(&:entity).uniq(&:id).each do |entity_record|
+      entry = entries[entity_record.id] ||= { id: entity_record.id.to_s, name: entity_record.name, totalsBySource: Hash.new(0) }
+      entry[:totalsBySource][source[:id]] += absolute_price(transaction.price)
+    end
+  end
+
+  def serialize_filterable_entries(entries)
+    entries.sort_by { |entry| entry[:name] }.map do |entry|
+      { id: entry[:id], name: entry[:name], totalsBySource: entry[:totalsBySource] }
     end
   end
 
@@ -316,24 +329,6 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
     end
   end
 
-  def ensure_counterpart_entry!(entries, entity)
-    entries[entity.id] ||= {
-      id: entity.id.to_s,
-      name: entity.name,
-      totalsBySource: Hash.new(0)
-    }
-  end
-
-  def serialize_filterable_entries(entries)
-    entries.sort_by { |entry| entry[:name] }.map do |entry|
-      {
-        id: entry[:id],
-        name: entry[:name],
-        totalsBySource: entry[:totalsBySource]
-      }
-    end
-  end
-
   def serialize_pie_entries(entries)
     entries.sort_by { |entry| entry[:name] }.map do |entry|
       {
@@ -371,6 +366,12 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
 
   def money(value)
     from_cent_based_to_float(value.to_i, "R$")
+  end
+
+  def report_query_state
+    @report_query_state ||= Reports::QueryState.new(params.permit(:from_date, :to_date, :granularity, :paid_state, :direction, :sort))
+  rescue Reports::QueryState::InvalidState
+    Reports::QueryState.new
   end
 
   def empty_state

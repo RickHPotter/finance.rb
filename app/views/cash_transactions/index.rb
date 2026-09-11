@@ -48,7 +48,7 @@ class Views::CashTransactions::Index < Views::Base
                 selection_kind: "budget"
               )
               render MonthYearContainer.new(index_context: index_context.slice(:search_term, :attach_to_subscription_id,
-                                                                               :category_id, :entity_id, :id, :subscription_id,
+                                                                               :category_id, :entity_id, :cash_installment_ids, :id, :subscription_id,
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count,
                                                                                :exchange_bound_type, :paid, :pending, :paid_state,

@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 class Logic::Finder::MonthlyAnalysis::Ordinary
-  TRANSFER_CATEGORY_NAMES = [ "EXCHANGE", "EXCHANGE RETURN", "BORROW RETURN", "FAILED LEND/BORROW RETURN" ].freeze
-  PIGGY_BANK_CATEGORY_NAMES = [ "PIGGY BANK", "PIGGY BANK RETURN" ].freeze
-  EXCLUDED_CASH_TRANSACTION_TYPES = %w[CardInstallment Investment PiggyBank].freeze
   def initialize(context:, month:)
     @context = context
     @month = month
@@ -44,10 +41,11 @@ class Logic::Finder::MonthlyAnalysis::Ordinary
   end
 
   def ordinary_transaction?(transaction)
-    return false if transaction.is_a?(CashTransaction) && transaction.cash_transaction_type.in?(EXCLUDED_CASH_TRANSACTION_TYPES)
+    movement_classifier.ordinary?(transaction)
+  end
 
-    category_names = transaction.categories.map(&:category_name)
-    !category_names.intersect?(TRANSFER_CATEGORY_NAMES) && !category_names.intersect?(PIGGY_BANK_CATEGORY_NAMES)
+  def movement_classifier
+    @movement_classifier ||= Reports::MovementClassifier.new
   end
 
   def empty_accumulator

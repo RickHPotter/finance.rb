@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class AllocationMutations::PaidHistoryEnvelope
-  ALLOWED_PARENT_CHANGES = %w[comment date description].freeze
+  ALLOWED_PARENT_CHANGES = %w[comment date description imported].freeze
   ALLOWED_INSTALLMENT_CHANGES = %w[date].freeze
 
   attr_reader :owner

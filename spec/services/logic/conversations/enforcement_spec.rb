@@ -86,7 +86,7 @@ RSpec.describe "Canonical conversation enforcement", type: :service do
     expect_database_rejection { Message.where(id: message.id).update_all(action_state: "pending") }
 
     expect_database_rejection do
-      conversation.participant_for!(friend).delete
+      ConversationParticipant.where(conversation:, user: friend).delete_all
       ApplicationRecord.connection.execute("SET CONSTRAINTS conversation_participants_canonical_pair IMMEDIATE")
     end
 

@@ -791,6 +791,59 @@ RSpec.describe CashTransaction, type: :model do
       expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.paid_history_locked"))
     end
 
+    it "allows extending a fully paid transaction with a future pending installment" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Extended paid transaction",
+        price: -35_000,
+        date: Date.new(2026, 9, 10),
+        month: 9,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: -35_000, date: Date.new(2026, 9, 10), month: 9, year: 2026, paid: true }
+        ]
+      )
+      paid_installment = transaction.cash_installments.first
+
+      transaction.price = -70_000
+      transaction.cash_installments_attributes = [
+        { id: paid_installment.id, number: 1, price: -35_000, date: Date.new(2026, 9, 10), month: 9, year: 2026, paid: true },
+        { number: 2, price: -35_000, date: Date.new(2026, 10, 10), month: 10, year: 2026, paid: false }
+      ]
+
+      expect(transaction).to be_valid
+    end
+
+    it "blocks extending a paid transaction with a new installment on the paid boundary" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Unsafe paid extension",
+        price: -35_000,
+        date: Date.new(2026, 9, 10),
+        month: 9,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: -35_000, date: Date.new(2026, 9, 10), month: 9, year: 2026, paid: true }
+        ]
+      )
+      paid_installment = transaction.cash_installments.first
+
+      transaction.price = -70_000
+      transaction.cash_installments_attributes = [
+        { id: paid_installment.id, number: 1, price: -35_000, date: Date.new(2026, 9, 10), month: 9, year: 2026, paid: true },
+        { number: 2, price: -35_000, date: Date.new(2026, 9, 10), month: 9, year: 2026, paid: false }
+      ]
+
+      expect(transaction).to be_invalid
+      expect(transaction.errors.details[:base]).to include(error: :paid_history_locked)
+    end
+
     it "allows reconciling a stale parent price to an unchanged installment total" do
       user = create(:user)
       bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))

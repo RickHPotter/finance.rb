@@ -28,7 +28,7 @@ RSpec.describe "UserCards", type: :request do
   end
 
   describe "[ #show ]" do
-    it "renders a context-scoped dashboard with references and category/entity breakdowns" do
+    it "renders a restorable lazy movement report with context-scoped references and allocations" do
       user_card = create(:user_card, user:, card:)
       scenario_context = create(:context, user:, name: "Scenario Card", source_context: user.main_context)
       main_category = create(:category, user:, category_name: "Main Food")
@@ -66,13 +66,19 @@ RSpec.describe "UserCards", type: :request do
                          reference_closing_date: Date.new(2026, 4, 13))
 
       patch switch_context_path(scenario_context)
-      get user_card_path(user_card)
+      report_params = {
+        from_date: "2026-04-01",
+        to_date: "2026-04-30",
+        granularity: "month",
+        paid_state: "all",
+        direction: "all"
+      }
+      get user_card_path(user_card), params: report_params
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include(user_card.user_card_name)
       expect(response.body).to include("Summary")
-      expect(response.body).to include("Category Interactive Dashboard")
-      expect(response.body).to include("Entity Interactive Dashboard")
+      expect(response.body).to include("User card movement")
       expect(response.body).to include("Scenario Food")
       expect(response.body).to include("Scenario Entity")
       expect(response.body).to include(I18n.l(Date.new(2026, 4, 20), format: :short))
@@ -81,22 +87,19 @@ RSpec.describe "UserCards", type: :request do
       expect(response.body).not_to include(I18n.l(Date.new(2026, 4, 12), format: :short))
       expect(response.body).to include("background-color: #4b5563", "color: #ffffff")
 
-      entity_payload = interactive_dashboard_payloads(response.body).fetch("entity")
-      scenario_entity_entry = entity_payload.fetch("items").find { |entry| entry.fetch("name") == "Scenario Entity" }
-      scenario_category_item = scenario_entity_entry.fetch("groups").flat_map { |group| group.fetch("secondaryItems") }
-                                                    .find { |item| item.fetch("memberIds").include?(scenario_category.id.to_s) }
-      expect(scenario_category_item.fetch("chartPresentation")).to eq(
-        "background" => CategoryColours::Presentation.neutral.background,
-        "foreground" => CategoryColours::Presentation.neutral.foreground
-      )
-      expect(scenario_category_item.fetch("swatches").size).to eq(2)
-      expect(scenario_category_item.fetch("swatches")).to include(
-        include("label" => "Scenario Food", "background" => "#4b5563", "foreground" => "#ffffff")
-      )
-      expect(scenario_category_item.fetch("swatchHexes")).to include("#4b5563")
+      report = response.parsed_body.at_css("#user_card_#{user_card.id}_movement")
+      expect(report["data-allocation-trend-url-value"]).to eq(user_card_movement_path(user_card))
+      expect(report.at_css("#user_card_#{user_card.id}_movement_from_date")["value"]).to eq("2026-04-01")
+      expect(response.parsed_body.css("[data-controller~='interactive-breakdown-dashboard']").size).to eq(2)
+
+      get user_card_movement_path(user_card), params: report_params
+
+      payload = response.parsed_body
+      expect(payload.dig("summary", "income", "source_count") + payload.dig("summary", "outcome", "source_count")).to eq(1)
+      expect(payload.fetch("details").pluck("description")).to eq([ "Scenario card transaction" ])
     end
 
-    it "includes future installment points in the interactive category dashboard payload" do
+    it "keeps future installments outside a bounded card report" do
       user_card = create(:user_card, user:, card:)
       assets = create(:category, user:, category_name: "ASSETS")
       gigi = create(:entity, user:, entity_name: "GIGI")
@@ -117,16 +120,15 @@ RSpec.describe "UserCards", type: :request do
       create(:category_transaction, transactable: transaction, category: assets)
       create(:entity_transaction, transactable: transaction, entity: gigi)
 
-      get user_card_path(user_card)
+      get user_card_movement_path(user_card), params: { from_date: "2026-04-01", to_date: "2026-04-30" }
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("ASSETS")
-      expect(response.body).to include("GIGI")
-      expect(response.body).to include("2026-04-01")
-      expect(response.body).to include("2030-03-01")
+      expect(response.parsed_body.dig("summary", "outcome", "source_count")).to eq(1)
+      expect(response.parsed_body.fetch("buckets").pluck("key")).to eq([ "2026-04" ])
+      expect(response.body).not_to include("2030-03")
     end
 
-    it "keeps only-category and only-entity dashboard groups strict" do
+    it "counts installments once when transactions have multiple allocations" do
       user_card = create(:user_card, user:, card:)
       assets = create(:category, user:, category_name: "ASSETS")
       lend_request = user.built_in_category("EXCHANGE")
@@ -174,23 +176,30 @@ RSpec.describe "UserCards", type: :request do
       create(:entity_transaction, transactable: mixed_transaction, entity: gigi)
       create(:entity_transaction, transactable: mixed_transaction, entity: moi)
 
-      get user_card_path(user_card)
+      get user_card_movement_path(user_card), params: { from_date: "2026-01-01", to_date: "2026-05-31" }
 
-      category_payload = interactive_dashboard_payloads(response.body).fetch("category")
-      assets_entry = category_payload.fetch("items").find { |category| category.fetch("name") == "ASSETS" }
-      only_assets_group = assets_entry.fetch("groups").find { |group| group.fetch("id") == "__all__" }
-      mixed_assets_group = assets_entry.fetch("groups").find { |group| group.fetch("label") == "+ LEND REQUEST" }
+      payload = response.parsed_body
+      expect(payload.dig("summary", "net_cents")).to eq(-10_000)
+      expect(payload.dig("summary", "outcome", "source_count")).to eq(5)
+      expect(payload.fetch("details").size).to eq(5)
+      expect(payload.fetch("breakdowns")).to contain_exactly(
+        include("key" => "ordinary", "net_cents" => -1_000),
+        include("key" => "transfer", "net_cents" => -9_000)
+      )
+    end
+  end
 
-      expect(only_assets_group.fetch("secondaryItems").pluck("name")).not_to include("GIGI / MOI")
-      expect(mixed_assets_group.fetch("secondaryItems").pluck("name")).to include("GIGI / MOI")
+  describe "[ #movement ]" do
+    it "rejects invalid report state and cards owned by another user" do
+      user_card = create(:user_card, user:, card:)
+      foreign_card = create(:user_card, :random, user: create(:user, :random))
 
-      entity_payload = interactive_dashboard_payloads(response.body).fetch("entity")
-      gigi_entry = entity_payload.fetch("items").find { |entity| entity.fetch("name") == "GIGI" }
-      only_gigi_group = gigi_entry.fetch("groups").find { |group| group.fetch("id") == "__all__" }
-      mixed_gigi_group = gigi_entry.fetch("groups").find { |group| group.fetch("label") == "+ MOI" }
+      get user_card_movement_path(user_card), params: { paid_state: "late" }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to include("code" => "invalid_paid_state")
 
-      expect(only_gigi_group.fetch("secondaryItems").pluck("name")).not_to include("ASSETS / LEND REQUEST")
-      expect(mixed_gigi_group.fetch("secondaryItems").pluck("name")).to include("ASSETS / LEND REQUEST")
+      get user_card_movement_path(foreign_card)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -440,13 +449,6 @@ RSpec.describe "UserCards", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(JSON.parse(response.body)).to include("reference_date" => "2026-03-20")
-    end
-  end
-
-  def interactive_dashboard_payloads(body)
-    body.scan(/data-interactive-breakdown-dashboard-data-value="([^"]+)"/).to_h do |(value)|
-      payload = JSON.parse(CGI.unescapeHTML(value))
-      [ payload.fetch("primaryKind"), payload ]
     end
   end
 end

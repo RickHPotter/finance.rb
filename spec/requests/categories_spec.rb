@@ -43,7 +43,7 @@ RSpec.describe "Categories", type: :request do
   end
 
   describe "[ #show ]" do
-    it "renders category details and the pie sections scoped to the current context" do
+    it "renders category details with a restorable lazy trend and context-scoped report data" do
       category = create(:category, user:, category_name: "TRAVEL")
       scenario_context = create(:context, user:, name: "Scenario Category", source_context: user.main_context)
       scenario_entity = create(:entity, user:, entity_name: "Scenario Entity")
@@ -69,18 +69,39 @@ RSpec.describe "Categories", type: :request do
       create(:entity_transaction, transactable: scenario_card, entity: scenario_entity)
 
       patch switch_context_path(scenario_context)
-      get category_path(category)
+      report_params = {
+        from_date: "2026-04-01",
+        to_date: "2026-04-30",
+        granularity: "day",
+        paid_state: "all",
+        direction: "outcome"
+      }
+      get category_path(category), params: report_params
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Details")
-      expect(response.body).to include("Scenario Entity")
-      expect(response.body).not_to include("Main Entity")
+      expect(response.body).to include(Entity.model_name.human(count: 2))
       expect(response.body).to include("User Bank Accounts")
       expect(response.body).to include("User Cards")
 
+      trend = response.parsed_body.at_css("[data-controller~='allocation-trend']")
+      expect(trend).to be_present
+      expect(trend["data-allocation-trend-url-value"]).to eq(category_trend_path(category))
+      expect(trend.at_css("#category_#{category.id}_trend_from_date")["value"]).to eq("2026-04-01")
+      expect(trend.at_css("#category_#{category.id}_trend_to_date")["value"]).to eq("2026-04-30")
+      expect(trend.at_css("#category_#{category.id}_trend_granularity option[selected]")["value"]).to eq("day")
+      expect(trend.at_css("#category_#{category.id}_trend_direction option[selected]")["value"]).to eq("outcome")
       counterpart_payload = pie_payloads(response.body).fetch("counterpart")
       expect(counterpart_payload.fetch("filterOptions").pluck("label")).to include("Bank Account: 99PAY", "User Card: 99PAY")
       expect(counterpart_payload.fetch("entries").pluck("name")).to include("Scenario Entity")
+      expect(counterpart_payload.to_json).not_to include("Main Entity")
+
+      get category_trend_path(category), params: report_params
+
+      payload = response.parsed_body
+      expect(payload.dig("summary", "net_cents")).to eq(-8_000)
+      expect(payload.fetch("breakdowns").pluck("label")).to all(include("Scenario Entity"))
+      expect(payload.to_json).not_to include("Main Entity")
     end
 
     it "sums transactions with duplicate prices independently" do
@@ -95,6 +116,36 @@ RSpec.describe "Categories", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("R$ -40.00", "R$ -60.00")
+    end
+  end
+
+  describe "[ #trend ]" do
+    it "returns a context-scoped category trend payload" do
+      category = create(:category, user:, category_name: "REPORT FOOD")
+      transaction = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, date: Date.new(2026, 7, 10), month: 7, year: 2026,
+                                              price: -1_500)
+      create(:category_transaction, transactable: transaction, category:)
+
+      get category_trend_path(category), params: { from_date: "2026-07-01", to_date: "2026-07-31" }
+
+      expect(response).to have_http_status(:success)
+      expect(response.media_type).to eq("application/json")
+      expect(response.parsed_body).to include(
+        "resource" => { "type" => "Category", "id" => category.id, "label" => "REPORT FOOD" },
+        "summary" => include("net_cents" => -1_500)
+      )
+    end
+
+    it "rejects invalid report state and categories owned by another user" do
+      category = create(:category, user:)
+      foreign_category = create(:category, user: create(:user, :random))
+
+      get category_trend_path(category), params: { from_date: "2026-09-01", to_date: "2026-01-01" }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to include("code" => "invalid_range")
+
+      get category_trend_path(foreign_category)
+      expect(response).to have_http_status(:not_found)
     end
   end
 

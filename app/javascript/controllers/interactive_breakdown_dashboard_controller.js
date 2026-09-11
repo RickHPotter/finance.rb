@@ -1,29 +1,19 @@
 import { Controller } from "@hotwired/stimulus"
-import {
-  BarController,
-  CategoryScale,
-  Chart,
-  Filler,
-  Legend,
-  LinearScale,
-  BarElement,
-  Tooltip
-} from "chart.js"
-import { resolveCategoryChartPresentation } from "../lib/category_chart_presentation.mjs"
+import { BarController, BarElement, CategoryScale, Chart, Legend, LinearScale, Tooltip } from "chart.js"
+import { formatCompactReportCurrency, formatReportCurrency } from "../lib/report_presentation.mjs"
 
-Chart.register(BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend, Filler)
+Chart.register(BarController, BarElement, CategoryScale, Legend, LinearScale, Tooltip)
 
 export default class extends Controller {
+  static values = { data: Object, locale: String, currency: String, labels: Object }
   static targets = ["primarySelect", "groupActions", "groupOptions", "secondaryActions", "secondaryOptions", "chartCanvas", "emptyState"]
-  static values = { data: Object }
 
   connect() {
-    this.selectedGroupIds = new Set()
-    this.selectedSecondaryIds = new Set()
     this.chart = null
+    this.selectedSecondaryIds = new Set()
     this.themeObserver = new MutationObserver(() => this.renderChart())
     this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
-    this.renderCurrentPrimary()
+    this.renderPayload()
   }
 
   disconnect() {
@@ -31,483 +21,294 @@ export default class extends Controller {
     this.destroyChart()
   }
 
+  dataValueChanged() {
+    if (!this.hasPrimarySelectTarget) return
+
+    this.renderPayload()
+  }
+
   changePrimary() {
-    this.renderCurrentPrimary()
-  }
-
-  selectAllGroups() {
-    this.selectedGroupIds = new Set(this.currentGroups().map((group) => group.id))
-    this.renderGroupToolbar()
-    this.resetSelectedSecondaryItems()
-    this.renderSecondaryToolbar()
-    this.renderChart()
-  }
-
-  unselectAllGroups() {
-    this.selectedGroupIds = new Set()
-    this.renderGroupToolbar()
-    this.resetSelectedSecondaryItems()
-    this.renderSecondaryToolbar()
-    this.renderChart()
+    this.selectDefaultGroup()
   }
 
   toggleGroup(event) {
-    const { groupId } = event.currentTarget.dataset
-    if (!groupId) return
+    this.selectedGroupId = event.currentTarget.dataset.groupId
+    this.renderGroups()
+    this.selectAllSecondaryItems()
+  }
 
-    this.selectedGroupIds = new Set([groupId])
-    this.renderGroupToolbar()
-    this.resetSelectedSecondaryItems()
-    this.renderSecondaryToolbar()
-    this.renderChart()
+  selectAllGroups() {
+    this.selectedGroupId = "__combined__"
+    this.renderGroups()
+    this.selectAllSecondaryItems()
+  }
+
+  unselectAllGroups() {
+    this.selectedGroupId = null
+    this.renderGroups()
+    this.selectAllSecondaryItems()
   }
 
   selectAllSecondaryItems() {
     this.selectedSecondaryIds = new Set(this.currentSecondaryItems().map((item) => item.id))
-    this.renderSecondaryToolbar()
+    this.renderSecondaryItems()
     this.renderChart()
   }
 
   unselectAllSecondaryItems() {
     this.selectedSecondaryIds = new Set()
-    this.renderSecondaryToolbar()
+    this.renderSecondaryItems()
     this.renderChart()
   }
 
   toggleSecondaryItem(event) {
-    const { secondaryId } = event.currentTarget.dataset
-    if (!secondaryId) return
+    const id = event.currentTarget.dataset.secondaryId
+    if (this.selectedSecondaryIds.has(id)) this.selectedSecondaryIds.delete(id)
+    else this.selectedSecondaryIds.add(id)
 
-    this.selectedSecondaryIds = new Set([secondaryId])
-    this.renderSecondaryToolbar()
+    this.renderSecondaryItems()
     this.renderChart()
   }
 
-  renderCurrentPrimary() {
-    this.selectedGroupIds = new Set([this.defaultGroupId()])
-    this.renderGroupToolbar()
-    this.resetSelectedSecondaryItems()
-    this.renderSecondaryToolbar()
-    this.renderChart()
+  renderPayload() {
+    const previousPrimaryId = this.primarySelectTarget.value
+    this.primarySelectTarget.replaceChildren()
+    ;(this.dataValue.items || []).forEach((item) => {
+      const option = document.createElement("option")
+      option.value = item.id
+      option.textContent = item.name
+      this.primarySelectTarget.appendChild(option)
+    })
+
+    if ((this.dataValue.items || []).some((item) => item.id === previousPrimaryId)) this.primarySelectTarget.value = previousPrimaryId
+    this.selectDefaultGroup()
   }
 
-  renderGroupToolbar() {
-    const groups = this.currentGroups()
-    this.groupActionsTarget.innerHTML = ""
-    this.groupOptionsTarget.innerHTML = ""
+  selectDefaultGroup() {
+    this.selectedGroupId = this.currentGroups().find((group) => group.id === "__all__")?.id || this.currentGroups()[0]?.id
+    this.renderGroups()
+    this.selectAllSecondaryItems()
+  }
 
-    this.groupActionsTarget.appendChild(
-      this.buildActionButton("Select All", () => this.selectAllGroups(), this.selectedGroupIds.size === groups.length && groups.length > 0)
+  renderGroups() {
+    this.groupActionsTarget.replaceChildren(
+      this.actionButton(this.label("select_all"), () => this.selectAllGroups(), this.selectedGroupId === "__combined__"),
+      this.actionButton(this.label("unselect_all"), () => this.unselectAllGroups(), this.selectedGroupId === null)
     )
-    this.groupActionsTarget.appendChild(
-      this.buildActionButton("Unselect All", () => this.unselectAllGroups(), this.selectedGroupIds.size === 0)
-    )
-
-    groups.forEach((group) => {
-      const button = document.createElement("button")
-      button.type = "button"
+    this.groupOptionsTarget.replaceChildren()
+    this.currentGroups().forEach((group) => {
+      const button = this.button(group.label, this.selectedGroupId === group.id)
       button.dataset.groupId = group.id
       button.addEventListener("click", (event) => this.toggleGroup(event))
-      button.className = this.filterButtonClass(this.selectedGroupIds.has(group.id))
-      button.textContent = group.label
       this.groupOptionsTarget.appendChild(button)
     })
   }
 
-  renderSecondaryToolbar() {
-    const secondaryItems = this.currentSecondaryItems()
-    this.secondaryActionsTarget.innerHTML = ""
-    this.secondaryOptionsTarget.innerHTML = ""
-
-    this.secondaryActionsTarget.appendChild(
-      this.buildActionButton(
-        "Select All",
-        () => this.selectAllSecondaryItems(),
-        this.selectedSecondaryIds.size === secondaryItems.length && secondaryItems.length > 0
-      )
+  renderSecondaryItems() {
+    this.secondaryActionsTarget.replaceChildren(
+      this.actionButton(this.label("select_all"), () => this.selectAllSecondaryItems(), this.allSecondarySelected()),
+      this.actionButton(this.label("unselect_all"), () => this.unselectAllSecondaryItems(), this.selectedSecondaryIds.size === 0)
     )
-    this.secondaryActionsTarget.appendChild(
-      this.buildActionButton("Unselect All", () => this.unselectAllSecondaryItems(), this.selectedSecondaryIds.size === 0)
-    )
+    this.secondaryOptionsTarget.replaceChildren()
 
-    secondaryItems.forEach((item) => {
-      const button = document.createElement("button")
-      button.type = "button"
+    this.currentSecondaryItems().forEach((item) => {
+      const selected = this.selectedSecondaryIds.has(item.id)
+      const button = this.button("", selected)
       button.dataset.secondaryId = item.id
       button.addEventListener("click", (event) => this.toggleSecondaryItem(event))
-      button.className = this.secondaryButtonClass(this.selectedSecondaryIds.has(item.id))
-
-      this.appendSecondaryVisual(button, item)
+      this.appendVisual(button, item)
 
       const name = document.createElement("span")
       name.className = "break-words"
       name.textContent = item.name
-      button.appendChild(name)
-
       const total = document.createElement("span")
-      total.className = this.secondaryTotalClass(this.selectedSecondaryIds.has(item.id))
-      total.textContent = this.formatCurrency(item.total)
-      button.appendChild(total)
-
+      total.className = `ml-auto rounded-full px-2 py-1 text-2xs font-black ${selected ? "bg-sky-200 text-sky-950 dark:bg-sky-900 dark:text-sky-100" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"}`
+      total.textContent = this.formatCents(item.total_cents)
+      button.append(name, total)
       this.secondaryOptionsTarget.appendChild(button)
     })
   }
 
-  appendSecondaryVisual(button, item) {
-    if ((item.avatarPaths || []).length > 1) {
-      const stack = document.createElement("span")
-      stack.className = "flex -space-x-2"
-      item.avatarPaths.slice(0, 3).forEach((avatarPath) => {
-        const avatar = document.createElement("img")
-        avatar.src = avatarPath
-        avatar.alt = item.name
-        avatar.className = "h-6 w-6 rounded-full border-2 border-white bg-white dark:border-slate-900 dark:bg-slate-900"
-        stack.appendChild(avatar)
-      })
-      button.appendChild(stack)
-      return
-    }
-
-    if ((item.avatarPaths || []).length === 1) {
-      const avatar = document.createElement("img")
-      avatar.src = item.avatarPaths[0]
-      avatar.alt = item.name
-      avatar.className = "h-6 w-6 rounded-full"
-      button.appendChild(avatar)
-      return
-    }
-
-    const swatches = this.itemSwatches(item)
-    if (swatches.length > 0) {
-      const stack = document.createElement("span")
-      stack.className = "flex -space-x-1"
-      stack.setAttribute("aria-hidden", "true")
-      swatches.slice(0, 3).forEach((presentation) => {
-        const swatch = document.createElement("span")
-        swatch.className = "inline-flex h-5 w-5 rounded-full border-2 border-white shadow-xs dark:border-slate-900"
-        swatch.style.backgroundColor = presentation.background
-        swatch.style.borderColor = presentation.foreground
-        stack.appendChild(swatch)
-      })
-      button.appendChild(stack)
-    }
-  }
-
-  itemSwatches(item) {
-    if ((item.swatches || []).length > 0) return item.swatches
-
-    return (item.swatchHexes || []).map((background) => resolveCategoryChartPresentation({}, background))
-  }
-
   renderChart() {
-    const series = this.currentSecondaryItems()
-      .filter((item) => this.selectedSecondaryIds.has(item.id))
-      .map((item) => ({ name: item.name, points: item.points || [] }))
+    if (!this.chartCanvasTarget) return
 
-    if (series.length === 0) {
-      this.destroyChart()
+    const items = this.currentSecondaryItems().filter((item) => this.selectedSecondaryIds.has(item.id))
+    this.destroyChart()
+    if (items.length === 0) {
       this.chartCanvasTarget.classList.add("hidden")
       this.emptyStateTarget.classList.remove("hidden")
+      this.emptyStateTarget.classList.add("flex")
       return
     }
 
     this.chartCanvasTarget.classList.remove("hidden")
     this.emptyStateTarget.classList.add("hidden")
-    const labels = this.timelineLabels(series)
-    const datasets = series.map((entry, index) => {
-      const presentation = entry.chartPresentation
-
-      return {
-        label: entry.name,
-        data: this.monthlySeries(entry.points, labels),
-        borderColor: presentation?.foreground || this.palette(index).border,
-        backgroundColor: presentation?.background || this.palette(index).fill,
-        borderWidth: 1,
-        borderRadius: 8,
-        borderSkipped: false
-      }
-    })
-
-    this.destroyChart()
-    this.chart = new Chart(this.chartCanvasTarget, this.chartOptions(labels, datasets))
-  }
-
-  chartOptions(labels, datasets) {
+    this.emptyStateTarget.classList.remove("flex")
+    const periods = this.dataValue.periods || []
     const theme = this.chartTheme()
-
-    return {
+    this.chart = new Chart(this.chartCanvasTarget, {
       type: "bar",
-      data: { labels, datasets },
+      data: {
+        labels: periods.map((period) => this.formatPeriod(period)),
+        datasets: items.map((item, index) => this.dataset(item, periods, index))
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        datasets: {
-          bar: {
-            categoryPercentage: 0.7,
-            barPercentage: 0.82
-          }
-        },
+        animation: false,
         interaction: { mode: "index", intersect: false },
         plugins: {
-          legend: {
-            position: "top",
-            align: "start",
-            labels: {
-              boxWidth: 12,
-              boxHeight: 12,
-              color: theme.legend,
-              usePointStyle: true,
-              pointStyle: "circle"
-            }
-          },
+          legend: { position: "top", align: "start", labels: { color: theme.text, usePointStyle: true, pointStyle: "circle" } },
           tooltip: {
             backgroundColor: theme.tooltipBackground,
             borderColor: theme.tooltipBorder,
             borderWidth: 1,
             bodyColor: theme.tooltipText,
             titleColor: theme.tooltipText,
-            callbacks: {
-              label: (context) => `${context.dataset.label}: ${this.formatCurrencyFromFloat(context.parsed.y)}`,
-              title: (items) => {
-                const raw = items[0]?.label
-                return raw ? new Intl.DateTimeFormat("pt-BR", { month: "short", year: "numeric" }).format(this.parseISODate(raw)) : ""
-              }
-            }
+            callbacks: { label: (context) => `${context.dataset.label}: ${this.formatCurrency(context.parsed.y)}` }
           }
         },
         scales: {
-          x: {
-            ticks: {
-              color: theme.ticks,
-              maxRotation: 0
-            },
-            grid: {
-              color: theme.grid,
-              display: false
-            },
-            border: { color: theme.axis }
-          },
+          x: { ticks: { color: theme.mutedText, maxRotation: 0 }, grid: { display: false } },
           y: {
-            ticks: {
-              color: theme.ticks,
-              callback: (value) => this.formatCurrencyFromFloat(value)
-            },
-            grid: { color: theme.grid },
-            border: { color: theme.axis }
+            ticks: { color: theme.mutedText, callback: (value) => this.formatCompactCurrency(value) },
+            grid: { color: theme.grid }
           }
         }
-      },
-      plugins: [{
-        id: "legendBottomPadding",
-        beforeInit: (chart) => {
-          const originalFit = chart.legend.fit
-          chart.legend.fit = function fitWithBottomPadding() {
-            originalFit.bind(chart.legend)()
-            this.height += 18
-          }
-        }
-      }, {
-        id: "chartAreaBackground",
-        beforeDraw: (chart) => {
-          const { ctx, chartArea } = chart
-          if (!chartArea) return
+      }
+    })
+  }
 
-          ctx.save()
-          ctx.fillStyle = theme.background
-          ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top)
-          ctx.restore()
-        }
-      }]
+  dataset(item, periods, index) {
+    const amounts = new Map((item.points || []).map((point) => [point.x, Number(point.amount_cents || 0) / 100]))
+    const presentation = item.chart_presentation || this.palette(index)
+
+    return {
+      label: item.name,
+      data: periods.map((period) => amounts.get(period) || 0),
+      backgroundColor: presentation.background,
+      borderColor: presentation.foreground,
+      borderWidth: 1,
+      borderRadius: 5
     }
   }
 
-  destroyChart() {
-    if (this.chart && typeof this.chart.destroy === "function") {
-      this.chart.destroy()
-      this.chart = null
+  appendVisual(button, item) {
+    const avatarPaths = item.avatar_paths || []
+    if (avatarPaths.length > 0) {
+      const wrapper = document.createElement("span")
+      wrapper.className = "flex -space-x-2"
+      avatarPaths.slice(0, 3).forEach((path) => {
+        const image = document.createElement("img")
+        image.src = path
+        image.alt = ""
+        image.className = "h-6 w-6 rounded-full border-2 border-white dark:border-slate-900"
+        wrapper.appendChild(image)
+      })
+      button.appendChild(wrapper)
+      return
     }
+
+    const swatches = item.swatches || []
+    if (swatches.length === 0) return
+
+    const wrapper = document.createElement("span")
+    wrapper.className = "flex -space-x-1"
+    wrapper.setAttribute("aria-hidden", "true")
+    swatches.forEach((swatch) => {
+      const mark = document.createElement("span")
+      mark.className = "h-5 w-5 rounded-full border-2"
+      mark.style.backgroundColor = swatch.background
+      mark.style.borderColor = swatch.foreground
+      wrapper.appendChild(mark)
+    })
+    button.appendChild(wrapper)
+  }
+
+  button(label, active) {
+    const button = document.createElement("button")
+    button.type = "button"
+    button.textContent = label
+    button.setAttribute("aria-pressed", String(active))
+    button.className = `inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${active ?
+      "border-sky-500 bg-sky-50 text-sky-950 dark:bg-sky-950/50 dark:text-sky-100" :
+      "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"}`
+    return button
+  }
+
+  actionButton(label, action, active) {
+    const button = this.button(label, active)
+    button.addEventListener("click", action)
+    return button
   }
 
   currentPrimary() {
-    return this.dataValue.items.find((item) => item.id === this.primarySelectTarget.value)
+    return (this.dataValue.items || []).find((item) => item.id === this.primarySelectTarget.value)
   }
 
   currentGroups() {
     return this.currentPrimary()?.groups || []
   }
 
-  defaultGroupId() {
-    return this.currentGroups().find((group) => group.id === "__all__")?.id || this.currentGroups()[0]?.id
-  }
-
   currentSecondaryItems() {
-    const groups = this.currentGroups().filter((group) => this.selectedGroupIds.has(group.id))
-    const secondaryItemMap = new Map()
+    if (this.selectedGroupId === "__combined__") return this.currentPrimary()?.all_secondary_items || []
+    if (this.selectedGroupId === null) return []
 
-    groups.forEach((group) => {
-      ;(group.secondaryItems || []).forEach((item) => {
-        const existing = secondaryItemMap.get(item.id)
-        if (!existing) {
-          secondaryItemMap.set(item.id, {
-            ...item,
-            points: [ ...(item.points || []) ],
-            avatarPaths: [ ...(item.avatarPaths || []) ],
-            swatches: [ ...(item.swatches || []) ],
-            swatchHexes: [ ...(item.swatchHexes || []) ]
-          })
-          return
-        }
-
-        existing.total += item.total || 0
-        const pointMap = new Map(existing.points.map((point) => [point.x, point.y]))
-        ;(item.points || []).forEach((point) => {
-          pointMap.set(point.x, (pointMap.get(point.x) || 0) + (point.y || 0))
-        })
-        existing.points = [...pointMap.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([x, y]) => ({ x, y }))
-      })
-    })
-
-    return [...secondaryItemMap.values()].sort((left, right) => {
-      if ((left.rank || 0) !== (right.rank || 0)) return (left.rank || 0) - (right.rank || 0)
-      return Math.abs(right.total || 0) - Math.abs(left.total || 0)
-    })
+    return this.currentGroups().find((group) => group.id === this.selectedGroupId)?.secondary_items || []
   }
 
-  resetSelectedSecondaryItems() {
-    this.selectedSecondaryIds = new Set(this.currentSecondaryItems().map((item) => item.id))
+  allSecondarySelected() {
+    const items = this.currentSecondaryItems()
+    return items.length > 0 && items.every((item) => this.selectedSecondaryIds.has(item.id))
   }
 
-  buildActionButton(label, handler, active = false) {
-    const button = document.createElement("button")
-    button.type = "button"
-    button.textContent = label
-    button.className = [
-      "inline-flex min-h-11 items-center justify-center rounded-sm border px-3 py-2 text-sm font-semibold shadow-sm transition",
-      active
-        ? "border-sky-500 bg-sky-100 text-sky-900 dark:border-sky-500/70 dark:bg-sky-950/50 dark:text-sky-100"
-        : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-800"
-    ].join(" ")
-    button.addEventListener("click", handler)
-    return button
+  formatCents(value) {
+    return this.formatCurrency((Number(value) || 0) / 100)
   }
 
-  filterButtonClass(selected) {
-    return [
-      "inline-flex min-h-11 items-center justify-center rounded-sm border px-3 py-2 text-sm font-semibold shadow-sm transition",
-      selected
-        ? "border-sky-500 bg-sky-50 text-sky-950 dark:border-sky-500/70 dark:bg-sky-950/50 dark:text-sky-100"
-        : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-800"
-    ].join(" ")
+  formatCurrency(value) {
+    return formatReportCurrency(value, this.localeValue, this.currencyValue)
   }
 
-  secondaryButtonClass(selected) {
-    return [
-      "inline-flex min-h-12 items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm shadow-sm transition",
-      selected
-        ? "border-sky-500 bg-sky-50 text-sky-950 dark:border-sky-500/70 dark:bg-sky-950/50 dark:text-sky-100"
-        : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-800"
-    ].join(" ")
+  formatCompactCurrency(value) {
+    return formatCompactReportCurrency(value, this.localeValue, this.currencyValue)
   }
 
-  secondaryTotalClass(selected) {
-    return [
-      "ml-auto rounded-full px-2 py-1 text-2xs font-black uppercase tracking-[0.16em]",
-      selected ? "bg-sky-200 text-sky-950 dark:bg-sky-900 dark:text-sky-100" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-    ].join(" ")
+  formatPeriod(value) {
+    const date = new Date(`${value}T12:00:00`)
+    const options = this.dataValue.granularity === "day" ? { day: "2-digit", month: "short" } : { month: "short", year: "numeric" }
+    return new Intl.DateTimeFormat(this.localeValue, options).format(date)
+  }
+
+  destroyChart() {
+    this.chart?.destroy()
+    this.chart = null
   }
 
   chartTheme() {
-    if (!this.darkMode) {
+    if (document.documentElement.classList.contains("dark")) {
       return {
-        axis: "rgba(148, 163, 184, 0.35)",
-        background: "#ffffff",
-        grid: "rgba(148, 163, 184, 0.18)",
-        legend: "#0f172a",
-        ticks: "#64748b",
-        tooltipBackground: "rgba(255, 255, 255, 0.96)",
-        tooltipBorder: "rgba(148, 163, 184, 0.35)",
-        tooltipText: "#0f172a"
+        text: "#e2e8f0", mutedText: "#94a3b8", grid: "rgba(100, 116, 139, 0.25)",
+        tooltipBackground: "rgba(15, 23, 42, 0.96)", tooltipBorder: "rgba(100, 116, 139, 0.8)", tooltipText: "#f8fafc"
       }
     }
 
     return {
-      axis: "rgba(71, 85, 105, 0.8)",
-      background: "#020617",
-      grid: "rgba(71, 85, 105, 0.45)",
-      legend: "#e2e8f0",
-      ticks: "#94a3b8",
-      tooltipBackground: "rgba(15, 23, 42, 0.96)",
-      tooltipBorder: "rgba(71, 85, 105, 0.9)",
-      tooltipText: "#f8fafc"
+      text: "#334155", mutedText: "#64748b", grid: "rgba(148, 163, 184, 0.2)",
+      tooltipBackground: "rgba(255, 255, 255, 0.98)", tooltipBorder: "rgba(100, 116, 139, 0.35)", tooltipText: "#0f172a"
     }
-  }
-
-  get darkMode() {
-    return document.documentElement.classList.contains("dark")
-  }
-
-  formatCurrency(cents) {
-    return this.formatCurrencyFromFloat((cents || 0) / 100.0)
-  }
-
-  formatCurrencyFromFloat(value) {
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value || 0)
-  }
-
-  timelineLabels(items) {
-    const pointDates = items.flatMap((item) => item.points.map((point) => point.x)).sort()
-    const earliestPoint = pointDates[0]
-    const latestPoint = pointDates[pointDates.length - 1]
-    const rangeStart = earliestPoint || this.dataValue.rangeStart || this.isoDate(new Date())
-    const rangeEnd = latestPoint || this.dataValue.rangeEnd || this.isoDate(new Date())
-    const current = this.startOfMonth(this.parseISODate(rangeStart))
-    const end = this.startOfMonth(this.parseISODate(rangeEnd))
-    const labels = []
-
-    while (current <= end) {
-      labels.push(this.isoDate(current))
-      current.setMonth(current.getMonth() + 1)
-    }
-
-    return labels
-  }
-
-  monthlySeries(points, labels) {
-    const totalsByDate = new Map()
-    ;(points || []).forEach((point) => {
-      const monthKey = this.isoDate(this.startOfMonth(this.parseISODate(point.x)))
-      totalsByDate.set(monthKey, (totalsByDate.get(monthKey) || 0) + (point.y / 100.0))
-    })
-
-    return labels.map((label) => totalsByDate.get(label) || 0)
-  }
-
-  isoDate(date) {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
-  }
-
-  parseISODate(value) {
-    const [year, month, day] = value.split("-").map(Number)
-    return new Date(year, month - 1, day)
-  }
-
-  startOfMonth(date) {
-    return new Date(date.getFullYear(), date.getMonth(), 1)
   }
 
   palette(index) {
-    const colours = [
-      { border: "#2563eb", fill: "rgba(37, 99, 235, 0.16)" },
-      { border: "#7c3aed", fill: "rgba(124, 58, 237, 0.16)" },
-      { border: "#ea580c", fill: "rgba(234, 88, 12, 0.16)" },
-      { border: "#0f766e", fill: "rgba(15, 118, 110, 0.16)" },
-      { border: "#be123c", fill: "rgba(190, 18, 60, 0.16)" },
-      { border: "#0891b2", fill: "rgba(8, 145, 178, 0.16)" }
+    const colors = [
+      ["#dbeafe", "#1d4ed8"], ["#ede9fe", "#6d28d9"], ["#ffedd5", "#c2410c"],
+      ["#ccfbf1", "#0f766e"], ["#ffe4e6", "#be123c"], ["#cffafe", "#0e7490"]
     ]
+    const [background, foreground] = colors[index % colors.length]
+    return { background, foreground }
+  }
 
-    return colours[index % colours.length]
+  label(key) {
+    return this.labelsValue[key] || key
   }
 }

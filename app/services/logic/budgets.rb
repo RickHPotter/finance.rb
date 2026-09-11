@@ -28,7 +28,7 @@ module Logic
     end
 
     def self.find_by_ref_month_year(financial_scope, month, year, raw_conditions)
-      return [] if raw_conditions[:skip_budgets]
+      return [] if raw_conditions[:skip_budgets] || raw_conditions[:cash_installment_ids].present?
 
       search_term_condition = Search::NormalizedText.condition_for(raw_conditions[:search_term], "budgets.description")
 

@@ -21,6 +21,7 @@ class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
         div(class: "mt-6 space-y-4") do
           details_section
+          trend_section
           counterpart_section
           user_bank_accounts_section
           user_cards_section
@@ -66,6 +67,16 @@ class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
         dashboard_stat(pluralise_model(CardTransaction, 2), scoped_card_transactions.count)
         dashboard_stat(model_attribute(CardTransaction, :total_amount), money(scoped_card_transactions.sum(:price)), emphasis: true)
       end
+    end
+  end
+
+  def trend_section
+    section_card(I18n.t("reports.allocation_trend.title")) do
+      render Views::Shared::AllocationTrend.new(
+        url: entity_trend_path(entity),
+        query_state: report_query_state,
+        prefix: "entity_#{entity.id}_trend"
+      )
     end
   end
 
@@ -242,23 +253,11 @@ class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
       filter_options = {}
 
       scoped_cash_transactions_for_payload.each do |transaction|
-        source = source_filter_for_bank_account(transaction.user_bank_account)
-        filter_options[source[:id]] = source
-
-        transaction.categories.uniq(&:id).each do |category_record|
-          entry = ensure_counterpart_entry!(entries, category_record)
-          entry[:totalsBySource][source[:id]] += absolute_price(transaction.price)
-        end
+        append_category_counterparts(entries, filter_options, transaction, source_filter_for_bank_account(transaction.user_bank_account))
       end
 
       scoped_card_transactions_for_payload.each do |transaction|
-        source = source_filter_for_user_card(transaction.user_card)
-        filter_options[source[:id]] = source
-
-        transaction.categories.uniq(&:id).each do |category_record|
-          entry = ensure_counterpart_entry!(entries, category_record)
-          entry[:totalsBySource][source[:id]] += absolute_price(transaction.price)
-        end
+        append_category_counterparts(entries, filter_options, transaction, source_filter_for_user_card(transaction.user_card))
       end
 
       {
@@ -266,6 +265,31 @@ class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
         filterOptions: filter_options.values.sort_by { |option| option[:label] },
         entries: serialize_filterable_entries(entries.values)
       }
+    end
+  end
+
+  def append_category_counterparts(entries, filter_options, transaction, source)
+    filter_options[source[:id]] = source
+    transaction.categories.uniq(&:id).each do |category_record|
+      entry = entries[category_record.id] ||= category_counterpart_entry(category_record)
+      entry[:totalsBySource][source[:id]] += absolute_price(transaction.price)
+    end
+  end
+
+  def category_counterpart_entry(category_record)
+    presentation = CategoryColours::Presentation.for(category_record)
+    {
+      id: category_record.id.to_s,
+      name: category_record.name,
+      colour: presentation.background,
+      **presentation.chart_payload,
+      totalsBySource: Hash.new(0)
+    }
+  end
+
+  def serialize_filterable_entries(entries)
+    entries.sort_by { |entry| entry[:name] }.map do |entry|
+      entry.slice(:id, :name, :colour, :background, :foreground, :totalsBySource).compact
     end
   end
 
@@ -304,31 +328,6 @@ class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
       end
 
       { kind: "user_cards", entries: serialize_pie_entries(entries.values) }
-    end
-  end
-
-  def ensure_counterpart_entry!(entries, category_record)
-    presentation = CategoryColours::Presentation.for(category_record)
-
-    entries[category_record.id] ||= {
-      id: category_record.id.to_s,
-      name: category_record.name,
-      colour: presentation.background,
-      **presentation.chart_payload,
-      totalsBySource: Hash.new(0)
-    }
-  end
-
-  def serialize_filterable_entries(entries)
-    entries.sort_by { |entry| entry[:name] }.map do |entry|
-      {
-        id: entry[:id],
-        name: entry[:name],
-        colour: entry[:colour],
-        background: entry[:background],
-        foreground: entry[:foreground],
-        totalsBySource: entry[:totalsBySource]
-      }.compact
     end
   end
 
@@ -371,6 +370,12 @@ class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
   def money(value)
     from_cent_based_to_float(value.to_i, "R$")
+  end
+
+  def report_query_state
+    @report_query_state ||= Reports::QueryState.new(params.permit(:from_date, :to_date, :granularity, :paid_state, :direction, :sort))
+  rescue Reports::QueryState::InvalidState
+    Reports::QueryState.new
   end
 
   def empty_state
