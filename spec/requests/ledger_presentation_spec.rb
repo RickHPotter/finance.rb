@@ -84,6 +84,25 @@ RSpec.describe "Entity ledger presentation", type: :request do
         "card_transactions/#{installment.card_transaction_id}"
       )
     end
+
+    it "keeps the public ledger semantic, keyboard-addressable, and free of mutation forms" do
+      create_cash_installment
+
+      get external_cash_transactions_path(share_token: share.token), params: {
+        active_month_years: [ 202_609 ].to_json,
+        default_year: 2026
+      }
+
+      document = response.parsed_body
+      expect(document.at_css("html")["lang"]).to eq("en")
+      expect(document.css("h1").map(&:text).map(&:squish)).to eq([ "SHARED ENTITY" ])
+      expect(document.at_css("nav[aria-label='Ledger type'] a[aria-current='page']").text.squish).to eq("Cash")
+      expect(document.at_css("select#ledger_sort[aria-label='Sort ledger']")).to be_present
+      expect(document.at_css("select#ledger_direction[aria-label='Sort direction']")).to be_present
+      expect(document.css("form")).to all(satisfy { |form| form["method"] == "get" })
+      expect(document.css("form input[name='authenticity_token']")).to be_empty
+      expect(duplicate_ids(document)).to be_empty
+    end
   end
 
   describe "internal presentation" do
@@ -99,6 +118,10 @@ RSpec.describe "Entity ledger presentation", type: :request do
   end
 
   private
+
+  def duplicate_ids(document)
+    document.css("[id]").map { |node| node["id"] }.tally.select { |_id, count| count > 1 }.keys
+  end
 
   def create_cash_installment
     account = create(:user_bank_account, :random, user: owner, bank: create(:bank, :random), user_bank_account_name: "PRIVATE ACCOUNT")

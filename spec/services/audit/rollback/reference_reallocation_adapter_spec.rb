@@ -3,6 +3,10 @@
 require "rails_helper"
 
 RSpec.describe "Audit rollback for reference installment reallocation" do
+  include ActiveSupport::Testing::TimeHelpers
+
+  around { |example| travel_to(Time.zone.local(2026, 9, 12, 12)) { example.run } }
+
   let(:user) { create(:user, :random) }
   let(:admin) { create(:user, :random, admin: true) }
   let(:context) { user.main_context }

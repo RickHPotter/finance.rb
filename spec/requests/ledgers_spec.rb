@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Lalas", type: :request do
+RSpec.describe "Entity ledgers", type: :request do
   describe "context scoping" do
     it "renders the token-authorized external root for an entity ledger" do
       user = create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-external-root@example.com")
