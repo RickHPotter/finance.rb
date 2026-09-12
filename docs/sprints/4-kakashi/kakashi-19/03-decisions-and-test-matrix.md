@@ -132,6 +132,7 @@ The final expected column depends on O1; every row must be explicit before devel
 | installment number/count | visible |
 | amount | visible |
 | paid/pending | visible |
+| canonical exchange-category row colours | visible without Category names |
 | transaction comment | hidden |
 | bank-account name/ID | hidden |
 | user-card name/ID | hidden |
@@ -150,7 +151,7 @@ The final expected column depends on O1; every row must be explicit before devel
 | select/deselect month | URL and lazy frames retain ledger identity/state |
 | refresh filtered ledger | same controls and rows |
 | Back/Forward | restores previous ledger state |
-| cash to card tab | same authorized ledger, Entity, Context, and share |
+| cash to card tab | same authorization/identity, clean Card state, full-page navigation |
 | direct lazy month refresh | authorization repeated and correct fragment returned |
 | obsolete `.turbo_stream` entry | canonical HTML redirect retaining authorized scope |
 | internal row navigation | stays inside internal ledger or has no action |

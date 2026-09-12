@@ -141,6 +141,9 @@ presentation differ; financial membership does not.
 - Filters and month selection produce canonical HTML URLs with Turbo action `replace`.
 - Lazy month frames preserve ledger mode, ledger identity, share authorization, and
   all relevant filter state.
+- Cash/Card mode changes retain only ledger identity and authorization. They use a
+  full-page navigation and reset mode-local months, search, sort, paid state, and
+  pagination so incompatible frame state cannot cross modes.
 - Refresh, Back, and Forward restore the same ledger state.
 - Internal links never escape to external routes.
 - External links never escape to authenticated finance indexes.

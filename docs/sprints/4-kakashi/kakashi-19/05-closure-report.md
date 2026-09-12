@@ -10,15 +10,19 @@ Status: implementation and automated verification complete as of 2026-09-12.
 - Cash and card membership, totals, filtering, sorting, pagination, and month loading
   use the shared `Ledgers` query and presentation vocabulary.
 - External rows expose only owner/Entity identity, Context, description, date or
-  billing month, installment position, amount, and paid state.
+  billing month, installment position, amount, paid state, and the canonical
+  exchange-category colour without its Category name.
 - Comments, account/card names, Categories, other Entities, references, internal IDs,
   private chrome, and mutation controls remain private.
 - Share lifecycle actions are owner-only and auditable. Public access telemetry is
   bounded to one write per share every five minutes and creates no financial audit.
 - External responses are no-store, noindex/nofollow/noarchive, no-referrer, throttled,
   and redact bearer tokens from Rails request and redirect logs.
-- Canonical URLs retain authorization and bounded query state through filters, tabs,
-  lazy frames, pagination, refresh, and browser history.
+- Canonical URLs retain authorization and bounded mode-local query state through
+  filters, lazy frames, pagination, refresh, and browser history. Cash/Card changes
+  deliberately reset query state and use full-page navigation.
+- The selected-month aggregate is rendered as a bookmark before lazy month frames
+  finish loading, and the external shell uses the application's full content width.
 
 ## Compatibility Inventory
 
@@ -42,8 +46,9 @@ Status: implementation and automated verification complete as of 2026-09-12.
 - Request coverage verifies every internal/external endpoint, context and Entity
   isolation, revocation, generic errors, privacy headers, token redaction, allowlisted
   fields, mobile parity, semantic markup, and absence of public mutations.
-- Browser coverage verifies canonical filtering, month selection, cash/card mode
-  changes, refresh, Back, Forward, and lazy-frame route retention.
+- Browser coverage verifies canonical filtering, month selection, clean cash/card mode
+  changes (including an empty selection), refresh, Back, Forward, and lazy-frame route
+  retention without Turbo frame races.
 - Ledger implementation does not mutate exchange, installment, balance, allocation,
   actionable-message, reference-merge, or rollback state. A separate due-date
   reference-reallocation correction discovered by full CI is documented below.
@@ -56,9 +61,9 @@ Use an Entity with both cash returns and card exchanges in the active Context.
    browser session.
 2. Confirm the external page has no application tabs, edit links, comments,
    Categories, other Entities, account/card labels, or mutation buttons.
-3. Switch Cash/Card, search, change sorting, select several months, deselect the last
-   month, paginate, refresh, and use Back/Forward. Confirm the URL and visible state
-   always agree.
+3. Search, change sorting, select several months, deselect the last month, paginate,
+   refresh, and use Back/Forward. Switch Cash/Card and confirm mode-local parameters
+   reset, the URL and visible state agree, and no `Content Missing` error appears.
 4. Compare external cash/card rows and totals with the authenticated internal ledger
    for the same Entity and Context.
 5. Narrow the viewport and confirm the same row fields and amounts remain visible in

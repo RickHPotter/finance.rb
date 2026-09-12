@@ -163,8 +163,8 @@ message behavior.
 ### Deliverables
 
 - Establish canonical internal and token-authorized external route families.
-- Preserve authorization and query state through cash/card tabs, filters, month lazy
-  loads, sorting, and pagination.
+- Preserve authorization and mode-local query state through filters, month lazy loads,
+  sorting, and pagination; reset query state when changing Cash/Card mode.
 - Apply KAKASHI-15 `_top`/replace/history conventions.
 - Add safe compatibility behavior for old internal bookmarks.
 - Make old external slug-only routes unavailable unless an independent valid share is
