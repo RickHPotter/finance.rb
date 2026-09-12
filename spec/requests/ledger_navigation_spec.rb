@@ -62,7 +62,7 @@ RSpec.describe "Canonical ledger navigation", type: :request do
     expect(response.location).not_to include("user_card_id")
   end
 
-  it "retains mode and state through tabs, filters, lazy frames, sorting, and pagination" do
+  it "resets state across mode tabs and retains it through filters, lazy frames, sorting, and pagination" do
     create_cash_transaction
     get external_cash_transactions_path(share_token: share.token), params: navigation_params.merge(per_page: 1)
 
@@ -76,9 +76,10 @@ RSpec.describe "Canonical ledger navigation", type: :request do
     expect(form["data-turbo-action"]).to eq("replace")
 
     card_tab = document.at_css("a[href*='/card_transactions']")
-    expect_scoped_link(card_tab, external_card_transactions_path(share_token: share.token))
-    expect(card_tab["data-turbo-frame"]).to eq("_top")
-    expect(card_tab["data-turbo-action"]).to eq("replace")
+    expect_clean_mode_link(card_tab, external_card_transactions_path(share_token: share.token))
+    expect(card_tab["data-turbo"]).to eq("false")
+    expect(card_tab["data-turbo-frame"]).to be_nil
+    expect(card_tab["data-turbo-action"]).to be_nil
 
     lazy_frame = document.at_css("turbo-frame#month_year_container_202609")
     lazy_uri = URI.parse(lazy_frame["src"])
@@ -145,6 +146,13 @@ RSpec.describe "Canonical ledger navigation", type: :request do
         "direction" => "desc"
       }.merge(expected_query.stringify_keys)
     )
+  end
+
+  def expect_clean_mode_link(node, expected_path)
+    expect(node).to be_present
+    uri = URI.parse(node["href"])
+    expect(uri.path).to eq(expected_path)
+    expect(uri.query).to be_nil
   end
 
   def create_cash_transaction
