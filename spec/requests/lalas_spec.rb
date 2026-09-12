@@ -11,6 +11,8 @@ RSpec.describe "Lalas", type: :request do
 
       get external_root_path(share_token: share.token)
 
+      expect(response).to redirect_to(external_cash_transactions_path(share_token: share.token, paid: true, pending: true, sort: "default", direction: "asc"))
+      follow_redirect!
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(external_cash_transactions_path(share_token: share.token))
     end
@@ -274,6 +276,8 @@ RSpec.describe "Lalas", type: :request do
 
       get internal_root_path(entity_public_id: lala.public_id)
 
+      expect(response).to redirect_to(internal_cash_transactions_path(entity_public_id: lala.public_id, paid: true, pending: true, sort: "default", direction: "asc"))
+      follow_redirect!
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(internal_cash_transactions_path(entity_public_id: lala.public_id))
     end
@@ -296,17 +300,19 @@ RSpec.describe "Lalas", type: :request do
       sign_in owner
 
       get stable_path
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:moved_permanently)
 
       entity.update!(entity_name: "RENAMED ENTITY")
       get stable_path
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:moved_permanently)
 
       get internal_root_path(entity_public_id: foreign_entity.public_id)
       expect(response).to have_http_status(:not_found)
 
-      get internal_root_path(entity_public_id: "original-name")
-      expect(response).to have_http_status(:not_found)
+      get internal_root_path(entity_public_id: "renamed-entity")
+      expect(response).to redirect_to(
+        internal_cash_transactions_path(entity_public_id: entity.public_id, paid: true, pending: true, sort: "default", direction: "asc")
+      )
     end
   end
 end

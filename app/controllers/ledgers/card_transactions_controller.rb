@@ -3,6 +3,8 @@
 class Ledgers::CardTransactionsController < LedgersController
   def index
     state = ledger_query_state(:card)
+    return if redirect_canonical_ledger_entry?(state, kind: :card)
+
     result = ledger_query(state, include_rows: false)
     @user_card = result.user_card
     build_index_context(state, result)
@@ -11,7 +13,8 @@ class Ledgers::CardTransactionsController < LedgersController
   end
 
   def search
-    index
+    state = ledger_query_state(:card)
+    redirect_to ledger_index_path(:card, **ledger_index_canonical_params(state)), status: :moved_permanently
   end
 
   def month_year
@@ -30,8 +33,8 @@ class Ledgers::CardTransactionsController < LedgersController
     years = (min_date.year..max_date.year)
     category_id = external_card_category_ids
     entity_id = [ lala.id ]
-    active_month_years = state.active_month_years.presence || default_active_month_years
-    default_year = state.default_year || active_month_years.max.to_s.first(4).to_i
+    active_month_years = state.active_month_years_provided ? state.active_month_years : default_active_month_years
+    default_year = state.default_year || (active_month_years.max / 100 if active_month_years.any?) || [ max_date, Time.zone.today + 1.month ].min.year
 
     @index_context = {
       current_user: user,

@@ -54,10 +54,11 @@ class LedgersController < ApplicationController
   end
 
   def set_variables
-    @main_items = [ { label: t("tabs.pix"), icon: :mobile, link: ledger_cash_transactions_path, default: @active_menu == :pix } ]
+    tab_params = ledger_tab_params(ledger_query_state(current_ledger_kind))
+    @main_items = [ { label: t("tabs.pix"), icon: :mobile, link: ledger_cash_transactions_path(**tab_params), default: @active_menu == :pix } ]
     @main_items += user_cards.pluck(:id, :user_card_name).map do |user_card_id, user_card_name|
       default = @active_sub_menu.to_sym == user_card_name.to_sym
-      { label: user_card_name, icon: :credit_card, link: ledger_card_transactions_path(user_card_id:), default: }
+      { label: user_card_name, icon: :credit_card, link: ledger_card_transactions_path(**tab_params, user_card_id:), default: }
     end
 
     @main_items.first[:default] = true if @main_items.pluck(:default).uniq == [ false ]
@@ -106,9 +107,9 @@ class LedgersController < ApplicationController
       header: Ledgers::Presenters::Header.new(access: ledger_access, result:),
       index_path: ledger_index_path(kind),
       month_path: ledger_month_path(kind),
-      cash_path: ledger_cash_transactions_path,
-      card_path: ledger_card_transactions_path,
-      canonical_params: ledger_canonical_params(state)
+      cash_path: ledger_cash_transactions_path(**ledger_tab_params(state)),
+      card_path: ledger_card_transactions_path(**ledger_tab_params(state)),
+      canonical_params: ledger_index_canonical_params(state)
     )
     context.merge!(current_user: nil, user_card: nil, user_card_id: nil, user_bank_account_id: nil) if external_ledger?
     context
@@ -124,8 +125,9 @@ class LedgersController < ApplicationController
       total_amount: result.total_amount,
       page: result.page,
       per_page: result.per_page,
+      index_path: ledger_index_path(kind),
       month_path: ledger_month_path(kind),
-      canonical_params: ledger_canonical_params(state)
+      canonical_params: ledger_index_canonical_params(state)
     }
   end
 
@@ -138,17 +140,17 @@ class LedgersController < ApplicationController
     end
   end
 
-  def ledger_index_path(kind)
-    kind == :cash ? ledger_cash_transactions_path : ledger_card_transactions_path
+  def ledger_index_path(kind, **query_params)
+    kind == :cash ? ledger_cash_transactions_path(**query_params) : ledger_card_transactions_path(**query_params)
   end
 
-  def ledger_month_path(kind)
+  def ledger_month_path(kind, **query_params)
     route_params = external_ledger? ? external_route_params : internal_route_params
-    return month_year_external_cash_transactions_path(**route_params) if external_ledger? && kind == :cash
-    return month_year_external_card_transactions_path(**route_params) if external_ledger?
-    return month_year_internal_cash_transactions_path(**route_params) if kind == :cash
+    return month_year_external_cash_transactions_path(**route_params, **query_params) if external_ledger? && kind == :cash
+    return month_year_external_card_transactions_path(**route_params, **query_params) if external_ledger?
+    return month_year_internal_cash_transactions_path(**route_params, **query_params) if kind == :cash
 
-    month_year_internal_card_transactions_path(**route_params)
+    month_year_internal_card_transactions_path(**route_params, **query_params)
   end
 
   def external_ledger?
@@ -158,5 +160,26 @@ class LedgersController < ApplicationController
   def ledger_canonical_params(state)
     params = state.canonical_params
     external_ledger? ? params.except(:cash_transaction, :card_transaction) : params
+  end
+
+  def ledger_index_canonical_params(state)
+    ledger_canonical_params(state).except(:month_year)
+  end
+
+  def ledger_tab_params(state)
+    params = ledger_index_canonical_params(state).slice(:active_month_years, :default_year, :search_term, :direction, :per_page, :force_mobile)
+    params[:sort] = state.sort if state.sort.in?(%w[description installment_date transaction_date price])
+    params
+  end
+
+  def current_ledger_kind
+    controller_name == "card_transactions" ? :card : :cash
+  end
+
+  def redirect_canonical_ledger_entry?(state, kind:)
+    return false unless params[:ledger_entry]
+
+    redirect_to ledger_index_path(kind, **ledger_index_canonical_params(state)), status: :moved_permanently
+    true
   end
 end

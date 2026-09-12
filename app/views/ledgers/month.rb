@@ -54,13 +54,13 @@ class Views::Ledgers::Month < Views::Base
       span(class: "#{classes} cursor-not-allowed opacity-40") { label }
     else
       link_to(label, page_path(page), class: "#{classes} hover:bg-slate-100 dark:hover:bg-slate-800",
-                                      data: { turbo_frame: "month_year_container_#{ledger_context[:month_year]}" })
+                                      data: { turbo_frame: "_top", turbo_action: "replace" })
     end
   end
 
   def page_path(page)
     query = ledger_context[:canonical_params].merge(page:)
-    "#{ledger_context[:month_path]}?#{Rack::Utils.build_nested_query(query)}"
+    "#{ledger_context[:index_path]}?#{Rack::Utils.build_nested_query(query)}"
   end
 
   def total_pages

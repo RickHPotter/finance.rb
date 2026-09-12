@@ -3,13 +3,16 @@
 class Ledgers::CashTransactionsController < LedgersController
   def index
     state = ledger_query_state(:cash)
+    return if redirect_canonical_ledger_entry?(state, kind: :cash)
+
     result = ledger_query(state, include_rows: false)
     build_index_context(state, result)
     render Views::Ledgers::Index.new(context: ledger_index_context(kind: :cash, state:, result:, context: @index_context))
   end
 
   def search
-    index
+    state = ledger_query_state(:cash)
+    redirect_to ledger_index_path(:cash, **ledger_index_canonical_params(state)), status: :moved_permanently
   end
 
   def month_year
@@ -28,8 +31,8 @@ class Ledgers::CashTransactionsController < LedgersController
     years = (min_date.year..max_date.year)
     category_id = external_cash_category_ids
     entity_id = [ lala.id ]
-    active_month_years = state.active_month_years.presence || default_active_month_years
-    default_year = state.default_year || active_month_years.max.to_s.first(4).to_i
+    active_month_years = state.active_month_years_provided ? state.active_month_years : default_active_month_years
+    default_year = state.default_year || (active_month_years.max / 100 if active_month_years.any?) || [ max_date, Time.zone.today ].min.year
 
     @index_context = {
       current_user: user,

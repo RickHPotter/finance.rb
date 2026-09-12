@@ -33,7 +33,7 @@ RSpec.describe "Entity ledger access boundaries", type: :request do
       internal_paths(entity.public_id).each do |path, params|
         get path, params: params
 
-        expect(response).to have_http_status(:ok)
+        expect(response).to have_http_status(:ok).or have_http_status(:moved_permanently)
       end
     end
   end
@@ -45,7 +45,7 @@ RSpec.describe "Entity ledger access boundaries", type: :request do
       external_paths(active.token).each do |path, params|
         get path, params: params
 
-        expect(response).to have_http_status(:ok)
+        expect(response).to have_http_status(:ok).or have_http_status(:moved_permanently)
       end
     end
 

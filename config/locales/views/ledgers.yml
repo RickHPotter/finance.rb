@@ -17,6 +17,17 @@ en:
       search: Search descriptions...
       paid: Paid
       pending: Pending
+      sort: Sort ledger
+      direction: Sort direction
+      sorts:
+        default: Default
+        description: Description
+        installment_date: Installment date
+        transaction_date: Transaction date
+        price: Amount
+      directions:
+        asc: Ascending
+        desc: Descending
     row:
       description: Description
       date: Date
@@ -62,6 +73,17 @@ pt-BR:
       search: Buscar descrições...
       paid: Pago
       pending: Pendente
+      sort: Ordenar livro-razão
+      direction: Direção da ordenação
+      sorts:
+        default: Padrão
+        description: Descrição
+        installment_date: Data da parcela
+        transaction_date: Data da movimentação
+        price: Valor
+      directions:
+        asc: Crescente
+        desc: Decrescente
     row:
       description: Descrição
       date: Data

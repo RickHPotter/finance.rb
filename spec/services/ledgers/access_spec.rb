@@ -24,4 +24,17 @@ RSpec.describe Ledgers::Access, type: :service do
     expect(access).to have_attributes(user: entity.user, entity:, context: entity.user.main_context, share: share.share)
     expect(Ledgers::Access::External.call(token: "unknown")).to be_nil
   end
+
+  it "resolves an unambiguous legacy slug from current database state" do
+    user = create(:user, :random)
+    user.entities.load
+    entity = create(:entity, user:, entity_name: "CRÍSTIAN PENS")
+
+    access = Ledgers::Access::LegacyInternal.call(user:, entity_slug: "cristian-pens", context: user.main_context)
+
+    expect(access).to have_attributes(user:, entity:, context: user.main_context, share: nil)
+
+    create(:entity, user:, entity_name: "CRISTIAN PENS")
+    expect(Ledgers::Access::LegacyInternal.call(user:, entity_slug: "cristian-pens", context: user.main_context)).to be_nil
+  end
 end

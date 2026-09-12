@@ -36,6 +36,7 @@ class Views::Ledgers::Filter < Views::Base
           class: "flex-1",
           data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
         )
+        sort_controls
         paid_filters if ledger_context[:kind] == :cash
       end
 
@@ -44,6 +45,39 @@ class Views::Ledgers::Filter < Views::Base
   end
 
   private
+
+  def sort_controls
+    div(class: "flex gap-2") do
+      select(
+        name: :sort,
+        id: "ledger_sort",
+        class: "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200",
+        aria: { label: I18n.t("ledgers.filter.sort") },
+        data: { action: "change->reactive-form#submit" }
+      ) do
+        sort_options.each do |value, label|
+          option(value:, selected: ledger_context[:sort] == value) { label }
+        end
+      end
+      select(
+        name: :direction,
+        id: "ledger_direction",
+        class: "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200",
+        aria: { label: I18n.t("ledgers.filter.direction") },
+        data: { action: "change->reactive-form#submit" }
+      ) do
+        %w[asc desc].each do |value|
+          option(value:, selected: ledger_context[:direction] == value) { I18n.t("ledgers.filter.directions.#{value}") }
+        end
+      end
+    end
+  end
+
+  def sort_options
+    values = %w[description installment_date transaction_date price]
+    values.unshift("default") if ledger_context[:kind] == :cash
+    values.map { |value| [ value, I18n.t("ledgers.filter.sorts.#{value}") ] }
+  end
 
   def paid_filters
     div(class: "flex items-center gap-4 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-950") do
@@ -62,8 +96,6 @@ class Views::Ledgers::Filter < Views::Base
   end
 
   def canonical_hidden_fields
-    hidden_field_tag :sort, ledger_context[:sort]
-    hidden_field_tag :direction, ledger_context[:direction]
     hidden_field_tag :per_page, ledger_context[:per_page]
     hidden_field_tag :force_mobile, true if ledger_context[:force_mobile]
     return if ledger_context[:external]

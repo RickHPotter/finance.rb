@@ -35,7 +35,8 @@ RSpec.describe Ledgers::QueryState, type: :service do
       page: 2,
       per_page: 25,
       user_bank_account_id: 17,
-      force_mobile: true
+      force_mobile: true,
+      active_month_years_provided: true
     )
     expect(state.canonical_params).not_to include(:ignored_private_filter, :user_id, :entity_id)
     expect(state.canonical_params[:month_year]).to eq(202_609)
@@ -71,5 +72,15 @@ RSpec.describe Ledgers::QueryState, type: :service do
 
   it "rejects unsupported ledger kinds" do
     expect { described_class.new(kind: :investment, params: {}) }.to raise_error(ArgumentError, /Unsupported ledger kind/)
+  end
+
+  it "distinguishes an explicit empty month selection from a missing selection" do
+    explicit = described_class.new(kind: :cash, params: { active_month_years: "[]" })
+    missing = described_class.new(kind: :cash, params: {})
+
+    expect(explicit).to have_attributes(active_month_years: [], active_month_years_provided: true)
+    expect(explicit.canonical_params).to include(active_month_years: "[]")
+    expect(missing).to have_attributes(active_month_years: [], active_month_years_provided: false)
+    expect(missing.canonical_params).not_to include(:active_month_years)
   end
 end

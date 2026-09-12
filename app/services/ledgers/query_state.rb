@@ -9,7 +9,8 @@ class Ledgers::QueryState
 
   attr_reader :kind, :month_year, :active_month_years, :default_year, :search_term,
               :paid, :pending, :sort, :direction, :page, :per_page,
-              :user_bank_account_id, :user_card_id, :force_mobile, :skip_budgets
+              :user_bank_account_id, :user_card_id, :force_mobile, :skip_budgets,
+              :active_month_years_provided
 
   def initialize(kind:, params:) # rubocop:disable Metrics/AbcSize
     @kind = kind.to_sym
@@ -19,6 +20,7 @@ class Ledgers::QueryState
     source = source.with_indifferent_access
     transaction = source.fetch("#{@kind}_transaction", {}).to_h.with_indifferent_access
     @month_year = valid_month_year(source[:month_year])
+    @active_month_years_provided = source.key?(:active_month_years)
     @active_month_years = parse_month_years(source[:active_month_years])
     @default_year = bounded_integer(source[:default_year], MIN_YEAR..MAX_YEAR)
     @search_term = source[:search_term].to_s.squish.first(200)
@@ -35,7 +37,7 @@ class Ledgers::QueryState
   def canonical_params
     {
       month_year:,
-      active_month_years: active_month_years.presence&.to_json,
+      active_month_years: (active_month_years.to_json if active_month_years_provided?),
       default_year:,
       search_term: search_term.presence,
       paid: (paid if kind == :cash),
@@ -51,6 +53,10 @@ class Ledgers::QueryState
   end
 
   private
+
+  def active_month_years_provided?
+    active_month_years_provided
+  end
 
   def transaction_params
     return { user_bank_account_id: } if kind == :cash && user_bank_account_id

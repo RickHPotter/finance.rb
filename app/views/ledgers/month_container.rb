@@ -9,12 +9,16 @@ class Views::Ledgers::MonthContainer < Views::Base
 
   def view_template
     turbo_frame_tag "month_year_container" do
-      ledger_context[:active_month_years].sort.each do |month_year|
-        turbo_frame_tag(
-          "month_year_container_#{month_year}",
-          src: month_path(month_year),
-          loading: :lazy
-        )
+      if ledger_context[:active_month_years].any?
+        ledger_context[:active_month_years].sort.each do |month_year|
+          turbo_frame_tag(
+            "month_year_container_#{month_year}",
+            src: month_path(month_year),
+            loading: :lazy
+          )
+        end
+      else
+        div(class: "mt-5") { render Views::Ledgers::EmptyState.new }
       end
     end
   end
@@ -24,6 +28,8 @@ class Views::Ledgers::MonthContainer < Views::Base
   def month_path(month_year)
     query = {
       month_year:,
+      active_month_years: ledger_context[:active_month_years].to_json,
+      default_year: ledger_context[:default_year],
       search_term: ledger_context[:search_term].presence,
       paid: (ledger_context[:paid] if ledger_context[:kind] == :cash),
       pending: (ledger_context[:pending] if ledger_context[:kind] == :cash),
