@@ -42,6 +42,13 @@ class LedgerShare < ApplicationRecord
     revoked_at.present?
   end
 
+  def lifecycle_state(time = Time.current)
+    return :revoked if revoked?
+    return :expired if expired?(time)
+
+    :active
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 

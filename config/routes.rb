@@ -59,6 +59,11 @@ Rails.application.routes.draw do
   end
   resources :entities do
     resource :trend, only: :show, controller: "reports/entity_trends", defaults: { format: :json }
+    resources :ledger_shares, only: %i[create destroy] do
+      member do
+        patch :rotate
+      end
+    end
 
     member do
       post :merge_preview, to: "entity_merge_previews#create"

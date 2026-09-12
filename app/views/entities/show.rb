@@ -7,11 +7,14 @@ class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
   include TranslateHelper
 
-  attr_reader :entity, :return_to
+  attr_reader :entity, :return_to, :ledger_context, :ledger_shares, :created_share_url
 
-  def initialize(entity:, return_to: "/entities")
+  def initialize(entity:, return_to: "/entities", ledger_context: nil, ledger_shares: [], created_share_url: nil)
     @entity = entity
     @return_to = return_to
+    @ledger_context = ledger_context
+    @ledger_shares = ledger_shares
+    @created_share_url = created_share_url
   end
 
   def view_template
@@ -21,6 +24,7 @@ class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
         div(class: "mt-6 space-y-4") do
           details_section
+          ledger_shares_section if ledger_context
           trend_section
           counterpart_section
           user_bank_accounts_section
@@ -67,6 +71,12 @@ class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
         dashboard_stat(pluralise_model(CardTransaction, 2), scoped_card_transactions.count)
         dashboard_stat(model_attribute(CardTransaction, :total_amount), money(scoped_card_transactions.sum(:price)), emphasis: true)
       end
+    end
+  end
+
+  def ledger_shares_section
+    section_card(I18n.t("ledger_shares.title")) do
+      render Views::Entities::LedgerShares.new(entity:, ledger_context:, shares: ledger_shares, created_share_url:)
     end
   end
 

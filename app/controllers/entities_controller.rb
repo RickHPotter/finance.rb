@@ -29,7 +29,12 @@ class EntitiesController < ApplicationController
 
   def show
     set_return_to
-    render_top_level Views::Entities::Show.new(entity: @entity, return_to: @return_to)
+    render_top_level Views::Entities::Show.new(
+      entity: @entity,
+      return_to: @return_to,
+      ledger_context: current_context,
+      ledger_shares: entity_ledger_shares
+    )
   end
 
   def edit
@@ -157,6 +162,10 @@ class EntitiesController < ApplicationController
     return notification_model(:not_destroyeda, Entity) if @entity.built_in?
 
     @entity.errors.full_messages.to_sentence.presence || notification_model(:not_destroyed_because_has_transactionsa, Entity)
+  end
+
+  def entity_ledger_shares
+    @entity.ledger_shares.where(context: current_context).order(created_at: :desc)
   end
 
   def search_params

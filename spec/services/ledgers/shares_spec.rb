@@ -65,4 +65,27 @@ RSpec.describe "Ledger share lifecycle", type: :service do
     expect(Ledgers::Shares::Resolve.call(token: replacement.token)).to eq(replacement.share)
     expect(replacement.share).to have_attributes(entity:, context: entity.user.main_context, expires_at: be_within(1.second).of(expires_at))
   end
+
+  it "rolls back lifecycle mutations when their audit record cannot be persisted" do
+    entity = create(:entity, :random)
+    original = Ledgers::Shares::Create.call(entity:, context: entity.user.main_context).share
+    allow(Ledgers::Shares::LifecycleAudit).to receive(:record!).and_raise(ActiveRecord::RecordInvalid)
+
+    share_count = LedgerShare.count
+    expect do
+      Ledgers::Shares::Create.call(entity:, context: entity.user.main_context, audit: true)
+    end.to raise_error(ActiveRecord::RecordInvalid)
+    expect(LedgerShare.count).to eq(share_count)
+
+    expect do
+      Ledgers::Shares::Revoke.call(share: original, audit: true)
+    end.to raise_error(ActiveRecord::RecordInvalid)
+    expect(original.reload).not_to be_revoked
+
+    expect do
+      Ledgers::Shares::Rotate.call(share: original, audit: true)
+    end.to raise_error(ActiveRecord::RecordInvalid)
+    expect(LedgerShare.count).to eq(share_count)
+    expect(original.reload).not_to be_revoked
+  end
 end

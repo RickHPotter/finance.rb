@@ -97,6 +97,9 @@ application.register("installments-display", InstallmentsDisplayController)
 import LazyTabsController from "./lazy_tabs_controller"
 application.register("lazy-tabs", LazyTabsController)
 
+import LedgerShareCopyController from "./ledger_share_copy_controller"
+application.register("ledger-share-copy", LedgerShareCopyController)
+
 import LetitsnowController from "./letitsnow_controller"
 application.register("letitsnow", LetitsnowController)
 
