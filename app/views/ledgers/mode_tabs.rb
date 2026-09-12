@@ -27,7 +27,7 @@ class Views::Ledgers::ModeTabs < Views::Base
       path,
       class: "rounded-lg border px-4 py-2 text-sm font-semibold transition-colors #{tab_class(active)}",
       aria: { current: ("page" if active) },
-      data: { turbo_frame: "_top", turbo_action: "replace" }
+      data: { turbo: false }
     )
   end
 

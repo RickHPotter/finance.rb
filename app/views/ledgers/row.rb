@@ -31,21 +31,21 @@ class Views::Ledgers::Row < Views::Base
 
   def description
     div(class: "min-w-0 text-left") do
-      p(class: "text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400") { I18n.t("ledgers.row.description") }
-      p(class: "mt-1 truncate font-semibold text-slate-950 dark:text-white") { row.description }
+      p(class: "text-xs font-semibold uppercase tracking-wide #{information_text_class}") { I18n.t("ledgers.row.description") }
+      p(class: "mt-1 truncate font-semibold #{primary_text_class}") { row.description }
     end
   end
 
   def datum(label, value)
     div(class: "text-left md:text-right") do
-      p(class: "text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400") { label }
-      p(class: "mt-1 whitespace-nowrap text-sm text-slate-800 dark:text-slate-200") { value }
+      p(class: "text-xs font-semibold uppercase tracking-wide #{information_text_class}") { label }
+      p(class: "mt-1 whitespace-nowrap text-sm #{primary_text_class}") { value }
     end
   end
 
   def amount_and_state
     div(class: "flex items-end justify-between gap-4 md:flex-col md:items-end md:justify-start") do
-      span(class: "whitespace-nowrap font-bold text-slate-950 dark:text-white") { from_cent_based_to_float(row.amount, "R$") }
+      span(class: "whitespace-nowrap font-bold #{primary_text_class}") { from_cent_based_to_float(row.amount, "R$") }
       span(class: state_class) { I18n.t(row.paid ? "ledgers.row.paid" : "ledgers.row.pending") }
     end
   end
@@ -74,5 +74,17 @@ class Views::Ledgers::Row < Views::Base
                "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
              end
     "#{base} #{colour}"
+  end
+
+  def primary_text_class
+    return "text-current" if row.row_style.present?
+
+    "text-slate-950 dark:text-white"
+  end
+
+  def information_text_class
+    return "text-current opacity-70" if row.row_style.present?
+
+    "text-slate-500 dark:text-slate-400"
   end
 end

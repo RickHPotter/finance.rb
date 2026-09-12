@@ -109,6 +109,7 @@ class LedgersController < ApplicationController
       month_path: ledger_month_path(kind),
       cash_path: ledger_cash_transactions_path(**ledger_tab_params(state)),
       card_path: ledger_card_transactions_path(**ledger_tab_params(state)),
+      aggregate_total_amount: selected_month_total(result, context[:active_month_years]),
       canonical_params: ledger_index_canonical_params(state)
     )
     context.merge!(current_user: nil, user_card: nil, user_card_id: nil, user_bank_account_id: nil) if external_ledger?
@@ -166,10 +167,13 @@ class LedgersController < ApplicationController
     ledger_canonical_params(state).except(:month_year)
   end
 
-  def ledger_tab_params(state)
-    params = ledger_index_canonical_params(state).slice(:active_month_years, :default_year, :search_term, :direction, :per_page, :force_mobile)
-    params[:sort] = state.sort if state.sort.in?(%w[description installment_date transaction_date price])
-    params
+  def ledger_tab_params(_state)
+    {}
+  end
+
+  def selected_month_total(result, active_month_years)
+    selected = Array(active_month_years).map(&:to_i)
+    result.months.sum { |month| selected.include?(month.month_year) ? month.total : 0 }
   end
 
   def current_ledger_kind

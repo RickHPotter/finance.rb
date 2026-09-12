@@ -22,7 +22,7 @@ class Views::Layouts::LedgerExternal < Views::Base
       end
 
       body(class: "min-h-screen bg-slate-100 text-slate-950 antialiased dark:bg-slate-950 dark:text-slate-100") do
-        main(class: "mx-auto min-h-screen w-full max-w-7xl px-3 py-5 sm:px-6 lg:px-8", &)
+        main(class: "mx-auto min-h-screen w-full max-w-355 px-3 py-5 sm:px-6 lg:px-8", &)
         javascript_tag(<<~JS)
           window.APP_LOCALE = "#{I18n.locale}";
         JS

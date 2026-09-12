@@ -12,12 +12,24 @@ RSpec.describe "Entity ledger presentation", type: :request do
     it "renders identity and only the allowlisted cash projection without private application chrome" do
       installment = create_cash_installment
 
-      get external_cash_transactions_path(share_token: share.token)
+      get external_cash_transactions_path(share_token: share.token), params: {
+        active_month_years: [ 202_609 ].to_json,
+        default_year: 2026,
+        search_term: "ALLOWLISTED",
+        paid: true,
+        pending: false,
+        sort: "price",
+        direction: "desc"
+      }
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("LEDGER OWNER", "SHARED ENTITY", context.name, "people/0")
       expect(response.body).to include('name="referrer" content="no-referrer"')
       expect(response.body).not_to include("current-user-id", "notification", "theme_toggle")
+      document = response.parsed_body
+      expect(document.at_css("[data-ledger-aggregate-total]")["data-price"]).to eq("-12345")
+      card_link = document.css("nav[aria-label='Ledger type'] a").find { |link| link.text.squish == "Card" }
+      expect(card_link["href"]).to eq(external_card_transactions_path(share_token: share.token))
 
       get month_year_external_cash_transactions_path(share_token: share.token), params: { month_year: 202_609 }
 
@@ -33,7 +45,10 @@ RSpec.describe "Entity ledger presentation", type: :request do
       )
       expect(response.body).not_to match(/data-turbo-method|method="(?:post|patch|delete)"/)
 
-      desktop_row = Nokogiri::HTML(response.body).at_css("article").text.squish
+      document = response.parsed_body
+      exchange_return = installment.cash_transaction.categories.find_by!(category_name: "EXCHANGE RETURN")
+      expect(document.at_css("article")["style"]).to include(CategoryColours::Presentation.for(exchange_return).inline_style)
+      desktop_row = document.at_css("article").text.squish
       get month_year_external_cash_transactions_path(share_token: share.token), params: { month_year: 202_609, force_mobile: true }
       mobile_row = Nokogiri::HTML(response.body).at_css("article").text.squish
       expect(mobile_row).to eq(desktop_row)
@@ -99,6 +114,7 @@ RSpec.describe "Entity ledger presentation", type: :request do
       expect(document.at_css("nav[aria-label='Ledger type'] a[aria-current='page']").text.squish).to eq("Cash")
       expect(document.at_css("select#ledger_sort[aria-label='Sort ledger']")).to be_present
       expect(document.at_css("select#ledger_direction[aria-label='Sort direction']")).to be_present
+      expect(document.at_css("main")["class"]).to include("max-w-355")
       expect(document.css("form")).to all(satisfy { |form| form["method"] == "get" })
       expect(document.css("form input[name='authenticity_token']")).to be_empty
       expect(duplicate_ids(document)).to be_empty

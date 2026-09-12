@@ -8,7 +8,7 @@ RSpec.describe "Ledger Turbo navigation", type: :feature do
   let(:share) { Ledgers::Shares::Create.call(entity:, context: owner.main_context) }
   let(:active_months) { [ 202_609 ].to_json }
 
-  it "keeps the final filter state canonical through mode changes, refresh, Back, and Forward" do
+  it "resets mode-specific filter state through mode changes and keeps refresh, Back, and Forward canonical" do
     sign_in owner
     visit entities_path
     visit external_cash_transactions_path(share_token: share.token, active_month_years: active_months, default_year: 2026)
@@ -18,22 +18,17 @@ RSpec.describe "Ledger Turbo navigation", type: :feature do
     select I18n.t("ledgers.filter.sorts.price"), from: "ledger_sort"
     select I18n.t("ledgers.filter.directions.desc"), from: "ledger_direction"
 
-    expect(page).to have_current_path(/search_term=canonical(?:\+|%20)search/)
+    expect(page).to have_current_path(/search_term=canonical(?:\+|%20)search.*direction=desc/)
+    filtered_cash_uri = URI.parse(page.current_url)
     click_on I18n.t("ledgers.navigation.card")
     expect(page).to have_current_path(%r{/card_transactions})
 
     final_uri = URI.parse(page.current_url)
     expect(final_uri.path).to eq(external_card_transactions_path(share_token: share.token))
-    expect(Rack::Utils.parse_nested_query(final_uri.query)).to include(
-      "active_month_years" => active_months,
-      "default_year" => "2026",
-      "search_term" => "canonical search",
-      "sort" => "price",
-      "direction" => "desc"
-    )
+    expect(final_uri.query).to be_nil
 
     refresh_browser_at(final_uri.request_uri)
-    browser_back_to(entities_path)
+    browser_back_to(filtered_cash_uri.request_uri)
     browser_forward_to(final_uri.request_uri)
   end
 
@@ -48,5 +43,13 @@ RSpec.describe "Ledger Turbo navigation", type: :feature do
     expect(find("input[name='active_month_years']", visible: :all).value).to eq("[]")
     expect(page).to have_no_css("turbo-frame#month_year_container_202609", visible: :all)
     expect(page).to have_text(I18n.t("ledgers.empty.title"))
+
+    expect(find_link(I18n.t("ledgers.navigation.card"))[:href]).to end_with(external_card_transactions_path(share_token: share.token))
+    click_on I18n.t("ledgers.navigation.card")
+
+    final_uri = URI.parse(page.current_url)
+    expect(final_uri.path).to eq(external_card_transactions_path(share_token: share.token))
+    expect(final_uri.query).to be_nil
+    expect(page).to have_no_text("Content Missing")
   end
 end

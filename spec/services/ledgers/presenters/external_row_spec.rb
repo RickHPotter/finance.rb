@@ -39,8 +39,13 @@ RSpec.describe Ledgers::Presenters::ExternalRow, type: :service do
       paid: false,
       internal?: false
     )
+    expected_presentation = CategoryColours::RowPresentation.new(categories: [ category ])
+    expect(row.row_style).to eq(expected_presentation.row_style)
+    expect(row.row_classes).to eq(expected_presentation.row_classes)
     expect(row.instance_variables.map { |name| row.instance_variable_get(name) }).to all(satisfy { |value| !value.is_a?(ApplicationRecord) })
-    expect(row.instance_variables).to contain_exactly(:@key, :@kind, :@description, :@date, :@number, :@installments_count, :@amount, :@paid)
+    expect(row.instance_variables).to contain_exactly(
+      :@key, :@kind, :@description, :@date, :@number, :@installments_count, :@amount, :@paid, :@row_classes, :@row_style
+    )
     expect(row.key).to match(/\Aledger_row_[0-9a-f]{20}\z/)
     expect(row).not_to respond_to(:comment, :user_bank_account, :transaction)
   end

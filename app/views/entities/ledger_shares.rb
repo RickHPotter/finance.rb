@@ -62,8 +62,8 @@ class Views::Entities::LedgerShares < Views::Base
 
   def creation_form
     form_with(url: entity_ledger_shares_path(entity), scope: :ledger_share, method: :post, class: "rounded-xl bg-slate-100 p-3 dark:bg-slate-950") do |form|
-      div(class: "grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end") do
-        div do
+      div(class: "grid gap-x-3 gap-y-1 sm:grid-cols-[minmax(0,1fr)_auto]") do
+        div(class: "sm:col-start-1 sm:row-start-1") do
           label(for: "ledger_share_expires_at", class: "mb-1 block text-xs font-bold text-slate-600 dark:text-slate-300") do
             I18n.t("ledger_shares.expires_at")
           end
@@ -76,9 +76,11 @@ class Views::Entities::LedgerShares < Views::Base
             min_datetime: Time.current,
             min_datetime_message: I18n.t("ledger_shares.errors.future_expiry")
           )
-          p(class: "mt-1 text-xs text-slate-500 dark:text-slate-400") { I18n.t("ledger_shares.expiry_hint") }
         end
-        Button(type: :submit, variant: :primary, class: "w-full sm:w-auto") { I18n.t("ledger_shares.actions.create") }
+        p(class: "sm:col-start-1 sm:row-start-2 text-xs text-slate-500 dark:text-slate-400") { I18n.t("ledger_shares.expiry_hint") }
+        div(class: "mt-2 sm:col-start-2 sm:row-start-1 sm:mt-0 sm:self-end") do
+          Button(type: :submit, variant: :primary, class: "w-full sm:w-auto") { I18n.t("ledger_shares.actions.create") }
+        end
       end
     end
   end
