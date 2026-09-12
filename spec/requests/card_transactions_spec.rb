@@ -1564,6 +1564,46 @@ RSpec.describe "CardTransactions", type: :request do
       expect(CashTransaction.exists?(cash_transaction_two.id)).to be_truthy
     end
 
+    it "rehomes a card-bound exchange return when its EXCHANGE transaction changes user card" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Exchange changing cards",
+        date: Time.zone.now,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        price: -2_200
+      )
+      transaction.category_transactions.destroy_all
+      transaction.entity_transactions.destroy_all
+      transaction.category_transactions.create!(category: exchange_category)
+      entity_transaction = transaction.entity_transactions.create!(entity: entity_one, price: -2_200, price_to_be_returned: -2_200)
+      exchange = entity_transaction.exchanges.create!(
+        bound_type: :card_bound,
+        exchange_type: :monetary,
+        number: 1,
+        price: -2_200,
+        date: Time.zone.now,
+        month: transaction.month,
+        year: transaction.year
+      )
+      original_exchange_return = exchange.cash_transaction
+      update_params = Params::CardTransactions.new
+      update_params.use_base(transaction, card_transaction_options: { user_card_id: user_card_two.id })
+
+      put card_transaction_path(transaction), params: update_params.params, headers: turbo_stream_headers
+
+      exchange_return = exchange.reload.cash_transaction
+      expect(response).to have_http_status(:see_other)
+      expect(transaction.reload.user_card).to eq(user_card_two)
+      expect(exchange_return.user_card).to eq(user_card_two)
+      expect(exchange_return.description).to include(user_card_two.user_card_name)
+      expect(exchange_return.exchanges).to contain_exactly(exchange)
+      expect(CashTransaction.exists?(original_exchange_return.id)).to be(false)
+    end
+
     it "updates the linked subscription" do
       other_subscription = create(:subscription, user:)
       card_transaction.use_base(@existing_card_transaction, card_transaction_options: { subscription_id: other_subscription.id })

@@ -39,6 +39,7 @@ class CardTransaction < ApplicationRecord
   before_validation :set_paid, on: :create
   after_initialize :build_default_card_installments
   after_save :update_month_year, :sync_subscription_installment
+  after_update :sync_card_bound_exchange_projections, if: :saved_change_to_user_card_id?
   after_commit :update_cash_balance, :update_associations_total, unless: :skip_post_commit_financial_recalculation
 
   # @scopes ...................................................................
@@ -259,6 +260,18 @@ class CardTransaction < ApplicationRecord
     return if attributes.all? { |attribute, value| installment.public_send(attribute) == value }
 
     installment.update!(attributes)
+  end
+
+  def sync_card_bound_exchange_projections
+    Exchange
+      .joins(:entity_transaction)
+      .where(
+        bound_type: :card_bound,
+        exchange_type: :monetary,
+        entity_transactions: { transactable_type: self.class.name, transactable_id: id }
+      )
+      .order(:id)
+      .find_each(&:sync_projection_after_parent_card_change!)
   end
 
   def update_month_year

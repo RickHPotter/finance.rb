@@ -56,6 +56,10 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
   # @class_methods ............................................................
   # @public_class_methods .....................................................
+  def sync_projection_after_parent_card_change!
+    save! if card_bound? && monetary?
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -137,7 +141,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
     return unless projection_sync_relevant_change?
 
-    if card_bound_projection_bucket_changed?
+    if card_bound_projection_target_changed?
       rehome_card_bound_exchange_before_sync!
       return
     end
@@ -471,12 +475,12 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   end
 
   def projection_sync_relevant_change?
-    (changes.keys - %w[created_at updated_at exchanges_count]).present?
+    (changes.keys - %w[created_at updated_at exchanges_count]).present? || card_bound_projection_target_changed?
   end
 
-  def card_bound_projection_bucket_changed?
+  def card_bound_projection_target_changed?
     card_bound? && cash_transaction.present? &&
-      (cash_transaction.month != month || cash_transaction.year != year)
+      (cash_transaction.month != month || cash_transaction.year != year || cash_transaction.user_card_id != transactable.user_card_id)
   end
 
   def rehome_card_bound_exchange_before_sync!
