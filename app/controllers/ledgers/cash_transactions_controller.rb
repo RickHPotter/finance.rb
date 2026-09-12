@@ -30,7 +30,7 @@ class Ledgers::CashTransactionsController < LedgersController
     default_active_month_years = [ Time.zone.today.clamp(min_date, max_date).strftime("%Y%m").to_i ]
     years = (min_date.year..max_date.year)
     category_id = external_cash_category_ids
-    entity_id = [ lala.id ]
+    entity_id = [ ledger_entity.id ]
     active_month_years = state.active_month_years_provided ? state.active_month_years : default_active_month_years
     default_year = state.default_year || (active_month_years.max / 100 if active_month_years.any?) || [ max_date, Time.zone.today ].min.year
 

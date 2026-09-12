@@ -8,7 +8,7 @@ class Views::Layouts::LedgerExternal < Views::Base
 
   def view_template(&)
     doctype
-    html do
+    html(lang: I18n.locale) do
       head do
         title { I18n.t("ledgers.external.title") }
         meta name: "viewport", content: "width=device-width, initial-scale=1"

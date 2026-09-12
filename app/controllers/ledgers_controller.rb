@@ -19,11 +19,11 @@ class LedgersController < ApplicationController
     ledger_access.user
   end
 
-  def lala
+  def ledger_entity
     ledger_access.entity
   end
 
-  def lala_context
+  def ledger_context
     ledger_access.context
   end
 
@@ -46,9 +46,9 @@ class LedgersController < ApplicationController
 
     user.user_cards
         .joins(card_transactions: %i[category_transactions entity_transactions])
-        .where(card_transactions: { context_id: lala_context.id })
+        .where(card_transactions: { context_id: ledger_context.id })
         .where(category_transactions: { category_id: exchange_category.id })
-        .where(entity_transactions: { entity_id: lala.id })
+        .where(entity_transactions: { entity_id: ledger_entity.id })
         .group("user_cards.id")
         .order(active: :desc)
   end
@@ -76,7 +76,7 @@ class LedgersController < ApplicationController
   def internal_route_params
     return if ledger_access.share
 
-    { entity_public_id: lala.public_id }
+    { entity_public_id: ledger_entity.public_id }
   end
 
   def ledger_cash_transactions_path(**query_params)

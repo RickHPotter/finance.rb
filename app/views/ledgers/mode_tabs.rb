@@ -12,7 +12,7 @@ class Views::Ledgers::ModeTabs < Views::Base
   end
 
   def view_template
-    nav(class: "mb-4 flex gap-2", aria_label: I18n.t("ledgers.navigation.label")) do
+    nav(class: "mb-4 flex gap-2", aria: { label: I18n.t("ledgers.navigation.label") }) do
       tab(I18n.t("ledgers.navigation.cash"), cash_path, :cash)
       tab(I18n.t("ledgers.navigation.card"), card_path, :card)
     end
@@ -26,7 +26,7 @@ class Views::Ledgers::ModeTabs < Views::Base
       label,
       path,
       class: "rounded-lg border px-4 py-2 text-sm font-semibold transition-colors #{tab_class(active)}",
-      aria_current: ("page" if active),
+      aria: { current: ("page" if active) },
       data: { turbo_frame: "_top", turbo_action: "replace" }
     )
   end

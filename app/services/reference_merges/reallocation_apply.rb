@@ -121,6 +121,7 @@ class ReferenceMerges::ReallocationApply
 
   def move_representative_installment!(installment, destination_date, destination_reference)
     installment.card_payment_reference_override = destination_reference
+    installment.card_payment_paid_override = installment.paid
     installment.update!(month: destination_date.month, year: destination_date.year)
     installment
   end

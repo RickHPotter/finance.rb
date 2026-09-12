@@ -9,7 +9,7 @@ class CardInstallment < Installment
   include TranslateHelper
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :card_payment_reference_override
+  attr_accessor :card_payment_reference_override, :card_payment_paid_override
 
   # @relationships ............................................................
   belongs_to :card_transaction, counter_cache: true

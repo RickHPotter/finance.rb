@@ -1257,6 +1257,8 @@ References:
 - Issues:
   - [#63](https://github.com/RickHPotter/finance.rb/issues/63)
 
+Status: implementation and automated verification complete as of 2026-09-12.
+
 Goal: make the authenticated `/internal/:entity_slug` and public
 `/:user_slug/external/:entity_slug` ledgers secure, navigable, consistent with the main
 finance indexes, and maintainable without parallel route/view drift.
@@ -1312,6 +1314,7 @@ References:
 - [current behavior and gap inventory](docs/sprints/4-kakashi/kakashi-19/02-current-behavior-and-gap-inventory.md)
 - [decisions and test matrix](docs/sprints/4-kakashi/kakashi-19/03-decisions-and-test-matrix.md)
 - [implementation slices](docs/sprints/4-kakashi/kakashi-19/04-implementation-slices.md)
+- [closure report and manual verification](docs/sprints/4-kakashi/kakashi-19/05-closure-report.md)
 
 ### KAKASHI-20: Audit spec quality and application performance
 
