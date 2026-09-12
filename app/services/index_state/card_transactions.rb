@@ -185,12 +185,28 @@ module IndexState
     end
 
     def resolved_reference_date(today:, max_date:)
+      shifted_reference = pending_shifted_reference(today:)
+      return Date.new(shifted_reference.year, shifted_reference.month) if shifted_reference
+
       next_reference = current_context.references.where(
         user_card: resolved_user_card,
         reference_closing_date: [ Date.tomorrow.. ]
       ).order(:reference_closing_date).first
 
       next_reference.present? ? Date.new(next_reference.year, next_reference.month) : [ today, max_date ].min
+    end
+
+    def pending_shifted_reference(today:)
+      unpaid_months = card_installments.where(paid: false).distinct.pluck(:year, :month).to_set
+
+      current_context.references.where(user_card: resolved_user_card, reference_date: today..).order(:reference_date).find do |reference|
+        unpaid_months.include?([ reference.year, reference.month ]) && shifted_closing_date?(reference)
+      end
+    end
+
+    def shifted_closing_date?(reference)
+      expected_closing_date = reference.reference_date - resolved_user_card.days_until_due_date.days
+      reference.reference_closing_date < expected_closing_date.beginning_of_month
     end
 
     def active_month_years_for(max_date:, today:)
