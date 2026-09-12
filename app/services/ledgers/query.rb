@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
 class Ledgers::Query
-  Month = Data.define(:month_year, :count, :total)
+  Month = Data.define(:month_year, :count, :total, :last_updated_at)
   Result = Data.define(:kind, :rows, :months, :total_count, :total_amount, :page, :per_page, :user_card, :user_bank_account) do
     def count_by_month_year
       months.index_by(&:month_year)
+    end
+
+    def last_updated_at
+      months.filter_map(&:last_updated_at).max
     end
   end
 
@@ -46,22 +50,24 @@ class Ledgers::Query
   end
 
   def authorized_cash_relation
-    account = resolve_owner_filter(access.user.user_bank_accounts, state.user_bank_account_id)
+    filter_id = state.user_bank_account_id unless access.share
+    account = resolve_owner_filter(access.user.user_bank_accounts, filter_id)
     transactions = scoped_transactions(CashTransaction, [ "EXCHANGE RETURN", "BORROW RETURN" ])
     transactions = transactions.where(user_bank_account_id: account.id) if account
     relation = access.context.cash_installments.where(cash_transaction_id: transactions.select(:id))
-    relation = relation.none if state.user_bank_account_id && account.nil?
+    relation = relation.none if filter_id && account.nil?
     relation = apply_search(relation, :cash_transaction, "cash_transactions.description")
     relation = apply_paid_filter(relation)
     [ relation, nil, account ]
   end
 
   def authorized_card_relation
-    user_card = resolve_owner_filter(access.user.user_cards, state.user_card_id)
+    filter_id = state.user_card_id unless access.share
+    user_card = resolve_owner_filter(access.user.user_cards, filter_id)
     transactions = scoped_transactions(CardTransaction, [ "EXCHANGE" ])
     transactions = transactions.where(user_card_id: user_card.id) if user_card
     relation = access.context.card_installments.where(card_transaction_id: transactions.select(:id))
-    relation = relation.none if state.user_card_id && user_card.nil?
+    relation = relation.none if filter_id && user_card.nil?
     relation = apply_search(relation, :card_transaction, "card_transactions.description")
     [ relation, user_card, nil ]
   end
@@ -96,9 +102,10 @@ class Ledgers::Query
       :year,
       :month,
       Arel.sql("COUNT(installments.id)"),
-      Arel.sql("COALESCE(SUM(installments.price), 0)")
-    ).map do |year, month, count, total|
-      Month.new(month_year: (year * 100) + month, count:, total:)
+      Arel.sql("COALESCE(SUM(installments.price), 0)"),
+      Arel.sql("MAX(installments.updated_at)")
+    ).map do |year, month, count, total, last_updated_at|
+      Month.new(month_year: (year * 100) + month, count:, total:, last_updated_at:)
     end.sort_by(&:month_year)
   end
 

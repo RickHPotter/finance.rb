@@ -6,8 +6,8 @@ class Ledgers::CardTransactionsController < LedgersController
     result = ledger_query(state, include_rows: false)
     @user_card = result.user_card
     build_index_context(state, result)
-    set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
-    render Views::Lalas::CardTransactions::Index.new(index_context: @index_context)
+    set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search) unless external_ledger?
+    render Views::Ledgers::Index.new(context: ledger_index_context(kind: :card, state:, result:, context: @index_context))
   end
 
   def search
@@ -19,17 +19,7 @@ class Ledgers::CardTransactionsController < LedgersController
     raise ActiveRecord::RecordNotFound if state.month_year.blank?
 
     result = ledger_query(state)
-    mobile = state.force_mobile || @mobile
-    month_year = state.month_year.to_s
-
-    render Views::Lalas::CardTransactions::MonthYear.new(
-      mobile:,
-      month_year:,
-      user_card_id: result.user_card&.id,
-      card_installments: result.rows,
-      total_amount: result.total_amount,
-      category_colour_display_mode: CategoryColours::DisplayMode.for(user)
-    )
+    render Views::Ledgers::Month.new(context: ledger_month_context(kind: :card, state:, result:))
   end
 
   private

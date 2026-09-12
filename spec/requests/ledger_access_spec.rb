@@ -60,7 +60,8 @@ RSpec.describe "Entity ledger access boundaries", type: :request do
           get path, params: params
 
           expect(response).to have_http_status(:not_found)
-          expect(response.body).to be_empty
+          expect(response.body).to include("Ledger unavailable")
+          expect(response.body).not_to include(owner.first_name, entity.entity_name)
         end
       end
     end

@@ -5,7 +5,7 @@ class Ledgers::CashTransactionsController < LedgersController
     state = ledger_query_state(:cash)
     result = ledger_query(state, include_rows: false)
     build_index_context(state, result)
-    render Views::Lalas::CashTransactions::Index.new(index_context: @index_context)
+    render Views::Ledgers::Index.new(context: ledger_index_context(kind: :cash, state:, result:, context: @index_context))
   end
 
   def search
@@ -17,18 +17,7 @@ class Ledgers::CashTransactionsController < LedgersController
     raise ActiveRecord::RecordNotFound if state.month_year.blank?
 
     result = ledger_query(state)
-    mobile = state.force_mobile || @mobile
-    month_year = state.month_year.to_s
-    month_year_str = I18n.l(Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01"), format: "%B %Y")
-
-    render Views::Lalas::CashTransactions::MonthYear.new(
-      mobile:,
-      month_year:,
-      month_year_str:,
-      cash_installments: result.rows,
-      total_amount: result.total_amount,
-      category_colour_display_mode: CategoryColours::DisplayMode.for(user)
-    )
+    render Views::Ledgers::Month.new(context: ledger_month_context(kind: :cash, state:, result:))
   end
 
   private

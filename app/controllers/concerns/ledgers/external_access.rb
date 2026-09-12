@@ -5,6 +5,7 @@ module Ledgers::ExternalAccess
 
   included do
     skip_before_action :authenticate_user!
+    layout "ledger_external"
     rescue_from ActiveRecord::RecordNotFound, with: :ledger_share_unavailable
   end
 
@@ -16,6 +17,6 @@ module Ledgers::ExternalAccess
   end
 
   def ledger_share_unavailable
-    head :not_found
+    render Views::Ledgers::Unavailable.new, status: :not_found
   end
 end

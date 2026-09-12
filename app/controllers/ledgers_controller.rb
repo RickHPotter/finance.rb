@@ -4,7 +4,8 @@ class LedgersController < ApplicationController
   include TranslateHelper
 
   before_action :resolve_ledger_access!
-  before_action :set_user_agent, :set_tabs
+  before_action :set_user_agent
+  before_action :set_tabs, unless: :external_ledger?
 
   private
 
@@ -96,5 +97,66 @@ class LedgersController < ApplicationController
 
   def ledger_query(state, include_rows: true)
     Ledgers::Query.call(access: ledger_access, state:, include_rows:)
+  end
+
+  def ledger_index_context(kind:, state:, result:, context:)
+    context = context.merge(
+      kind:,
+      external: external_ledger?,
+      header: Ledgers::Presenters::Header.new(access: ledger_access, result:),
+      index_path: ledger_index_path(kind),
+      month_path: ledger_month_path(kind),
+      cash_path: ledger_cash_transactions_path,
+      card_path: ledger_card_transactions_path,
+      canonical_params: ledger_canonical_params(state)
+    )
+    context.merge!(current_user: nil, user_card: nil, user_card_id: nil, user_bank_account_id: nil) if external_ledger?
+    context
+  end
+
+  def ledger_month_context(kind:, state:, result:)
+    {
+      kind:,
+      external: external_ledger?,
+      month_year: state.month_year,
+      rows: ledger_rows(result.rows, kind:),
+      total_count: result.total_count,
+      total_amount: result.total_amount,
+      page: result.page,
+      per_page: result.per_page,
+      month_path: ledger_month_path(kind),
+      canonical_params: ledger_canonical_params(state)
+    }
+  end
+
+  def ledger_rows(installments, kind:)
+    if external_ledger?
+      installments.map { |installment| Ledgers::Presenters::ExternalRow.build(installment:, kind:, share: ledger_access.share) }
+    else
+      display_mode = CategoryColours::DisplayMode.for(user)
+      installments.map { |installment| Ledgers::Presenters::InternalRow.new(installment:, kind:, category_colour_display_mode: display_mode) }
+    end
+  end
+
+  def ledger_index_path(kind)
+    kind == :cash ? ledger_cash_transactions_path : ledger_card_transactions_path
+  end
+
+  def ledger_month_path(kind)
+    route_params = external_ledger? ? external_route_params : internal_route_params
+    return month_year_external_cash_transactions_path(**route_params) if external_ledger? && kind == :cash
+    return month_year_external_card_transactions_path(**route_params) if external_ledger?
+    return month_year_internal_cash_transactions_path(**route_params) if kind == :cash
+
+    month_year_internal_card_transactions_path(**route_params)
+  end
+
+  def external_ledger?
+    ledger_access.share.present?
+  end
+
+  def ledger_canonical_params(state)
+    params = state.canonical_params
+    external_ledger? ? params.except(:cash_transaction, :card_transaction) : params
   end
 end

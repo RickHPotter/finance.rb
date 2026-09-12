@@ -1,0 +1,89 @@
+en:
+  ledgers:
+    external:
+      title: Shared ledger
+      eyebrow: Shared read-only ledger
+    internal:
+      eyebrow: Entity ledger
+    header:
+      scope: Context
+      updated: Last updated
+      never: No entries yet
+    navigation:
+      label: Ledger type
+      cash: Cash
+      card: Card
+    filter:
+      search: Search descriptions...
+      paid: Paid
+      pending: Pending
+    row:
+      description: Description
+      date: Date
+      installment: Installment
+      paid: Paid
+      pending: Pending
+    empty:
+      title: No ledger entries found
+      description: Try another month or adjust the filters.
+    unavailable:
+      title: Ledger unavailable
+      description: This shared link is invalid, expired, or no longer active.
+    total:
+      entries:
+        one: 1 entry in this result
+        other: "%{count} entries in this result"
+    month:
+      summary:
+        one: 1 matching entry
+        other: "%{count} matching entries"
+    pagination:
+      label: Ledger pages
+      previous: Previous
+      next: Next
+      status: Page %{page} of %{pages}
+
+pt-BR:
+  ledgers:
+    external:
+      title: Livro-razão compartilhado
+      eyebrow: Livro-razão compartilhado somente para leitura
+    internal:
+      eyebrow: Livro-razão da entidade
+    header:
+      scope: Contexto
+      updated: Última atualização
+      never: Nenhum lançamento ainda
+    navigation:
+      label: Tipo do livro-razão
+      cash: Dinheiro
+      card: Cartão
+    filter:
+      search: Buscar descrições...
+      paid: Pago
+      pending: Pendente
+    row:
+      description: Descrição
+      date: Data
+      installment: Parcela
+      paid: Pago
+      pending: Pendente
+    empty:
+      title: Nenhum lançamento encontrado
+      description: Tente outro mês ou ajuste os filtros.
+    unavailable:
+      title: Livro-razão indisponível
+      description: Este link compartilhado é inválido, expirou ou não está mais ativo.
+    total:
+      entries:
+        one: 1 lançamento neste resultado
+        other: "%{count} lançamentos neste resultado"
+    month:
+      summary:
+        one: 1 lançamento correspondente
+        other: "%{count} lançamentos correspondentes"
+    pagination:
+      label: Páginas do livro-razão
+      previous: Anterior
+      next: Próxima
+      status: Página %{page} de %{pages}
