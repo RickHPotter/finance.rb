@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Ledgers::ExternalCompatibilityController < ApplicationController
+  include Ledgers::ExternalSecurity
+
   skip_before_action :authenticate_user!
   layout "ledger_external"
   rescue_from ActiveRecord::RecordNotFound, with: :ledger_unavailable
@@ -9,6 +11,7 @@ class Ledgers::ExternalCompatibilityController < ApplicationController
     access = Ledgers::Access::External.call(token: params[:share_token])
     raise ActiveRecord::RecordNotFound if access.blank?
 
+    Ledgers::Shares::RecordAccess.call(share: access.share)
     state = Ledgers::QueryState.new(kind: params[:ledger_kind], params:)
     redirect_to canonical_path(state), status: :moved_permanently
   end

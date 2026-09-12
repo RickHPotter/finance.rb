@@ -2,6 +2,7 @@
 
 module Ledgers::ExternalAccess
   extend ActiveSupport::Concern
+  include Ledgers::ExternalSecurity
 
   included do
     skip_before_action :authenticate_user!
@@ -14,6 +15,8 @@ module Ledgers::ExternalAccess
   def resolve_ledger_access!
     @ledger_access = Ledgers::Access::External.call(token: params[:share_token])
     raise ActiveRecord::RecordNotFound if @ledger_access.blank?
+
+    Ledgers::Shares::RecordAccess.call(share: @ledger_access.share)
   end
 
   def ledger_share_unavailable

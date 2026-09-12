@@ -3,6 +3,8 @@
 require "rails_helper"
 
 RSpec.describe "Ledger share lifecycle", type: :service do
+  include ActiveSupport::Testing::TimeHelpers
+
   it "creates a context-bound share while returning the raw token only once" do
     entity = create(:entity, :random)
 
@@ -64,6 +66,31 @@ RSpec.describe "Ledger share lifecycle", type: :service do
     expect(Ledgers::Shares::Resolve.call(token: original.token)).to be_nil
     expect(Ledgers::Shares::Resolve.call(token: replacement.token)).to eq(replacement.share)
     expect(replacement.share).to have_attributes(entity:, context: entity.user.main_context, expires_at: be_within(1.second).of(expires_at))
+  end
+
+  it "records successful access at a bounded cadence without auditing finance data" do
+    entity = create(:entity, :random)
+    share = Ledgers::Shares::Create.call(entity:, context: entity.user.main_context).share
+    audit_operation_count = AuditOperation.count
+
+    travel_to Time.zone.local(2026, 9, 12, 10) do
+      expect(Ledgers::Shares::RecordAccess.call(share:)).to be(true)
+      expect(share.reload).to have_attributes(access_count: 1, last_accessed_at: Time.current)
+      expect(Ledgers::Shares::RecordAccess.call(share:, at: 1.minute.from_now)).to be(false)
+      expect(share.reload.access_count).to eq(1)
+      expect(Ledgers::Shares::RecordAccess.call(share:, at: 5.minutes.from_now)).to be(true)
+      expect(share.reload.access_count).to eq(2)
+      expect(AuditOperation.count).to eq(audit_operation_count)
+    end
+  end
+
+  it "keeps authorization independent when access telemetry cannot be written" do
+    share = create(:ledger_share)
+    allow(LedgerShare).to receive(:available_at).and_raise(ActiveRecord::ConnectionNotEstablished)
+    allow(Rails.logger).to receive(:warn)
+
+    expect(Ledgers::Shares::RecordAccess.call(share:)).to be(false)
+    expect(Rails.logger).to have_received(:warn).with("External ledger access telemetry unavailable (ActiveRecord::ConnectionNotEstablished)")
   end
 
   it "rolls back lifecycle mutations when their audit record cannot be persisted" do
