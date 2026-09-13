@@ -124,6 +124,21 @@ RSpec.describe "Entities", type: :request do
     end
   end
 
+  describe "[ #new ]" do
+    it "offers the Magnific people avatars with their attribution" do
+      get new_entity_path
+
+      expect(response).to have_http_status(:success)
+      document = response.parsed_body
+      %w[30 31 32 33].each do |number|
+        expect(document.at_css("img[src*='avatars/people/#{number}']")).to be_present
+      end
+      credit = document.at_css("a[href='https://www.flaticon.com/authors/magnific']")
+      expect(credit).to be_present
+      expect(credit.text).to include("Magnific", "Flaticon")
+    end
+  end
+
   describe "[ #trend ]" do
     it "returns a context-scoped entity trend payload" do
       entity = create(:entity, user:, entity_name: "REPORT ANA")

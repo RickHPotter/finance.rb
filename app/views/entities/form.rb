@@ -83,6 +83,14 @@ class Views::Entities::Form < Views::Base
       end
 
       div do
+        span { model_attribute(entity, :magnific_person_icons_credit_text) }
+        whitespace
+        a(class: "underline", href: "https://www.flaticon.com/authors/magnific", title: "people icons") do
+          "#{model_attribute(entity, :magnific_person_icons_credits)} - Flaticon"
+        end
+      end
+
+      div do
         span { model_attribute(entity, :dog_icons_credit_text) }
         whitespace
         a(class: "underline", href: "https://www.flaticon.com/authors/maxim-kulikov", title: "dogs and cats icons") do
