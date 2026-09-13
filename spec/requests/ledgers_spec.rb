@@ -4,6 +4,23 @@ require "rails_helper"
 
 RSpec.describe "Entity ledgers", type: :request do
   describe "context scoping" do
+    it "keeps public lalas navigation inside the stable alias" do
+      user = create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-lalas@example.com")
+      create(:entity, user:, entity_name: "LALA")
+
+      get lalas_root_path
+
+      expect(response).to redirect_to(lalas_cash_transactions_path(paid: true, pending: true, sort: "default", direction: "asc"))
+      follow_redirect!
+      expect(response).to have_http_status(:ok)
+
+      document = response.parsed_body
+      expect(document.at_css("form#search_form")["action"]).to eq(lalas_cash_transactions_path)
+      card_link = document.css("nav[aria-label='Ledger type'] a").find { |link| link.text.squish == "Card" }
+      expect(card_link["href"]).to eq(lalas_card_transactions_path)
+      expect(document.at_css("turbo-frame[src*='/lalas/cash_transactions/month_year']")).to be_present
+    end
+
     it "renders the token-authorized external root for an entity ledger" do
       user = create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-external-root@example.com")
       entity = create(:entity, user:, entity_name: "LALA")

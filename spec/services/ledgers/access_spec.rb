@@ -37,4 +37,26 @@ RSpec.describe Ledgers::Access, type: :service do
     create(:entity, user:, entity_name: "CRISTIAN PENS")
     expect(Ledgers::Access::LegacyInternal.call(user:, entity_slug: "cristian-pens", context: user.main_context)).to be_nil
   end
+
+  it "resolves the public lalas alias only when its active Entity is unambiguous" do
+    entity = create(:entity, :random, entity_name: "LALA")
+
+    access = Ledgers::Access::PublicAlias.call(alias_name: :lalas)
+
+    expect(access).to have_attributes(user: entity.user, entity:, context: entity.user.main_context)
+    expect(access.share.public_id).to include("public-alias:lalas:", entity.public_id)
+
+    create(:entity, :random, entity_name: "lala")
+    expect(Ledgers::Access::PublicAlias.call(alias_name: :lalas)).to be_nil
+  end
+
+  it "supports an explicit stable Entity public ID for the lalas alias" do
+    named_entity = create(:entity, :random, entity_name: "LALA")
+    configured_entity = create(:entity, :random, entity_name: "SISTER")
+
+    access = Ledgers::Access::PublicAlias.call(alias_name: :lalas, entity_public_id: configured_entity.public_id)
+
+    expect(access.entity).to eq(configured_entity)
+    expect(access.entity).not_to eq(named_entity)
+  end
 end

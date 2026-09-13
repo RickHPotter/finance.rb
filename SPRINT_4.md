@@ -1296,6 +1296,9 @@ Architecture:
 
 - replace the ambiguous `lalas` module naming with a ledger-oriented namespace when the
   route/controller migration can be performed safely
+- retain `/lalas` as one explicit owner-approved public compatibility alias backed by
+  the hardened external ledger stack; it must resolve one stable/unambiguous active
+  Entity or fail closed
 - extract shared ledger query/presentation contracts instead of continuing separate
   cash/card/internal/external copies
 - keep context and entity scoping in query objects/controllers, never only in rendered

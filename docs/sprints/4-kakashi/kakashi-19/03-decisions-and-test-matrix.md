@@ -42,6 +42,12 @@ transactions, installments, allocations, balances, messages, or audits.
 No. It may return not-found or redirect only when an independently valid share is
 already present. Guessable names never retain public authority for compatibility.
 
+The explicit `/lalas` route is the sole owner-approved exception: it is an intentional
+public alias for the unique active `LALA` Entity and its owner's main Context. It uses
+the hardened external ledger presentation, privacy headers, throttling, and query
+contract. It fails closed if that identity is missing or ambiguous; deployments may
+bind it to a stable Entity with `LALAS_ENTITY_PUBLIC_ID`.
+
 ### D9. How are duplicate allocation joins handled?
 
 The installment is selected canonically before enrichment and appears once. Multiple
@@ -96,7 +102,9 @@ the path.
 | malformed token | generic not found without broad lookup |
 | revoked token | same generic not found |
 | expired token | same generic not found |
-| old slug-only public URL | no data disclosure |
+| old owner/Entity slug-only public URL | no data disclosure |
+| explicit `/lalas` public alias with one configured or unambiguous active Entity | success |
+| explicit `/lalas` alias with missing/ambiguous Entity | generic not found |
 | valid token plus foreign Entity/context parameter | grant scope remains authoritative |
 | direct month endpoint with no token | generic not found |
 | share revoked after page load | subsequent frame/filter request unavailable |

@@ -85,11 +85,35 @@ RSpec.describe "Entity ledger access boundaries", type: :request do
       expect(document.at_css("form#search_form")["action"]).to eq(external_cash_transactions_path(share_token: active.token))
     end
 
-    it "does not authorize the obsolete unscoped or owner-and-Entity slug URLs" do
-      get "/lalas"
+    it "does not authorize the obsolete owner-and-Entity slug URL" do
+      get "/#{owner.first_name.parameterize}/external/#{entity.entity_name.parameterize}"
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "keeps every endpoint of the explicit lalas alias public" do
+      create(:entity, user: owner, entity_name: "LALA")
+
+      lalas_paths.each do |path, params|
+        get path, params: params
+
+        expect(response).to have_http_status(:ok).or have_http_status(:moved_permanently)
+        expect(response.headers).to include(
+          "X-Robots-Tag" => "noindex, nofollow, noarchive",
+          "Cache-Control" => "private, no-store",
+          "Referrer-Policy" => "no-referrer"
+        )
+      end
+    end
+
+    it "fails closed when the public lalas identity is missing or ambiguous" do
+      get lalas_root_path
       expect(response).to have_http_status(:not_found)
 
-      get "/#{owner.first_name.parameterize}/external/#{entity.entity_name.parameterize}"
+      create(:entity, user: owner, entity_name: "LALA")
+      other_owner = create(:user, :random)
+      create(:entity, user: other_owner, entity_name: "lala")
+
+      get lalas_root_path
       expect(response).to have_http_status(:not_found)
     end
   end
@@ -117,6 +141,18 @@ RSpec.describe "Entity ledger access boundaries", type: :request do
       [ external_card_transactions_path(share_token:), {} ],
       [ search_external_card_transactions_path(share_token:), {} ],
       [ month_year_external_card_transactions_path(share_token:), { month_year: "202609" } ]
+    ]
+  end
+
+  def lalas_paths
+    [
+      [ lalas_root_path, {} ],
+      [ lalas_cash_transactions_path, {} ],
+      [ search_lalas_cash_transactions_path, {} ],
+      [ month_year_lalas_cash_transactions_path, { month_year: "202609" } ],
+      [ lalas_card_transactions_path, {} ],
+      [ search_lalas_card_transactions_path, {} ],
+      [ month_year_lalas_card_transactions_path, { month_year: "202609" } ]
     ]
   end
 end

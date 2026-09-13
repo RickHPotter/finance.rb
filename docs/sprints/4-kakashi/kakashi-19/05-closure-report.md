@@ -34,9 +34,11 @@ Status: implementation and automated verification complete as of 2026-09-12.
 - Old owner/Entity external slugs return not-found unless the same request already
   carries an independently valid share token, in which case they redirect to the
   canonical shared URL.
-- Unscoped `/lalas` routes, `Views::Lalas`, and the parallel cash/card templates are
-  removed. The `ledger_external.html.erb` file remains intentionally as Rails' wrapper
-  around the Phlex external layout.
+- The obsolete `Views::Lalas` and parallel cash/card templates remain removed. The
+  owner-approved public `/lalas` compatibility alias delegates to the hardened ledger
+  stack and fails closed unless its active Entity identity resolves unambiguously. The
+  `ledger_external.html.erb` file remains intentionally as Rails' wrapper around the
+  Phlex external layout.
 
 ## Automated Evidence
 

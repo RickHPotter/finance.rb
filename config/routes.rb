@@ -207,6 +207,24 @@ Rails.application.routes.draw do
     end
   end
 
+  scope "/lalas", as: :lalas, module: "ledgers/public_alias" do
+    root "cash_transactions#index", defaults: { ledger_entry: true }
+
+    resources :card_transactions, only: %i[index] do
+      collection do
+        get :month_year
+        get :search
+      end
+    end
+
+    resources :cash_transactions, only: %i[index] do
+      collection do
+        get :month_year
+        get :search
+      end
+    end
+  end
+
   scope "/internal/:entity_public_id", as: :internal, module: "ledgers/internal" do
     root "cash_transactions#index", defaults: { ledger_entry: true }
 
