@@ -15,9 +15,11 @@ class Views::Ledgers::Filter < Views::Base
       url: ledger_context[:index_path],
       id: "search_form",
       method: :get,
-      class: "w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900",
+      class: "relative w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900",
       data: { controller: "reactive-form", turbo_frame: "_top", turbo_action: "replace" }
     ) do
+      render Views::Ledgers::AggregateTotal.new(amount: ledger_context[:aggregate_total_amount])
+
       render Views::Shared::MonthYearSelector.new(
         current_user: (ledger_context[:current_user] unless ledger_context[:external]),
         default_year: ledger_context[:default_year],
@@ -47,11 +49,12 @@ class Views::Ledgers::Filter < Views::Base
   private
 
   def sort_controls
-    div(class: "flex gap-2") do
+    div(class: "grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto") do
       select(
         name: :sort,
         id: "ledger_sort",
-        class: "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200",
+        class: "min-w-0 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 sm:w-auto " \
+               "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200",
         aria: { label: I18n.t("ledgers.filter.sort") },
         data: { action: "change->reactive-form#submit" }
       ) do
@@ -62,7 +65,8 @@ class Views::Ledgers::Filter < Views::Base
       select(
         name: :direction,
         id: "ledger_direction",
-        class: "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200",
+        class: "min-w-0 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 sm:w-auto " \
+               "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200",
         aria: { label: I18n.t("ledgers.filter.direction") },
         data: { action: "change->reactive-form#submit" }
       ) do

@@ -25,7 +25,7 @@ class Views::Layouts::LedgerExternal < Views::Base
 
       body(class: "min-h-screen bg-slate-100 text-slate-950 antialiased dark:bg-slate-950 dark:text-slate-100") do
         main(class: "mx-auto min-h-screen w-full max-w-355 px-3 py-5 sm:px-6 lg:px-8") do
-          div(class: "mb-2 flex justify-end") { theme_toggle }
+          div(class: "mb-2 flex justify-start") { theme_toggle }
           yield
         end
         javascript_tag(<<~JS)

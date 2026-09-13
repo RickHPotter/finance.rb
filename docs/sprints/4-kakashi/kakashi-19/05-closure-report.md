@@ -21,8 +21,10 @@ Status: implementation and automated verification complete as of 2026-09-12.
 - Canonical URLs retain authorization and bounded mode-local query state through
   filters, lazy frames, pagination, refresh, and browser history. Cash/Card changes
   deliberately reset query state and use full-page navigation.
-- The selected-month aggregate is rendered as a bookmark before lazy month frames
-  finish loading, and the external shell uses the application's full content width.
+- The selected-month aggregate is rendered as an upward-facing bookmark attached to
+  the filter section before lazy month frames finish loading, and the external shell
+  uses the application's full content width. On compact screens the theme control is
+  leading-aligned and the sort controls divide the available width without overflow.
 - Public ledger documents carry the application favicon and expose a localized
   light/dark toggle backed only by browser-local theme state; the public control does
   not call the authenticated preference endpoint.

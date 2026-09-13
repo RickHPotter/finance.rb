@@ -12,7 +12,7 @@ class Views::Ledgers::AggregateTotal < Views::Base
   def view_template
     div(class: "relative z-40 h-0") do
       div(
-        class: "absolute -top-5 right-4 rounded-b-lg border border-yellow-600 bg-yellow-400 px-3 py-2 font-lekton text-sm font-bold text-black shadow-md",
+        class: "absolute -top-12 right-0 rounded-t-lg border border-yellow-600 bg-yellow-400 px-3 py-2 font-lekton text-sm font-bold text-black shadow-md sm:right-2",
         data: { ledger_aggregate_total: true, price: amount }
       ) do
         from_cent_based_to_float(amount, "R$")

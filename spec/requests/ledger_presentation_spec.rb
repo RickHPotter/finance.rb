@@ -33,7 +33,15 @@ RSpec.describe "Entity ledger presentation", type: :request do
       expect(theme_toggle).to be_present
       expect(theme_toggle["data-theme-update-url-value"]).to be_nil
       expect(theme_toggle.text).to include("◐", "Light")
-      expect(document.at_css("[data-ledger-aggregate-total]")["data-price"]).to eq("-12345")
+      expect(theme_toggle.parent["class"]).to include("justify-start")
+      aggregate_total = document.at_css("form#search_form [data-ledger-aggregate-total]")
+      expect(aggregate_total["data-price"]).to eq("-12345")
+      expect(aggregate_total["class"]).to include("rounded-t-lg")
+      sort = document.at_css("select#ledger_sort")
+      direction = document.at_css("select#ledger_direction")
+      expect(sort.parent["class"]).to include("grid", "w-full", "grid-cols-2")
+      expect(sort["class"]).to include("min-w-0", "w-full")
+      expect(direction["class"]).to include("min-w-0", "w-full")
       card_link = document.css("nav[aria-label='Ledger type'] a").find { |link| link.text.squish == "Card" }
       expect(card_link["href"]).to eq(external_card_transactions_path(share_token: share.token))
 
