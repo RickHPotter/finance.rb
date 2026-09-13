@@ -84,6 +84,21 @@ The selection is an operation parameter and audit metadata value, not a persiste
 `UserCard` preference. A migration is added only if implementation discovery proves a
 separate durable invariant is necessary.
 
+### D16: Existing successful behavior is the activation baseline
+
+KAKASHI-21 starts with a previously delivered implementation. Reconciliation may
+refactor or harden it only behind executable before/after coverage. It must not change
+combine semantics, preserved installment dates, explicitly unpaid shifted invoices, or
+canonical exchange-return synchronization without a newly approved product decision.
+
+### D17: Actionable-message policy is invariant
+
+Neither merge mode creates a new reason to send, suppress, receive, supersede, or
+auto-apply an actionable message. Existing projection callbacks may run because the
+financial graph genuinely changes, but message policy is not inferred or rewritten by
+KAKASHI-21. Any necessary behavioral change requires separate explicit approval and
+coverage.
+
 ## Core Schedule Matrix
 
 | Scenario | Mode | Expected result |
@@ -99,6 +114,7 @@ separate durable invariant is necessary.
 | Source after target | reallocate | rejected, no mutation |
 | Missing mode | n/a | `422`, no audit operation, no mutation |
 | Unknown mode | n/a | `422`, no audit operation, no mutation |
+| Invalid source/target date | n/a | `422`, no exception, no audit operation, no mutation |
 
 ## Attribute Invariants
 

@@ -7,6 +7,19 @@ implements a forward, sequence-preserving installment reallocation. Each slice k
 the legacy combine result stable while moving the write path toward one planned,
 audited, rollbackable operation.
 
+## Existing Baseline
+
+The six original slices below substantially landed before formal KAKASHI-21 activation,
+primarily in commit `6660b1a5`, with later production-driven corrections preserving
+installment dates, reducing invoice callback churn, retaining explicitly unpaid invoice
+state at the due-date boundary, and preferring the unpaid shifted invoice graph.
+
+They describe the intended product and remain acceptance requirements, but they must
+not be replayed as a rewrite. Development starts with the five reconciliation slices
+after the original plan. Each slice is independently reviewable, covered,
+RuboCop-clean, and ends with a proposed commit description. Development stops after
+each slice for review.
+
 ## Slice 1: Add the Explicit Merge Decision
 
 1. Add stable `merge_mode` values for `combine_into_target` and
@@ -160,3 +173,112 @@ Acceptance:
 - no partial merge or rollback state can be observed after an injected failure
 
 Commit: `spec: harden reference merge reallocation`
+
+## Reconciliation and Closure Slices
+
+### Slice 7: Characterize the Inherited Two-Mode Contract
+
+1. Inventory the exact current result of combine and reallocate modes at the public
+   service and HTTP boundaries.
+2. Add or tighten regression examples before refactoring any financial mutation.
+3. Freeze date preservation, installment identity/economics, invoice membership,
+   exchange projection ownership, context/card isolation, and operation metadata.
+4. Prove missing/invalid modes and invalid dates fail without business or audit writes.
+5. Record the production-driven fixes that are already part of the supported baseline.
+6. Assert that reference merging does not introduce a new actionable-message policy or
+   change established send/receive/auto-apply behavior.
+
+Acceptance:
+
+- both modes have executable before/after graph expectations
+- known behavior is protected before shared-boundary changes begin
+- gaps between the written contract and implementation are explicit test failures or
+  documented follow-up work, never silently normalized
+
+Commit: `spec: characterize user card reference merge modes`
+
+### Slice 8: Harden the Shared Merge Boundary and Locks
+
+1. Give both modes a consistent result/error contract without changing their successful
+   financial outcomes.
+2. Normalize and validate dates before lookup so malformed requests fail closed rather
+   than raising an unhandled parsing exception.
+3. Serialize mutations at the selected user-card/context boundary, then resolve and
+   lock the complete affected graph in deterministic order.
+4. Replan after the boundary lock and reject stale or phantom membership before the
+   first mutation.
+5. Bring combine mode under the same stale-plan and deterministic-lock guarantees as
+   reallocation.
+6. Preserve independent progress for unrelated cards where PostgreSQL safety permits.
+
+Acceptance:
+
+- same-card combine/reallocate races serialize and the loser safely replans or rejects
+- rows inserted or changed between preview and apply cannot produce a partial result
+- malformed dates, missing roots, and stale state return actionable failures
+- unrelated card/context graphs remain untouched
+
+Commit: `fix: serialize user card reference merges`
+
+### Slice 9: Reconcile Invoice and Exchange Graph Edges
+
+1. Exercise existing and missing destination references/invoices, empty calendar gaps,
+   year boundaries, one-installment purchases, and several transactions in one bucket.
+2. Verify invoice reconstruction from final membership, including amount, comment,
+   cash installment, date, paid state, and counters.
+3. Verify every matching monetary card-bound exchange follows its own shifted bucket
+   and every generated return projection remains canonical.
+4. Inject failures during tail creation, invoice reconstruction, projection
+   synchronization, integrity verification, and balance recalculation.
+5. Fix only contract violations demonstrated by these examples; retain existing
+   combine behavior and established exchange/message rules.
+
+Acceptance:
+
+- every affected row moves exactly once and every unrelated row remains unchanged
+- all generated totals and associations reconcile after either mode
+- every injected failure restores the complete pre-merge state
+
+Commit: `fix: reconcile reference merge financial graphs`
+
+### Slice 10: Complete Guarded Rollback Coverage
+
+1. Snapshot a real complete graph before each mode, apply the merge, preview rollback,
+   compensate, and compare the restored graph.
+2. Cover a created tail, reused destination graph, gaps, card-bound exchanges, generated
+   return projections, and destroyed source rows.
+3. Add stale conflicts for moved installments, destination/tail invoices, references,
+   exchanges, projections, and missing dependencies.
+4. Verify rollback failures are atomic and a second valid token application remains
+   idempotent through the established KAKASHI-08 contract.
+5. Extend adapters only for demonstrated known graph shapes; unknown shapes remain
+   read-only.
+
+Acceptance:
+
+- both modes are immediately previewable after a fresh successful merge
+- compensation restores exact financial IDs, attributes, routing, and membership
+- post-merge divergence blocks the whole rollback rather than restoring a prefix
+
+Commit: `spec: complete reference merge rollback coverage`
+
+### Slice 11: Finish UI, Manual Acceptance, and Closure
+
+1. Verify localized mode labels, consequence text, retained invalid selection, precise
+   failure feedback, forward-only availability, and server-side enforcement.
+2. Check the merge form in light/dark and compact layouts without changing its financial
+   semantics.
+3. Write a repeatable manual test for combine, reallocation, year-boundary movement,
+   exchanges/projections, audit preview, compensation, and conflict rejection.
+4. Run focused service/request/audit/concurrency suites, JavaScript coverage, RuboCop,
+   and `bin/ci`.
+5. Update the sprint status and write a closure report with automated and manual
+   evidence.
+
+Acceptance:
+
+- the operator can predict the consequence of either choice before submitting
+- success and rejection remain navigable through HTML and Turbo
+- automated and manual evidence satisfy the completion gate
+
+Commit: `docs: close kakashi 21`
