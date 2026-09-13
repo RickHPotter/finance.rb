@@ -3,6 +3,10 @@ en:
     external:
       title: Shared ledger
       eyebrow: Shared read-only ledger
+      theme:
+        toggle: Switch light or dark mode
+        light: Light
+        dark: Dark
     internal:
       eyebrow: Entity ledger
     header:
@@ -59,6 +63,10 @@ pt-BR:
     external:
       title: Livro-razão compartilhado
       eyebrow: Livro-razão compartilhado somente para leitura
+      theme:
+        toggle: Alternar entre os modos claro e escuro
+        light: Claro
+        dark: Escuro
     internal:
       eyebrow: Livro-razão da entidade
     header:

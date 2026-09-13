@@ -25,8 +25,14 @@ RSpec.describe "Entity ledger presentation", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("LEDGER OWNER", "SHARED ENTITY", context.name, "people/0")
       expect(response.body).to include('name="referrer" content="no-referrer"')
-      expect(response.body).not_to include("current-user-id", "notification", "theme_toggle")
+      expect(response.body).not_to include("current-user-id", "notification")
       document = response.parsed_body
+      expect(document.at_css("link[rel='icon'][href='/pwa_logos/128.png']")).to be_present
+      expect(document.at_css("link[rel='apple-touch-icon'][href='/pwa_logos/512.png']")).to be_present
+      theme_toggle = document.at_css("button#theme_toggle[data-controller='theme'][data-action='click->theme#toggle']")
+      expect(theme_toggle).to be_present
+      expect(theme_toggle["data-theme-update-url-value"]).to be_nil
+      expect(theme_toggle.text).to include("◐", "Light")
       expect(document.at_css("[data-ledger-aggregate-total]")["data-price"]).to eq("-12345")
       card_link = document.css("nav[aria-label='Ledger type'] a").find { |link| link.text.squish == "Card" }
       expect(card_link["href"]).to eq(external_card_transactions_path(share_token: share.token))
