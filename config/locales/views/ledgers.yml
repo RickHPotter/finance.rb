@@ -7,6 +7,8 @@ en:
         toggle: Switch light or dark mode
         light: Light
         dark: Dark
+      locale:
+        label: Language
     internal:
       eyebrow: Entity ledger
     header:
@@ -67,6 +69,8 @@ pt-BR:
         toggle: Alternar entre os modos claro e escuro
         light: Claro
         dark: Escuro
+      locale:
+        label: Idioma
     internal:
       eyebrow: Livro-razão da entidade
     header:

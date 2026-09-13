@@ -35,6 +35,7 @@ class Ledgers::ExternalCompatibilityController < ApplicationController
   end
 
   def ledger_unavailable
+    @ledger_unavailable = true
     render Views::Ledgers::Unavailable.new, status: :not_found
   end
 end

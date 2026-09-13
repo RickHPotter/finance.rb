@@ -34,6 +34,10 @@ RSpec.describe "Entity ledger presentation", type: :request do
       expect(theme_toggle["data-theme-update-url-value"]).to be_nil
       expect(theme_toggle.text).to include("◐", "Light")
       expect(theme_toggle.parent["class"]).to include("justify-start")
+      locale_switcher = document.at_css("nav[data-ledger-locale-switcher][aria-label='Language']")
+      expect(locale_switcher.css("a").map { |link| link.text.squish }).to eq(%w[PT-BR EN])
+      expect(locale_switcher.at_css("a[hreflang='en'][aria-current='page']")).to be_present
+      expect(locale_switcher.at_css("a[hreflang='pt-BR']")["href"]).to include("locale=pt-BR", "search_term=ALLOWLISTED")
       aggregate_total = document.at_css("form#search_form [data-ledger-aggregate-total]")
       expect(aggregate_total["data-price"]).to eq("-12345")
       expect(aggregate_total["class"]).to include("rounded-t-lg")
@@ -95,6 +99,19 @@ RSpec.describe "Entity ledger presentation", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("No ledger entries found", "Try another month or adjust the filters.")
       expect(response.body).to include("dark:")
+    end
+
+    it "switches and persists the public ledger locale without a mutation request" do
+      get external_cash_transactions_path(share_token: share.token), params: { locale: "pt-BR" }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.at_css("html")["lang"]).to eq("pt-BR")
+      expect(response.parsed_body.at_css("nav[data-ledger-locale-switcher] a[hreflang='pt-BR'][aria-current='page']")).to be_present
+
+      get external_cash_transactions_path(share_token: share.token)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.at_css("html")["lang"]).to eq("pt-BR")
     end
 
     it "uses the same allowlisted projection for card billing periods" do

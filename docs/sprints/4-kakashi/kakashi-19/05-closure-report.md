@@ -25,9 +25,9 @@ Status: implementation and automated verification complete as of 2026-09-12.
   the filter section before lazy month frames finish loading, and the external shell
   uses the application's full content width. On compact screens the theme control is
   leading-aligned and the sort controls divide the available width without overflow.
-- Public ledger documents carry the application favicon and expose a localized
-  light/dark toggle backed only by browser-local theme state; the public control does
-  not call the authenticated preference endpoint.
+- Public ledger documents carry the application favicon and expose localized
+  light/dark and PT-BR/EN controls. Theme state remains browser-local, locale uses the
+  public locale cookie, and neither control calls an authenticated preference endpoint.
 
 ## Compatibility Inventory
 
@@ -73,10 +73,10 @@ Use an Entity with both cash returns and card exchanges in the active Context.
    reset, the URL and visible state agree, and no `Content Missing` error appears.
 4. Compare external cash/card rows and totals with the authenticated internal ledger
    for the same Entity and Context.
-5. Confirm the application favicon is present. Toggle light/dark mode, refresh, and
-   verify the browser-local choice persists without an authenticated preference call.
-   Narrow the viewport and confirm the same row fields and amounts remain visible in a
-   usable order in both modes.
+5. Confirm the application favicon is present. Toggle light/dark mode and PT-BR/EN,
+   refresh, and verify both choices persist without an authenticated preference call.
+   Narrow the viewport and confirm these controls remain aligned and the same row fields
+   and amounts remain visible in a usable order in both modes and locales.
 6. Open a lazy month URL directly. Confirm it remains share-authorized and an invalid,
    expired, or revoked token shows only the generic unavailable page.
 7. Revoke the open share and then filter or refresh the external page. Confirm access

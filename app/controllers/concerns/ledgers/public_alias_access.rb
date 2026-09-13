@@ -36,6 +36,7 @@ module Ledgers::PublicAliasAccess
   end
 
   def public_ledger_unavailable
+    @ledger_unavailable = true
     render Views::Ledgers::Unavailable.new, status: :not_found
   end
 end

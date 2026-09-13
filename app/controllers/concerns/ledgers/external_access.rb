@@ -20,6 +20,7 @@ module Ledgers::ExternalAccess
   end
 
   def ledger_share_unavailable
+    @ledger_unavailable = true
     render Views::Ledgers::Unavailable.new, status: :not_found
   end
 end

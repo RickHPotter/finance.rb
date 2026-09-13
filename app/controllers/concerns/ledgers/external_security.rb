@@ -14,6 +14,7 @@ module Ledgers::ExternalSecurity
     return if Ledgers::ExternalRateLimiter.allowed?(request:, token: external_rate_limit_identity)
 
     response.set_header("Retry-After", Ledgers::ExternalRateLimiter::WINDOW.to_i.to_s)
+    @ledger_unavailable = true
     render Views::Ledgers::Unavailable.new, status: :too_many_requests
   end
 

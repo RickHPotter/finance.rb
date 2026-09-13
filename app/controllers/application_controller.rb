@@ -25,19 +25,22 @@ class ApplicationController < ActionController::Base
     devise_parameter_sanitizer.permit(:account_update, keys: %i[first_name last_name locale])
   end
 
-  # Set locale from params[:locale] or cookies[:locale]
+  # Set locale from params[:locale], cookies[:locale], user profile, or default.
+  # params[:locale] takes priority so that the locale switcher always works,
+  # even for logged-in users whose profile has a different locale saved.
   #
   # @return [void]
   #
   def set_locale
-    I18n.locale =
-      if respond_to?(:current_user) && current_user&.locale.present?
-        current_user.locale
-      elsif params[:locale].present?
-        cookies[:locale] = params[:locale]
-      else
-        cookies[:locale] || I18n.default_locale
-      end
+    if params[:locale].present?
+      cookies[:locale] = params[:locale]
+      persist_locale_to_profile(params[:locale])
+      I18n.locale = params[:locale]
+    elsif respond_to?(:current_user) && current_user&.locale.present?
+      I18n.locale = current_user.locale
+    else
+      I18n.locale = cookies[:locale] || I18n.default_locale
+    end
   end
 
   def check_reasoning
@@ -61,6 +64,17 @@ class ApplicationController < ActionController::Base
 
   def resolve_current_context
     current_context
+  end
+
+  # Persist the chosen locale to the current user's profile so future visits
+  # without a locale param continue to use the same locale.
+  #
+  # @return [void]
+  #
+  def persist_locale_to_profile(locale)
+    return unless respond_to?(:current_user) && current_user&.profile.present?
+
+    current_user.profile.update_columns(locale:)
   end
 
   def current_context

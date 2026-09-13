@@ -1,6 +1,20 @@
 # frozen_string_literal: true
 
 class Views::Layouts::LedgerExternal < Views::Base
+  LOCALE_QUERY_KEYS = %w[
+    active_month_years
+    default_year
+    direction
+    force_mobile
+    month_year
+    page
+    paid
+    pending
+    per_page
+    search_term
+    sort
+  ].freeze
+
   register_output_helper :csp_meta_tag
   register_output_helper :stylesheet_link_tag
   register_output_helper :javascript_include_tag
@@ -25,7 +39,10 @@ class Views::Layouts::LedgerExternal < Views::Base
 
       body(class: "min-h-screen bg-slate-100 text-slate-950 antialiased dark:bg-slate-950 dark:text-slate-100") do
         main(class: "mx-auto min-h-screen w-full max-w-355 px-3 py-5 sm:px-6 lg:px-8") do
-          div(class: "mb-2 flex justify-start") { theme_toggle }
+          div(class: "mb-2 flex items-center justify-start gap-2") do
+            theme_toggle
+            locale_switcher unless ledger_unavailable?
+          end
           yield
         end
         javascript_tag(<<~JS)
@@ -56,6 +73,47 @@ class Views::Layouts::LedgerExternal < Views::Base
       span(aria: { hidden: "true" }) { "◐" }
       span(data: { theme_target: "label" }) { I18n.t("ledgers.external.theme.light") }
     end
+  end
+
+  def locale_switcher
+    nav(
+      class: "inline-flex min-h-10 items-center rounded-full border border-slate-300 bg-white p-1 text-xs font-semibold shadow-sm " \
+             "dark:border-slate-700 dark:bg-slate-900",
+      aria: { label: I18n.t("ledgers.external.locale.label") },
+      data: { ledger_locale_switcher: true }
+    ) do
+      locale_link("pt-BR", "🇧🇷", "PT-BR")
+      locale_link("en", "🇬🇧", "EN")
+    end
+  end
+
+  def ledger_unavailable?
+    rails_view_context.instance_variable_get(:@ledger_unavailable)
+  end
+
+  def locale_link(locale, flag, label)
+    active = I18n.locale.to_s == locale
+    a(
+      href: locale_path(locale),
+      hreflang: locale,
+      lang: locale,
+      aria: { current: ("page" if active) },
+      class: "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 transition-colors #{locale_link_class(active)}"
+    ) do
+      span(aria: { hidden: "true" }) { flag }
+      span { label }
+    end
+  end
+
+  def locale_path(locale)
+    query = rails_view_context.request.query_parameters.slice(*LOCALE_QUERY_KEYS).merge(locale:)
+    "#{rails_view_context.request.path}?#{Rack::Utils.build_nested_query(query)}"
+  end
+
+  def locale_link_class(active)
+    return "bg-sky-600 text-white dark:bg-sky-400 dark:text-slate-950" if active
+
+    "text-slate-600 hover:bg-slate-100 hover:text-sky-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-300"
   end
 
   def theme_script

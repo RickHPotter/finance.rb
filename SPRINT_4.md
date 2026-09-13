@@ -1290,8 +1290,8 @@ Shared ledger experience:
   entity/user scope
 - keep external pages free of mutation controls, private navigation, and unrelated
   application chrome
-- retain the application favicon and a browser-local light/dark control on public
-  ledger pages without exposing authenticated preference mutation
+- retain the application favicon plus browser-local light/dark and PT-BR/EN controls
+  on public ledger pages without exposing authenticated preference mutation
 - make internal navigation integrate with KAKASHI-15 URL/history rules
 
 Architecture:

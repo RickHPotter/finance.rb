@@ -2,7 +2,6 @@
 
 class Views::Shared::AppFooter < Views::Base
   include Phlex::Rails::Helpers::ButtonTo
-  include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::LinkTo
 
   include CacheHelper
@@ -11,12 +10,14 @@ class Views::Shared::AppFooter < Views::Base
   def view_template
     ShellContainer(tag: :footer, class: "antialiased pt-2 max-w-auto max-w-[1420px] mx-auto") do
       div(class: "flex justify-between items-center") do
-        locale_links
+        div(class: "flex items-center gap-2") do
+          theme_switcher
+          locale_links
+        end
         action_links
       end
 
       context_switcher(class: "flex justify-center mb-2")
-      theme_toggle(class: "flex justify-center mb-2")
 
       button(data: { controller: "push", action: "push#subscribe" }, class: "pt-16 mb-2 text-xs flex mx-auto") { "🔔" }
 
@@ -67,37 +68,40 @@ class Views::Shared::AppFooter < Views::Base
 
   def locale_links
     div(class: "flex items-center gap-2") do
-      locale_button("pt-BR", "https://cdn.icon-icons.com/icons2/1694/PNG/512/brbrazilflag_111698.png", "Português")
-      locale_button("en", "https://static.vecteezy.com/system/resources/previews/005/416/914/original/flag-of-united-kingdom-illustration-free-vector.jpg", "English")
+      locale_button("pt-BR", "🇧🇷", "PT-BR")
+      locale_button("en", "🇬🇧", "EN")
     end
   end
 
-  def locale_button(locale, image_src, title)
+  def locale_button(locale, flag, label)
     span do
-      button_to(update_locale_path(locale:), method: :patch, class: "flex p-2 text-sm text-white hover:bg-gray-600") do
-        image_tag image_src, size: "25x15", title:
+      button_to(update_locale_path(locale:), method: :patch,
+                                             class: "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-sm text-white hover:bg-gray-600") do
+        span(aria: { hidden: "true" }) { flag }
+        span { label }
       end
     end
   end
 
-  def theme_toggle(class:)
-    div(class:) do
-      is_dark = rails_view_context.current_user&.preference&.theme == "dark"
-
-      button(
-        id: "theme_toggle",
-        type: "button",
-        title: "Switch theme",
-        class: "rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 transition-colors hover:border-red-300 hover:text-red-600 " \
-               "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-emerald-400 dark:hover:text-emerald-300",
-        data: {
-          controller: "theme",
-          action: "click->theme#toggle",
-          theme_update_url_value: preference_path
-        }
-      ) do
-        is_dark ? "Dark" : "Light"
-      end
+  def theme_switcher
+    button(
+      id: "theme_toggle",
+      type: "button",
+      title: "Switch theme",
+      aria: { pressed: "false" },
+      class: "inline-flex min-h-10 items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm " \
+             "transition-colors hover:border-sky-400 hover:text-sky-700 " \
+             "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-sky-500 dark:hover:text-sky-300",
+      data: {
+        controller: "theme",
+        action: "click->theme#toggle",
+        theme_update_url_value: preference_path,
+        theme_light_label_value: "Light",
+        theme_dark_label_value: "Dark"
+      }
+    ) do
+      span(aria: { hidden: "true" }) { "◐" }
+      span(data: { theme_target: "label" }) { "Light" }
     end
   end
 

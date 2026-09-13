@@ -28,8 +28,9 @@
 
       <div class="flex justify-center items-center gap-2 mt-4 sm:mx-auto sm:w-full md:max-w-md">
         <span>
-          <%= locale_link("pt-BR", class: "flex text-sm text-white hover:bg-gray-600") do %>
-            <%= image_tag "https://cdn.icon-icons.com/icons2/1694/PNG/512/brbrazilflag_111698.png", size: "25x15", title: "Português" %>
+          <%= locale_link("pt-BR", class: "inline-flex items-center gap-1 text-sm text-white hover:bg-gray-600 rounded-full px-2.5 py-1.5") do %>
+            <span aria-hidden="true">🇧🇷</span>
+            <span>PT-BR</span>
           <% end %>
         </span>
 
@@ -38,8 +39,9 @@
         </a>
 
         <span>
-          <%= locale_link("en", class: "flex text-sm text-white hover:bg-gray-600") do %>
-            <%= image_tag "https://static.vecteezy.com/system/resources/previews/005/416/914/original/flag-of-united-kingdom-illustration-free-vector.jpg", size: "25x15", title: "English" %>
+          <%= locale_link("en", class: "inline-flex items-center gap-1 text-sm text-white hover:bg-gray-600 rounded-full px-2.5 py-1.5") do %>
+            <span aria-hidden="true">🇬🇧</span>
+            <span>EN</span>
           <% end %>
         </span>
       </div>
