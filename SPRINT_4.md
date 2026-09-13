@@ -1259,11 +1259,13 @@ References:
 - Issues:
   - [#63](https://github.com/RickHPotter/finance.rb/issues/63)
 
-Status: implementation and automated verification complete as of 2026-09-12.
+Status: complete as of 2026-09-13. Implementation, automated verification, and manual
+acceptance are finished.
 
-Goal: make the authenticated `/internal/:entity_slug` and public
-`/:user_slug/external/:entity_slug` ledgers secure, navigable, consistent with the main
-finance indexes, and maintainable without parallel route/view drift.
+Goal: make the authenticated `/internal/:entity_public_id` and public
+`/shared/:share_token` ledgers secure, navigable, consistent with the main finance
+indexes, and maintainable without parallel route/view drift. Retain `/lalas` only as
+the explicitly approved hardened public compatibility alias.
 
 Identity and access:
 

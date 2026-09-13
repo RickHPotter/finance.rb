@@ -1,5 +1,8 @@
 # KAKASHI-19 Implementation Slices
 
+Status: all nine slices and post-implementation manual-acceptance refinements are
+complete as of 2026-09-13.
+
 ## Delivery Rule
 
 Each slice is independently reviewable, covered, RuboCop-clean, and ends with a
@@ -213,7 +216,9 @@ message behavior.
 ### Deliverables
 
 - Move remaining domain code and views from `Lalas` to `Ledgers`.
-- Remove obsolete unscoped `/lalas` behavior and unused route/controller/view copies.
+- Remove the unsafe `User.first`-backed `/lalas` behavior and unused
+  route/controller/view copies. Retain only the explicit owner-approved public alias,
+  resolved through the hardened external ledger stack.
 - Keep only deliberate, tested compatibility shims.
 - Add request, service, feature, mobile, accessibility, query-count, and regression
   coverage.

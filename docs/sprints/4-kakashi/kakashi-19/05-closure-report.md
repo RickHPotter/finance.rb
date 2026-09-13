@@ -1,6 +1,7 @@
 # KAKASHI-19 Closure Report
 
-Status: implementation and automated verification complete as of 2026-09-12.
+Status: complete as of 2026-09-13. Implementation, automated verification, and manual
+acceptance are finished.
 
 ## Delivered Contract
 
@@ -26,8 +27,9 @@ Status: implementation and automated verification complete as of 2026-09-12.
   uses the application's full content width. On compact screens the theme control is
   leading-aligned and the sort controls divide the available width without overflow.
 - Public ledger documents carry the application favicon and expose localized
-  light/dark and PT-BR/EN controls. Theme state remains browser-local, locale uses the
-  public locale cookie, and neither control calls an authenticated preference endpoint.
+  light/dark and flagged PT-BR/EN controls. Theme state remains browser-local, locale
+  uses the public locale cookie, and neither control calls an authenticated preference
+  endpoint.
 
 ## Compatibility Inventory
 
@@ -45,6 +47,31 @@ Status: implementation and automated verification complete as of 2026-09-12.
   `ledger_external.html.erb` file remains intentionally as Rails' wrapper around the
   Phlex external layout.
 
+## Manual-Acceptance Refinements
+
+Manual testing after the original closure run found and resolved the following
+presentation and compatibility gaps:
+
+- shared links now include every qualifying cash installment allocated to the shared
+  Entity, rather than silently returning an empty ledger;
+- external transaction rows retain the owner's canonical exchange/return colours
+  without revealing private Category names;
+- the aggregate bookmark reconciles every selected month and is attached to the filter
+  section in its normal orientation;
+- external content uses the same center-container width as the authenticated
+  application, so month buttons and filters do not collapse prematurely;
+- Cash/Card mode changes discard incompatible mode-local query parameters and navigate
+  as full pages, avoiding stale selections and Turbo `Content Missing` responses;
+- compact layouts keep theme and locale controls together on the leading side, give
+  Sort and Order their available width, and keep the bookmark in the filter section;
+- the owner-approved public `/lalas` route is restored without restoring its former
+  `User.first` authorization shortcut; and
+- favicon, browser-local theme, locale persistence, and Brazil/United Kingdom flag
+  indicators work without invoking authenticated preference mutations.
+
+These refinements do not alter ledger membership semantics, exchange synchronization,
+actionable-message delivery, or any other financial mutation rule.
+
 ## Automated Evidence
 
 - Model and service coverage verifies share constraints, authorization, normalized
@@ -60,7 +87,7 @@ Status: implementation and automated verification complete as of 2026-09-12.
   actionable-message, reference-merge, or rollback state. A separate due-date
   reference-reallocation correction discovered by full CI is documented below.
 
-## Manual Verification Checklist
+## Repeatable Manual Verification Checklist
 
 Use an Entity with both cash returns and card exchanges in the active Context.
 
@@ -105,3 +132,10 @@ moving an explicitly unpaid installment could recreate its invoice as paid when 
 destination reference date was today or earlier. The separately reviewable fix carries
 the installment's paid state into the recreated projection and freezes its regression
 coverage at the exact due-date boundary. The final full CI run passed afterward.
+
+Post-closure acceptance verification on 2026-09-13:
+
+- public-ledger follow-up suite: 71 examples, 0 failures;
+- final allocation/ledger regression selection: 111 examples, 0 failures;
+- focused RuboCop checks: no offenses; and
+- manual acceptance: complete.
