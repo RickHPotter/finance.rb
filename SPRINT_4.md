@@ -1053,7 +1053,8 @@ Locked V1 direction:
   exchanges
 - bulk Remove Entity and Switch Entity accept only a completely neutral source row;
   payer, monetary, return-bearing, and exchange-bearing allocations are form/domain-only;
-  built-in-self and friend-backed identities remain unavailable to Add/Remove but may
+  friend-backed identities may be added and may be removed or switched only from a
+  neutral allocation; built-in-self remains unavailable to Add/Remove but may
   participate in a neutral Switch on an ordinary transaction or valid Budget
 - category bulk actions are idempotent and protect structural built-in families
 - cash/card installment selections are deduplicated to unique parent transactions for

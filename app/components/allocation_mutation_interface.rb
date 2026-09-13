@@ -233,6 +233,8 @@ module Components
       records =
         if allocation_type == :category
           current_user.categories.active.where(built_in: false)
+        elsif operation == :switch
+          current_user.entities.active
         else
           current_user.entities.active.where(built_in: false)
         end

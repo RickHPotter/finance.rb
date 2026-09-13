@@ -56,7 +56,7 @@ class AllocationMutations::EntityPlanner
       entity = requested_entities[entity_id]
       return { reason_code: :entity_not_owned, details: { entity_id: } } if entity.blank?
       return { reason_code: :entity_inactive, details: { entity_id: } } unless entity.active?
-      return { reason_code: :entity_protected, details: { entity_id: } } if protected_identity?(entity)
+      return { reason_code: :entity_protected, details: { entity_id: } } if protected_identity?(entity) && !protected_identity_switch?
     end
 
     nil
@@ -75,6 +75,10 @@ class AllocationMutations::EntityPlanner
 
   def protected_identity?(entity)
     entity.built_in?
+  end
+
+  def protected_identity_switch?
+    action.switch?
   end
 
   def validate_subscription_structure

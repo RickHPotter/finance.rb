@@ -36,7 +36,7 @@ and exchanges must also be zero/absent.
 ### D7. Which entity row may bulk Switch change?
 
 Decision: only a neutral source row. Bulk switch never transfers monetary allocation,
-payer responsibility, returns, exchanges, or friend identity.
+payer responsibility, returns, or exchanges.
 
 ### D8. How is a payer entity replaced?
 
@@ -57,10 +57,11 @@ be corrected when the final structure remains valid.
 
 ### D11. Are built-in self or friend-backed entities generic bulk choices?
 
-Decision: not for generic Add or Remove. A bulk Switch may replace a completely neutral
-source with a built-in self or friend-backed entity, or replace one of those identities,
-only on an ordinary transaction or Budget that passes every existing structural and
-final-state check. Payer, monetary, return-bearing, exchange-bearing, generated, and
+Decision: built-in self remains unavailable for generic Add or Remove, but may
+participate in a completely neutral Switch. Friend-backed entities may be added and may
+be removed or switched when the source allocation is completely neutral. Every action
+must target an ordinary transaction or Budget that passes the existing structural and
+final-state checks. Payer, monetary, return-bearing, exchange-bearing, generated, and
 other domain-owned cases continue through the form/domain workflow.
 
 ### D12. What is the default apply behavior with conflicts?
@@ -176,7 +177,7 @@ Exchange rollback instead of restoring a potentially stale audited value.
 | non-zero `price` | destination-present no-op only | conflict | conflict |
 | non-zero `price_to_be_returned` | destination-present no-op only | conflict | conflict |
 | has Exchanges | destination-present no-op only | conflict | conflict |
-| friend-backed identity | protected | conflict | eligible only for a neutral, structurally ordinary switch |
+| friend-backed identity | eligible as a neutral destination | eligible only when neutral | eligible only for a neutral, structurally ordinary switch |
 | built-in self identity | protected | conflict | eligible only for a neutral, structurally ordinary switch |
 
 ## Structural Family Matrix
@@ -248,8 +249,8 @@ Exchange rollback instead of restoring a potentially stale audited value.
 | switch neutral source | eligible |
 | switch neutral source to existing destination | source removed, destination unchanged |
 | switch payer/non-zero/exchange source | conflict |
-| built-in self source/destination | protected |
-| friend-backed source/destination | protected |
+| built-in self source/destination | protected for Add/Remove; eligible for a neutral, structurally ordinary Switch |
+| friend-backed source/destination | eligible for Add; eligible for neutral Remove/Switch |
 | Piggy Bank entity mutation | conflict unless rich domain workflow |
 | foreign-user entity | rejected |
 
