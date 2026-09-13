@@ -287,15 +287,22 @@ built-in category into an automatic conflict.
 - when destination already exists, remove the neutral source and retain the existing
   destination without changing its values
 - never transfer payer responsibility, values, return percentages with monetary
-  meaning, exchanges, or friend identity through the generic bulk path
+  meaning, or exchanges through the generic bulk path
 - same source/destination is a no-op
 
 ### Built-in and friend-backed entities
 
-The built-in self entity and user-backed friend entities are structural identity
-boundaries for generic bulk mutation. They are not generic bulk destinations or
-sources. Their changes use the normal form/domain path, which validates local and
-counterpart behavior explicitly.
+The built-in self entity remains a structural identity boundary for generic bulk Add
+and Remove. A bulk Switch may include it when replacing a completely neutral source on
+an ordinary transaction, or when updating a Budget that passes its final-state checks.
+
+Friend-backed entities are valid generic Add destinations. They may also be removed or
+participate in a Switch when the source allocation is completely neutral. These
+operations create or remove only neutral descriptive rows and must still pass the
+structural-family planner. Payer, monetary, return-bearing, exchange-bearing,
+generated, and other domain-owned changes use the normal form/domain path, which
+validates local and counterpart behavior explicitly. Generic allocation mutations do
+not create actionable messages or change counterpart records.
 
 ## Structural-Family Rules
 
@@ -311,7 +318,8 @@ records. Their source workflow owns their allocation.
 
 - built-in category membership is protected
 - payer or exchange-bearing entities are form-only
-- friend-backed identities are form/domain-only
+- friend-backed identities remain eligible only for neutral descriptive mutations;
+  structural source/counterpart changes stay in the form/domain workflow
 - a neutral unrelated entity/category correction is eligible only when it does not
   change counterpart selection or projection rules
 - linked source/counterpart/projection records form one structural group for planning

@@ -115,6 +115,11 @@ export default class extends Controller {
     })
     buttonsToClick.forEach(e => this.toggleMonth(e))
 
+    if (buttonsToClick.length > 0) {
+      this._syncFormState()
+      document.getElementById(this.element.dataset.formId)?.requestSubmit()
+    }
+
     this.isMouseDown = false
   }
 
@@ -135,19 +140,12 @@ export default class extends Controller {
     this.activeMonths.add(month)
     target.classList.remove(...inactive_bg)
     target.classList.add(...active_bg)
-    this._syncFormState()
-
-    const formId = this.element.dataset.formId
-    const form = document.getElementById(formId)
-    form?.requestSubmit()
   }
 
   _removeMonthYearContainer(target, month) {
     this.activeMonths.delete(month)
     target.classList.remove(...active_bg)
     target.classList.add(...inactive_bg)
-
-    this._syncFormState()
 
     const frame = document.querySelector(`turbo-frame#month_year_container_${month}`)
     if (frame) {

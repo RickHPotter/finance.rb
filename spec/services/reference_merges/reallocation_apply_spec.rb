@@ -3,6 +3,10 @@
 require "rails_helper"
 
 RSpec.describe ReferenceMerges::ReallocationApply do
+  include ActiveSupport::Testing::TimeHelpers
+
+  around { |example| travel_to(Time.zone.local(2026, 9, 12, 12)) { example.run } }
+
   let(:user) { create(:user, :random) }
   let(:context) { user.main_context }
   let(:user_card) { create(:user_card, :random, user:, due_date_day: 12, days_until_due_date: 5) }

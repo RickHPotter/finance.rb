@@ -85,6 +85,30 @@ $$;
 
 
 --
+-- Name: enforce_ledger_share_owner(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_ledger_share_owner() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM entities
+    INNER JOIN contexts ON contexts.id = NEW.context_id
+    WHERE entities.id = NEW.entity_id
+      AND entities.user_id = contexts.user_id
+  ) THEN
+    RAISE EXCEPTION 'ledger share entity and context must have the same owner'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: prevent_financial_audit_mutation(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -767,7 +791,8 @@ CREATE TABLE public.entities (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     built_in boolean DEFAULT false NOT NULL,
-    friendship_id bigint
+    friendship_id bigint,
+    public_id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -1113,6 +1138,46 @@ CREATE SEQUENCE public.investments_id_seq
 --
 
 ALTER SEQUENCE public.investments_id_seq OWNED BY public.investments.id;
+
+
+--
+-- Name: ledger_shares; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ledger_shares (
+    id bigint NOT NULL,
+    entity_id bigint NOT NULL,
+    context_id bigint NOT NULL,
+    public_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    token_digest character varying NOT NULL,
+    expires_at timestamp(6) without time zone,
+    revoked_at timestamp(6) without time zone,
+    last_accessed_at timestamp(6) without time zone,
+    access_count bigint DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT ledger_shares_access_count_nonnegative CHECK ((access_count >= 0)),
+    CONSTRAINT ledger_shares_token_digest_format CHECK (((token_digest)::text ~ '^[0-9a-f]{64}$'::text))
+);
+
+
+--
+-- Name: ledger_shares_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.ledger_shares_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: ledger_shares_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.ledger_shares_id_seq OWNED BY public.ledger_shares.id;
 
 
 --
@@ -1697,6 +1762,13 @@ ALTER TABLE ONLY public.investments ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: ledger_shares id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ledger_shares ALTER COLUMN id SET DEFAULT nextval('public.ledger_shares_id_seq'::regclass);
+
+
+--
 -- Name: message_actions id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1983,6 +2055,14 @@ ALTER TABLE ONLY public.investments
 
 
 --
+-- Name: ledger_shares ledger_shares_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ledger_shares
+    ADD CONSTRAINT ledger_shares_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: message_actions message_actions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2152,6 +2232,13 @@ CREATE UNIQUE INDEX idx_references_context_user_card_month_year ON public."refer
 --
 
 CREATE UNIQUE INDEX idx_references_context_user_card_reference_date ON public."references" USING btree (context_id, user_card_id, reference_date);
+
+
+--
+-- Name: index_active_ledger_shares_on_scope; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_active_ledger_shares_on_scope ON public.ledger_shares USING btree (entity_id, context_id) WHERE (revoked_at IS NULL);
 
 
 --
@@ -2596,6 +2683,13 @@ CREATE INDEX index_entities_on_friendship_id ON public.entities USING btree (fri
 
 
 --
+-- Name: index_entities_on_public_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_entities_on_public_id ON public.entities USING btree (public_id);
+
+
+--
 -- Name: index_entities_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2789,6 +2883,34 @@ CREATE INDEX index_investments_on_user_bank_account_id ON public.investments USI
 --
 
 CREATE INDEX index_investments_on_user_id ON public.investments USING btree (user_id);
+
+
+--
+-- Name: index_ledger_shares_on_context_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ledger_shares_on_context_id ON public.ledger_shares USING btree (context_id);
+
+
+--
+-- Name: index_ledger_shares_on_entity_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ledger_shares_on_entity_id ON public.ledger_shares USING btree (entity_id);
+
+
+--
+-- Name: index_ledger_shares_on_public_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ledger_shares_on_public_id ON public.ledger_shares USING btree (public_id);
+
+
+--
+-- Name: index_ledger_shares_on_token_digest; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ledger_shares_on_token_digest ON public.ledger_shares USING btree (token_digest);
 
 
 --
@@ -3076,6 +3198,13 @@ CREATE CONSTRAINT TRIGGER conversation_participants_canonical_pair AFTER INSERT 
 --
 
 CREATE CONSTRAINT TRIGGER conversations_canonical_participants AFTER INSERT OR UPDATE ON public.conversations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.enforce_canonical_conversation_participants();
+
+
+--
+-- Name: ledger_shares ledger_shares_owner_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER ledger_shares_owner_guard BEFORE INSERT OR UPDATE OF entity_id, context_id ON public.ledger_shares FOR EACH ROW EXECUTE FUNCTION public.enforce_ledger_share_owner();
 
 
 --
@@ -3414,6 +3543,14 @@ ALTER TABLE ONLY public.card_transactions
 
 
 --
+-- Name: ledger_shares fk_rails_a01c718ef0; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ledger_shares
+    ADD CONSTRAINT fk_rails_a01c718ef0 FOREIGN KEY (entity_id) REFERENCES public.entities(id);
+
+
+--
 -- Name: user_preferences fk_rails_a69bfcfd81; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3491,6 +3628,14 @@ ALTER TABLE ONLY public.message_actions
 
 ALTER TABLE ONLY public.investments
     ADD CONSTRAINT fk_rails_ce357552d4 FOREIGN KEY (piggy_bank_return_cash_transaction_id) REFERENCES public.cash_transactions(id);
+
+
+--
+-- Name: ledger_shares fk_rails_cef2505fa9; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ledger_shares
+    ADD CONSTRAINT fk_rails_cef2505fa9 FOREIGN KEY (context_id) REFERENCES public.contexts(id);
 
 
 --
@@ -3644,6 +3789,8 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260911100000'),
+('20260911090000'),
 ('20260909090000'),
 ('20260820220000'),
 ('20260820210000'),

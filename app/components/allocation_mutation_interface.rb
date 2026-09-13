@@ -195,13 +195,13 @@ module Components
           class: "mt-4 grid gap-3 sm:grid-cols-2 #{'hidden' unless action_key == 'category_add'}",
           data: { allocation_mutation_target: "panel", allocation_action_key: action_key }
         ) do
-          allocation_combobox(allocation_type, action_key, :source) unless operation == :add
-          allocation_combobox(allocation_type, action_key, :destination) unless operation == :remove
+          allocation_combobox(allocation_type, operation, action_key, :source) unless operation == :add
+          allocation_combobox(allocation_type, operation, action_key, :destination) unless operation == :remove
         end
       end
     end
 
-    def allocation_combobox(allocation_type, action_key, role)
+    def allocation_combobox(allocation_type, operation, action_key, role)
       label_id = "allocation_#{action_key}_#{role}_label"
 
       div(class: "text-start", role: "group", aria: { labelledby: label_id }) do
@@ -211,7 +211,7 @@ module Components
         div(class: "mt-1") do
           render Views::Shared::SingleSelectCombobox.new(
             name: "allocation_choice[#{action_key}][#{role}]",
-            options: allocation_options(allocation_type),
+            options: allocation_options(allocation_type, operation:),
             selected_value: nil,
             placeholder: I18n.t("allocation_mutations.interface.choose_#{allocation_type}"),
             term: I18n.t("allocation_mutations.interface.#{allocation_type}_term"),
@@ -225,18 +225,21 @@ module Components
       end
     end
 
-    def allocation_options(allocation_type)
+    def allocation_options(allocation_type, operation:)
       @allocation_options ||= {}
-      return @allocation_options.fetch(allocation_type) if @allocation_options.key?(allocation_type)
+      cache_key = [ allocation_type, operation ]
+      return @allocation_options.fetch(cache_key) if @allocation_options.key?(cache_key)
 
       records =
         if allocation_type == :category
           current_user.categories.active.where(built_in: false)
+        elsif operation == :switch
+          current_user.entities.active
         else
-          current_user.entities.active.where(built_in: false, friendship_id: nil)
+          current_user.entities.active.where(built_in: false)
         end
 
-      @allocation_options[allocation_type] = records.order(allocation_type == :category ? :category_name : :entity_name).map do |record|
+      @allocation_options[cache_key] = records.order(allocation_type == :category ? :category_name : :entity_name).map do |record|
         [ record.name, record.id, {} ]
       end
     end

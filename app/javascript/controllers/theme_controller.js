@@ -1,7 +1,16 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static values = { updateUrl: String }
+  static targets = ["label"]
+  static values = {
+    updateUrl: String,
+    lightLabel: String,
+    darkLabel: String
+  }
+
+  connect() {
+    this.render()
+  }
 
   toggle() {
     const isDark = document.documentElement.classList.contains("dark")
@@ -9,7 +18,7 @@ export default class extends Controller {
 
     // Optimistic UI update
     document.documentElement.classList.toggle("dark", !isDark)
-    this.element.textContent = isDark ? "Dark" : "Light"
+    this.render()
 
     // Save to local storage for instant reload before server responds
     try {
@@ -29,5 +38,26 @@ export default class extends Controller {
         body: JSON.stringify({ user_preference: { theme: nextTheme } })
       })
     }
+  }
+
+  render() {
+    const dark = document.documentElement.classList.contains("dark")
+    const label = dark ? this.darkLabel : this.lightLabel
+
+    if (this.hasLabelTarget) {
+      this.labelTarget.textContent = label
+    } else {
+      this.element.textContent = label
+    }
+
+    this.element.setAttribute("aria-pressed", dark.toString())
+  }
+
+  get lightLabel() {
+    return this.hasLightLabelValue ? this.lightLabelValue : "Light"
+  }
+
+  get darkLabel() {
+    return this.hasDarkLabelValue ? this.darkLabelValue : "Dark"
   }
 }

@@ -1052,8 +1052,10 @@ Locked V1 direction:
 - bulk Add Entity creates a neutral non-payer row with zero price, zero return, and no
   exchanges
 - bulk Remove Entity and Switch Entity accept only a completely neutral source row;
-  payer, monetary, return-bearing, exchange-bearing, built-in-self, and friend-backed
-  allocations are form/domain-only
+  payer, monetary, return-bearing, and exchange-bearing allocations are form/domain-only;
+  friend-backed identities may be added and may be removed or switched only from a
+  neutral allocation; built-in-self remains unavailable to Add/Remove but may
+  participate in a neutral Switch on an ordinary transaction or valid Budget
 - category bulk actions are idempotent and protect structural built-in families
 - cash/card installment selections are deduplicated to unique parent transactions for
   allocation planning, and preview displays both counts
@@ -1257,9 +1259,13 @@ References:
 - Issues:
   - [#63](https://github.com/RickHPotter/finance.rb/issues/63)
 
-Goal: make the authenticated `/internal/:entity_slug` and public
-`/:user_slug/external/:entity_slug` ledgers secure, navigable, consistent with the main
-finance indexes, and maintainable without parallel route/view drift.
+Status: complete as of 2026-09-13. Implementation, automated verification, and manual
+acceptance are finished.
+
+Goal: make the authenticated `/internal/:entity_public_id` and public
+`/shared/:share_token` ledgers secure, navigable, consistent with the main finance
+indexes, and maintainable without parallel route/view drift. Retain `/lalas` only as
+the explicitly approved hardened public compatibility alias.
 
 Identity and access:
 
@@ -1287,12 +1293,17 @@ Shared ledger experience:
   entity/user scope
 - keep external pages free of mutation controls, private navigation, and unrelated
   application chrome
+- retain the application favicon plus browser-local light/dark and PT-BR/EN controls
+  on public ledger pages without exposing authenticated preference mutation
 - make internal navigation integrate with KAKASHI-15 URL/history rules
 
 Architecture:
 
 - replace the ambiguous `lalas` module naming with a ledger-oriented namespace when the
   route/controller migration can be performed safely
+- retain `/lalas` as one explicit owner-approved public compatibility alias backed by
+  the hardened external ledger stack; it must resolve one stable/unambiguous active
+  Entity or fail closed
 - extract shared ledger query/presentation contracts instead of continuing separate
   cash/card/internal/external copies
 - keep context and entity scoping in query objects/controllers, never only in rendered
@@ -1305,6 +1316,14 @@ Coverage:
 - cover authentication, token/share authorization, revocation, slug/token enumeration,
   field redaction, context/entity isolation, route preservation, filters, month loading,
   mobile layout, browser history, and absence of external mutation actions
+
+References:
+
+- [ledger product and security contract](docs/sprints/4-kakashi/kakashi-19/01-ledger-product-and-security-contract.md)
+- [current behavior and gap inventory](docs/sprints/4-kakashi/kakashi-19/02-current-behavior-and-gap-inventory.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-19/03-decisions-and-test-matrix.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-19/04-implementation-slices.md)
+- [closure report and manual verification](docs/sprints/4-kakashi/kakashi-19/05-closure-report.md)
 
 ### KAKASHI-20: Audit spec quality and application performance
 

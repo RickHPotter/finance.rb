@@ -10,20 +10,25 @@ class Entity < ApplicationRecord
   audits_financial_changes skip: %i[card_transactions_count card_transactions_total cash_transactions_count cash_transactions_total], on: %i[destroy]
 
   # @security (i.e. attr_accessible) ..........................................
+  attr_readonly :public_id
+
   # @relationships ............................................................
   belongs_to :user
   belongs_to :friendship, optional: true
 
   has_many :entity_transactions, dependent: :destroy
+  has_many :ledger_shares, dependent: :destroy
   has_many :card_transactions, through: :entity_transactions, source: :transactable, source_type: "CardTransaction"
   has_many :cash_transactions, through: :entity_transactions, source: :transactable, source_type: "CashTransaction"
 
   # @validations ..............................................................
-  validates :entity_name, presence: true, uniqueness: { scope: :user_id }
+  validates :entity_name, presence: true
+  validates :entity_name, uniqueness: { scope: :user_id }
   validates :built_in, inclusion: { in: [ true, false ] }
   validate :prevent_deactivation_when_built_in
 
   # @callbacks ................................................................
+  before_validation :assign_public_id, on: :create
   before_validation :assign_friendship_if_needed
   before_validation :set_built_in
   before_destroy :prevent_destroy_when_built_in
@@ -91,6 +96,10 @@ class Entity < ApplicationRecord
   # @protected_instance_methods ...............................................
   protected
 
+  def assign_public_id
+    self.public_id ||= SecureRandom.uuid
+  end
+
   def assign_friendship_if_needed
     return unless @entity_user_to_assign.present?
 
@@ -143,11 +152,13 @@ end
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
 #  friendship_id           :bigint           indexed
+#  public_id               :uuid             not null, uniquely indexed
 #  user_id                 :bigint           not null, indexed, uniquely indexed => [entity_name]
 #
 # Indexes
 #
 #  index_entities_on_friendship_id     (friendship_id)
+#  index_entities_on_public_id         (public_id) UNIQUE
 #  index_entities_on_user_id           (user_id)
 #  index_entity_name_on_composite_key  (user_id,entity_name) UNIQUE
 #

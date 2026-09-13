@@ -160,6 +160,43 @@ RSpec.describe "Allocation mutations" do
     expect(transaction.reload.categories).to contain_exactly(destination)
   end
 
+  it "applies a neutral self-to-friend entity switch without invoking counterpart behavior" do
+    built_in = user.built_in_entity
+    friend = create(:entity, user:, entity_name: "FRIEND", entity_user: create(:user, :random))
+    transaction.entity_transactions.create!(entity: built_in, is_payer: false, price: 0, price_to_be_returned: 0)
+
+    post preview_allocation_mutations_path, params: {
+      allocation_mutation: {
+        owner_type: "CashTransaction",
+        owner_ids: [ transaction.id ],
+        selected_row_count: 1,
+        return_to: cash_transactions_path,
+        action: {
+          allocation_type: "entity",
+          operation: "switch",
+          source_id: built_in.id,
+          destination_id: friend.id
+        }
+      }
+    }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body).to include("affected_count" => 1, "strict_apply_available" => true)
+
+    expect do
+      post apply_allocation_mutations_path, params: {
+        apply_token: response.parsed_body.fetch("apply_token"),
+        mode: "strict",
+        allocation_confirmation: "1",
+        return_to: cash_transactions_path
+      }
+    end.not_to change(Message, :count)
+
+    expect(response).to redirect_to(cash_transactions_path)
+    expect(transaction.reload.entities).to contain_exactly(friend)
+    expect(transaction.entity_transactions.sole).to have_attributes(is_payer: false, price: 0, price_to_be_returned: 0, exchanges_count: 0)
+  end
+
   it "keeps Turbo apply on the workflow and returns detailed failure status" do
     post preview_allocation_mutations_path, params: preview_params, as: :json
     token = response.parsed_body.fetch("apply_token")

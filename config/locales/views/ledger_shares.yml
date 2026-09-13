@@ -1,0 +1,79 @@
+en:
+  ledger_shares:
+    title: Shared ledger access
+    description: "Share a read-only cash and card ledger for this Entity in %{context}."
+    security_note: Existing links cannot be displayed again. Rotate a link if it was lost or exposed.
+    expires_at: Optional expiry
+    expiry_hint: Leave blank for no automatic expiry.
+    never: Never
+    not_yet: Not yet
+    empty: No shared links have been created for this Context.
+    one_time:
+      title: Copy this new link now
+      description: For security, the complete link is shown only in this response.
+      copied: Link copied.
+    fields:
+      created_at: Created
+      expires_at: Expires
+      last_accessed_at: Last accessed
+      access_count: Accesses
+    states:
+      active: Active
+      expired: Expired
+      revoked: Revoked
+    actions:
+      create: Create shared link
+      copy: Copy link
+      rotate: Replace link
+      revoke: Revoke
+    confirmations:
+      rotate: Replace this link? The current link will stop working immediately.
+      revoke: Revoke this link? It will stop working immediately.
+    notices:
+      created: Shared ledger link created. Copy it now.
+      rotated: Shared ledger link replaced. Copy the new link now.
+      revoked: Shared ledger link revoked.
+    errors:
+      invalid_expiry: Enter a valid expiry date and time.
+      future_expiry: Expiry must be in the future.
+      unavailable: Only an active shared link can be replaced.
+
+pt-BR:
+  ledger_shares:
+    title: Acesso compartilhado ao livro-razão
+    description: "Compartilhe um livro-razão somente para leitura de dinheiro e cartão desta Entidade em %{context}."
+    security_note: Links existentes não podem ser exibidos novamente. Substitua um link perdido ou exposto.
+    expires_at: Expiração opcional
+    expiry_hint: Deixe em branco para não expirar automaticamente.
+    never: Nunca
+    not_yet: Ainda não
+    empty: Nenhum link compartilhado foi criado para este Contexto.
+    one_time:
+      title: Copie este novo link agora
+      description: Por segurança, o link completo aparece somente nesta resposta.
+      copied: Link copiado.
+    fields:
+      created_at: Criado em
+      expires_at: Expira em
+      last_accessed_at: Último acesso
+      access_count: Acessos
+    states:
+      active: Ativo
+      expired: Expirado
+      revoked: Revogado
+    actions:
+      create: Criar link compartilhado
+      copy: Copiar link
+      rotate: Substituir link
+      revoke: Revogar
+    confirmations:
+      rotate: Substituir este link? O link atual deixará de funcionar imediatamente.
+      revoke: Revogar este link? Ele deixará de funcionar imediatamente.
+    notices:
+      created: Link do livro-razão criado. Copie-o agora.
+      rotated: Link do livro-razão substituído. Copie o novo link agora.
+      revoked: Link do livro-razão revogado.
+    errors:
+      invalid_expiry: Informe uma data e hora de expiração válidas.
+      future_expiry: A expiração deve estar no futuro.
+      unavailable: Somente um link compartilhado ativo pode ser substituído.

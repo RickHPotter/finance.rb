@@ -180,7 +180,7 @@ module CashTransactable
       reference_date = Time.zone.today.beginning_of_month
     elsif is_a?(CardInstallment)
       reference_date = card_payment_date
-      paid = reference_date.present? && Time.zone.today >= reference_date
+      paid = card_payment_projection_paid(reference_date)
     else
       paid = (respond_to?(:paid) && paid) || (date.present? && Time.zone.today >= date)
       reference_date = card_payment_date
@@ -200,6 +200,12 @@ module CashTransactable
     return card_payment_date.beginning_of_day if is_a?(Investment)
 
     card_payment_date.end_of_day
+  end
+
+  def card_payment_projection_paid(reference_date)
+    return card_payment_paid_override unless card_payment_paid_override.nil?
+
+    reference_date.present? && Time.zone.today >= reference_date
   end
 
   def full_price

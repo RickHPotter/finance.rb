@@ -59,6 +59,11 @@ Rails.application.routes.draw do
   end
   resources :entities do
     resource :trend, only: :show, controller: "reports/entity_trends", defaults: { format: :json }
+    resources :ledger_shares, only: %i[create destroy] do
+      member do
+        patch :rotate
+      end
+    end
 
     member do
       post :merge_preview, to: "entity_merge_previews#create"
@@ -202,8 +207,8 @@ Rails.application.routes.draw do
     end
   end
 
-  namespace :lalas do
-    root "cash_transactions#index"
+  scope "/lalas", as: :lalas, module: "ledgers/public_alias" do
+    root "cash_transactions#index", defaults: { ledger_entry: true }
 
     resources :card_transactions, only: %i[index] do
       collection do
@@ -220,8 +225,8 @@ Rails.application.routes.draw do
     end
   end
 
-  scope "/internal/:entity_slug", as: :internal, module: :lalas do
-    root "cash_transactions#index"
+  scope "/internal/:entity_public_id", as: :internal, module: "ledgers/internal" do
+    root "cash_transactions#index", defaults: { ledger_entry: true }
 
     resources :card_transactions, only: %i[index] do
       collection do
@@ -238,8 +243,20 @@ Rails.application.routes.draw do
     end
   end
 
-  scope "/:user_slug/external/:entity_slug", as: :external, module: :lalas do
-    root "cash_transactions#index"
+  scope "/:user_slug/external/:entity_slug", controller: "ledgers/external_compatibility" do
+    get "/", action: :show, as: :legacy_external_root, defaults: { ledger_kind: :cash, ledger_endpoint: :index }
+    get "cash_transactions", action: :show, as: :legacy_external_cash_transactions, defaults: { ledger_kind: :cash, ledger_endpoint: :index }
+    get "cash_transactions/search", action: :show, as: :legacy_search_external_cash_transactions, defaults: { ledger_kind: :cash, ledger_endpoint: :index }
+    get "cash_transactions/month_year", action: :show, as: :legacy_month_year_external_cash_transactions,
+                                               defaults: { ledger_kind: :cash, ledger_endpoint: :month_year }
+    get "card_transactions", action: :show, as: :legacy_external_card_transactions, defaults: { ledger_kind: :card, ledger_endpoint: :index }
+    get "card_transactions/search", action: :show, as: :legacy_search_external_card_transactions, defaults: { ledger_kind: :card, ledger_endpoint: :index }
+    get "card_transactions/month_year", action: :show, as: :legacy_month_year_external_card_transactions,
+                                               defaults: { ledger_kind: :card, ledger_endpoint: :month_year }
+  end
+
+  scope "/shared/:share_token", as: :external, module: "ledgers/external" do
+    root "cash_transactions#index", defaults: { ledger_entry: true }
 
     resources :card_transactions, only: %i[index] do
       collection do
