@@ -80,7 +80,7 @@ RSpec.describe AllocationMutations::EntityPlanner do
     expect(result.outcome.details[:reasons]).to contain_exactly(:payer, :price, :return, :exchanges)
   end
 
-  it "rejects foreign, inactive, built-in, and friend-backed identities" do
+  it "rejects foreign and inactive identities and protects special identities from generic add" do
     foreign = create(:entity, user: create(:user, :random), entity_name: "FOREIGN")
     inactive = create(:entity, user:, entity_name: "INACTIVE")
     inactive.update!(active: false)
@@ -91,6 +91,44 @@ RSpec.describe AllocationMutations::EntityPlanner do
     expect(plan(transaction, :add, destination_id: inactive.id).outcome.reason_code).to eq(:entity_inactive)
     expect(plan(transaction, :add, destination_id: built_in.id).outcome.reason_code).to eq(:entity_protected)
     expect(plan(transaction, :add, destination_id: friend.id).outcome.reason_code).to eq(:entity_protected)
+
+    add_neutral(transaction, built_in)
+    expect(plan(transaction.reload, :remove, source_id: built_in.id).outcome.reason_code).to eq(:entity_protected)
+  end
+
+  it "allows a neutral switch from self to a friend on an ordinary paid transaction" do
+    built_in = user.built_in_entity
+    friend = create(:entity, user:, entity_name: "FRIEND", entity_user: create(:user, :random))
+    add_neutral(transaction, built_in)
+    transaction.cash_installments.first.update_column(:paid, true)
+
+    result = plan(transaction.reload, :switch, source_id: built_in.id, destination_id: friend.id)
+
+    expect(result).to be_eligible
+    expect(result.entity_ids_after).to contain_exactly(friend.id)
+  end
+
+  it "keeps a special-identity switch blocked when its source has monetary meaning" do
+    built_in = user.built_in_entity
+    friend = create(:entity, user:, entity_name: "FRIEND", entity_user: create(:user, :random))
+    transaction.entity_transactions.create!(entity: built_in, is_payer: false, price: 100, price_to_be_returned: 0)
+
+    result = plan(transaction.reload, :switch, source_id: built_in.id, destination_id: friend.id)
+
+    expect(result.outcome).to have_attributes(status: :conflict, reason_code: :entity_allocation_not_neutral)
+    expect(result.outcome.details[:reasons]).to contain_exactly(:price)
+  end
+
+  it "keeps a neutral special-identity switch blocked for a structural transaction" do
+    built_in = user.built_in_entity
+    friend = create(:entity, user:, entity_name: "FRIEND", entity_user: create(:user, :random))
+    transaction.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+    add_neutral(transaction, built_in)
+
+    result = plan(transaction.reload, :switch, source_id: built_in.id, destination_id: friend.id)
+
+    expect(result.outcome).to have_attributes(status: :conflict, reason_code: :structural_entity_allocation)
+    expect(result.outcome.details[:family]).to eq(:exchange)
   end
 
   it "allows a neutral correction on an ordinary paid transaction" do

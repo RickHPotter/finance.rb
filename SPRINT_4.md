@@ -1052,8 +1052,9 @@ Locked V1 direction:
 - bulk Add Entity creates a neutral non-payer row with zero price, zero return, and no
   exchanges
 - bulk Remove Entity and Switch Entity accept only a completely neutral source row;
-  payer, monetary, return-bearing, exchange-bearing, built-in-self, and friend-backed
-  allocations are form/domain-only
+  payer, monetary, return-bearing, and exchange-bearing allocations are form/domain-only;
+  built-in-self and friend-backed identities remain unavailable to Add/Remove but may
+  participate in a neutral Switch on an ordinary transaction or valid Budget
 - category bulk actions are idempotent and protect structural built-in families
 - cash/card installment selections are deduplicated to unique parent transactions for
   allocation planning, and preview displays both counts

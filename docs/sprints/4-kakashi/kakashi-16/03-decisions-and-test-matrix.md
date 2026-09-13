@@ -57,7 +57,11 @@ be corrected when the final structure remains valid.
 
 ### D11. Are built-in self or friend-backed entities generic bulk choices?
 
-Decision: no. They are identity/structure boundaries and use the form/domain workflow.
+Decision: not for generic Add or Remove. A bulk Switch may replace a completely neutral
+source with a built-in self or friend-backed entity, or replace one of those identities,
+only on an ordinary transaction or Budget that passes every existing structural and
+final-state check. Payer, monetary, return-bearing, exchange-bearing, generated, and
+other domain-owned cases continue through the form/domain workflow.
 
 ### D12. What is the default apply behavior with conflicts?
 
@@ -172,8 +176,8 @@ Exchange rollback instead of restoring a potentially stale audited value.
 | non-zero `price` | destination-present no-op only | conflict | conflict |
 | non-zero `price_to_be_returned` | destination-present no-op only | conflict | conflict |
 | has Exchanges | destination-present no-op only | conflict | conflict |
-| friend-backed identity | protected | conflict | conflict |
-| built-in self identity | protected | conflict | conflict |
+| friend-backed identity | protected | conflict | eligible only for a neutral, structurally ordinary switch |
+| built-in self identity | protected | conflict | eligible only for a neutral, structurally ordinary switch |
 
 ## Structural Family Matrix
 

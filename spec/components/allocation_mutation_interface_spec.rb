@@ -27,15 +27,26 @@ RSpec.describe Components::AllocationMutationInterface, type: :component do
     expect(action_buttons).to all(satisfy { |button| button["type"] == "button" && button.key?("aria-pressed") })
   end
 
-  it "omits protected allocation choices and exposes exact submission targets" do
+  it "offers special identities only for the narrow entity switch and exposes exact submission targets" do
     category = create(:category, user:, category_name: "CUSTOM CATEGORY")
     entity = create(:entity, user:, entity_name: "CUSTOM ENTITY")
     friend = create(:entity, user:, entity_name: "FRIEND", entity_user: create(:user, :random))
+    built_in = user.built_in_entity
     document = render_component
-    values = document.css("input[type='radio']").map { |input| input["value"] }
+    all_values = document.css("input[type='radio']").map { |input| input["value"] }
+    add_values = document.css("input[name='allocation_choice[entity_add][destination]']").map { |input| input["value"] }
+    remove_values = document.css("input[name='allocation_choice[entity_remove][source]']").map { |input| input["value"] }
+    switch_source_values = document.css("input[name='allocation_choice[entity_switch][source]']").map { |input| input["value"] }
+    switch_destination_values = document.css("input[name='allocation_choice[entity_switch][destination]']").map { |input| input["value"] }
 
-    expect(values).to include(category.id.to_s, entity.id.to_s)
-    expect(values).not_to include(user.built_in_category("INVESTMENT").id.to_s, user.built_in_entity.id.to_s, friend.id.to_s)
+    expect(all_values).to include(category.id.to_s, entity.id.to_s)
+    expect(all_values).not_to include(user.built_in_category("INVESTMENT").id.to_s)
+    expect(add_values).to include(entity.id.to_s)
+    expect(add_values).not_to include(built_in.id.to_s, friend.id.to_s)
+    expect(remove_values).to include(entity.id.to_s)
+    expect(remove_values).not_to include(built_in.id.to_s, friend.id.to_s)
+    expect(switch_source_values).to include(entity.id.to_s, built_in.id.to_s, friend.id.to_s)
+    expect(switch_destination_values).to include(entity.id.to_s, built_in.id.to_s, friend.id.to_s)
     expect(document.at_css("input[data-allocation-mutation-target='ownerIds']")["name"]).to eq("allocation_mutation[owner_ids][]")
     expect(document.at_css("input[data-allocation-mutation-target='rowCount']")["name"]).to eq("allocation_mutation[selected_row_count]")
     expect(document.at_css("input[data-allocation-mutation-target='ownerIds']")["data-bulk-selection-kind"]).to eq("installment")

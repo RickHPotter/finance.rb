@@ -293,9 +293,13 @@ built-in category into an automatic conflict.
 ### Built-in and friend-backed entities
 
 The built-in self entity and user-backed friend entities are structural identity
-boundaries for generic bulk mutation. They are not generic bulk destinations or
-sources. Their changes use the normal form/domain path, which validates local and
-counterpart behavior explicitly.
+boundaries for generic bulk Add and Remove. A bulk Switch may include either identity
+when it replaces a completely neutral source on an ordinary transaction, or when it
+updates a Budget that passes its final-state checks. This narrow correction creates
+only a neutral destination row and must still pass the structural-family planner.
+Payer, monetary, return-bearing, exchange-bearing, generated, and other domain-owned
+changes use the normal form/domain path, which validates local and counterpart behavior
+explicitly.
 
 ## Structural-Family Rules
 
@@ -311,7 +315,8 @@ records. Their source workflow owns their allocation.
 
 - built-in category membership is protected
 - payer or exchange-bearing entities are form-only
-- friend-backed identities are form/domain-only
+- friend-backed identities are form/domain-only except for the narrow neutral bulk
+  Switch described above
 - a neutral unrelated entity/category correction is eligible only when it does not
   change counterpart selection or projection rules
 - linked source/counterpart/projection records form one structural group for planning

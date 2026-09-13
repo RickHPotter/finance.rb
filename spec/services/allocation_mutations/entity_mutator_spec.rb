@@ -91,6 +91,24 @@ RSpec.describe AllocationMutations::EntityMutator do
     )
   end
 
+  it "switches a neutral self allocation to a friendship-backed entity" do
+    built_in = user.built_in_entity
+    friend = create(:entity, user:, entity_name: "FRIEND", entity_user: create(:user, :random))
+    add_neutral(transaction, built_in)
+    plan = entity_plan(transaction.reload, :switch, source_id: built_in.id, destination_id: friend.id)
+
+    impact = described_class.new(plan:).call
+
+    expect(transaction.reload.entities).to contain_exactly(friend)
+    expect(transaction.entity_transactions.sole).to have_attributes(
+      is_payer: false,
+      price: 0,
+      price_to_be_returned: 0,
+      exchanges_count: 0
+    )
+    expect(impact).to have_attributes(entity_ids_before: [ built_in.id ], entity_ids_after: [ friend.id ])
+  end
+
   it "applies a Budget switch and captures its reference month" do
     budget = create(
       :budget,
