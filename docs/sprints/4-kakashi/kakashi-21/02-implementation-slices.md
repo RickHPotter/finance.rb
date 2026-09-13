@@ -204,6 +204,13 @@ Commit: `spec: characterize user card reference merge modes`
 
 ### Slice 8: Harden the Shared Merge Boundary and Locks
 
+Status: complete as of 2026-09-13. Both modes now return the same structured result,
+use one transaction-scoped advisory lock keyed by user card and context, and reject
+missing, invalid, stale, or raced graphs without partial mutation. Combine retains its
+legacy financial result behind a dedicated locked apply service; reallocation replans
+after the shared boundary lock. Mixed-mode concurrency and newly added affected
+membership are covered, and independent cards retain distinct merge locks.
+
 1. Give both modes a consistent result/error contract without changing their successful
    financial outcomes.
 2. Normalize and validate dates before lookup so malformed requests fail closed rather

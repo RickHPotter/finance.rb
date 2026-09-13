@@ -4,19 +4,7 @@ class ReferenceMerges::ReallocationApply
   class StalePlanError < StandardError; end
   class IntegrityError < StandardError; end
 
-  Result = Data.define(:status, :reason_code, :plan, :operation) do
-    def applied?
-      status == "applied"
-    end
-
-    def rejected?
-      status == "rejected"
-    end
-
-    def failed?
-      status == "failed"
-    end
-  end
+  Result = ReferenceMerges::Result
 
   attr_reader :plan
 
@@ -51,6 +39,7 @@ class ReferenceMerges::ReallocationApply
       metadata: operation_metadata
     ) do
       ApplicationRecord.transaction do
+        ReferenceMerges::Lock.acquire!(user_card: plan.user_card, context: plan.context)
         lock_plan_records!
         @locked_plan = replan
         raise StalePlanError unless @locked_plan.eligible? && @locked_plan.digest == plan.digest

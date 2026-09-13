@@ -77,18 +77,19 @@ Later fixes are part of the baseline and must not regress:
 
 ### Shared mutation boundary
 
-Combine remains a monolithic Boolean path while reallocation uses a planner and
-structured result. Combine is atomic and audited, but it does not yet share
-reallocation's explicit stale-plan and deterministic-lock contract.
+Resolved in Slice 8. `Logic::References.merge_result` now provides one structured
+applied/rejected/failed contract. Combine runs through a dedicated atomic apply service,
+and both modes acquire the same transaction-scoped user-card/context advisory lock
+before locking and mutating their financial graphs. The original Boolean entry point
+remains as a compatibility wrapper.
 
 ### Lock scope and phantom membership
 
 Reallocation locks the rows found by the original plan and then compares a replanned
-digest. This protects the tested same-plan race, but the feature still needs executable
-coverage for independently planned same-card operations, mixed combine/reallocate
-races, membership inserted between plan and apply, and unrelated-card concurrency. The
-final boundary should serialize the selected card/context graph without relying on all
-writers coincidentally locking the same child rows.
+digest. Slice 8 added a shared user-card/context advisory boundary, mixed
+combine/reallocate race coverage, and rejection when affected membership appears after
+planning. PostgreSQL coverage also proves that independent cards in the same context do
+not share the merge lock.
 
 ### Full graph matrix
 
@@ -128,7 +129,7 @@ CI gate.
 
 ## Development Start Point
 
-Slice 7 is complete. Proceed with Slices 8–11 in the implementation plan. The original
-Slices 1–6 are an inherited baseline to verify, not work to duplicate. Any newly
-discovered mismatch is first expressed as a failing focused spec; implementation
+Slices 7 and 8 are complete. Proceed with Slices 9–11 in the implementation plan. The
+original Slices 1–6 are an inherited baseline to verify, not work to duplicate. Any
+newly discovered mismatch is first expressed as a failing focused spec; implementation
 follows in the same slice.

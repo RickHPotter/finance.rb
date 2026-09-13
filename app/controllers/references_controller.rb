@@ -39,43 +39,32 @@ class ReferencesController < ApplicationController
     @reference = merge_reference_for(source_reference_date)
     @reference.merge_mode = merge_mode
 
-    if source_reference_date.nil? || target_reference_date.nil?
-      @reference.errors.add(:merge_mode, :invalid_date)
-      render_merge_failure(merge_mode)
-    elsif perform_reference_merge(source_reference_date, target_reference_date, merge_mode)
+    @merge_result = Logic::References.merge_result(
+      @user_card,
+      source_reference_date,
+      target_reference_date,
+      merge_mode:,
+      context: current_context
+    )
+
+    if @merge_result.applied?
       redirect_to user_card_edit_destination, status: :see_other
     else
-      if merge_mode.to_s.in?(Logic::References::MERGE_MODES)
-        add_reallocation_errors if merge_mode == Logic::References::REALLOCATE_INSTALLMENTS
-      else
-        @reference.errors.add(:merge_mode, :inclusion)
-      end
+      add_merge_errors
       render_merge_failure(merge_mode)
     end
   end
 
   private
 
-  def perform_reference_merge(source_reference_date, target_reference_date, merge_mode)
-    if merge_mode == Logic::References::REALLOCATE_INSTALLMENTS
-      @reallocation_result = Logic::References.reallocation_result(
-        @user_card,
-        source_reference_date,
-        target_reference_date,
-        context: current_context
-      )
-      return @reallocation_result.applied?
-    end
+  def add_merge_errors
+    return @reference.errors.add(:merge_mode, :inclusion) if @merge_result.reason_code == "invalid_mode"
 
-    Logic::References.merge(@user_card, source_reference_date, target_reference_date, merge_mode:, context: current_context)
-  end
-
-  def add_reallocation_errors
-    issues = @reallocation_result.plan.issues
+    issues = @merge_result.plan&.issues
     if issues.present?
       issues.each { |issue| @reference.errors.add(:merge_mode, issue.code, **issue.details) }
     else
-      @reference.errors.add(:merge_mode, @reallocation_result.reason_code || :reallocation_blocked)
+      @reference.errors.add(:merge_mode, (@merge_result.reason_code || :apply_failed).to_sym)
     end
   end
 

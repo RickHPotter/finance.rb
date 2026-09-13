@@ -362,6 +362,23 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     expect(user_card.references).to exist(context:, month: 8, year: 2026)
   end
 
+  it "rejects a stale plan when affected installment membership changes before locking" do
+    create_year_transaction
+    plan = build_plan
+    october_reference = user_card.references.find_by!(context:, month: 10, year: 2026)
+    additional_transaction = create_transaction_for([ october_reference ])
+    additional_installment = additional_transaction.card_installments.sole
+    october_invoice = user_card.unpaid_invoices(context:).find_by!(month: 10, year: 2026)
+    additional_installment.update_columns(cash_transaction_id: october_invoice.id)
+
+    result = described_class.new(plan:).call
+
+    expect(result).to be_rejected
+    expect(result.reason_code).to eq("stale_plan")
+    expect(additional_installment.reload).to have_attributes(month: 10, year: 2026, cash_transaction_id: october_invoice.id)
+    expect(user_card.references).to exist(context:, month: 8, year: 2026)
+  end
+
   it "rolls the whole shift back when a downstream recalculation fails" do
     transaction, = create_year_transaction
     original_rows = transaction.card_installments.order(:number).pluck(:id, :date, :month, :year, :cash_transaction_id)
