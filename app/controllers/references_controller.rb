@@ -33,15 +33,16 @@ class ReferencesController < ApplicationController
   end
 
   def perform_merge
-    source_reference_date = "#{merge_reference_params[:source_reference_date]}-01"
-    target_reference_date = "#{merge_reference_params[:target_reference_date]}-01"
+    source_reference_date = normalized_merge_date(merge_reference_params[:source_reference_date])
+    target_reference_date = normalized_merge_date(merge_reference_params[:target_reference_date])
     merge_mode = merge_reference_params[:merge_mode]
-    source_date = source_reference_date.to_date
-    @reference = current_context.references.find_by(user_card: @user_card, year: source_date.year, month: source_date.month) ||
-                 current_context.references.new(user_card: @user_card, reference_date: source_date)
+    @reference = merge_reference_for(source_reference_date)
     @reference.merge_mode = merge_mode
 
-    if perform_reference_merge(source_reference_date, target_reference_date, merge_mode)
+    if source_reference_date.nil? || target_reference_date.nil?
+      @reference.errors.add(:merge_mode, :invalid_date)
+      render_merge_failure(merge_mode)
+    elsif perform_reference_merge(source_reference_date, target_reference_date, merge_mode)
       redirect_to user_card_edit_destination, status: :see_other
     else
       if merge_mode.to_s.in?(Logic::References::MERGE_MODES)
@@ -49,8 +50,7 @@ class ReferencesController < ApplicationController
       else
         @reference.errors.add(:merge_mode, :inclusion)
       end
-      render_top_level Views::References::Merge.new(reference: @reference, user_card: @user_card, return_to: @return_to, merge_mode:),
-                       status: :unprocessable_content
+      render_merge_failure(merge_mode)
     end
   end
 
@@ -77,6 +77,24 @@ class ReferencesController < ApplicationController
     else
       @reference.errors.add(:merge_mode, @reallocation_result.reason_code || :reallocation_blocked)
     end
+  end
+
+  def normalized_merge_date(value)
+    Date.strptime(value.to_s, "%Y-%m").beginning_of_month
+  rescue Date::Error
+    nil
+  end
+
+  def merge_reference_for(source_date)
+    return current_context.references.new(user_card: @user_card, reference_date: Date.current.beginning_of_month) unless source_date
+
+    current_context.references.find_by(user_card: @user_card, year: source_date.year, month: source_date.month) ||
+      current_context.references.new(user_card: @user_card, reference_date: source_date)
+  end
+
+  def render_merge_failure(merge_mode)
+    render_top_level Views::References::Merge.new(reference: @reference, user_card: @user_card, return_to: @return_to, merge_mode:),
+                     status: :unprocessable_content
   end
 
   def render_top_level(view, status: :ok)

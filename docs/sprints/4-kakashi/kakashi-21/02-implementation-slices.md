@@ -178,6 +178,11 @@ Commit: `spec: harden reference merge reallocation`
 
 ### Slice 7: Characterize the Inherited Two-Mode Contract
 
+Status: complete as of 2026-09-13. The successful combine graph, merge metadata,
+installment identity/economics, and actionable-message invariance are frozen alongside
+the existing reallocation matrix. Recognized modes now reject malformed months at the
+service and HTTP boundaries without an audit operation or domain mutation.
+
 1. Inventory the exact current result of combine and reallocate modes at the public
    service and HTTP boundaries.
 2. Add or tighten regression examples before refactoring any financial mutation.

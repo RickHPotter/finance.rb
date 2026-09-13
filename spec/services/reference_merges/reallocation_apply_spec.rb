@@ -313,7 +313,8 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     source_exchange, target_exchange = attach_card_bound_exchanges(transaction, [ august, september ])
     source_projection_id = source_exchange.cash_transaction_id
 
-    result = described_class.new(plan: build_plan).call
+    result = nil
+    expect { result = described_class.new(plan: build_plan).call }.not_to change(Message, :count)
 
     expect(result).to be_applied
     expect(source_exchange.reload).to have_attributes(month: 9, year: 2026)

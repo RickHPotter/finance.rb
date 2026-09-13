@@ -24,6 +24,18 @@ RSpec.describe Logic::References do
       end.not_to change(AuditOperation, :count)
     end
 
+    it "rejects malformed dates for either recognized mode without writing audit history" do
+      user_card
+
+      described_class::MERGE_MODES.each do |merge_mode|
+        expect do
+          result = described_class.merge(user_card, "invalid", "2026-09-01", merge_mode:, context: user.main_context)
+
+          expect(result).to be(false)
+        end.not_to change(AuditOperation, :count)
+      end
+    end
+
     it "keeps reallocation fail-closed when its required invoice graph is absent" do
       user_card
 

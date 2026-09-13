@@ -106,6 +106,26 @@ RSpec.describe "References", type: :request do
       end
     end
 
+    it "rejects malformed source or target months without mutation or audit history" do
+      reference
+      original_attributes = reference.attributes
+
+      [
+        { source_reference_date: "invalid", target_reference_date: "2026-09" },
+        { source_reference_date: "2026-08", target_reference_date: "2026-13" }
+      ].each do |dates|
+        expect do
+          post perform_merge_user_card_references_path(user_card), params: dates.merge(
+            merge_mode: Logic::References::COMBINE_INTO_TARGET
+          )
+        end.not_to change(AuditOperation, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.invalid_date"))
+        expect(reference.reload.attributes).to eq(original_attributes)
+      end
+    end
+
     it "reallocates persisted installments through the HTTP endpoint" do
       user_card.update!(due_date_day: 12, days_until_due_date: 5)
       august = create(:reference, context: user.main_context, user_card:, month: 8, year: 2026, reference_date: Date.new(2026, 8, 12),
@@ -480,16 +500,36 @@ RSpec.describe "References", type: :request do
         expect(source_projection_before.price).to eq(2000)
         expect(target_projection_before.price).to eq(3000)
 
-        post perform_merge_user_card_references_path(user_card), params: {
-          source_reference_date: "2026-07",
-          target_reference_date: "2026-08",
-          merge_mode: Logic::References::COMBINE_INTO_TARGET
-        }
+        source_installment = source_card_transaction.card_installments.sole
+        target_installment = target_card_transaction.card_installments.sole
+        source_installment_before = source_installment.attributes.except("updated_at", "month", "year", "cash_transaction_id")
+        target_installment_before = target_installment.attributes.except("updated_at")
+
+        expect do
+          post perform_merge_user_card_references_path(user_card), params: {
+            source_reference_date: "2026-07",
+            target_reference_date: "2026-08",
+            merge_mode: Logic::References::COMBINE_INTO_TARGET
+          }
+        end.not_to change(Message, :count)
 
         expect(response).to redirect_to(edit_user_card_path(user_card))
 
+        operation = AuditOperation.where("metadata ->> 'reference_merge_mode' = ?", Logic::References::COMBINE_INTO_TARGET).order(:created_at).last!
+        expect(operation.metadata).to include(
+          "user_card_id" => user_card.id,
+          "context_id" => user.main_context.id,
+          "source_reference" => "2026-07-01",
+          "target_reference" => "2026-08-01"
+        )
+
         expect(Reference.exists?(source_reference.id)).to be(false)
         expect(user_card.unpaid_invoices(context: user.main_context).find_by(month: 7, year: 2026)).to be_nil
+
+        target_invoice_after = user_card.unpaid_invoices(context: user.main_context).find_by!(month: 8, year: 2026)
+        expect(source_installment.reload).to have_attributes(month: 8, year: 2026, cash_transaction_id: target_invoice_after.id)
+        expect(source_installment.attributes.except("updated_at", "month", "year", "cash_transaction_id")).to eq(source_installment_before)
+        expect(target_installment.reload.attributes.except("updated_at")).to eq(target_installment_before)
 
         expect(source_exchange.reload.month).to eq(8)
         expect(source_exchange.year).to eq(2026)

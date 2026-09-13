@@ -79,8 +79,7 @@ Later fixes are part of the baseline and must not regress:
 
 Combine remains a monolithic Boolean path while reallocation uses a planner and
 structured result. Combine is atomic and audited, but it does not yet share
-reallocation's explicit stale-plan and deterministic-lock contract. Invalid raw date
-handling is also not uniformly fail-closed across controller and service boundaries.
+reallocation's explicit stale-plan and deterministic-lock contract.
 
 ### Lock scope and phantom membership
 
@@ -129,6 +128,7 @@ CI gate.
 
 ## Development Start Point
 
-Proceed with Slices 7–11 in the implementation plan. The original Slices 1–6 are an
-inherited baseline to verify, not work to duplicate. Any newly discovered mismatch is
-first expressed as a failing focused spec; implementation follows in the same slice.
+Slice 7 is complete. Proceed with Slices 8–11 in the implementation plan. The original
+Slices 1–6 are an inherited baseline to verify, not work to duplicate. Any newly
+discovered mismatch is first expressed as a failing focused spec; implementation
+follows in the same slice.
