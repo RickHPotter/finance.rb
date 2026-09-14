@@ -103,11 +103,13 @@ all restore the complete pre-merge graph.
 
 ### Rollback conflict matrix
 
-Exact fresh rollback and one moved-installment conflict are covered for reallocation.
-The remaining declared cases include divergence of a reference, reused or created tail
-invoice, exchange, generated projection, and a missing dependency, plus atomic failure
-and idempotent reapplication evidence. Combine also needs the same graph-level
-snapshot standard rather than only selected restoration assertions.
+Resolved in Slice 10. Exact graph snapshots now prove restoration for combine and
+reallocation across created and reused tail graphs, an empty calendar gap, destroyed
+source rows, exchanges, and generated projections. Divergence of a moved installment,
+reference, invoice, exchange, or projection conflicts before compensation, as does a
+missing created tail dependency. An injected post-compensation integrity failure is
+atomic and retryable, and repeated successful tokens return the original committed
+rollback operation for both modes.
 
 ### Operational and manual closure
 
@@ -130,7 +132,7 @@ CI gate.
 
 ## Development Start Point
 
-Slices 7–9 are complete. Proceed with Slices 10–11 in the implementation plan. The
+Slices 7–10 are complete. Proceed with Slice 11 in the implementation plan. The
 original Slices 1–6 are an inherited baseline to verify, not work to duplicate. Any
 newly discovered mismatch is first expressed as a failing focused spec; implementation
 follows in the same slice.

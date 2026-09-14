@@ -263,6 +263,15 @@ Commit: `fix: reconcile reference merge financial graphs`
 
 ### Slice 10: Complete Guarded Rollback Coverage
 
+Status: complete as of 2026-09-14. Both merge modes now have exact pre-merge
+financial-graph restoration coverage, including created and reused tail graphs, an
+empty calendar gap, destroyed source rows, card-bound exchanges, and generated return
+projections. Post-merge divergence across installments, references, invoices,
+exchanges, and projections is rejected as one conflicted preview; a missing created
+tail dependency is rejected as well. A failure after compensation leaves the complete
+merged graph intact, permits a valid retry, and repeated successful tokens resolve to
+the original committed rollback operation.
+
 1. Snapshot a real complete graph before each mode, apply the merge, preview rollback,
    compensate, and compare the restored graph.
 2. Cover a created tail, reused destination graph, gaps, card-bound exchanges, generated
