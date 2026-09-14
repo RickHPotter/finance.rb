@@ -200,6 +200,20 @@ RSpec.describe "References", type: :request do
       expect(document.at_css("input[name='target_reference_date']")["value"]).to eq("2026-08")
       expect(response.body).to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.not_forward_adjacent"))
     end
+
+    it "explains affected paid exchange-return history instead of reporting a generic apply failure" do
+      allow(Logic::References).to receive(:merge_result).and_return(ReferenceMerges::Result.rejected(:locked_exchange_history))
+
+      post perform_merge_user_card_references_path(user_card), params: {
+        source_reference_date: reference.reference_date.strftime("%Y-%m"),
+        target_reference_date: reference.reference_date.next_month.strftime("%Y-%m"),
+        merge_mode: Logic::References::COMBINE_INTO_TARGET
+      }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.locked_exchange_history"))
+      expect(response.body).not_to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.apply_failed"))
+    end
   end
 
   describe "[ context isolation ]" do

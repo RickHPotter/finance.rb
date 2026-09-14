@@ -62,7 +62,9 @@ class ReferenceMerges::CombineApply
 
     lock_invoice_graph!
     @source_exchanges = source_exchanges.lock.to_a
+    @destination_exchanges = destination_exchanges.lock.to_a
     lock_exchange_projections!
+    reject!(:locked_exchange_history) if affected_exchange_projections.any?(&:paid_history?)
   end
 
   def load_and_lock_references!
@@ -99,19 +101,38 @@ class ReferenceMerges::CombineApply
   end
 
   def source_exchanges
+    card_bound_exchanges
+      .where(month: source_date.month, year: source_date.year)
+      .order(:id)
+  end
+
+  def destination_exchanges
+    return Exchange.none if @source_exchanges.empty?
+
+    card_bound_exchanges
+      .where(month: target_date.month, year: target_date.year)
+      .where(entity_transactions: { entity_id: @source_exchanges.map { |exchange| exchange.entity_transaction.entity_id }.uniq })
+      .order(:id)
+  end
+
+  def card_bound_exchanges
     Exchange
       .joins(:entity_transaction)
       .joins("INNER JOIN card_transactions ON card_transactions.id = entity_transactions.transactable_id " \
              "AND entity_transactions.transactable_type = 'CardTransaction'")
-      .where(bound_type: :card_bound, month: source_date.month, year: source_date.year)
+      .where(bound_type: :card_bound)
       .where(card_transactions: { user_card_id: user_card.id, context_id: context.id })
-      .order(:id)
+      .preload(cash_transaction: :cash_installments, entity_transaction: :entity)
   end
 
   def lock_exchange_projections!
-    projection_ids = @source_exchanges.filter_map(&:cash_transaction_id).uniq
+    projection_ids = affected_exchange_projections.map(&:id)
     CashTransaction.where(id: projection_ids).order(:id).lock.load
     CashInstallment.where(cash_transaction_id: projection_ids).order(:id).lock.load
+  end
+
+  def affected_exchange_projections
+    @affected_exchange_projections ||= [ *@source_exchanges, *@destination_exchanges ].filter_map(&:cash_transaction).uniq(&:id)
   end
 
   def apply_locked_graph!

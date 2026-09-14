@@ -28,6 +28,7 @@ en:
               invalid_date: requires valid source and target months
               not_adjacent: requires the source and target to be adjacent calendar months
               combine_missing_root: cannot find one canonical source and target reference/invoice graph
+              locked_exchange_history: cannot combine these invoices because an affected exchange-return projection has paid history
               not_forward_adjacent: requires the target to be the calendar month immediately after the source
               missing_root: cannot find one canonical %{missing} for the %{kind} month %{date}
               empty_shift: cannot find any future installments or card-bound exchanges to reallocate
@@ -78,6 +79,7 @@ pt-BR:
               invalid_date: exige meses de origem e destino válidos
               not_adjacent: exige que a origem e o destino sejam meses consecutivos
               combine_missing_root: não encontrou um grafo canônico de referência/fatura para a origem e o destino
+              locked_exchange_history: não pode combinar estas faturas porque uma projeção de retorno de troca afetada possui histórico pago
               not_forward_adjacent: exige que o destino seja o mês imediatamente seguinte à origem
               missing_root: não encontrou um único %{missing} canônico para o mês %{kind} %{date}
               empty_shift: não encontrou parcelas futuras ou trocas vinculadas ao cartão para realocar

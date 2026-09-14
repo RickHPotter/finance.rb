@@ -75,3 +75,18 @@ Run [05-manual-verification.md](05-manual-verification.md) against production-sh
 safely mutable data. Record the card/month/operation IDs used and complete its sign-off.
 Any mismatch reopens the relevant graph case as a failing focused regression before a
 production change. No schema migration or data backfill belongs to this feature.
+
+## Manual-Acceptance Finding: Paid Combine Projection
+
+Manual verification on 2026-09-14 exercised user card `#3`, October → November 2026,
+in combine mode. Exchange `#4651` belongs to projection `#10009`, whose installment
+`#45360` is already paid. The original path discovered the protected history only while
+saving the Exchange, rolled the transaction back, and returned the generic
+`apply_failed` message.
+
+Combine now locks the source projections and the destination projections for matching
+source Entities before its first mutation. If any affected projection has paid history,
+it returns the precise `locked_exchange_history` rejection. The production-shaped
+development graph was rechecked through the service boundary: the result was rejected,
+the graph was identical, and no AuditOperation was created. Focused service and request
+coverage freezes both the pre-mutation rejection and localized feedback.
