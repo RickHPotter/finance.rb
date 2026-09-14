@@ -62,7 +62,7 @@ class Ledgers::Query
   end
 
   def authorized_card_relation
-    filter_id = state.user_card_id unless access.share
+    filter_id = state.user_card_id
     user_card = resolve_owner_filter(access.user.user_cards, filter_id)
     transactions = scoped_transactions(CardTransaction, [ "EXCHANGE" ])
     transactions = transactions.where(user_card_id: user_card.id) if user_card
@@ -126,6 +126,7 @@ class Ledgers::Query
 
     relation.includes(
       transaction_association => [
+        :user_card,
         :categories,
         :entities,
         { category_transactions: :category },

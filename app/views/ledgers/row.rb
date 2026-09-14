@@ -17,8 +17,9 @@ class Views::Ledgers::Row < Views::Base
       class: [ "rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900", row.row_classes ].compact.join(" "),
       style: row.row_style
     ) do
-      div(class: "grid gap-3 p-4 md:grid-cols-[minmax(0,1fr)_auto_auto_auto]") do
+      div(class: row_grid_classes) do
         description
+        datum(I18n.t("ledgers.row.card"), row.user_card_name) if row.kind == :card
         datum(I18n.t("ledgers.row.date"), formatted_date)
         datum(I18n.t("ledgers.row.installment"), "#{row.number}/#{row.installments_count}")
         amount_and_state
@@ -28,6 +29,11 @@ class Views::Ledgers::Row < Views::Base
   end
 
   private
+
+  def row_grid_classes
+    columns = row.kind == :card ? "md:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]" : "md:grid-cols-[minmax(0,1fr)_auto_auto_auto]"
+    "grid gap-3 p-4 #{columns}"
+  end
 
   def description
     div(class: "min-w-0 text-left") do

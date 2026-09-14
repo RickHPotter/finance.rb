@@ -112,7 +112,7 @@ class LedgersController < ApplicationController
       aggregate_total_amount: selected_month_total(result, context[:active_month_years]),
       canonical_params: ledger_index_canonical_params(state)
     )
-    context.merge!(current_user: nil, user_card: nil, user_card_id: nil, user_bank_account_id: nil) if external_ledger?
+    context.merge!(current_user: nil, user_card: nil, user_bank_account_id: nil) if external_ledger?
     context
   end
 
@@ -160,7 +160,10 @@ class LedgersController < ApplicationController
 
   def ledger_canonical_params(state)
     params = state.canonical_params
-    external_ledger? ? params.except(:cash_transaction, :card_transaction) : params
+    return params unless external_ledger?
+    return params.except(:cash_transaction) if state.kind == :card
+
+    params.except(:cash_transaction, :card_transaction)
   end
 
   def ledger_index_canonical_params(state)

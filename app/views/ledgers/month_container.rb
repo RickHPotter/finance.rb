@@ -39,18 +39,21 @@ class Views::Ledgers::MonthContainer < Views::Base
       per_page: ledger_context[:per_page],
       force_mobile: (true if ledger_context[:force_mobile])
     }.compact
-    add_internal_filter(query)
+    add_ledger_filter(query)
 
     "#{ledger_context[:month_path]}?#{Rack::Utils.build_nested_query(query)}"
   end
 
-  def add_internal_filter(query)
+  def add_ledger_filter(query)
+    if ledger_context[:kind] == :card && ledger_context[:user_card_id].present?
+      query[:card_transaction] = { user_card_id: ledger_context[:user_card_id] }
+      return
+    end
+
     return if ledger_context[:external]
 
-    if ledger_context[:kind] == :cash && ledger_context[:user_bank_account_id].present?
-      query[:cash_transaction] = { user_bank_account_id: ledger_context[:user_bank_account_id] }
-    elsif ledger_context[:kind] == :card && ledger_context[:user_card_id].present?
-      query[:card_transaction] = { user_card_id: ledger_context[:user_card_id] }
-    end
+    return unless ledger_context[:user_bank_account_id].present?
+
+    query[:cash_transaction] = { user_bank_account_id: ledger_context[:user_bank_account_id] }
   end
 end

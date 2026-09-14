@@ -118,13 +118,26 @@ RSpec.describe "Entity ledger presentation", type: :request do
     it "uses the same allowlisted projection for card billing periods" do
       installment = create_card_installment
 
-      get month_year_external_card_transactions_path(share_token: share.token), params: { month_year: 202_609 }
+      get external_card_transactions_path(share_token: share.token), params: { active_month_years: [ 202_609 ].to_json }
+
+      card_filter = response.parsed_body.at_css("select#ledger_user_card_id")
+      expect(card_filter["aria-label"]).to eq("Filter by card")
+      expect(card_filter.css("option").map(&:text)).to include("All cards", "PRIVATE USER CARD")
+
+      card_filter_params = { card_transaction: { user_card_id: installment.card_transaction.user_card_id } }
+      get external_card_transactions_path(share_token: share.token), params: { active_month_years: [ 202_609 ].to_json, **card_filter_params }
+
+      document = response.parsed_body
+      expect(document.at_css("select#ledger_user_card_id option[selected]")["value"]).to eq(installment.card_transaction.user_card_id.to_s)
+      month_query = Rack::Utils.parse_nested_query(URI.parse(document.at_css("turbo-frame#month_year_container_202609")["src"]).query)
+      expect(month_query.dig("card_transaction", "user_card_id")).to eq(installment.card_transaction.user_card_id.to_s)
+
+      get month_year_external_card_transactions_path(share_token: share.token), params: { month_year: 202_609, **card_filter_params }
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("ALLOWLISTED CARD", "September 2026", "1/1", "Pending")
+      expect(response.body).to include("ALLOWLISTED CARD", "PRIVATE USER CARD", "September 2026", "1/1", "Pending")
       expect(response.body).not_to include(
         "PRIVATE CARD COMMENT",
-        "PRIVATE USER CARD",
         "PRIVATE CARD CATEGORY",
         "PRIVATE CARD ENTITY",
         "card_installment_#{installment.id}",

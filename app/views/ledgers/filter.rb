@@ -38,6 +38,7 @@ class Views::Ledgers::Filter < Views::Base
           class: "flex-1",
           data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
         )
+        card_filter if ledger_context[:kind] == :card
         sort_controls
         paid_filters if ledger_context[:kind] == :cash
       end
@@ -47,6 +48,22 @@ class Views::Ledgers::Filter < Views::Base
   end
 
   private
+
+  def card_filter
+    select(
+      name: "card_transaction[user_card_id]",
+      id: "ledger_user_card_id",
+      class: "min-w-0 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 sm:w-auto " \
+             "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200",
+      aria: { label: I18n.t("ledgers.filter.card") },
+      data: { action: "change->reactive-form#submit" }
+    ) do
+      option(value: "", selected: ledger_context[:user_card_id].blank?) { I18n.t("ledgers.filter.all_cards") }
+      ledger_context.fetch(:ledger_user_cards, []).each do |id, name|
+        option(value: id, selected: ledger_context[:user_card_id] == id) { name }
+      end
+    end
+  end
 
   def sort_controls
     div(class: "grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto") do

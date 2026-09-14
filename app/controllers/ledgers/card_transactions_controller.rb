@@ -53,7 +53,7 @@ class Ledgers::CardTransactionsController < LedgersController
       to_price: nil,
       from_installments_count: nil,
       to_installments_count: nil,
-      user_card: @user_card,
+      **card_filter_context,
       force_mobile: state.force_mobile,
       sort: state.sort,
       direction: state.direction,
@@ -61,6 +61,10 @@ class Ledgers::CardTransactionsController < LedgersController
       per_page: state.per_page,
       count_by_month_year: result.count_by_month_year
     }
+  end
+
+  def card_filter_context
+    { user_card: @user_card, user_card_id: @user_card&.id, ledger_user_cards: user_cards.pluck(:id, :user_card_name) }
   end
 
   def ledger_date_bounds(result, fallback:)

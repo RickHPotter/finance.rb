@@ -21,6 +21,8 @@ en:
       card: Card
     filter:
       search: Search descriptions...
+      card: Filter by card
+      all_cards: All cards
       paid: Paid
       pending: Pending
       sort: Sort ledger
@@ -36,6 +38,7 @@ en:
         desc: Descending
     row:
       description: Description
+      card: Card
       date: Date
       installment: Installment
       paid: Paid
@@ -86,6 +89,8 @@ pt-BR:
       card: Cartão
     filter:
       search: Buscar descrições...
+      card: Filtrar por cartão
+      all_cards: Todos os cartões
       paid: Pago
       pending: Pendente
       sort: Ordenar livro-razão
@@ -101,6 +106,7 @@ pt-BR:
         desc: Decrescente
     row:
       description: Descrição
+      card: Cartão
       date: Data
       installment: Parcela
       paid: Pago
