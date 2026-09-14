@@ -93,12 +93,13 @@ not share the merge lock.
 
 ### Full graph matrix
 
-The current suite covers the principal 12-installment/year-boundary case, preserved
-dates, gaps, paid-history boundaries, multiple reassignments, exchange projections,
-stale state, failure rollback, and one same-card race. The written matrix remains wider:
-existing versus created tail graphs, several independent purchases per bucket, exact
-invoice dates/paid states/counters, mixed-mode races, and every failure stage need an
-explicit reconciliation pass.
+Resolved in Slice 9. The suite now covers existing and created tail graphs, empty gaps,
+year boundaries, several independent purchases in one bucket, exchange-only ranges,
+and reconstruction from final invoice membership. Paid empty invoices inside shifted
+source or destination buckets fail before mutation, while duplicate historical invoices
+before the source do not contaminate eligibility. Tail creation, invoice reconstruction,
+projection synchronization, integrity verification, and balance recalculation failures
+all restore the complete pre-merge graph.
 
 ### Rollback conflict matrix
 
@@ -129,7 +130,7 @@ CI gate.
 
 ## Development Start Point
 
-Slices 7 and 8 are complete. Proceed with Slices 9–11 in the implementation plan. The
+Slices 7–9 are complete. Proceed with Slices 10–11 in the implementation plan. The
 original Slices 1–6 are an inherited baseline to verify, not work to duplicate. Any
 newly discovered mismatch is first expressed as a failing focused spec; implementation
 follows in the same slice.

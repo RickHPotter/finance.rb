@@ -224,12 +224,12 @@ class ReferenceMerges::ReallocationPlanner
   end
 
   def paid_invoices_issue
-    ids = affected_invoices.select { |invoice| invoice.paid? || invoice.paid_history? }.map(&:id).sort
+    ids = invoices.select { |invoice| affected_invoice?(invoice) && (invoice.paid? || invoice.paid_history?) }.map(&:id).sort
     issue(:paid_invoices, ids: ids.join(",")) if ids.present?
   end
 
   def duplicate_invoices_issue
-    dates = invoices_by_date.filter_map { |date, rows| date.iso8601 if rows.many? }.sort
+    dates = invoices_by_date.filter_map { |date, rows| date.iso8601 if date.in?(affected_invoice_dates) && rows.many? }.sort
     issue(:duplicate_invoices, dates: dates.join(",")) if dates.present?
   end
 
@@ -238,9 +238,12 @@ class ReferenceMerges::ReallocationPlanner
     issue(:locked_exchange_projections, ids: ids.join(",")) if ids.present?
   end
 
-  def affected_invoices
-    ids = installments.filter_map(&:cash_transaction_id).uniq
-    invoices.select { |invoice| invoice.id.in?(ids) }
+  def affected_invoice?(invoice)
+    row_date(invoice).in?(affected_invoice_dates)
+  end
+
+  def affected_invoice_dates
+    @affected_invoice_dates ||= build_buckets.flat_map { |bucket| [ bucket.source_date, bucket.destination_date ] }.to_set
   end
 
   def issue(code, details = {})

@@ -234,6 +234,14 @@ Commit: `fix: serialize user card reference merges`
 
 ### Slice 9: Reconcile Invoice and Exchange Graph Edges
 
+Status: complete as of 2026-09-14. Existing empty tail invoices are reused and
+reconstructed from their final membership, including several independent purchases.
+Exchange-only shifts now remove unpaid empty card-payment invoices, paid empty invoices
+inside the affected range block before mutation, and unrelated duplicate invoice
+history before the source month no longer blocks a valid merge. Tail creation, invoice
+reconstruction, projection synchronization, integrity verification, and balance
+recalculation failures are covered as atomic operations.
+
 1. Exercise existing and missing destination references/invoices, empty calendar gaps,
    year boundaries, one-installment purchases, and several transactions in one bucket.
 2. Verify invoice reconstruction from final membership, including amount, comment,

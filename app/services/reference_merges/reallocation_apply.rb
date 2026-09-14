@@ -86,6 +86,7 @@ class ReferenceMerges::ReallocationApply
       move_bucket_installments!(bucket)
       move_bucket_exchanges!(bucket)
     end
+    destroy_empty_shifted_invoices!
     Audit::BulkMutation.update_columns!(target_reference, reference_closing_date: source_closing_date)
     source_reference.destroy!
 
@@ -142,6 +143,17 @@ class ReferenceMerges::ReallocationApply
 
   def destroy_empty_card_payment_invoices!(invoice_ids)
     CashTransaction.where(id: invoice_ids).find_each do |invoice|
+      next if CardInstallment.exists?(cash_transaction_id: invoice.id)
+
+      invoice.destroy!
+    end
+  end
+
+  def destroy_empty_shifted_invoices!
+    affected_buckets = @locked_plan.buckets.flat_map { |bucket| [ bucket.source_date, bucket.destination_date ] }.to_set
+
+    plan.context.cash_transactions.card_payment.where(user_card: plan.user_card, paid: false).find_each do |invoice|
+      next unless Date.new(invoice.year, invoice.month, 1).in?(affected_buckets)
       next if CardInstallment.exists?(cash_transaction_id: invoice.id)
 
       invoice.destroy!
