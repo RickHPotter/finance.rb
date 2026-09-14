@@ -11,6 +11,11 @@ application code, its evidence must attribute the improvement to each change sep
 
 ## Slice 1 — Establish Repeatable Profiling
 
+Status: complete as of 2026-09-14. `bin/rspec-profile` now applies a stable default
+seed, retains RSpec's human top-N report, and writes a structured artifact with process,
+suite, example, SQL, and FactoryBot measurements. An adjacent active-example artifact
+identifies interrupted or stalled work. Ordinary `bin/rspec` behavior remains unchanged.
+
 **Goal:** turn the supplied one-off profile into a reproducible baseline.
 
 ### Deliverables

@@ -1463,6 +1463,7 @@ References:
 - [current baseline and gap inventory](docs/sprints/4-kakashi/kakashi-20/02-current-baseline-and-gap-inventory.md)
 - [implementation slices](docs/sprints/4-kakashi/kakashi-20/03-implementation-slices.md)
 - [decisions and test matrix](docs/sprints/4-kakashi/kakashi-20/04-decisions-and-test-matrix.md)
+- [profiling workflow](docs/sprints/4-kakashi/kakashi-20/05-profiling-workflow.md)
 
 ### KAKASHI-21: Choose how a user-card reference merge reallocates installments
 
