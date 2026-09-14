@@ -202,7 +202,6 @@ RSpec.describe ReferenceMerges::ReallocationPlanner do
     august = create_reference(8)
     september = create_reference(9)
     invoices = [ july, august, september ].map { |reference| create_invoice(reference) }
-    create_invoice(july, price: -500)
     transaction = create(
       :card_transaction,
       user:,
@@ -223,6 +222,9 @@ RSpec.describe ReferenceMerges::ReallocationPlanner do
       installment.update_columns(cash_transaction_id: invoice.id)
     end
     transaction.card_installments.order(:number).first.update_columns(paid: true)
+    create_invoice(july, price: -500)
+
+    expect(context.cash_transactions.card_payment.where(user_card:, month: 7, year: 2026).count).to eq(2)
 
     result = plan
 

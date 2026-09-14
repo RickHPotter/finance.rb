@@ -11,6 +11,12 @@ export function isForwardAdjacentMonth(source, target) {
   return nextMonth.year === targetParts.year && nextMonth.month === targetParts.month
 }
 
+export function mergeModeAvailability(source, target, { preserveSelection = false } = {}) {
+  const available = isForwardAdjacentMonth(source, target)
+
+  return { available, clearSelection: !available && !preserveSelection }
+}
+
 function parseMonth(value) {
   const match = /^(\d{4})-(\d{2})$/.exec(value || "")
   if (!match) return null

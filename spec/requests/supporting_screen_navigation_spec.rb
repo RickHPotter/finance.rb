@@ -139,13 +139,14 @@ RSpec.describe "Supporting screen navigation", type: :request do
 
   it "redirects a successful reference merge with 303 to the retained card edit destination" do
     return_to = user_cards_path(search_term: "visa")
-    expect(Logic::References).to receive(:merge).with(
+    result = ReferenceMerges::Result.applied(operation: nil)
+    expect(Logic::References).to receive(:merge_result).with(
       user_card,
-      "2026-05-01",
-      "2026-06-01",
+      Date.new(2026, 5, 1),
+      Date.new(2026, 6, 1),
       merge_mode: Logic::References::COMBINE_INTO_TARGET,
       context: user.main_context
-    ).and_return(true)
+    ).and_return(result)
 
     post perform_merge_user_card_references_path(user_card), params: {
       return_to:,

@@ -113,10 +113,12 @@ rollback operation for both modes.
 
 ### Operational and manual closure
 
-The feature has no dedicated manual-verification guide or closure report. The final
-delivery must verify both modes through the real form, generated invoice and exchange
-return graphs, audit preview/revert, Turbo navigation, localized feedback, and the full
-CI gate.
+Resolved for implementation and automated delivery in Slice 11. The localized form,
+retained rejected state, forward-only client affordance, compact/dark presentation,
+HTML/Turbo navigation, focused suites, and full CI gate are verified. Dedicated manual
+verification and closure documents cover both modes, generated invoice/exchange-return
+graphs, audit preview/compensation, stale conflict rejection, and message-policy
+invariance. Production-shaped manual sign-off remains an explicit human gate.
 
 ## Non-Regression Boundaries
 
@@ -132,7 +134,7 @@ CI gate.
 
 ## Development Start Point
 
-Slices 7–10 are complete. Proceed with Slice 11 in the implementation plan. The
-original Slices 1–6 are an inherited baseline to verify, not work to duplicate. Any
-newly discovered mismatch is first expressed as a failing focused spec; implementation
-follows in the same slice.
+Slices 7–11 are complete for implementation and automated verification. The original
+Slices 1–6 are an inherited baseline that has now been reconciled rather than duplicated.
+Complete the production-shaped checklist before final human sign-off; any mismatch is
+first expressed as a failing focused regression.

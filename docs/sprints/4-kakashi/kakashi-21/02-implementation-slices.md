@@ -293,6 +293,13 @@ Commit: `spec: complete reference merge rollback coverage`
 
 ### Slice 11: Finish UI, Manual Acceptance, and Closure
 
+Status: implementation and automated closure complete as of 2026-09-14; production-
+shaped manual sign-off remains explicit. The form now retains rejected month/mode
+inputs, preserves server feedback through Stimulus connection, explains both financial
+consequences in English and Brazilian Portuguese, and behaves coherently in compact and
+dark layouts. HTML/Turbo navigation uses the structured result boundary. The repeatable
+manual guide and closure report are published, and the full CI gate passes.
+
 1. Verify localized mode labels, consequence text, retained invalid selection, precise
    failure feedback, forward-only availability, and server-side enforcement.
 2. Check the merge form in light/dark and compact layouts without changing its financial

@@ -38,6 +38,8 @@ class ReferencesController < ApplicationController
     merge_mode = merge_reference_params[:merge_mode]
     @reference = merge_reference_for(source_reference_date)
     @reference.merge_mode = merge_mode
+    @reference.source_reference_date = merge_reference_params[:source_reference_date]
+    @reference.target_reference_date = merge_reference_params[:target_reference_date]
 
     @merge_result = Logic::References.merge_result(
       @user_card,

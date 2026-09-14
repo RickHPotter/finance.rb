@@ -22,7 +22,7 @@ en:
           attributes:
             merge_mode:
               reallocation_blocked: cannot reallocate paid, locked, stale, or invalid invoice history
-              apply_failed: could not complete the reallocation; no changes were saved (see the server log for the exact error)
+              apply_failed: could not complete the merge; no changes were saved (see the server log for the exact error)
               stale_plan: could not complete because the affected invoice history changed; retry from a refreshed page
               context_mismatch: cannot use context %{context_id} with user card %{user_card_id}
               invalid_date: requires valid source and target months
@@ -43,10 +43,10 @@ en:
       modes:
         combine_into_target:
           label: Combine into target
-          hint: Move the source invoice into the target. Later invoices stay where they are.
+          hint: Move the source invoice into the target and remove the emptied source. Later invoices stay where they are.
         reallocate_installments:
           label: Reallocate installments
-          hint: Move the source invoice forward and shift every later persisted invoice by one month.
+          hint: Shift the source and every later persisted invoice forward by one month, preserving installment dates and amounts.
 
 pt-BR:
   activerecord:
@@ -72,7 +72,7 @@ pt-BR:
           attributes:
             merge_mode:
               reallocation_blocked: não pode realocar um histórico de faturas pago, bloqueado, desatualizado ou inválido
-              apply_failed: não concluiu a realocação; nenhuma alteração foi salva (consulte o log do servidor para ver o erro exato)
+              apply_failed: não concluiu a mesclagem; nenhuma alteração foi salva (consulte o log do servidor para ver o erro exato)
               stale_plan: não concluiu porque o histórico de faturas afetado mudou; atualize a página e tente novamente
               context_mismatch: não pode usar o contexto %{context_id} com o cartão %{user_card_id}
               invalid_date: exige meses de origem e destino válidos
@@ -93,7 +93,7 @@ pt-BR:
       modes:
         combine_into_target:
           label: Combinar no destino
-          hint: Move a fatura de origem para o destino. As faturas seguintes permanecem onde estão.
+          hint: Move a fatura de origem para o destino e remove a origem vazia. As faturas seguintes permanecem onde estão.
         reallocate_installments:
           label: Realocar parcelas
-          hint: Move a fatura de origem e desloca cada fatura futura já registrada em um mês.
+          hint: Desloca a origem e cada fatura futura já registrada em um mês, preservando datas e valores das parcelas.

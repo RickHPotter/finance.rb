@@ -89,6 +89,22 @@ RSpec.describe "References", type: :request do
       )
     end
 
+    it "renders localized labels and financial consequences in both supported locales" do
+      %i[en pt-BR].each do |locale|
+        I18n.with_locale(locale) do
+          get merge_user_card_references_path(user_card, id: reference.id)
+
+          expect(response).to have_http_status(:success)
+          Logic::References::MERGE_MODES.each do |mode|
+            expect(response.body).to include(
+              I18n.t("references.merge.modes.#{mode}.label"),
+              I18n.t("references.merge.modes.#{mode}.hint")
+            )
+          end
+        end
+      end
+    end
+
     it "rejects a missing or unknown merge mode without creating an audit operation" do
       reference
 
@@ -180,6 +196,8 @@ RSpec.describe "References", type: :request do
       document = Nokogiri::HTML(response.body)
       selected_mode = document.at_css("input[name='merge_mode'][value='#{Logic::References::REALLOCATE_INSTALLMENTS}']")
       expect(selected_mode["checked"]).to be_present
+      expect(document.at_css("input[name='source_reference_date']")["value"]).to eq("2026-09")
+      expect(document.at_css("input[name='target_reference_date']")["value"]).to eq("2026-08")
       expect(response.body).to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.not_forward_adjacent"))
     end
   end
