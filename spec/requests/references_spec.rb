@@ -85,7 +85,8 @@ RSpec.describe "References", type: :request do
       expect(mode_inputs).to all(satisfy { |input| input["checked"].nil? })
       expect(response.body).to include(
         I18n.t("references.merge.modes.combine_into_target.label"),
-        I18n.t("references.merge.modes.reallocate_installments.label")
+        I18n.t("references.merge.modes.reallocate_installments.label"),
+        I18n.t("references.merge.historical_confirmation.label")
       )
     end
 
@@ -201,18 +202,21 @@ RSpec.describe "References", type: :request do
       expect(response.body).to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.not_forward_adjacent"))
     end
 
-    it "explains affected paid exchange-return history instead of reporting a generic apply failure" do
-      allow(Logic::References).to receive(:merge_result).and_return(ReferenceMerges::Result.rejected(:locked_exchange_history))
+    it "requests and retains confirmation for paid exchange-return history" do
+      allow(Logic::References).to receive(:merge_result).and_return(ReferenceMerges::Result.rejected(:paid_history_confirmation_required))
 
       post perform_merge_user_card_references_path(user_card), params: {
         source_reference_date: reference.reference_date.strftime("%Y-%m"),
         target_reference_date: reference.reference_date.next_month.strftime("%Y-%m"),
-        merge_mode: Logic::References::COMBINE_INTO_TARGET
+        merge_mode: Logic::References::COMBINE_INTO_TARGET,
+        historical_correction_confirmation: "1"
       }
 
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.body).to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.locked_exchange_history"))
+      expect(response.body).to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.paid_history_confirmation_required"))
       expect(response.body).not_to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.apply_failed"))
+      confirmation = Nokogiri::HTML(response.body).at_css("input[type='checkbox'][name='historical_correction_confirmation']")
+      expect(confirmation["checked"]).to be_present
     end
   end
 

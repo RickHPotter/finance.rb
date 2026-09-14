@@ -9,14 +9,15 @@ RSpec.describe Audit::Rollback::Adapters::Reference do
   let(:user_card) { create(:user_card, :random, user:) }
   let(:account) { create(:user_bank_account, :random, user:) }
 
-  def apply(operation)
+  def apply(operation, confirmed: false)
     preview = Audit::Rollback::Preview.new(operation:, actor: admin)
     result = Audit::Rollback::Apply.new(
       operation:,
       actor: admin,
       context: admin.main_context,
       request_id: SecureRandom.uuid,
-      token: preview.apply_token
+      token: preview.apply_token,
+      confirmed:
     ).call
     [ preview, result ]
   end
@@ -230,5 +231,88 @@ RSpec.describe Audit::Rollback::Adapters::Reference do
     expect(april_reference.reload.reference_closing_date).to eq(original_april_closing_date)
     expect(CashTransaction).to exist(march_invoice.id)
     expect(CashTransaction).to exist(april_invoice.id)
+  end
+
+  it "restores a confirmed merge of paid card-bound exchange projections" do
+    entity = create(:entity, :random, user:)
+    august_reference = create(
+      :reference,
+      user_card:,
+      context:,
+      month: 8,
+      year: 2026,
+      reference_date: Date.new(2026, 8, 12),
+      reference_closing_date: Date.new(2026, 8, 5)
+    )
+    september_reference = create(
+      :reference,
+      user_card:,
+      context:,
+      month: 9,
+      year: 2026,
+      reference_date: Date.new(2026, 9, 12),
+      reference_closing_date: Date.new(2026, 9, 5)
+    )
+    august_invoice = create_invoice(august_reference, price: -1_000)
+    september_invoice = create_invoice(september_reference, price: -1_000)
+    card_transaction = create(
+      :card_transaction,
+      user:,
+      context:,
+      user_card:,
+      month: 8,
+      year: 2026,
+      price: -2_000,
+      card_installments: [
+        build(:card_installment, number: 1, month: 8, year: 2026, price: -1_000),
+        build(:card_installment, number: 2, month: 9, year: 2026, price: -1_000)
+      ],
+      entity_transactions: [
+        build(:entity_transaction, entity:, transactable: nil, is_payer: false, price: 0, price_to_be_returned: 0)
+      ]
+    )
+    card_transaction.card_installments.find_by!(number: 1).update_columns(cash_transaction_id: august_invoice.id)
+    card_transaction.card_installments.find_by!(number: 2).update_columns(cash_transaction_id: september_invoice.id)
+    source_exchange = create_paid_card_bound_exchange(card_transaction:, entity:, reference: august_reference)
+    target_exchange = create_paid_card_bound_exchange(card_transaction:, entity:, reference: september_reference)
+    source_projection = source_exchange.cash_transaction
+    target_projection = target_exchange.cash_transaction
+    source_paid_installment = source_projection.cash_installments.sole
+    target_paid_installment = target_projection.cash_installments.sole
+
+    result = Logic::References.merge_result(
+      user_card,
+      august_reference.reference_date,
+      september_reference.reference_date,
+      merge_mode: Logic::References::COMBINE_INTO_TARGET,
+      context:,
+      historical_correction_confirmation: true
+    )
+    preview, rollback = apply(result.operation, confirmed: true)
+
+    expect(preview).to have_attributes(state: "previewable")
+    expect(rollback).to have_attributes(status: "applied")
+    expect(Reference).to exist(august_reference.id)
+    expect(CashTransaction).to exist(source_projection.id)
+    expect(source_exchange.reload).to have_attributes(month: 8, year: 2026, cash_transaction_id: source_projection.id)
+    expect(target_exchange.reload).to have_attributes(month: 9, year: 2026, cash_transaction_id: target_projection.id)
+    expect(source_paid_installment.reload).to have_attributes(price: 1_000, paid: true, cash_transaction_id: source_projection.id)
+    expect(target_paid_installment.reload).to have_attributes(price: 1_000, paid: true, cash_transaction_id: target_projection.id)
+  end
+
+  def create_paid_card_bound_exchange(card_transaction:, entity:, reference:)
+    exchange = create(
+      :exchange,
+      entity_transaction: card_transaction.entity_transactions.find_by!(entity:),
+      exchange_type: :monetary,
+      bound_type: :card_bound,
+      month: reference.month,
+      year: reference.year,
+      date: reference.reference_date,
+      price: 1_000
+    )
+    exchange.cash_transaction.cash_installments.sole.update_columns(paid: true)
+    exchange.cash_transaction.update_columns(paid: true)
+    exchange
   end
 end

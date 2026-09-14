@@ -88,12 +88,13 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     )
   end
 
-  def build_plan(source_date: Date.new(2026, 8, 1), target_date: Date.new(2026, 9, 1))
+  def build_plan(source_date: Date.new(2026, 8, 1), target_date: Date.new(2026, 9, 1), historical_correction_confirmation: false)
     ReferenceMerges::ReallocationPlanner.new(
       user_card:,
       context:,
       source_date:,
-      target_date:
+      target_date:,
+      historical_correction_confirmation:
     ).call
   end
 
@@ -387,6 +388,53 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     expect(september_projection.cash_installments.sole.price).to eq(500)
     expect(october_projection).to have_attributes(price: 1_000)
     expect(october_projection.cash_installments.sole.price).to eq(1_000)
+  end
+
+  it "reallocates a confirmed paid return projection without rewriting its completed installment" do
+    august = create_reference(8, 2026)
+    september = create_reference(9, 2026)
+    [ august, september ].each { |reference| create_invoice(reference) }
+    transaction = create_transaction_for([ august ])
+    exchange = attach_card_bound_exchanges(transaction, [ august ]).sole
+    projection = exchange.cash_transaction
+    paid_installment = projection.cash_installments.sole
+    paid_installment.update_columns(paid: true)
+    projection.update_columns(paid: true)
+    paid_facts = paid_installment.attributes.slice("id", "date", "month", "year", "price", "starting_price", "paid")
+
+    result = described_class.new(plan: build_plan(historical_correction_confirmation: true)).call
+
+    expect(result).to be_applied
+    expect(exchange.reload).to have_attributes(month: 9, year: 2026, cash_transaction_id: projection.id)
+    expect(projection.reload).to have_attributes(month: 9, year: 2026, paid: true)
+    expect(paid_installment.reload.attributes.slice(*paid_facts.keys)).to eq(paid_facts)
+    expect(result.operation.metadata["historical_correction_confirmation"]).to be(true)
+
+    later_transaction = create_transaction_for([ september ])
+    later_transaction.categories << exchange_category
+    later_entity_transaction = create(
+      :entity_transaction,
+      transactable: later_transaction,
+      entity: exchange.entity_transaction.entity,
+      is_payer: true,
+      price: -10,
+      price_to_be_returned: 10
+    )
+    later_exchange = create(
+      :exchange,
+      entity_transaction: later_entity_transaction,
+      exchange_type: :monetary,
+      bound_type: :card_bound,
+      month: 9,
+      year: 2026,
+      date: september.reference_date,
+      price: 10
+    )
+
+    expect(later_exchange.reload.cash_transaction_id).to eq(projection.id)
+    expect(projection.reload).to have_attributes(price: 510, paid: false)
+    expect(paid_installment.reload.attributes.slice(*paid_facts.keys)).to eq(paid_facts)
+    expect(projection.cash_installments.where(paid: false).sole.price).to eq(10)
   end
 
   it "removes empty card-payment invoices when shifting an exchange-only range" do

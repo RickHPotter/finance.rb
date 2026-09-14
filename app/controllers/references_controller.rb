@@ -36,6 +36,7 @@ class ReferencesController < ApplicationController
     source_reference_date = normalized_merge_date(merge_reference_params[:source_reference_date])
     target_reference_date = normalized_merge_date(merge_reference_params[:target_reference_date])
     merge_mode = merge_reference_params[:merge_mode]
+    historical_correction_confirmation = merge_reference_params[:historical_correction_confirmation]
     @reference = merge_reference_for(source_reference_date)
     @reference.merge_mode = merge_mode
     @reference.source_reference_date = merge_reference_params[:source_reference_date]
@@ -46,14 +47,15 @@ class ReferencesController < ApplicationController
       source_reference_date,
       target_reference_date,
       merge_mode:,
-      context: current_context
+      context: current_context,
+      historical_correction_confirmation:
     )
 
     if @merge_result.applied?
       redirect_to user_card_edit_destination, status: :see_other
     else
       add_merge_errors
-      render_merge_failure(merge_mode)
+      render_merge_failure(merge_mode, historical_correction_confirmation:)
     end
   end
 
@@ -83,8 +85,14 @@ class ReferencesController < ApplicationController
       current_context.references.new(user_card: @user_card, reference_date: source_date)
   end
 
-  def render_merge_failure(merge_mode)
-    render_top_level Views::References::Merge.new(reference: @reference, user_card: @user_card, return_to: @return_to, merge_mode:),
+  def render_merge_failure(merge_mode, historical_correction_confirmation: false)
+    render_top_level Views::References::Merge.new(
+      reference: @reference,
+      user_card: @user_card,
+      return_to: @return_to,
+      merge_mode:,
+      historical_correction_confirmation:
+    ),
                      status: :unprocessable_content
   end
 
@@ -122,6 +130,6 @@ class ReferencesController < ApplicationController
   end
 
   def merge_reference_params
-    params.permit(:source_reference_date, :target_reference_date, :merge_mode)
+    params.permit(:source_reference_date, :target_reference_date, :merge_mode, :historical_correction_confirmation)
   end
 end

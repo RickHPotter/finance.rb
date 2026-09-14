@@ -32,7 +32,7 @@ class Audit::Rollback::Compensator
     return if handled_keys.include?(row.key)
     return mark_handled(row) if row.action == "none"
     return if row.record_type.in?(INSTALLMENT_TYPES) && included_transaction_parent(row)
-    return compensate_reference_reallocation_installment(row) if reference_reallocation_installment?(row)
+    return compensate_reference_merge_installment(row) if reference_merge_installment?(row)
 
     if row.record_type.in?(TRANSACTION_TYPES | INSTALLMENT_TYPES)
       compensate_transaction_group(row)
@@ -49,7 +49,7 @@ class Audit::Rollback::Compensator
     compensate_parent(record_type:, item_id:, rows:)
   end
 
-  def compensate_reference_reallocation_installment(row)
+  def compensate_reference_merge_installment(row)
     installment = row.adapter.live_record
     raise CompensationError, "reallocated installment #{row.key} is missing" unless installment
 
@@ -63,8 +63,8 @@ class Audit::Rollback::Compensator
     mark_handled(row)
   end
 
-  def reference_reallocation_installment?(row)
-    reference_reallocation? && row.record_type == "CardInstallment" && row.action == "update"
+  def reference_merge_installment?(row)
+    reference_merge? && row.record_type == "CardInstallment" && row.action == "update"
   end
 
   def transaction_parent_key(row)
@@ -86,9 +86,16 @@ class Audit::Rollback::Compensator
       next false if handled_keys.include?(candidate.key)
 
       (candidate.record_type.in?(TRANSACTION_TYPES) && candidate.record_type == record_type && candidate.item_id == item_id) ||
-        (candidate.record_type.in?(INSTALLMENT_TYPES) && transaction_parent_key(candidate) == [ record_type, item_id ]) ||
+        (candidate.record_type.in?(INSTALLMENT_TYPES) && rollback_parent_key(candidate) == [ record_type, item_id ]) ||
         (candidate.record_type.in?(ALLOCATION_TYPES) && allocation_parent_key(candidate) == [ record_type, item_id ])
     end
+  end
+
+  def rollback_parent_key(row)
+    state = row.before_state || row.expected_after_state || {}
+    parent_type = row.record_type == "CashInstallment" ? "CashTransaction" : "CardTransaction"
+    parent_id = state[row.record_type == "CashInstallment" ? "cash_transaction_id" : "card_transaction_id"]
+    [ parent_type, parent_id ]
   end
 
   def compensate_parent(record_type:, item_id:, rows:)
@@ -124,13 +131,27 @@ class Audit::Rollback::Compensator
     association = installment_association(parent)
     parent.public_send(association).target.clear
     installment_rows.select { |row| row.before_state.present? }.each do |row|
-      parent.public_send(association).build(installment_attributes(row))
+      attach_recreated_parent_installment(parent, association, row)
     end
     allocation_rows.select { |row| row.before_state.present? }.each { |row| build_allocation(parent, row) }
     prepare_parent(parent)
     parent.save!
+    restore_post_compensation_attributes(parent_row, parent)
     impact.capture_transaction(parent)
     mark_handled(parent_row, *installment_rows, *allocation_rows)
+  end
+
+  def attach_recreated_parent_installment(parent, association, row)
+    installment = row.action == "update" ? row.adapter.live_record : nil
+    unless installment
+      parent.public_send(association).build(installment_attributes(row))
+      return
+    end
+
+    installment.assign_attributes(row.adapter.restore_attributes)
+    installment.cash_transaction = parent if parent.is_a?(CashTransaction)
+    installment.card_transaction = parent if parent.is_a?(CardTransaction)
+    parent.public_send(association).target << installment
   end
 
   def update_parent(record_type:, item_id:, parent_row:, installment_rows:, allocation_rows:)
@@ -250,5 +271,9 @@ class Audit::Rollback::Compensator
 
   def reference_reallocation?
     preview.operation.metadata["reference_merge_mode"] == Logic::References::REALLOCATE_INSTALLMENTS
+  end
+
+  def reference_merge?
+    preview.operation.metadata["reference_merge_mode"].in?(Logic::References::MERGE_MODES)
   end
 end

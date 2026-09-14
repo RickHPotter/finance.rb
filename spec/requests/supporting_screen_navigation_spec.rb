@@ -145,7 +145,8 @@ RSpec.describe "Supporting screen navigation", type: :request do
       Date.new(2026, 5, 1),
       Date.new(2026, 6, 1),
       merge_mode: Logic::References::COMBINE_INTO_TARGET,
-      context: user.main_context
+      context: user.main_context,
+      historical_correction_confirmation: nil
     ).and_return(result)
 
     post perform_merge_user_card_references_path(user_card), params: {

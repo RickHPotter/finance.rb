@@ -85,8 +85,25 @@ saving the Exchange, rolled the transaction back, and returned the generic
 `apply_failed` message.
 
 Combine now locks the source projections and the destination projections for matching
-source Entities before its first mutation. If any affected projection has paid history,
-it returns the precise `locked_exchange_history` rejection. The production-shaped
-development graph was rechecked through the service boundary: the result was rejected,
-the graph was identical, and no AuditOperation was created. Focused service and request
-coverage freezes both the pre-mutation rejection and localized feedback.
+source Entities before its first mutation. Paid history first returns a precise request
+for historical confirmation. Once confirmed, a supported graph retains every paid
+installment's ID, date, amount, and settlement state, consolidates the source and target
+under the canonical target projection, and rebuilds only the unpaid remainder.
+
+The production-shaped card `#3` graph was exercised inside an outer rollback-only
+transaction. Its October and November projections combined to `427830`, retained paid
+installments `#45360` (`62241`) and `#45361` (`38203`), and produced one pending
+installment of `327386`. Audit preview was applyable and confirmed rollback restored the
+source reference, source projection, exchange ownership, and paid rows. Focused coverage
+also proves that a later exchange appends a new pending installment to the canonical
+projection without rewriting completed payments. Unsupported or inconsistent projection
+graphs continue to reject before mutation.
+
+The same confirmed-history contract now covers reallocation. Because buckets move
+latest-to-earliest, a paid projection can retain its CashTransaction and paid installment
+facts while its exchanges and unpaid schedule advance one month. The production-shaped
+card `#3` plan (10 buckets, 147 card installments, and 120 exchanges) was eligible and
+applied successfully inside an outer rollback-only transaction; the outer rollback
+restored the exact sampled graph and audit-operation count. Regression coverage repeats
+the post-reallocation consumption case and verifies that only the new amount becomes
+pending.

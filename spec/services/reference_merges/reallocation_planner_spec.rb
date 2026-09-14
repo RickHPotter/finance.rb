@@ -85,8 +85,15 @@ RSpec.describe ReferenceMerges::ReallocationPlanner do
     installment.reload
   end
 
-  def plan(source: "2026-08-01", target: "2026-09-01", selected_context: context, selected_card: user_card)
-    described_class.new(user_card: selected_card, context: selected_context, source_date: source, target_date: target).call
+  def plan(source: "2026-08-01", target: "2026-09-01", selected_context: context, selected_card: user_card,
+           historical_correction_confirmation: false)
+    described_class.new(
+      user_card: selected_card,
+      context: selected_context,
+      source_date: source,
+      target_date: target,
+      historical_correction_confirmation:
+    ).call
   end
 
   def create_card_bound_exchange(reference, price: 500)
@@ -261,7 +268,7 @@ RSpec.describe ReferenceMerges::ReallocationPlanner do
     expect(result.exchange_ids).not_to include(unrelated_exchange.id)
   end
 
-  it "blocks paid exchange projections and duplicate canonical invoices" do
+  it "requires confirmation for paid exchange projections and still reports unrelated graph conflicts" do
     august = create_reference(8)
     september = create_reference(9)
     august_invoice = create_invoice(august)
@@ -275,9 +282,26 @@ RSpec.describe ReferenceMerges::ReallocationPlanner do
     result = plan
 
     expect(result).to be_conflict
-    expect(result.issues.map(&:code)).to include(:locked_exchange_projections, :duplicate_invoices, :missing_root)
+    expect(result.issues.map(&:code)).to include(:paid_history_confirmation_required, :duplicate_invoices, :missing_root)
     expect(result.issues.find { |issue| issue.code == :duplicate_invoices }.details[:dates]).to eq("2026-09-01")
     expect(result.lock_keys).to include("CashTransaction:#{duplicate_invoice.id}")
+  end
+
+  it "accepts a structurally valid paid exchange projection after confirmation" do
+    august = create_reference(8)
+    september = create_reference(9)
+    august_invoice = create_invoice(august)
+    september_invoice = create_invoice(september)
+    create_card_installment(august, invoice: august_invoice)
+    create_card_installment(september, invoice: september_invoice)
+    exchange = create_card_bound_exchange(august)
+    exchange.cash_transaction.cash_installments.sole.update_columns(paid: true)
+    exchange.cash_transaction.update_columns(paid: true)
+
+    result = plan(historical_correction_confirmation: true)
+
+    expect(result).to be_eligible
+    expect(result.historical_correction_confirmation).to be(true)
   end
 
   it "reports invalid direction, missing roots, and context ownership mismatches" do

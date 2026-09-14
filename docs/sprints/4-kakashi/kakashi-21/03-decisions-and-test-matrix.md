@@ -44,11 +44,15 @@ creates only missing graph rows. The final tail may cross a year boundary.
 Descending mutation avoids transient bucket coalescing. All locks, writes, projection
 synchronization, validation, and source cleanup still belong to one database transaction.
 
-### D9: Paid or unsupported history fails closed
+### D9: Paid history requires an explicitly supported correction path
 
-V1 does not rewrite paid/locked installments merely to imitate issuer behavior. Any
-unsafe row blocks the reallocation before mutation. Existing guarded confirmation rules
-continue to govern rollback of otherwise supported paid history.
+V1 does not rewrite paid/locked installments merely to imitate issuer behavior. Combine
+may consolidate reconcilable paid card-bound projections after explicit historical
+confirmation; reallocation may move a valid paid projection intact while processing the
+schedule latest-to-earliest. In both modes, paid installment IDs, dates, prices, and
+settlement states remain intact. Only structural parent/sequence data and unpaid
+scheduling may change. Unsupported or arithmetically inconsistent graphs still fail
+before mutation. Existing guarded confirmation rules continue to govern rollback.
 
 ### D10: Card-bound exchanges follow their invoice buckets
 

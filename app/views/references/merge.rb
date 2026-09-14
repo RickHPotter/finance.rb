@@ -7,13 +7,14 @@ class Views::References::Merge < Views::Base
 
   include TranslateHelper
 
-  attr_reader :reference, :user_card, :return_to, :merge_mode
+  attr_reader :reference, :user_card, :return_to, :merge_mode, :historical_correction_confirmation
 
-  def initialize(reference:, user_card:, return_to: "/user_cards", merge_mode: nil)
+  def initialize(reference:, user_card:, return_to: "/user_cards", merge_mode: nil, historical_correction_confirmation: false)
     @reference = reference
     @user_card = user_card
     @return_to = return_to
     @merge_mode = merge_mode
+    @historical_correction_confirmation = ActiveModel::Type::Boolean.new.cast(historical_correction_confirmation)
   end
 
   def view_template
@@ -53,6 +54,7 @@ class Views::References::Merge < Views::Base
           end
 
           merge_mode_fields(form)
+          historical_correction_confirmation_field(form)
 
           div(class: "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between") do
             form.submit action_model(:merge, Reference, 2),
@@ -100,6 +102,26 @@ class Views::References::Merge < Views::Base
       span do
         strong(class: "block") { I18n.t("references.merge.modes.#{mode}.label") }
         small(class: "mt-1 block text-xs text-slate-500 dark:text-slate-400") { I18n.t("references.merge.modes.#{mode}.hint") }
+      end
+    end
+  end
+
+  def historical_correction_confirmation_field(form)
+    label(
+      for: "historical_correction_confirmation",
+      class: "mb-6 flex items-start gap-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 " \
+             "dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100"
+    ) do
+      raw form.check_box(
+        :historical_correction_confirmation,
+        { id: "historical_correction_confirmation", checked: historical_correction_confirmation, class: "mt-0.5 accent-amber-600" },
+        "1",
+        "0"
+      )
+
+      span do
+        strong(class: "block") { I18n.t("references.merge.historical_confirmation.label") }
+        small(class: "mt-1 block text-xs text-amber-800 dark:text-amber-200") { I18n.t("references.merge.historical_confirmation.hint") }
       end
     end
   end

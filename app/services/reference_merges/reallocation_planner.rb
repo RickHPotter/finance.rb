@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 class ReferenceMerges::ReallocationPlanner
-  attr_reader :user_card, :context, :raw_source_date, :raw_target_date
+  attr_reader :user_card, :context, :raw_source_date, :raw_target_date, :historical_correction_confirmation
 
-  def initialize(user_card:, context:, source_date:, target_date:)
+  def initialize(user_card:, context:, source_date:, target_date:, historical_correction_confirmation: false)
     @user_card = user_card
     @context = context
     @raw_source_date = source_date
     @raw_target_date = target_date
+    @historical_correction_confirmation = ActiveModel::Type::Boolean.new.cast(historical_correction_confirmation)
   end
 
   def call
@@ -21,7 +22,8 @@ class ReferenceMerges::ReallocationPlanner
       buckets: build_buckets,
       issues: build_issues,
       lock_keys: build_lock_keys,
-      state_rows: build_state_rows
+      state_rows: build_state_rows,
+      historical_correction_confirmation:
     )
   end
 
@@ -234,8 +236,19 @@ class ReferenceMerges::ReallocationPlanner
   end
 
   def locked_projections_issue
-    ids = projections.select(&:paid_history?).map(&:id).sort
-    issue(:locked_exchange_projections, ids: ids.join(",")) if ids.present?
+    locked = projections.select(&:paid_history?)
+    return if locked.empty?
+    return issue(:paid_history_confirmation_required) unless historical_correction_confirmation
+
+    unsupported_ids = locked.reject { |projection| paid_projection_reallocation(projection).supported? }.map(&:id).sort
+    issue(:unsupported_paid_exchange_history, ids: unsupported_ids.join(",")) if unsupported_ids.present?
+  end
+
+  def paid_projection_reallocation(projection)
+    ReferenceMerges::PaidProjectionReallocation.new(
+      projection:,
+      exchanges: exchanges.select { |exchange| exchange.cash_transaction_id == projection.id }
+    )
   end
 
   def affected_invoice?(invoice)

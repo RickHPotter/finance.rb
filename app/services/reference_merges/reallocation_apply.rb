@@ -60,7 +60,7 @@ class ReferenceMerges::ReallocationApply
       earliest_affected_reference: plan.earliest_affected_date&.iso8601,
       latest_affected_reference: plan.latest_affected_date&.iso8601,
       tail_reference: plan.tail_date&.iso8601
-    }
+    }.merge(plan.historical_correction_confirmation ? { historical_correction_confirmation: true } : {})
   end
 
   def lock_plan_records!
@@ -75,7 +75,8 @@ class ReferenceMerges::ReallocationApply
       user_card: plan.user_card,
       context: plan.context,
       source_date: plan.source_date,
-      target_date: plan.target_date
+      target_date: plan.target_date,
+      historical_correction_confirmation: plan.historical_correction_confirmation
     ).call
   end
 
@@ -165,12 +166,19 @@ class ReferenceMerges::ReallocationApply
 
     destination_reference = destination_reference_for(bucket.destination_date)
 
-    Exchange.where(id: bucket.exchange_ids).order(:id).each do |exchange|
-      exchange.update!(
-        date: destination_reference.reference_date,
-        month: bucket.destination_date.month,
-        year: bucket.destination_date.year
-      )
+    Exchange.where(id: bucket.exchange_ids).includes(:cash_transaction, :entity_transaction).order(:id).group_by(&:cash_transaction_id).each_value do |exchanges|
+      projection = exchanges.first.cash_transaction
+      if projection&.paid_history?
+        ReferenceMerges::PaidProjectionReallocation.new(projection:, exchanges:, destination_reference:).call
+      else
+        exchanges.each do |exchange|
+          exchange.update!(
+            date: destination_reference.reference_date,
+            month: bucket.destination_date.month,
+            year: bucket.destination_date.year
+          )
+        end
+      end
     end
   end
 
@@ -263,7 +271,7 @@ class ReferenceMerges::ReallocationApply
   def verify_projection_total!(projection)
     expected_price = Exchange.where(cash_transaction_id: projection.id).sum(:price)
     raise IntegrityError unless projection.price == expected_price
-    raise IntegrityError unless projection.cash_installments.sole.price == expected_price
+    raise IntegrityError unless projection.cash_installments.sum(:price) == expected_price
   end
 
   def recalculate_balances!

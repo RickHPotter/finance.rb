@@ -21,9 +21,14 @@ class Audit::Rollback::Adapters::Exchange < Audit::Rollback::Adapters::Base
     RECALCULATIONS
   end
 
-  def compensate!(rows:, **)
-    super(**)
-    restore_projection_snapshot(rows)
+  def compensate!(rows:, confirmed: false, **)
+    paid_projection_update = action == "update" && confirmed && paid_projection_history?(rows)
+    if paid_projection_update
+      Audit::BulkMutation.update_columns!(live_record, restore_attributes)
+    else
+      super(**)
+      restore_projection_snapshot(rows)
+    end
     handled_destroyed_projection_keys(rows)
   end
 
@@ -98,6 +103,14 @@ class Audit::Rollback::Adapters::Exchange < Audit::Rollback::Adapters::Base
 
     rows.select do |row|
       row.record_type.in?(PROJECTION_TYPES) && projection_row_for?(row, projection_id)
+    end
+  end
+
+  def paid_projection_history?(rows)
+    projection_rows(rows).any? do |row|
+      row.record_type == "CashInstallment" && [ row.before_state, row.expected_after_state ].compact.any? do |state|
+        ActiveModel::Type::Boolean.new.cast(state["paid"])
+      end
     end
   end
 

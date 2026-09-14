@@ -112,6 +112,20 @@ submitting, then confirm all are unchanged afterward.
 5. Refresh after each rejection and confirm no bucket, amount, relationship, balance,
    message, or audit mutation escaped.
 
+For combine mode, use source and target card-bound projections with paid installments.
+Confirm the first submission requests historical confirmation. Submit again with that
+confirmation and verify that every paid installment keeps its ID, date, amount, and paid
+state; the projections become one canonical target projection; and only the combined
+unpaid remainder is rebuilt. Add another exchange for the same Entity/card/target bucket
+afterward and confirm it appends one new pending installment without modifying the paid
+rows. An inconsistent projection total must still fail closed.
+
+Repeat with reallocation. After confirmation, each paid projection must retain its
+CashTransaction ID and every paid installment fact while advancing to its destination
+bucket. Only pending installments follow the new destination due date. Add another
+exchange for the same Entity/card/destination bucket and confirm it joins that moved
+projection as a new pending installment.
+
 ## K21-M06 — Audit Preview, Rollback, and Conflict
 
 Run this once after a fresh combine and once after a fresh reallocation.
