@@ -11,6 +11,18 @@ Add an explicit financial decision to the existing user-card reference merge:
 Both modes must remain scoped, atomic, projection-safe, fully audited, and eligible for
 operation-wide guarded rollback.
 
+## Activation Status
+
+KAKASHI-21 is being activated against an existing implementation rather than a blank
+code path. Earlier reference-merge work already introduced the explicit mode choice,
+`ReferenceMerges::ReallocationPlanner`, `ReferenceMerges::ReallocationApply`, grouped
+audit metadata, and rollback support. Those behaviors remain the inherited baseline.
+
+The feature is not complete merely because that code exists or has already been used.
+Closure requires reconciling the implementation with this contract, strengthening the
+shared mutation boundary and concurrency guarantees, filling the remaining executable
+matrix, and manually accepting both modes.
+
 ## Current Behavior
 
 `Logic::References.merge` currently accepts adjacent source and target references. It
@@ -243,3 +255,6 @@ fails closed rather than restoring a prefix of the shifted range.
 - changing the schedule of future installments that are not persisted
 - repairing reference merges completed before audit capture
 - partial or per-record rollback of a merge operation
+- changing any actionable-message send, receive, auto-apply, supersession, or pending
+  rule; projection synchronization must continue through the established domain path
+  without making message policy part of reference merging

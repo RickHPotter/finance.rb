@@ -22,10 +22,15 @@ en:
           attributes:
             merge_mode:
               reallocation_blocked: cannot reallocate paid, locked, stale, or invalid invoice history
-              apply_failed: could not complete the reallocation; no changes were saved (see the server log for the exact error)
+              apply_failed: could not complete the merge; no changes were saved (see the server log for the exact error)
               stale_plan: could not complete because the affected invoice history changed; retry from a refreshed page
               context_mismatch: cannot use context %{context_id} with user card %{user_card_id}
               invalid_date: requires valid source and target months
+              not_adjacent: requires the source and target to be adjacent calendar months
+              combine_missing_root: cannot find one canonical source and target reference/invoice graph
+              locked_exchange_history: cannot combine these invoices because an affected exchange-return projection has paid history
+              paid_history_confirmation_required: requires confirmation before combining paid exchange-return history
+              unsupported_paid_exchange_history: cannot safely reconcile the paid exchange-return projections in these invoices
               not_forward_adjacent: requires the target to be the calendar month immediately after the source
               missing_root: cannot find one canonical %{missing} for the %{kind} month %{date}
               empty_shift: cannot find any future installments or card-bound exchanges to reallocate
@@ -38,13 +43,16 @@ en:
     merge:
       mode_legend: Choose how to move the invoices
       mode_hint: This choice changes the schedule of this card's installments.
+      historical_confirmation:
+        label: Confirm paid-history consolidation
+        hint: Preserve completed payments while moving or combining their exchange-return projections. Only unpaid scheduling may be rebuilt.
       modes:
         combine_into_target:
           label: Combine into target
-          hint: Move the source invoice into the target. Later invoices stay where they are.
+          hint: Move the source invoice into the target and remove the emptied source. Later invoices stay where they are.
         reallocate_installments:
           label: Reallocate installments
-          hint: Move the source invoice forward and shift every later persisted invoice by one month.
+          hint: Shift the source and every later persisted invoice forward by one month, preserving installment dates and amounts.
 
 pt-BR:
   activerecord:
@@ -70,10 +78,15 @@ pt-BR:
           attributes:
             merge_mode:
               reallocation_blocked: não pode realocar um histórico de faturas pago, bloqueado, desatualizado ou inválido
-              apply_failed: não concluiu a realocação; nenhuma alteração foi salva (consulte o log do servidor para ver o erro exato)
+              apply_failed: não concluiu a mesclagem; nenhuma alteração foi salva (consulte o log do servidor para ver o erro exato)
               stale_plan: não concluiu porque o histórico de faturas afetado mudou; atualize a página e tente novamente
               context_mismatch: não pode usar o contexto %{context_id} com o cartão %{user_card_id}
               invalid_date: exige meses de origem e destino válidos
+              not_adjacent: exige que a origem e o destino sejam meses consecutivos
+              combine_missing_root: não encontrou um grafo canônico de referência/fatura para a origem e o destino
+              locked_exchange_history: não pode combinar estas faturas porque uma projeção de retorno de troca afetada possui histórico pago
+              paid_history_confirmation_required: exige confirmação antes de combinar o histórico pago de retornos de troca
+              unsupported_paid_exchange_history: não pode reconciliar com segurança as projeções pagas de retorno de troca destas faturas
               not_forward_adjacent: exige que o destino seja o mês imediatamente seguinte à origem
               missing_root: não encontrou um único %{missing} canônico para o mês %{kind} %{date}
               empty_shift: não encontrou parcelas futuras ou trocas vinculadas ao cartão para realocar
@@ -86,10 +99,13 @@ pt-BR:
     merge:
       mode_legend: Escolha como mover as faturas
       mode_hint: Esta escolha altera o cronograma das parcelas deste cartão.
+      historical_confirmation:
+        label: Confirmar consolidação do histórico pago
+        hint: Preserva os pagamentos concluídos ao mover ou combinar suas projeções de retorno de troca. Somente o cronograma pendente poderá ser reconstruído.
       modes:
         combine_into_target:
           label: Combinar no destino
-          hint: Move a fatura de origem para o destino. As faturas seguintes permanecem onde estão.
+          hint: Move a fatura de origem para o destino e remove a origem vazia. As faturas seguintes permanecem onde estão.
         reallocate_installments:
           label: Realocar parcelas
-          hint: Move a fatura de origem e desloca cada fatura futura já registrada em um mês.
+          hint: Desloca a origem e cada fatura futura já registrada em um mês, preservando datas e valores das parcelas.

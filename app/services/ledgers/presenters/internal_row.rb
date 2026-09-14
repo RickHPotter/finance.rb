@@ -2,7 +2,7 @@
 
 class Ledgers::Presenters::InternalRow
   attr_reader :key, :kind, :description, :date, :number, :installments_count, :amount, :paid,
-              :categories, :entities, :row_classes, :row_style
+              :user_card_name, :categories, :entities, :row_classes, :row_style
 
   def initialize(installment:, kind:, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     transaction = installment.public_send("#{kind}_transaction")
@@ -17,6 +17,7 @@ class Ledgers::Presenters::InternalRow
     @installments_count = transaction.public_send("#{kind}_installments_count")
     @amount = installment.price
     @paid = installment.paid
+    @user_card_name = transaction.user_card&.user_card_name
     @categories = ordered_categories
     @entities = transaction.entity_transactions.sort_by(&:id).filter_map do |allocation|
       entity = allocation.entity

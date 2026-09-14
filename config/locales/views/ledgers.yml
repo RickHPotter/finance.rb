@@ -21,6 +21,8 @@ en:
       card: Card
     filter:
       search: Search descriptions...
+      card: Filter by card
+      all_cards: All cards
       paid: Paid
       pending: Pending
       sort: Sort ledger
@@ -36,6 +38,7 @@ en:
         desc: Descending
     row:
       description: Description
+      card: Card
       date: Date
       installment: Installment
       paid: Paid
@@ -46,6 +49,9 @@ en:
     unavailable:
       title: Ledger unavailable
       description: This shared link is invalid, expired, or no longer active.
+    rate_limited:
+      title: Ledger temporarily busy
+      description: Too many ledger sections were requested at once. Please wait a moment and try again.
     total:
       entries:
         one: 1 entry in this result
@@ -83,6 +89,8 @@ pt-BR:
       card: Cartão
     filter:
       search: Buscar descrições...
+      card: Filtrar por cartão
+      all_cards: Todos os cartões
       paid: Pago
       pending: Pendente
       sort: Ordenar livro-razão
@@ -98,6 +106,7 @@ pt-BR:
         desc: Decrescente
     row:
       description: Descrição
+      card: Cartão
       date: Data
       installment: Parcela
       paid: Pago
@@ -108,6 +117,9 @@ pt-BR:
     unavailable:
       title: Livro-razão indisponível
       description: Este link compartilhado é inválido, expirou ou não está mais ativo.
+    rate_limited:
+      title: Livro-razão temporariamente ocupado
+      description: Muitas seções do livro-razão foram solicitadas de uma vez. Aguarde um momento e tente novamente.
     total:
       entries:
         one: 1 lançamento neste resultado

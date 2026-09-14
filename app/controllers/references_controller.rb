@@ -33,50 +33,67 @@ class ReferencesController < ApplicationController
   end
 
   def perform_merge
-    source_reference_date = "#{merge_reference_params[:source_reference_date]}-01"
-    target_reference_date = "#{merge_reference_params[:target_reference_date]}-01"
+    source_reference_date = normalized_merge_date(merge_reference_params[:source_reference_date])
+    target_reference_date = normalized_merge_date(merge_reference_params[:target_reference_date])
     merge_mode = merge_reference_params[:merge_mode]
-    source_date = source_reference_date.to_date
-    @reference = current_context.references.find_by(user_card: @user_card, year: source_date.year, month: source_date.month) ||
-                 current_context.references.new(user_card: @user_card, reference_date: source_date)
+    historical_correction_confirmation = merge_reference_params[:historical_correction_confirmation]
+    @reference = merge_reference_for(source_reference_date)
     @reference.merge_mode = merge_mode
+    @reference.source_reference_date = merge_reference_params[:source_reference_date]
+    @reference.target_reference_date = merge_reference_params[:target_reference_date]
 
-    if perform_reference_merge(source_reference_date, target_reference_date, merge_mode)
+    @merge_result = Logic::References.merge_result(
+      @user_card,
+      source_reference_date,
+      target_reference_date,
+      merge_mode:,
+      context: current_context,
+      historical_correction_confirmation:
+    )
+
+    if @merge_result.applied?
       redirect_to user_card_edit_destination, status: :see_other
     else
-      if merge_mode.to_s.in?(Logic::References::MERGE_MODES)
-        add_reallocation_errors if merge_mode == Logic::References::REALLOCATE_INSTALLMENTS
-      else
-        @reference.errors.add(:merge_mode, :inclusion)
-      end
-      render_top_level Views::References::Merge.new(reference: @reference, user_card: @user_card, return_to: @return_to, merge_mode:),
-                       status: :unprocessable_content
+      add_merge_errors
+      render_merge_failure(merge_mode, historical_correction_confirmation:)
     end
   end
 
   private
 
-  def perform_reference_merge(source_reference_date, target_reference_date, merge_mode)
-    if merge_mode == Logic::References::REALLOCATE_INSTALLMENTS
-      @reallocation_result = Logic::References.reallocation_result(
-        @user_card,
-        source_reference_date,
-        target_reference_date,
-        context: current_context
-      )
-      return @reallocation_result.applied?
-    end
+  def add_merge_errors
+    return @reference.errors.add(:merge_mode, :inclusion) if @merge_result.reason_code == "invalid_mode"
 
-    Logic::References.merge(@user_card, source_reference_date, target_reference_date, merge_mode:, context: current_context)
-  end
-
-  def add_reallocation_errors
-    issues = @reallocation_result.plan.issues
+    issues = @merge_result.plan&.issues
     if issues.present?
       issues.each { |issue| @reference.errors.add(:merge_mode, issue.code, **issue.details) }
     else
-      @reference.errors.add(:merge_mode, @reallocation_result.reason_code || :reallocation_blocked)
+      @reference.errors.add(:merge_mode, (@merge_result.reason_code || :apply_failed).to_sym)
     end
+  end
+
+  def normalized_merge_date(value)
+    Date.strptime(value.to_s, "%Y-%m").beginning_of_month
+  rescue Date::Error
+    nil
+  end
+
+  def merge_reference_for(source_date)
+    return current_context.references.new(user_card: @user_card, reference_date: Date.current.beginning_of_month) unless source_date
+
+    current_context.references.find_by(user_card: @user_card, year: source_date.year, month: source_date.month) ||
+      current_context.references.new(user_card: @user_card, reference_date: source_date)
+  end
+
+  def render_merge_failure(merge_mode, historical_correction_confirmation: false)
+    render_top_level Views::References::Merge.new(
+      reference: @reference,
+      user_card: @user_card,
+      return_to: @return_to,
+      merge_mode:,
+      historical_correction_confirmation:
+    ),
+                     status: :unprocessable_content
   end
 
   def render_top_level(view, status: :ok)
@@ -113,6 +130,6 @@ class ReferencesController < ApplicationController
   end
 
   def merge_reference_params
-    params.permit(:source_reference_date, :target_reference_date, :merge_mode)
+    params.permit(:source_reference_date, :target_reference_date, :merge_mode, :historical_correction_confirmation)
   end
 end

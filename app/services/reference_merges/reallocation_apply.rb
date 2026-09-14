@@ -4,19 +4,7 @@ class ReferenceMerges::ReallocationApply
   class StalePlanError < StandardError; end
   class IntegrityError < StandardError; end
 
-  Result = Data.define(:status, :reason_code, :plan, :operation) do
-    def applied?
-      status == "applied"
-    end
-
-    def rejected?
-      status == "rejected"
-    end
-
-    def failed?
-      status == "failed"
-    end
-  end
+  Result = ReferenceMerges::Result
 
   attr_reader :plan
 
@@ -51,6 +39,7 @@ class ReferenceMerges::ReallocationApply
       metadata: operation_metadata
     ) do
       ApplicationRecord.transaction do
+        ReferenceMerges::Lock.acquire!(user_card: plan.user_card, context: plan.context)
         lock_plan_records!
         @locked_plan = replan
         raise StalePlanError unless @locked_plan.eligible? && @locked_plan.digest == plan.digest
@@ -71,7 +60,7 @@ class ReferenceMerges::ReallocationApply
       earliest_affected_reference: plan.earliest_affected_date&.iso8601,
       latest_affected_reference: plan.latest_affected_date&.iso8601,
       tail_reference: plan.tail_date&.iso8601
-    }
+    }.merge(plan.historical_correction_confirmation ? { historical_correction_confirmation: true } : {})
   end
 
   def lock_plan_records!
@@ -86,7 +75,8 @@ class ReferenceMerges::ReallocationApply
       user_card: plan.user_card,
       context: plan.context,
       source_date: plan.source_date,
-      target_date: plan.target_date
+      target_date: plan.target_date,
+      historical_correction_confirmation: plan.historical_correction_confirmation
     ).call
   end
 
@@ -97,6 +87,7 @@ class ReferenceMerges::ReallocationApply
       move_bucket_installments!(bucket)
       move_bucket_exchanges!(bucket)
     end
+    destroy_empty_shifted_invoices!
     Audit::BulkMutation.update_columns!(target_reference, reference_closing_date: source_closing_date)
     source_reference.destroy!
 
@@ -159,17 +150,35 @@ class ReferenceMerges::ReallocationApply
     end
   end
 
+  def destroy_empty_shifted_invoices!
+    affected_buckets = @locked_plan.buckets.flat_map { |bucket| [ bucket.source_date, bucket.destination_date ] }.to_set
+
+    plan.context.cash_transactions.card_payment.where(user_card: plan.user_card, paid: false).find_each do |invoice|
+      next unless Date.new(invoice.year, invoice.month, 1).in?(affected_buckets)
+      next if CardInstallment.exists?(cash_transaction_id: invoice.id)
+
+      invoice.destroy!
+    end
+  end
+
   def move_bucket_exchanges!(bucket)
     return if bucket.exchange_ids.empty?
 
     destination_reference = destination_reference_for(bucket.destination_date)
 
-    Exchange.where(id: bucket.exchange_ids).order(:id).each do |exchange|
-      exchange.update!(
-        date: destination_reference.reference_date,
-        month: bucket.destination_date.month,
-        year: bucket.destination_date.year
-      )
+    Exchange.where(id: bucket.exchange_ids).includes(:cash_transaction, :entity_transaction).order(:id).group_by(&:cash_transaction_id).each_value do |exchanges|
+      projection = exchanges.first.cash_transaction
+      if projection&.paid_history?
+        ReferenceMerges::PaidProjectionReallocation.new(projection:, exchanges:, destination_reference:).call
+      else
+        exchanges.each do |exchange|
+          exchange.update!(
+            date: destination_reference.reference_date,
+            month: bucket.destination_date.month,
+            year: bucket.destination_date.year
+          )
+        end
+      end
     end
   end
 
@@ -262,7 +271,7 @@ class ReferenceMerges::ReallocationApply
   def verify_projection_total!(projection)
     expected_price = Exchange.where(cash_transaction_id: projection.id).sum(:price)
     raise IntegrityError unless projection.price == expected_price
-    raise IntegrityError unless projection.cash_installments.sole.price == expected_price
+    raise IntegrityError unless projection.cash_installments.sum(:price) == expected_price
   end
 
   def recalculate_balances!

@@ -35,7 +35,7 @@ RSpec.describe "External ledger HTTP security", type: :request do
     expect(response.body).not_to include("invalid-legacy-secret")
   end
 
-  it "throttles invalid-token enumeration with the same generic unavailable surface" do
+  it "throttles invalid-token enumeration without exposing lookup material" do
     stub_const("Ledgers::ExternalRateLimiter::NETWORK_LIMIT", 2)
     stub_const("Ledgers::ExternalRateLimiter::IDENTITY_LIMIT", 10)
 
@@ -48,7 +48,9 @@ RSpec.describe "External ledger HTTP security", type: :request do
 
     get external_cash_transactions_path(share_token: "invalid-three")
     expect(response).to have_http_status(:too_many_requests)
-    expect(response.body).to eq(generic_body)
+    expect(response.body).not_to eq(generic_body)
+    expect(response.body).to include("Ledger temporarily busy")
+    expect(response.body).not_to include("invalid-three")
     expect(response.headers["Retry-After"]).to eq("60")
     expect_privacy_headers
   end
@@ -84,6 +86,32 @@ RSpec.describe "External ledger HTTP security", type: :request do
       expect(response).to have_http_status(:ok)
       expect(share.share.reload.access_count).to eq(1)
     end
+  end
+
+  it "keeps month-frame bursts separate from navigation and returns a valid throttled frame" do
+    stub_const("Ledgers::ExternalRateLimiter::NETWORK_LIMIT", 10)
+    stub_const("Ledgers::ExternalRateLimiter::IDENTITY_LIMIT", 2)
+    stub_const("Ledgers::ExternalRateLimiter::MONTH_FRAME_NETWORK_LIMIT", 10)
+    stub_const("Ledgers::ExternalRateLimiter::MONTH_FRAME_IDENTITY_LIMIT", 2)
+    frame_id = "month_year_container_202609"
+    frame_headers = { "Turbo-Frame" => frame_id }
+
+    2.times do
+      get month_year_external_cash_transactions_path(share_token: share.token), params: { month_year: 202_609 }, headers: frame_headers
+      expect(response).to have_http_status(:ok)
+    end
+
+    get month_year_external_cash_transactions_path(share_token: share.token), params: { month_year: 202_609 }, headers: frame_headers
+    expect(response).to have_http_status(:too_many_requests)
+    expect(response.parsed_body.at_css("turbo-frame##{frame_id}")).to be_present
+    expect(response.body).to include("Ledger temporarily busy")
+
+    2.times do
+      get external_cash_transactions_path(share_token: share.token)
+      expect(response).to have_http_status(:ok)
+    end
+    get external_cash_transactions_path(share_token: share.token)
+    expect(response).to have_http_status(:too_many_requests)
   end
 
   private

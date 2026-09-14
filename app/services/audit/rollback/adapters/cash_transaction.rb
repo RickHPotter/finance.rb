@@ -40,9 +40,10 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
   end
 
   def post_compensation_attributes
-    return {} unless supported_card_payment_projection_update?
+    return before_state.slice("description", "comment") if supported_card_payment_projection_update?
+    return before_state.slice("description", "comment") if supported_reference_merge_graph?
 
-    before_state.slice("description", "comment")
+    {}
   end
 
   def rollback_ignored_attributes

@@ -24,9 +24,9 @@ class ReferenceMerges::ReallocationPlan
     end
   end
 
-  attr_reader :user_card, :context, :source_date, :target_date, :buckets, :issues, :lock_keys, :state_rows
+  attr_reader :user_card, :context, :source_date, :target_date, :buckets, :issues, :lock_keys, :state_rows, :historical_correction_confirmation
 
-  def initialize(user_card:, context:, source_date:, target_date:, buckets:, issues:, lock_keys:, state_rows:)
+  def initialize(user_card:, context:, source_date:, target_date:, buckets:, issues:, lock_keys:, state_rows:, historical_correction_confirmation: false)
     @user_card = user_card
     @context = context
     @source_date = source_date
@@ -35,6 +35,7 @@ class ReferenceMerges::ReallocationPlan
     @issues = issues.freeze
     @lock_keys = lock_keys.freeze
     @state_rows = state_rows.freeze
+    @historical_correction_confirmation = ActiveModel::Type::Boolean.new.cast(historical_correction_confirmation)
   end
 
   def eligible?
@@ -77,6 +78,7 @@ class ReferenceMerges::ReallocationPlan
       context_id: context.id,
       source_date: source_date&.iso8601,
       target_date: target_date&.iso8601,
+      historical_correction_confirmation:,
       issues: issues.map { |issue| { code: issue.code, details: issue.details } },
       buckets: buckets.map do |bucket|
         {

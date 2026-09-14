@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Ledgers::Presenters::ExternalRow
-  attr_reader :key, :kind, :description, :date, :number, :installments_count, :amount, :paid, :row_classes, :row_style
+  attr_reader :key, :kind, :description, :date, :number, :installments_count, :amount, :paid, :user_card_name, :row_classes, :row_style
 
   def self.build(installment:, kind:, share:)
     transaction = installment.public_send("#{kind}_transaction")
@@ -18,8 +18,8 @@ class Ledgers::Presenters::ExternalRow
       installments_count: transaction.public_send("#{kind}_installments_count"),
       amount: installment.price,
       paid: installment.paid,
-      row_classes: presentation.row_classes,
-      row_style: presentation.row_style
+      user_card_name: transaction.user_card&.user_card_name,
+      presentation:
     )
   end
 
@@ -30,7 +30,7 @@ class Ledgers::Presenters::ExternalRow
   end
   private_class_method :category_presentation
 
-  def initialize(key:, kind:, description:, date:, number:, installments_count:, amount:, paid:, row_classes:, row_style:)
+  def initialize(key:, kind:, description:, date:, number:, installments_count:, amount:, paid:, user_card_name:, presentation:)
     @key = key
     @kind = kind
     @description = description
@@ -39,8 +39,9 @@ class Ledgers::Presenters::ExternalRow
     @installments_count = installments_count
     @amount = amount
     @paid = paid
-    @row_classes = row_classes
-    @row_style = row_style
+    @user_card_name = user_card_name
+    @row_classes = presentation.row_classes
+    @row_style = presentation.row_style
   end
 
   def categories

@@ -1453,6 +1453,11 @@ Explicitly out of scope:
 - Issues:
   - [#77](https://github.com/RickHPotter/finance.rb/issues/77)
 
+Status: implementation and automated closure complete as of 2026-09-14. The explicit
+choice, shared locking boundary, forward reallocation, projection synchronization,
+grouped audit, guarded rollback, UI/navigation contract, and full automated matrix are
+reconciled. Production-shaped manual acceptance remains the explicit final human gate.
+
 Goal: make the reference-merge form require an explicit choice between preserving the
 current invoice-collapse behavior and applying the installment reallocation used by
 Itaú, while keeping either operation atomic, auditable, and completely reversible
@@ -1525,6 +1530,9 @@ AuditRollback requirements:
   the only intentional additions to history
 - reject stale rollback after any affected record diverges instead of partially
   restoring the sequence
+- preserve existing actionable-message send, receive, and auto-apply rules exactly;
+  KAKASHI-21 may exercise canonical exchange projection callbacks but does not broaden
+  or redefine message behavior
 
 Coverage:
 
@@ -1544,6 +1552,9 @@ References:
 - [product and data contract](docs/sprints/4-kakashi/kakashi-21/01-product-and-data-contract.md)
 - [implementation slices](docs/sprints/4-kakashi/kakashi-21/02-implementation-slices.md)
 - [decisions and test matrix](docs/sprints/4-kakashi/kakashi-21/03-decisions-and-test-matrix.md)
+- [current implementation inventory](docs/sprints/4-kakashi/kakashi-21/04-current-implementation-inventory.md)
+- [manual verification](docs/sprints/4-kakashi/kakashi-21/05-manual-verification.md)
+- [closure report](docs/sprints/4-kakashi/kakashi-21/06-closure-report.md)
 
 ### KAKASHI-22: Reconcile Piggy Bank valuation under IOF constraints
 

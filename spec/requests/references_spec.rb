@@ -85,8 +85,25 @@ RSpec.describe "References", type: :request do
       expect(mode_inputs).to all(satisfy { |input| input["checked"].nil? })
       expect(response.body).to include(
         I18n.t("references.merge.modes.combine_into_target.label"),
-        I18n.t("references.merge.modes.reallocate_installments.label")
+        I18n.t("references.merge.modes.reallocate_installments.label"),
+        I18n.t("references.merge.historical_confirmation.label")
       )
+    end
+
+    it "renders localized labels and financial consequences in both supported locales" do
+      %i[en pt-BR].each do |locale|
+        I18n.with_locale(locale) do
+          get merge_user_card_references_path(user_card, id: reference.id)
+
+          expect(response).to have_http_status(:success)
+          Logic::References::MERGE_MODES.each do |mode|
+            expect(response.body).to include(
+              I18n.t("references.merge.modes.#{mode}.label"),
+              I18n.t("references.merge.modes.#{mode}.hint")
+            )
+          end
+        end
+      end
     end
 
     it "rejects a missing or unknown merge mode without creating an audit operation" do
@@ -103,6 +120,26 @@ RSpec.describe "References", type: :request do
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include(Reference.human_attribute_name(:merge_mode))
+      end
+    end
+
+    it "rejects malformed source or target months without mutation or audit history" do
+      reference
+      original_attributes = reference.attributes
+
+      [
+        { source_reference_date: "invalid", target_reference_date: "2026-09" },
+        { source_reference_date: "2026-08", target_reference_date: "2026-13" }
+      ].each do |dates|
+        expect do
+          post perform_merge_user_card_references_path(user_card), params: dates.merge(
+            merge_mode: Logic::References::COMBINE_INTO_TARGET
+          )
+        end.not_to change(AuditOperation, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.invalid_date"))
+        expect(reference.reload.attributes).to eq(original_attributes)
       end
     end
 
@@ -160,7 +197,26 @@ RSpec.describe "References", type: :request do
       document = Nokogiri::HTML(response.body)
       selected_mode = document.at_css("input[name='merge_mode'][value='#{Logic::References::REALLOCATE_INSTALLMENTS}']")
       expect(selected_mode["checked"]).to be_present
+      expect(document.at_css("input[name='source_reference_date']")["value"]).to eq("2026-09")
+      expect(document.at_css("input[name='target_reference_date']")["value"]).to eq("2026-08")
       expect(response.body).to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.not_forward_adjacent"))
+    end
+
+    it "requests and retains confirmation for paid exchange-return history" do
+      allow(Logic::References).to receive(:merge_result).and_return(ReferenceMerges::Result.rejected(:paid_history_confirmation_required))
+
+      post perform_merge_user_card_references_path(user_card), params: {
+        source_reference_date: reference.reference_date.strftime("%Y-%m"),
+        target_reference_date: reference.reference_date.next_month.strftime("%Y-%m"),
+        merge_mode: Logic::References::COMBINE_INTO_TARGET,
+        historical_correction_confirmation: "1"
+      }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.paid_history_confirmation_required"))
+      expect(response.body).not_to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.apply_failed"))
+      confirmation = Nokogiri::HTML(response.body).at_css("input[type='checkbox'][name='historical_correction_confirmation']")
+      expect(confirmation["checked"]).to be_present
     end
   end
 
@@ -480,16 +536,36 @@ RSpec.describe "References", type: :request do
         expect(source_projection_before.price).to eq(2000)
         expect(target_projection_before.price).to eq(3000)
 
-        post perform_merge_user_card_references_path(user_card), params: {
-          source_reference_date: "2026-07",
-          target_reference_date: "2026-08",
-          merge_mode: Logic::References::COMBINE_INTO_TARGET
-        }
+        source_installment = source_card_transaction.card_installments.sole
+        target_installment = target_card_transaction.card_installments.sole
+        source_installment_before = source_installment.attributes.except("updated_at", "month", "year", "cash_transaction_id")
+        target_installment_before = target_installment.attributes.except("updated_at")
+
+        expect do
+          post perform_merge_user_card_references_path(user_card), params: {
+            source_reference_date: "2026-07",
+            target_reference_date: "2026-08",
+            merge_mode: Logic::References::COMBINE_INTO_TARGET
+          }
+        end.not_to change(Message, :count)
 
         expect(response).to redirect_to(edit_user_card_path(user_card))
 
+        operation = AuditOperation.where("metadata ->> 'reference_merge_mode' = ?", Logic::References::COMBINE_INTO_TARGET).order(:created_at).last!
+        expect(operation.metadata).to include(
+          "user_card_id" => user_card.id,
+          "context_id" => user.main_context.id,
+          "source_reference" => "2026-07-01",
+          "target_reference" => "2026-08-01"
+        )
+
         expect(Reference.exists?(source_reference.id)).to be(false)
         expect(user_card.unpaid_invoices(context: user.main_context).find_by(month: 7, year: 2026)).to be_nil
+
+        target_invoice_after = user_card.unpaid_invoices(context: user.main_context).find_by!(month: 8, year: 2026)
+        expect(source_installment.reload).to have_attributes(month: 8, year: 2026, cash_transaction_id: target_invoice_after.id)
+        expect(source_installment.attributes.except("updated_at", "month", "year", "cash_transaction_id")).to eq(source_installment_before)
+        expect(target_installment.reload.attributes.except("updated_at")).to eq(target_installment_before)
 
         expect(source_exchange.reload.month).to eq(8)
         expect(source_exchange.year).to eq(2026)

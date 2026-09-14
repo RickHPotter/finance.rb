@@ -119,6 +119,22 @@ RSpec.describe Ledgers::Query, type: :service do
       expect(result.months).to be_empty
       expect(result.user_card).to be_nil
     end
+
+    it "applies an authorized card filter to external ledger rows" do
+      selected = create_card_installment(description: "SELECTED CARD", price: -1250)
+      create_card_installment(description: "OTHER CARD", price: -2000)
+      share = Ledgers::Shares::Create.call(entity:, context:)
+      external_access = Ledgers::Access::External.call(token: share.token)
+      state = Ledgers::QueryState.new(
+        kind: :card,
+        params: { month_year: "202609", card_transaction: { user_card_id: selected.card_transaction.user_card_id } }
+      )
+
+      result = described_class.call(access: external_access, state:)
+
+      expect(result.rows.ids).to eq([ selected.id ])
+      expect(result.user_card).to eq(selected.card_transaction.user_card)
+    end
   end
 
   private

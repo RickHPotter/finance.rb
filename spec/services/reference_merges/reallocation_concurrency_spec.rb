@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "rails_helper"
+require "timeout"
 
 RSpec.describe "Concurrent reference reallocation" do
   self.use_transactional_tests = false
@@ -59,6 +60,91 @@ RSpec.describe "Concurrent reference reallocation" do
     expect(user_card.references.where(context:, month: 8, year: 2026)).not_to exist
     expect(user_card.references.where(context:, month: 10, year: 2026).count).to eq(1)
     expect(AuditOperation.where("metadata ->> 'reference_merge_mode' = ?", Logic::References::REALLOCATE_INSTALLMENTS).count).to eq(1)
+  end
+
+  it "serializes independently planned combine and reallocation attempts for the same card and context" do
+    user = create(:user, :random)
+    context = user.main_context
+    user_card = create(:user_card, :random, user:, due_date_day: 12, days_until_due_date: 5)
+    account = create(:user_bank_account, :random, user:)
+    references = [ 8, 9 ].map do |month|
+      create(
+        :reference,
+        user_card:,
+        context:,
+        month:,
+        year: 2026,
+        reference_date: Date.new(2026, month, 12),
+        reference_closing_date: Date.new(2026, month, 7)
+      )
+    end
+    invoices = references.map { |reference| create_invoice(user:, context:, user_card:, account:, reference:) }
+    transaction = create_transaction(user:, context:, user_card:, references:)
+    transaction.card_installments.order(:number).zip(invoices).each do |installment, invoice|
+      installment.update_columns(cash_transaction_id: invoice.id)
+    end
+
+    ready = Queue.new
+    release = Queue.new
+    modes = [ Logic::References::COMBINE_INTO_TARGET, Logic::References::REALLOCATE_INSTALLMENTS ]
+    threads = modes.map do |merge_mode|
+      Thread.new do
+        ready << true
+        release.pop
+        ActiveRecord::Base.connection_pool.with_connection do
+          Logic::References.merge_result(
+            user_card,
+            Date.new(2026, 8, 1),
+            Date.new(2026, 9, 1),
+            merge_mode:,
+            context:
+          )
+        end
+      end
+    end
+    2.times { ready.pop }
+    2.times { release << true }
+    results = threads.map(&:value)
+
+    expect(results.map(&:status)).to contain_exactly("applied", "rejected")
+    expect(user_card.references.where(context:, month: 8, year: 2026)).not_to exist
+    expect(user_card.references.where(context:).group(:year, :month).having("COUNT(*) > 1")).to be_empty
+    expect(AuditOperation.where("metadata ->> 'reference_merge_mode' IN (?)", modes).count).to eq(1)
+
+    installment_buckets = transaction.card_installments.reload.order(:number).pluck(:month, :year)
+    expect(installment_buckets).to be_in([ [ [ 9, 2026 ], [ 9, 2026 ] ], [ [ 9, 2026 ], [ 10, 2026 ] ] ])
+  end
+
+  it "does not make independent cards in the same context share a merge lock" do
+    user = create(:user, :random)
+    context = user.main_context
+    first_card = create(:user_card, :random, user:)
+    second_card = create(:user_card, :random, user:)
+    locked = Queue.new
+    release = Queue.new
+    holder = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        ApplicationRecord.transaction do
+          ReferenceMerges::Lock.acquire!(user_card: first_card, context:)
+          locked << true
+          release.pop
+        end
+      end
+    end
+
+    locked.pop
+    independent_lock = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        ApplicationRecord.transaction { ReferenceMerges::Lock.acquire!(user_card: second_card, context:) }
+      end
+      true
+    end
+
+    expect(Timeout.timeout(5) { independent_lock.value }).to be(true)
+  ensure
+    release << true if release
+    holder&.join
+    independent_lock&.join
   end
 
   private

@@ -44,11 +44,15 @@ creates only missing graph rows. The final tail may cross a year boundary.
 Descending mutation avoids transient bucket coalescing. All locks, writes, projection
 synchronization, validation, and source cleanup still belong to one database transaction.
 
-### D9: Paid or unsupported history fails closed
+### D9: Paid history requires an explicitly supported correction path
 
-V1 does not rewrite paid/locked installments merely to imitate issuer behavior. Any
-unsafe row blocks the reallocation before mutation. Existing guarded confirmation rules
-continue to govern rollback of otherwise supported paid history.
+V1 does not rewrite paid/locked installments merely to imitate issuer behavior. Combine
+may consolidate reconcilable paid card-bound projections after explicit historical
+confirmation; reallocation may move a valid paid projection intact while processing the
+schedule latest-to-earliest. In both modes, paid installment IDs, dates, prices, and
+settlement states remain intact. Only structural parent/sequence data and unpaid
+scheduling may change. Unsupported or arithmetically inconsistent graphs still fail
+before mutation. Existing guarded confirmation rules continue to govern rollback.
 
 ### D10: Card-bound exchanges follow their invoice buckets
 
@@ -84,6 +88,21 @@ The selection is an operation parameter and audit metadata value, not a persiste
 `UserCard` preference. A migration is added only if implementation discovery proves a
 separate durable invariant is necessary.
 
+### D16: Existing successful behavior is the activation baseline
+
+KAKASHI-21 starts with a previously delivered implementation. Reconciliation may
+refactor or harden it only behind executable before/after coverage. It must not change
+combine semantics, preserved installment dates, explicitly unpaid shifted invoices, or
+canonical exchange-return synchronization without a newly approved product decision.
+
+### D17: Actionable-message policy is invariant
+
+Neither merge mode creates a new reason to send, suppress, receive, supersede, or
+auto-apply an actionable message. Existing projection callbacks may run because the
+financial graph genuinely changes, but message policy is not inferred or rewritten by
+KAKASHI-21. Any necessary behavioral change requires separate explicit approval and
+coverage.
+
 ## Core Schedule Matrix
 
 | Scenario | Mode | Expected result |
@@ -99,6 +118,7 @@ separate durable invariant is necessary.
 | Source after target | reallocate | rejected, no mutation |
 | Missing mode | n/a | `422`, no audit operation, no mutation |
 | Unknown mode | n/a | `422`, no audit operation, no mutation |
+| Invalid source/target date | n/a | `422`, no exception, no audit operation, no mutation |
 
 ## Attribute Invariants
 

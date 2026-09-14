@@ -88,12 +88,13 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     )
   end
 
-  def build_plan(source_date: Date.new(2026, 8, 1), target_date: Date.new(2026, 9, 1))
+  def build_plan(source_date: Date.new(2026, 8, 1), target_date: Date.new(2026, 9, 1), historical_correction_confirmation: false)
     ReferenceMerges::ReallocationPlanner.new(
       user_card:,
       context:,
       source_date:,
-      target_date:
+      target_date:,
+      historical_correction_confirmation:
     ).call
   end
 
@@ -248,6 +249,63 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     expect(invoice.cash_installments.sole.price).to eq(-12_000)
   end
 
+  it "reuses an existing empty tail invoice and rebuilds it from several final purchases" do
+    august = create_reference(8, 2026)
+    september = create_reference(9, 2026)
+    october = create_reference(10, 2026)
+    october_reference_id = october.id
+    august_invoice = create_invoice(august)
+    september_invoice = create_invoice(september)
+    october_invoice = create_invoice(october, price: 0)
+    october_cash_installment_id = october_invoice.cash_installments.sole.id
+    spanning_transaction = create_transaction_for([ august, september ])
+    spanning_transaction.card_installments.order(:number).zip([ august_invoice, september_invoice ]).each do |installment, invoice|
+      installment.update_columns(cash_transaction_id: invoice.id)
+    end
+    independent_transactions = 2.times.map do |index|
+      create(
+        :card_transaction,
+        user:,
+        context:,
+        user_card:,
+        date: Time.zone.local(2026, 8, index + 1),
+        month: 9,
+        year: 2026,
+        price: -1_000,
+        card_installments: [
+          build(:card_installment, number: 1, date: Time.zone.local(2026, 8, index + 1), month: 9, year: 2026, price: -1_000, paid: false)
+        ],
+        category_transactions: [],
+        entity_transactions: []
+      )
+    end
+    independent_transactions.each do |transaction|
+      transaction.card_installments.sole.update_columns(cash_transaction_id: september_invoice.id)
+    end
+
+    result = described_class.new(plan: build_plan).call
+
+    expect(result).to be_applied
+    expect(october_invoice.reload).to have_attributes(
+      month: 10,
+      year: 2026,
+      price: -3_000,
+      paid: false,
+      cash_installments_count: 1
+    )
+    expect(october_invoice.date.to_date).to eq(october.reference_date)
+    expect(october_invoice.cash_installments.sole).to have_attributes(
+      id: october_cash_installment_id,
+      price: -3_000,
+      paid: false
+    )
+    expect(october_invoice.cash_installments.sole.date.to_date).to eq(october.reference_date)
+    expect(user_card.references.find_by!(context:, month: 10, year: 2026).id).to eq(october_reference_id)
+    expect(CardInstallment.where(cash_transaction_id: october_invoice.id).count).to eq(3)
+    expect(context.cash_transactions.card_payment.where(user_card:, month: 10, year: 2026).count).to eq(1)
+    expect(independent_transactions.flat_map(&:card_installments).map { |row| [ row.reload.month, row.year ] }).to all(eq([ 10, 2026 ]))
+  end
+
   it "moves occupied buckets by one calendar month without collapsing an empty gap" do
     august = create_reference(8, 2026)
     september = create_reference(9, 2026)
@@ -313,7 +371,8 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     source_exchange, target_exchange = attach_card_bound_exchanges(transaction, [ august, september ])
     source_projection_id = source_exchange.cash_transaction_id
 
-    result = described_class.new(plan: build_plan).call
+    result = nil
+    expect { result = described_class.new(plan: build_plan).call }.not_to change(Message, :count)
 
     expect(result).to be_applied
     expect(source_exchange.reload).to have_attributes(month: 9, year: 2026)
@@ -329,6 +388,76 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     expect(september_projection.cash_installments.sole.price).to eq(500)
     expect(october_projection).to have_attributes(price: 1_000)
     expect(october_projection.cash_installments.sole.price).to eq(1_000)
+  end
+
+  it "reallocates a confirmed paid return projection without rewriting its completed installment" do
+    august = create_reference(8, 2026)
+    september = create_reference(9, 2026)
+    [ august, september ].each { |reference| create_invoice(reference) }
+    transaction = create_transaction_for([ august ])
+    exchange = attach_card_bound_exchanges(transaction, [ august ]).sole
+    projection = exchange.cash_transaction
+    paid_installment = projection.cash_installments.sole
+    paid_installment.update_columns(paid: true)
+    projection.update_columns(paid: true)
+    paid_facts = paid_installment.attributes.slice("id", "date", "month", "year", "price", "starting_price", "paid")
+
+    result = described_class.new(plan: build_plan(historical_correction_confirmation: true)).call
+
+    expect(result).to be_applied
+    expect(exchange.reload).to have_attributes(month: 9, year: 2026, cash_transaction_id: projection.id)
+    expect(projection.reload).to have_attributes(month: 9, year: 2026, paid: true)
+    expect(paid_installment.reload.attributes.slice(*paid_facts.keys)).to eq(paid_facts)
+    expect(result.operation.metadata["historical_correction_confirmation"]).to be(true)
+
+    later_transaction = create_transaction_for([ september ])
+    later_transaction.categories << exchange_category
+    later_entity_transaction = create(
+      :entity_transaction,
+      transactable: later_transaction,
+      entity: exchange.entity_transaction.entity,
+      is_payer: true,
+      price: -10,
+      price_to_be_returned: 10
+    )
+    later_exchange = create(
+      :exchange,
+      entity_transaction: later_entity_transaction,
+      exchange_type: :monetary,
+      bound_type: :card_bound,
+      month: 9,
+      year: 2026,
+      date: september.reference_date,
+      price: 10
+    )
+
+    expect(later_exchange.reload.cash_transaction_id).to eq(projection.id)
+    expect(projection.reload).to have_attributes(price: 510, paid: false)
+    expect(paid_installment.reload.attributes.slice(*paid_facts.keys)).to eq(paid_facts)
+    expect(projection.cash_installments.where(paid: false).sole.price).to eq(10)
+  end
+
+  it "removes empty card-payment invoices when shifting an exchange-only range" do
+    july = create_reference(7, 2026)
+    august = create_reference(8, 2026)
+    september = create_reference(9, 2026)
+    july_invoice = create_invoice(july)
+    august_invoice = create_invoice(august, price: 0)
+    september_invoice = create_invoice(september, price: 0)
+    transaction = create_transaction_for([ july ])
+    transaction.card_installments.sole.update_columns(cash_transaction_id: july_invoice.id)
+    exchange = attach_card_bound_exchanges(transaction, [ august ]).sole
+
+    result = described_class.new(plan: build_plan).call
+
+    expect(result).to be_applied
+    expect(exchange.reload).to have_attributes(month: 9, year: 2026)
+    expect(exchange.cash_transaction).to have_attributes(month: 9, year: 2026, price: 500)
+    expect(CashTransaction).not_to exist(august_invoice.id)
+    expect(CashTransaction).not_to exist(september_invoice.id)
+    expect(CashTransaction).to exist(july_invoice.id)
+    expect(user_card.references).not_to exist(context:, month: 8, year: 2026)
+    expect(user_card.references).to exist(context:, month: 9, year: 2026)
   end
 
   it "rolls installment and exchange movements back together when projection synchronization fails" do
@@ -349,6 +478,51 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     expect(user_card.references).to exist(context:, month: 8, year: 2026)
   end
 
+  it "rolls the whole graph back when tail creation fails" do
+    transaction, = create_year_transaction
+    original_rows = transaction.card_installments.order(:number).pluck(:id, :date, :month, :year, :cash_transaction_id)
+    original_reference_ids = user_card.references.where(context:).order(:year, :month).ids
+    service = described_class.new(plan: build_plan)
+    allow(service).to receive(:create_destination_reference!).and_raise(ActiveRecord::RecordInvalid.new(Reference.new))
+
+    result = service.call
+
+    expect(result).to be_failed
+    expect(transaction.card_installments.reload.order(:number).pluck(:id, :date, :month, :year, :cash_transaction_id)).to eq(original_rows)
+    expect(user_card.references.where(context:).order(:year, :month).ids).to eq(original_reference_ids)
+    expect(user_card.references).not_to exist(context:, month: 1, year: 2027)
+  end
+
+  it "rolls the whole graph back when invoice reconstruction fails" do
+    transaction, = create_year_transaction
+    original_rows = transaction.card_installments.order(:number).pluck(:id, :date, :month, :year, :cash_transaction_id)
+    invoice_scope = context.cash_transactions.card_payment.where(user_card:, paid: false).order(:year, :month)
+    original_invoice_prices = invoice_scope.pluck(:id, :price)
+    service = described_class.new(plan: build_plan)
+    allow(service).to receive(:synchronize_card_payment_invoice!).and_raise(ActiveRecord::RecordInvalid.new(CashTransaction.new))
+
+    result = service.call
+
+    expect(result).to be_failed
+    expect(transaction.card_installments.reload.order(:number).pluck(:id, :date, :month, :year, :cash_transaction_id)).to eq(original_rows)
+    expect(invoice_scope.reload.pluck(:id, :price)).to eq(original_invoice_prices)
+    expect(user_card.references).to exist(context:, month: 8, year: 2026)
+  end
+
+  it "rolls the whole graph back when final integrity verification fails" do
+    transaction, = create_year_transaction
+    original_rows = transaction.card_installments.order(:number).pluck(:id, :date, :month, :year, :cash_transaction_id)
+    original_reference_ids = user_card.references.where(context:).order(:year, :month).ids
+    service = described_class.new(plan: build_plan)
+    allow(service).to receive(:verify_final_graph!).and_raise(described_class::IntegrityError)
+
+    result = service.call
+
+    expect(result).to be_failed
+    expect(transaction.card_installments.reload.order(:number).pluck(:id, :date, :month, :year, :cash_transaction_id)).to eq(original_rows)
+    expect(user_card.references.where(context:).order(:year, :month).ids).to eq(original_reference_ids)
+  end
+
   it "rejects a stale plan when affected financial state changes before locking" do
     transaction, = create_year_transaction
     plan = build_plan
@@ -358,6 +532,23 @@ RSpec.describe ReferenceMerges::ReallocationApply do
 
     expect(result).to be_rejected
     expect(result.reason_code).to eq("stale_plan")
+    expect(user_card.references).to exist(context:, month: 8, year: 2026)
+  end
+
+  it "rejects a stale plan when affected installment membership changes before locking" do
+    create_year_transaction
+    plan = build_plan
+    october_reference = user_card.references.find_by!(context:, month: 10, year: 2026)
+    additional_transaction = create_transaction_for([ october_reference ])
+    additional_installment = additional_transaction.card_installments.sole
+    october_invoice = user_card.unpaid_invoices(context:).find_by!(month: 10, year: 2026)
+    additional_installment.update_columns(cash_transaction_id: october_invoice.id)
+
+    result = described_class.new(plan:).call
+
+    expect(result).to be_rejected
+    expect(result.reason_code).to eq("stale_plan")
+    expect(additional_installment.reload).to have_attributes(month: 10, year: 2026, cash_transaction_id: october_invoice.id)
     expect(user_card.references).to exist(context:, month: 8, year: 2026)
   end
 

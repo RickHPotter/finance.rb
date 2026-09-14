@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 class ReferenceMerges::ReallocationPlanner
-  attr_reader :user_card, :context, :raw_source_date, :raw_target_date
+  attr_reader :user_card, :context, :raw_source_date, :raw_target_date, :historical_correction_confirmation
 
-  def initialize(user_card:, context:, source_date:, target_date:)
+  def initialize(user_card:, context:, source_date:, target_date:, historical_correction_confirmation: false)
     @user_card = user_card
     @context = context
     @raw_source_date = source_date
     @raw_target_date = target_date
+    @historical_correction_confirmation = ActiveModel::Type::Boolean.new.cast(historical_correction_confirmation)
   end
 
   def call
@@ -21,7 +22,8 @@ class ReferenceMerges::ReallocationPlanner
       buckets: build_buckets,
       issues: build_issues,
       lock_keys: build_lock_keys,
-      state_rows: build_state_rows
+      state_rows: build_state_rows,
+      historical_correction_confirmation:
     )
   end
 
@@ -224,23 +226,37 @@ class ReferenceMerges::ReallocationPlanner
   end
 
   def paid_invoices_issue
-    ids = affected_invoices.select { |invoice| invoice.paid? || invoice.paid_history? }.map(&:id).sort
+    ids = invoices.select { |invoice| affected_invoice?(invoice) && (invoice.paid? || invoice.paid_history?) }.map(&:id).sort
     issue(:paid_invoices, ids: ids.join(",")) if ids.present?
   end
 
   def duplicate_invoices_issue
-    dates = invoices_by_date.filter_map { |date, rows| date.iso8601 if rows.many? }.sort
+    dates = invoices_by_date.filter_map { |date, rows| date.iso8601 if date.in?(affected_invoice_dates) && rows.many? }.sort
     issue(:duplicate_invoices, dates: dates.join(",")) if dates.present?
   end
 
   def locked_projections_issue
-    ids = projections.select(&:paid_history?).map(&:id).sort
-    issue(:locked_exchange_projections, ids: ids.join(",")) if ids.present?
+    locked = projections.select(&:paid_history?)
+    return if locked.empty?
+    return issue(:paid_history_confirmation_required) unless historical_correction_confirmation
+
+    unsupported_ids = locked.reject { |projection| paid_projection_reallocation(projection).supported? }.map(&:id).sort
+    issue(:unsupported_paid_exchange_history, ids: unsupported_ids.join(",")) if unsupported_ids.present?
   end
 
-  def affected_invoices
-    ids = installments.filter_map(&:cash_transaction_id).uniq
-    invoices.select { |invoice| invoice.id.in?(ids) }
+  def paid_projection_reallocation(projection)
+    ReferenceMerges::PaidProjectionReallocation.new(
+      projection:,
+      exchanges: exchanges.select { |exchange| exchange.cash_transaction_id == projection.id }
+    )
+  end
+
+  def affected_invoice?(invoice)
+    row_date(invoice).in?(affected_invoice_dates)
+  end
+
+  def affected_invoice_dates
+    @affected_invoice_dates ||= build_buckets.flat_map { |bucket| [ bucket.source_date, bucket.destination_date ] }.to_set
   end
 
   def issue(code, details = {})
