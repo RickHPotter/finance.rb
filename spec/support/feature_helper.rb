@@ -82,6 +82,15 @@ module FeatureBrowser
       }
     end
 
+    def shutdown!
+      Capybara.send(:session_pool).each_value do |session|
+        session.driver.quit if session.driver.respond_to?(:quit)
+      rescue StandardError => e
+        warn("Unable to quit Capybara driver: #{e.class}: #{e.message}")
+      end
+      Capybara.reset_sessions!
+    end
+
     private
 
     def usable_path(path)
@@ -111,4 +120,7 @@ end
 RSpec.configure do |config|
   config.include FeatureHelper
   config.include TranslateHelper
+  config.after(:suite) { FeatureBrowser.shutdown! }
 end
+
+at_exit { FeatureBrowser.shutdown! }

@@ -31,14 +31,14 @@ RSpec.describe "Concurrent Health Check reruns" do
           user = User.find(admin.id)
           scope = HealthCheck::Scope.new(user:, context: user.main_context)
           ready << true
-          release.pop
+          wait_for_signal(release, description: "the health-check scheduler race release")
           HealthCheck::RunCoordinator.new(scope:).call(entries: [ entry ]).first
         end
       end
     end
-    2.times { ready.pop }
+    2.times { wait_for_signal(ready, description: "a health-check scheduler to become ready") }
     2.times { release << true }
-    schedules = threads.map(&:value)
+    schedules = threads.map { |thread| thread_value(thread, description: "a health-check scheduler") }
 
     expect(schedules.map(&:reason)).to contain_exactly("queued", "already_running")
     expect(schedules.count(&:enqueued?)).to eq(1)

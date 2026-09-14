@@ -117,6 +117,13 @@ recorded in `06-factory-graph-audit.md`.
 
 ## Slice 4 — Diagnose Hangs and Isolate Integrations
 
+Status: complete as of 2026-09-14. An opt-in no-progress watchdog reports the active
+example, elapsed time, all Ruby thread backtraces, and PostgreSQL activity/locks before
+browser cleanup and termination. WebMock rejects unstubbed external HTTP while retaining
+loopback browser traffic. Feature drivers receive suite and process-exit cleanup, and
+concurrency specs now use bounded descriptive synchronization without timing sleeps.
+The integration behavior is recorded in `07-spec-integration-isolation.md`.
+
 **Goal:** make genuine stalls actionable without masking them with broad timeouts.
 
 ### Deliverables

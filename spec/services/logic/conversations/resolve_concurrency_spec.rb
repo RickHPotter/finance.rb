@@ -14,15 +14,15 @@ RSpec.describe Logic::Conversations::Resolve do
     threads = [ rikki, gigi ].map do |actor|
       Thread.new do
         ready << true
-        release.pop
+        wait_for_signal(release, description: "the conversation resolver race release")
         ActiveRecord::Base.connection_pool.with_connection do
           described_class.call(actor:, friendship: Friendship.find(friendship.id), kind: :human).id
         end
       end
     end
-    2.times { ready.pop }
+    2.times { wait_for_signal(ready, description: "a conversation resolver to become ready") }
     2.times { release << true }
-    conversation_ids = threads.map(&:value)
+    conversation_ids = threads.map { |thread| thread_value(thread, description: "a conversation resolver") }
 
     expect(conversation_ids.uniq.one?).to be(true)
     expect(Conversation.where(friendship:, kind: :human, scenario_key: nil).count).to eq(1)

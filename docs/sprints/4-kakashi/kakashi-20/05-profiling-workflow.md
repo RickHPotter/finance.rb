@@ -22,13 +22,14 @@ artifact to `tmp/rspec-profile.json`. Files under `tmp/` are ignored by Git.
 
 ## Configuration
 
-The command accepts three task-specific environment variables:
+The command accepts four task-specific environment variables:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `RSPEC_PROFILE_PATH` | `tmp/rspec-profile.json` | structured artifact destination |
 | `RSPEC_PROFILE_SEED` | `20260914` | seed used when `--seed` is absent |
 | `RSPEC_PROFILE_TOP` | `10` | number passed to RSpec's `--profile` |
+| `RSPEC_STALL_TIMEOUT_SECONDS` | disabled | no-progress threshold that enables the diagnostic watchdog |
 
 An explicit `--seed` or `--profile` argument wins over its environment default.
 
@@ -62,8 +63,11 @@ tmp/rspec-profile.active.json
 
 It contains the process ID, run identifier, suite start, and exact active example with
 its rerun argument. A normally completed run removes this file. If the process is killed
-or genuinely stalls, it remains as the first diagnostic breadcrumb. Slice 4 will build
-the no-progress watchdog and thread/PostgreSQL diagnostics on this contract.
+or genuinely stalls, it remains as the first diagnostic breadcrumb. For suspected
+stalls, set `RSPEC_STALL_TIMEOUT_SECONDS` to a generous threshold. The watchdog prints
+the active example, Ruby thread backtraces, and PostgreSQL activity/lock state before
+cleaning up browser sessions and terminating. See
+`07-spec-integration-isolation.md` for the complete contract.
 
 ## Comparing Runs
 

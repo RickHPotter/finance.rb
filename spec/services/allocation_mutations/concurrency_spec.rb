@@ -33,7 +33,7 @@ RSpec.describe "Concurrent allocation mutation application" do
     threads = 2.times.map do |index|
       Thread.new do
         ready << true
-        release.pop
+        wait_for_signal(release, description: "the allocation mutation race release")
         ActiveRecord::Base.connection_pool.with_connection do
           AllocationMutations::Apply.new(
             actor: user,
@@ -46,9 +46,9 @@ RSpec.describe "Concurrent allocation mutation application" do
         end
       end
     end
-    2.times { ready.pop }
+    2.times { wait_for_signal(ready, description: "an allocation mutation racer to become ready") }
     2.times { release << true }
-    results = threads.map(&:value)
+    results = threads.map { |thread| thread_value(thread, description: "an allocation mutation racer") }
 
     expect(results.map(&:status)).to eq(%w[applied applied])
     expect(results.map(&:duplicate)).to contain_exactly(false, true)

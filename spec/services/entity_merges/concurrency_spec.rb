@@ -29,7 +29,7 @@ RSpec.describe "Concurrent Entity merge application" do
     threads = 2.times.map do |index|
       Thread.new do
         ready << true
-        release.pop
+        wait_for_signal(release, description: "the entity merge race release")
         ActiveRecord::Base.connection_pool.with_connection do
           EntityMerges::Apply.new(
             actor: user,
@@ -43,9 +43,9 @@ RSpec.describe "Concurrent Entity merge application" do
         end
       end
     end
-    2.times { ready.pop }
+    2.times { wait_for_signal(ready, description: "an entity merge racer to become ready") }
     2.times { release << true }
-    results = threads.map(&:value)
+    results = threads.map { |thread| thread_value(thread, description: "an entity merge racer") }
 
     expect(results.map(&:status)).to contain_exactly(:applied, :rejected)
     expect(results.filter_map(&:reason_code)).to contain_exactly("stale_preview")

@@ -18,15 +18,15 @@ RSpec.describe "Conversation participant read cursor concurrency" do
     threads = [ first, second ].map do |message|
       Thread.new do
         ready << true
-        release.pop
+        wait_for_signal(release, description: "the read-cursor race release")
         ActiveRecord::Base.connection_pool.with_connection do
           ConversationParticipant.find(participant_id).advance_read_cursor_to!(Message.find(message.id))
         end
       end
     end
-    2.times { ready.pop }
+    2.times { wait_for_signal(ready, description: "a read-cursor racer to become ready") }
     2.times { release << true }
-    threads.each(&:value)
+    threads.each { |thread| thread_value(thread, description: "a read-cursor racer") }
 
     expect(ConversationParticipant.find(participant_id).last_read_message_id).to eq(second.id)
   ensure
