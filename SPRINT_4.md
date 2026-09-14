@@ -1330,6 +1330,15 @@ References:
 - Issues:
   - [#64](https://github.com/RickHPotter/finance.rb/issues/64)
 
+Status: planning and activation audit complete as of 2026-09-14. The first supplied
+profile is sufficient to start implementation: it identifies a sequence-dependent spec
+fixture responsible for 338.07 seconds of a 12-minute-38-second run. Repeatable
+instrumentation, the bounded regression correction, and a post-correction baseline are
+the first delivery slices; performance budgets and parallel execution remain deferred
+until stable evidence exists. Focused local RSpec runs will skip SimpleCov by default,
+an explicit local coverage command will remain available, and `bin/ci` will always run
+the authoritative coverage path.
+
 Goal: make the growing RSpec suite fast and predictable enough for daily use while
 using slow or hanging examples to identify application paths that perform unnecessary
 database, callback, projection, rendering, or notification work.
@@ -1447,6 +1456,13 @@ Explicitly out of scope:
 - blanket mocking of application internals
 - arbitrary timing assertions tied to one development machine
 - parallelization as a substitute for fixing deadlocks, N+1 queries, or callback storms
+
+References:
+
+- [performance and spec quality contract](docs/sprints/4-kakashi/kakashi-20/01-performance-and-spec-quality-contract.md)
+- [current baseline and gap inventory](docs/sprints/4-kakashi/kakashi-20/02-current-baseline-and-gap-inventory.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-20/03-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-20/04-decisions-and-test-matrix.md)
 
 ### KAKASHI-21: Choose how a user-card reference merge reallocates installments
 
