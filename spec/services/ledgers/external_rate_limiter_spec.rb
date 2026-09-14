@@ -41,4 +41,17 @@ RSpec.describe Ledgers::ExternalRateLimiter, type: :service do
     expect(described_class.allowed?(request:, token: "never-log-this", store:)).to be(true)
     expect(Rails.logger).to have_received(:warn).with("External ledger rate limit unavailable (IOError)")
   end
+
+  it "isolates month-frame fan-out from the stricter navigation budget" do
+    stub_const("Ledgers::ExternalRateLimiter::NETWORK_LIMIT", 10)
+    stub_const("Ledgers::ExternalRateLimiter::IDENTITY_LIMIT", 2)
+    stub_const("Ledgers::ExternalRateLimiter::MONTH_FRAME_NETWORK_LIMIT", 10)
+    stub_const("Ledgers::ExternalRateLimiter::MONTH_FRAME_IDENTITY_LIMIT", 3)
+
+    3.times { expect(described_class.allowed?(request:, token: "valid", scope: :month_frame, store:)).to be(true) }
+    expect(described_class.allowed?(request:, token: "valid", scope: :month_frame, store:)).to be(false)
+
+    2.times { expect(described_class.allowed?(request:, token: "valid", store:)).to be(true) }
+    expect(described_class.allowed?(request:, token: "valid", store:)).to be(false)
+  end
 end
