@@ -32,6 +32,7 @@ RSpec.describe Logic::CardExchangeProjectionAudit do
 
       healthy_card = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -98,6 +99,7 @@ RSpec.describe Logic::CardExchangeProjectionAudit do
 
       broken_card = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -178,11 +180,11 @@ RSpec.describe Logic::CardExchangeProjectionAudit do
       user_card = create(:user_card, :random, user:, card: create(:card, :random))
       derived_context = create(:context, user:, name: "Scenario Y", source_context: user.main_context)
 
-      main_card = create(:card_transaction, user:, context: user.main_context, user_card:, description: "Main card")
+      main_card = create(:card_transaction, :with_allocations, user:, context: user.main_context, user_card:, description: "Main card")
       main_card.entity_transactions.first.update_columns(is_payer: true, price: 1_000, price_to_be_returned: 1_000)
       create(:exchange, entity_transaction: main_card.entity_transactions.first, exchange_type: :monetary, price: 500, month: 4, year: 2026)
 
-      derived_card = create(:card_transaction, user:, context: derived_context, user_card:, description: "Derived card")
+      derived_card = create(:card_transaction, :with_allocations, user:, context: derived_context, user_card:, description: "Derived card")
       derived_card.entity_transactions.first.update_columns(is_payer: true, price: 1_000, price_to_be_returned: 1_000)
       create(:exchange, entity_transaction: derived_card.entity_transactions.first, exchange_type: :monetary, price: 500, month: 4, year: 2026)
 
@@ -220,6 +222,7 @@ RSpec.describe Logic::CardExchangeProjectionAudit do
 
       equal_total_card = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -301,6 +304,7 @@ RSpec.describe Logic::CardExchangeProjectionAudit do
 
       card = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -367,6 +371,7 @@ RSpec.describe Logic::CardExchangeProjectionAudit do
 
       card = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -438,6 +443,7 @@ RSpec.describe Logic::CardExchangeProjectionAudit do
 
       card = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -482,12 +488,12 @@ RSpec.describe Logic::CardExchangeProjectionAudit do
       user = create(:user, :random)
       user_card = create(:user_card, :random, user:, card: create(:card, :random))
 
-      pending_card = create(:card_transaction, user:, context: user.main_context, user_card:, description: "Pending broken", paid: false)
+      pending_card = create(:card_transaction, :with_allocations, user:, context: user.main_context, user_card:, description: "Pending broken", paid: false)
       pending_card.entity_transactions.first.update_columns(is_payer: true, price: 1_000, price_to_be_returned: 1_000)
       pending_card.update_column(:paid, false)
       create(:exchange, entity_transaction: pending_card.entity_transactions.first, exchange_type: :monetary, price: 500, month: 4, year: 2026)
 
-      paid_card = create(:card_transaction, user:, context: user.main_context, user_card:, description: "Paid broken", paid: true)
+      paid_card = create(:card_transaction, :with_allocations, user:, context: user.main_context, user_card:, description: "Paid broken", paid: true)
       paid_card.entity_transactions.first.update_columns(is_payer: true, price: 1_000, price_to_be_returned: 1_000)
       paid_card.update_column(:paid, true)
       create(:exchange, entity_transaction: paid_card.entity_transactions.first, exchange_type: :monetary, price: 500, month: 4, year: 2026)

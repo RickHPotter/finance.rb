@@ -113,7 +113,7 @@ RSpec.describe Logic::ContextPurgeService do
           record.save!
         end
 
-        card_transaction = create(:card_transaction, user:, context: derived_context, user_card:)
+        card_transaction = create(:card_transaction, :with_allocations, user:, context: derived_context, user_card:)
         create(:exchange, entity_transaction: card_transaction.entity_transactions.first)
         create(:reference, user_card:, context: derived_context, month: 1, year: 2030, reference_date: Date.new(2030, 1, 12))
         create(:budget, user:, context: derived_context, budget_categories: [ build(:budget_category, category: derived_category) ])

@@ -1177,6 +1177,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       stale_origin = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: user_card_one,
@@ -1238,6 +1239,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       active_origin = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: user_card_one,
@@ -1876,6 +1878,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: user_card_one,

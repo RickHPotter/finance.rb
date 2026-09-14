@@ -81,6 +81,13 @@ independent sequence drift.
 
 ## Slice 3 — Make Factory Graphs Explicit and Deterministic
 
+Status: complete as of 2026-09-14. Factory helper reuse now selects stable records,
+Ruby and Faker random values derive from the suite seed plus example ID, and the default
+CardTransaction graph no longer creates unrelated category/entity allocations. Specs
+that exercise allocations opt into `:with_allocations`, with executable contracts for
+both shapes. The retained high-volume graph and its persistence requirements are
+recorded in `06-factory-graph-audit.md`.
+
 **Goal:** reduce hidden setup work and order sensitivity in the highest-volume factories.
 
 ### Deliverables

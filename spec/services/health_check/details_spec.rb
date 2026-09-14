@@ -158,7 +158,7 @@ RSpec.describe "Health check detail providers" do
   end
 
   it "preloads projection repair targets with a bounded query count" do
-    source = create(:card_transaction, user: admin, context:)
+    source = create(:card_transaction, :with_allocations, user: admin, context:)
     source_entity = source.entity_transactions.first
     source_entity.update!(is_payer: true, price: source.price, price_to_be_returned: source.price)
     exchange = create(

@@ -97,7 +97,7 @@ RSpec.describe ReferenceMerges::ReallocationPlanner do
   end
 
   def create_card_bound_exchange(reference, price: 500)
-    transaction = create(:card_transaction, user:, context:, user_card:, month: reference.month, year: reference.year)
+    transaction = create(:card_transaction, :with_allocations, user:, context:, user_card:, month: reference.month, year: reference.year)
     create(
       :exchange,
       entity_transaction: transaction.entity_transactions.first,
@@ -250,7 +250,7 @@ RSpec.describe ReferenceMerges::ReallocationPlanner do
 
     source_exchange = create_card_bound_exchange(august)
     other_card = create(:user_card, :random, user:)
-    unrelated_transaction = create(:card_transaction, user:, context:, user_card: other_card, month: 8, year: 2026)
+    unrelated_transaction = create(:card_transaction, :with_allocations, user:, context:, user_card: other_card, month: 8, year: 2026)
     unrelated_exchange = create(
       :exchange,
       entity_transaction: unrelated_transaction.entity_transactions.first,

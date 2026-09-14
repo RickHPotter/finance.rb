@@ -587,6 +587,7 @@ RSpec.describe "CashTransactions", type: :request do
       user_card = create(:user_card, :random, user:, card: create(:card, :random))
       source_card = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -696,6 +697,7 @@ RSpec.describe "CashTransactions", type: :request do
       exchanges = [ 4_000, 1_000, 3_000 ].zip([ target_projection, target_projection, duplicate_projection ]).map do |price, projection|
         source_card = create(
           :card_transaction,
+          :with_allocations,
           user:,
           context: user.main_context,
           user_card:,
@@ -741,6 +743,7 @@ RSpec.describe "CashTransactions", type: :request do
       user_card = create(:user_card, :random, user:, card: create(:card, :random))
       source_card = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -789,6 +792,7 @@ RSpec.describe "CashTransactions", type: :request do
                       })
       target_source_card = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -857,6 +861,7 @@ RSpec.describe "CashTransactions", type: :request do
       user_card = create(:user_card, :random, user:, card: create(:card, :random))
       august_source = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -871,6 +876,7 @@ RSpec.describe "CashTransactions", type: :request do
       )
       september_source = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -885,6 +891,7 @@ RSpec.describe "CashTransactions", type: :request do
       )
       october_source = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -899,6 +906,7 @@ RSpec.describe "CashTransactions", type: :request do
       )
       existing_september_source = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -2935,6 +2943,7 @@ RSpec.describe "CashTransactions", type: :request do
     it "shows a confirmation path and then allows a paid exchange return installment price correction" do
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
@@ -3060,6 +3069,7 @@ RSpec.describe "CashTransactions", type: :request do
     it "allows direct structural edits on unpaid mirrored exchange return installments and mirrors them back to exchanges" do
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
@@ -3741,6 +3751,7 @@ RSpec.describe "CashTransactions", type: :request do
       user_card = create(:user_card, :random, user:, card:)
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -3838,6 +3849,7 @@ RSpec.describe "CashTransactions", type: :request do
       user_card = create(:user_card, :random, user:, card:)
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -3925,6 +3937,7 @@ RSpec.describe "CashTransactions", type: :request do
       receiver_bank_account = create(:user_bank_account, :random, user: receiver, bank: create(:bank, :random))
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -4090,6 +4103,7 @@ RSpec.describe "CashTransactions", type: :request do
       receiver_bank_account = create(:user_bank_account, :random, user: receiver, bank: create(:bank, :random))
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -4255,6 +4269,7 @@ RSpec.describe "CashTransactions", type: :request do
       receiver_bank_account = create(:user_bank_account, :random, user: receiver, bank: create(:bank, :random))
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -4712,6 +4727,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -4888,6 +4904,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -5035,6 +5052,7 @@ RSpec.describe "CashTransactions", type: :request do
       exchange_return_category = user.built_in_category("EXCHANGE RETURN")
       main_card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
@@ -5587,6 +5605,7 @@ RSpec.describe "CashTransactions", type: :request do
     it "filters exchange return cash rows by exchange bound type" do
       card_bound_source = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),

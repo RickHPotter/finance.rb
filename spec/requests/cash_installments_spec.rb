@@ -93,6 +93,7 @@ RSpec.describe "CashInstallments", type: :request do
 
     origin_card_transaction = create(
       :card_transaction,
+      :with_allocations,
       user: sender,
       context: sender_context,
       user_card: sender_user_card,
@@ -419,6 +420,7 @@ RSpec.describe "CashInstallments", type: :request do
     it "mirrors the split settlement back to card-bound exchange rows" do
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
@@ -958,6 +960,7 @@ RSpec.describe "CashInstallments", type: :request do
     it "reflects paid state on card-bound exchanges without rewriting their own dates" do
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
@@ -1525,6 +1528,7 @@ RSpec.describe "CashInstallments", type: :request do
     it "keeps card-bound exchange dates unchanged when shared settlement installments are paid in bulk" do
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
@@ -1927,6 +1931,7 @@ RSpec.describe "CashInstallments", type: :request do
     it "keeps card-bound exchange dates unchanged when shared settlement installments are transferred" do
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),

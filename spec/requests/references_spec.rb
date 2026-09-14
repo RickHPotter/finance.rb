@@ -509,13 +509,36 @@ RSpec.describe "References", type: :request do
                                                    cash_transaction_type: "CardInstallment", date: Date.new(2026, 8, 12), month: 8, year: 2026,
                                                    price: -1000, paid: false, categories: [ card_payment_category ])
 
-        source_card_transaction = create(:card_transaction, user:, context: user.main_context, user_card:, description: "July Purchase", date: Date.new(2026, 6, 10),
-                                                            month: 7, year: 2026, price: -2000, paid: false, categories: [ exchange_category ])
+        source_card_transaction = create(
+          :card_transaction,
+          :with_allocations,
+          user:,
+          context: user.main_context,
+          user_card:,
+          description: "July Purchase",
+          date: Date.new(2026, 6, 10),
+          month: 7,
+          year: 2026,
+          price: -2000,
+          paid: false,
+          categories: [ exchange_category ]
+        )
         source_card_transaction.card_installments.first.update!(cash_transaction: source_invoice, month: 7, year: 2026)
 
-        target_card_transaction = create(:card_transaction, user:, context: user.main_context, user_card:,
-                                                            description: "August Purchase", date: Date.new(2026, 7, 10),
-                                                            month: 8, year: 2026, price: -3000, paid: false, categories: [ exchange_category ])
+        target_card_transaction = create(
+          :card_transaction,
+          :with_allocations,
+          user:,
+          context: user.main_context,
+          user_card:,
+          description: "August Purchase",
+          date: Date.new(2026, 7, 10),
+          month: 8,
+          year: 2026,
+          price: -3000,
+          paid: false,
+          categories: [ exchange_category ]
+        )
         target_card_transaction.card_installments.first.update!(cash_transaction: target_invoice, month: 8, year: 2026)
 
         source_entity_transaction = source_card_transaction.entity_transactions.first

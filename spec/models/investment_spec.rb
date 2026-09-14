@@ -182,7 +182,7 @@ RSpec.describe Investment, type: :model do
         expect(subject.cash_transaction.investments.count).to eq(investments.size + 1)
         expect(subject.cash_transaction.price).to eq([ subject, *investments ].sum(&:price))
 
-        subject.update(user_bank_account: random_custom_create(:user_bank_account, reference: { user: subject.user }))
+        subject.update(user_bank_account: create(:user_bank_account, :random, user: subject.user))
         investments.first.cash_transaction.reload
 
         expect(subject.cash_transaction).to_not eq cash_transaction
