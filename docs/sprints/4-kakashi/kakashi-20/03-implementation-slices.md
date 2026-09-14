@@ -42,6 +42,15 @@ identifies interrupted or stalled work. Ordinary `bin/rspec` behavior remains un
 
 ## Slice 2 — Remove Pathological Sequence-Chasing Setup
 
+Status: complete as of 2026-09-14. Both collision directions now use one explicit
+negative transaction ID, outside the positive PostgreSQL sequences, and assert the
+numeric collision plus distinct polymorphic classes before purge. The regression no
+longer creates transactions until independent sequences happen to align. The original
+338.07-second outlier now completes in approximately 0.41–0.45 seconds; the complete
+six-example file completes in approximately 4.1–4.4 seconds across repeated fixed-seed
+runs. Removing unused default CardTransaction allocations also reduced each collision
+example from 18 to 15 factories and removed 27–38 SQL statements.
+
 **Goal:** preserve the context-purge collision regression without runtime depending on
 independent sequence drift.
 

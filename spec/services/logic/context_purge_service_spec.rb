@@ -4,6 +4,7 @@ require "rails_helper"
 
 RSpec.describe Logic::ContextPurgeService do
   describe "#call" do
+    let(:colliding_transaction_id) { -20_020 }
     let(:user) { create(:user) }
     let(:main_context) { user.main_context }
     let(:derived_context) { create(:context, user:, source_context: main_context, archived_at: Time.current) }
@@ -16,7 +17,7 @@ RSpec.describe Logic::ContextPurgeService do
     let(:derived_entity) { create(:entity, :random, user:, entity_name: "Derived entity") }
 
     it "does not delete main-context entity/category rows when derived cash transaction ids match card transaction ids" do
-      main_card_transaction, derived_cash_transaction = align_card_and_cash_transaction_ids
+      main_card_transaction, derived_cash_transaction = main_card_and_derived_cash_with_colliding_ids
       main_card_transaction.categories = [ main_category ]
       main_card_transaction.entities = [ main_entity ]
       main_card_transaction.save!
@@ -40,7 +41,7 @@ RSpec.describe Logic::ContextPurgeService do
     end
 
     it "does not delete main-context entity/category rows when derived card transaction ids match cash transaction ids" do
-      main_cash_transaction, derived_card_transaction = align_cash_and_card_transaction_ids
+      main_cash_transaction, derived_card_transaction = main_cash_and_derived_card_with_colliding_ids
       main_cash_transaction.categories = [ main_category ]
       main_cash_transaction.entities = [ main_entity ]
       main_cash_transaction.save!
@@ -170,34 +171,44 @@ RSpec.describe Logic::ContextPurgeService do
 
     private
 
-    def align_card_and_cash_transaction_ids
-      main_card_transaction = create(:card_transaction, user:, context: main_context, user_card:)
-      derived_cash_transaction = create(:cash_transaction, user:, context: derived_context, user_bank_account:)
+    def main_card_and_derived_cash_with_colliding_ids
+      main_card_transaction = create(
+        :card_transaction,
+        id: colliding_transaction_id,
+        user:,
+        context: main_context,
+        user_card:,
+        category_transactions: [],
+        entity_transactions: []
+      )
+      derived_cash_transaction = create(:cash_transaction, id: colliding_transaction_id, user:, context: derived_context, user_bank_account:)
 
-      while main_card_transaction.id != derived_cash_transaction.id
-        if main_card_transaction.id < derived_cash_transaction.id
-          main_card_transaction = create(:card_transaction, user:, context: main_context, user_card:)
-        else
-          derived_cash_transaction = create(:cash_transaction, user:, context: derived_context, user_bank_account:)
-        end
-      end
+      expect_polymorphic_id_collision(main_card_transaction, derived_cash_transaction)
 
       [ main_card_transaction, derived_cash_transaction ]
     end
 
-    def align_cash_and_card_transaction_ids
-      main_cash_transaction = create(:cash_transaction, user:, context: main_context, user_bank_account:)
-      derived_card_transaction = create(:card_transaction, user:, context: derived_context, user_card:)
+    def main_cash_and_derived_card_with_colliding_ids
+      main_cash_transaction = create(:cash_transaction, id: colliding_transaction_id, user:, context: main_context, user_bank_account:)
+      derived_card_transaction = create(
+        :card_transaction,
+        id: colliding_transaction_id,
+        user:,
+        context: derived_context,
+        user_card:,
+        category_transactions: [],
+        entity_transactions: []
+      )
 
-      while main_cash_transaction.id != derived_card_transaction.id
-        if main_cash_transaction.id < derived_card_transaction.id
-          main_cash_transaction = create(:cash_transaction, user:, context: main_context, user_bank_account:)
-        else
-          derived_card_transaction = create(:card_transaction, user:, context: derived_context, user_card:)
-        end
-      end
+      expect_polymorphic_id_collision(main_cash_transaction, derived_card_transaction)
 
       [ main_cash_transaction, derived_card_transaction ]
+    end
+
+    def expect_polymorphic_id_collision(first_transaction, second_transaction)
+      expect(first_transaction.id).to eq(colliding_transaction_id)
+      expect(second_transaction.id).to eq(colliding_transaction_id)
+      expect(first_transaction.class).not_to eq(second_transaction.class)
     end
   end
 end
