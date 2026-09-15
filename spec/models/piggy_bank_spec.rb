@@ -6,6 +6,7 @@ RSpec.describe PiggyBank, type: :model do
   let(:user) { create(:user, :random) }
   let(:account) { create(:user_bank_account, :random, user:) }
   let(:entity) { create(:entity, :random, user:) }
+  let(:investment_type) { create(:investment_type, :random) }
 
   def build_source(price: -5_000, return_price: 5_000, return_date: 3.months.from_now)
     build(
@@ -27,6 +28,22 @@ RSpec.describe PiggyBank, type: :model do
       source.entity_transactions = [ EntityTransaction.new(entity: attached_entity, price: 0, price_to_be_returned: 0, is_payer: false) ]
       source.piggy_bank.return_cash_transaction = return_transaction
     end
+  end
+
+  def create_valuation(return_transaction, price:)
+    create(
+      :investment,
+      user:,
+      context: user.main_context,
+      user_bank_account: account,
+      investment_type:,
+      description: "Observed Piggy Bank adjustment",
+      price:,
+      date: Date.new(2026, 9, 15),
+      month: 9,
+      year: 2026,
+      piggy_bank_return_cash_transaction: return_transaction
+    )
   end
 
   it "creates one linked positive return transaction atomically" do
@@ -230,6 +247,48 @@ RSpec.describe PiggyBank, type: :model do
     expect(shared_return.reload.piggy_bank_return_links.count).to eq(1)
     expect(shared_return).to have_attributes(price: 5_000)
     expect(shared_return.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 5_000, false ] ])
+  end
+
+  it "uses persisted contribution baselines and signed valuations for a grouped return" do
+    first_source = build_source(price: -5_000, return_price: 5_500)
+    first_source.save!
+    shared_return = first_source.piggy_bank.return_cash_transaction
+    second_source = build_attached_source(shared_return, price: -2_000, return_price: 2_200)
+    second_source.save!
+
+    create_valuation(shared_return, price: 800)
+    create_valuation(shared_return, price: -300)
+
+    expect(shared_return.piggy_bank_return_links.sum(:return_price)).to eq(7_700)
+    expect(shared_return.piggy_bank_investments.sum(:price)).to eq(500)
+    expect(shared_return.reload).to have_attributes(price: 8_200, starting_price: 8_200, paid: false)
+    expect(shared_return.cash_installments.sole).to have_attributes(price: 8_200, starting_price: 8_200, paid: false)
+  end
+
+  it "preserves several paid splits while later gains and losses change only the unpaid remainder" do
+    source = build_source
+    source.save!
+    shared_return = source.piggy_bank.return_cash_transaction
+    first_paid = shared_return.cash_installments.sole
+    first_paid.update!(price: 1_000, starting_price: 1_000, paid: true)
+    Logic::Manipulation::CashInstallment.new(first_paid).split_installment(shared_return.date, 4_000)
+    second_paid = shared_return.cash_installments.order(:number).last
+    second_paid.update!(price: 1_500, starting_price: 1_500, paid: true)
+    Logic::Manipulation::CashInstallment.new(second_paid).split_installment(shared_return.date, 2_500)
+    paid_before = shared_return.cash_installments.where(paid: true).order(:number).map do |installment|
+      installment.attributes.slice("id", "number", "date", "month", "year", "price", "starting_price", "paid")
+    end
+
+    create_valuation(shared_return, price: 800)
+    create_valuation(shared_return, price: -300)
+
+    paid_after = shared_return.cash_installments.where(paid: true).order(:number).map do |installment|
+      installment.attributes.slice("id", "number", "date", "month", "year", "price", "starting_price", "paid")
+    end
+    expect(paid_after).to eq(paid_before)
+    expect(shared_return.reload).to have_attributes(price: 5_500, starting_price: 5_500, paid: false)
+    expect(shared_return.cash_installments.where(paid: true).sum(:price)).to eq(2_500)
+    expect(shared_return.cash_installments.where(paid: false).pluck(:price, :paid)).to eq([ [ 3_000, false ] ])
   end
 
   it "rejects attaching a contribution from another bank entity" do

@@ -2,11 +2,10 @@
 
 ## Status
 
-Proposed contract drafted on 2026-09-15. It promotes the recommended sparse net-value
-direction from the exploration document into an implementation plan while keeping two
-bank-specific decisions open in the decisions document.
-
-No implementation is authorized by this documentation pass.
+Approved contract as of 2026-09-15. It promotes the recommended sparse net-value
+direction from the exploration document into an implementation plan. The bank exposes
+a current net redeemable total before withdrawal, and contribution IOF-free dates use
+an editable 30-calendar-day default.
 
 ## Goal
 
@@ -205,8 +204,9 @@ date, and status (`not recorded`, `waiting`, or `available`). Separate lots may 
 to share a return group because reconciliation observes the bank's group-level net
 balance. KAKASHI-22 does not apportion that balance or its delta across lots.
 
-Whether this field is purely manual or receives an editable 30-calendar-day default is
-an approval gate. No tax rate or declining IOF schedule is stored or calculated.
+For new contributions, the app proposes the source transaction's calendar date plus 30
+calendar days. The user may edit or clear that date. No tax rate or declining IOF
+schedule is stored or calculated.
 
 ## Reporting Contract
 

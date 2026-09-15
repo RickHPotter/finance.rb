@@ -1580,10 +1580,11 @@ Goal: let Piggy Bank valuation remain useful when the bank provides no daily pro
 history and the amount economically available before day 30 differs from gross yield
 because of IOF.
 
-Status: product and architecture documentation drafted on 2026-09-15. Development is
-not started. Two bank-specific input decisions remain intentionally open: whether a net
-redeemable total is observable before withdrawal, and whether the contribution-level
-IOF-free date is entered manually or initialized from a confirmed 30-day rule.
+Status: product and architecture documentation approved and Slice 1 characterization
+completed on 2026-09-15. The bank-observed net redeemable total is the authoritative
+input. Contribution-level IOF-free dates use an editable default of contribution date
+plus 30 calendar days. Development next proceeds to the write-free reconciliation
+preview.
 
 Exploration direction:
 
@@ -1616,12 +1617,11 @@ Locked direction:
 - reconciliation is scoped, locked, atomic, audited, stale-safe, and eligible for
   guarded operation-wide rollback.
 
-Pending approval gates:
+Approved bank-product inputs:
 
-- confirm whether the bank exposes a net redeemable total before withdrawal or only
-  gross value/charges/final settlement;
-- choose manual availability-date entry or an editable default of contribution date
-  plus 30 calendar days.
+- the bank exposes a current net redeemable total before withdrawal;
+- the app proposes contribution date plus 30 calendar days as the IOF-free date and
+  allows the user to edit it.
 
 References:
 

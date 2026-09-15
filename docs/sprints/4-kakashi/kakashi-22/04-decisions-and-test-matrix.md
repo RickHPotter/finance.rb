@@ -68,29 +68,18 @@ together. The existing guarded rollback must restore the exact pre-apply graph.
 KAKASHI-22 does not change ordinary Investment behavior, Monthly Analysis arithmetic,
 exchange projections, or actionable-message send/receive/auto-apply rules.
 
-## Approval Gates
+## Approved Bank-Product Inputs
 
-### P1: What value can the bank expose before withdrawal?
+### P1: The bank exposes current net redeemable value
 
-Confirm one:
+The current net redeemable total is visible before withdrawal and is the authoritative
+reconciliation input. Gross balance, IOF, and other charges are not separate V1 inputs.
 
-- the current net redeemable total is visible before withdrawal; or
-- only gross balance plus an IOF/charge amount is visible; or
-- only the final settled amount is known.
+### P2: `iof_exempt_on` receives an editable 30-day default
 
-The drafted V1 form assumes the first. If only gross and charges exist, the form contract
-must explicitly accept both rather than asking the user to calculate net value. If only
-final settlement exists, atomic reconcile-and-settle becomes part of V1.
-
-### P2: How is `iof_exempt_on` initialized?
-
-Choose one:
-
-- user enters the date manually, with no inferred tax rule; or
-- the app proposes contribution date plus 30 calendar days and lets the user edit it.
-
-The second is more convenient but must be confirmed as correct for the actual bank
-product. Neither choice calculates IOF money.
+The app proposes the source contribution's calendar date plus 30 calendar days. The user
+may edit or clear the value. This convenience rule does not calculate IOF money or
+guarantee a bank withdrawal.
 
 ## Calculation Matrix
 
@@ -190,7 +179,7 @@ product. Neither choice calculates IOF money.
 
 KAKASHI-22 is complete only when:
 
-- both approval gates are resolved in this document;
+- both bank-product inputs remain represented exactly as approved;
 - the observed-value calculation is correct before and after partial withdrawals;
 - preview is write-free and apply is stale-safe, locked, atomic, and retry-safe;
 - positive, negative, and zero results follow the contract;

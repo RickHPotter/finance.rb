@@ -295,21 +295,25 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       entity = create(:entity, user:, entity_name: "RESERVE BANK")
       source = create_piggy_bank_source(entity:, description: "Partial reserve", price: -5_000, paid: true)
       grouped_return = source.piggy_bank.return_cash_transaction
+      investment_type = create(:investment_type, :random)
       original_installment = grouped_return.cash_installments.first
       original_installment.update!(date: Date.new(2026, 7, 10), month: 7, year: 2026, price: 1_000, paid: true)
       Logic::Manipulation::CashInstallment.new(original_installment).split_installment(Date.new(2026, 7, 31), 4_000)
+      create_valuation(grouped_return, investment_type:, price: 500)
+      create_valuation(grouped_return, investment_type:, price: -200)
 
       expect(payload[:piggy_banks]).to include(
         total_contributed: 50.0,
         total_projected_contribution: 0.0,
         total_withdrawn: 10.0,
-        total_projected_withdrawal: 40.0,
-        recognized_profit_loss: 0.0
+        total_projected_withdrawal: 43.0,
+        recognized_profit_loss: 3.0
       )
-      expect(payload.dig(:piggy_banks, :groups).first).to include(withdrawn: 10.0, projected_withdrawal: 40.0)
+      expect(payload.dig(:piggy_banks, :groups).first).to include(withdrawn: 10.0, projected_withdrawal: 43.0, recognized_profit_loss: 3.0)
       sources = payload.dig(:piggy_banks, :groups, 0, :sources)
       expect(sources[:withdrawn]).to contain_exactly(include(role: "withdrawn", origin: "generated_return"))
       expect(sources[:projected_withdrawal]).to contain_exactly(include(role: "projected_withdrawal", origin: "generated_return"))
+      expect(sources[:recognized_profit_loss].sum { |valuation| valuation[:amount_cents] }).to eq(300)
     end
 
     it "keeps equal descriptions separated by return ID and excludes unrelated valuations" do

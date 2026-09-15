@@ -6,10 +6,16 @@ KAKASHI-22 adds safe snapshot reconciliation to the existing Piggy Bank graph. W
 split into reviewable slices and stops after each slice for review. Every implementation
 slice must be covered, RuboCop-clean, and end with a proposed commit description.
 
-Development begins only after approval gates P1 and P2 in the decisions document are
-resolved.
+The bank-product inputs P1 and P2 are approved: use the observed current net redeemable
+total and propose an editable contribution-date-plus-30-days IOF-free date.
 
 ## Slice 1: Freeze Existing Piggy Bank Valuation Semantics
+
+Status: complete as of 2026-09-15. The regression suite now freezes persisted grouped
+baselines, signed valuation arithmetic, several immutable paid splits, adjustment-month
+reporting, and real operation-wide rollback of a newly created linked valuation. The
+focused model/reporting/rollback run passed with 41 examples and no production behavior
+changed.
 
 1. Characterize grouped baseline, signed linked Investments, parent return total, paid
    history, and unpaid projection with executable examples.
