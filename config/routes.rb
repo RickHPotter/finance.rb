@@ -12,6 +12,10 @@ Rails.application.routes.draw do
   resource :preference, only: %i[update]
   resources :friendships, param: :public_id, only: %i[index create update destroy]
 
+  resources :baby_names, only: :index do
+    resource :decision, only: :create, controller: "baby_name_decisions"
+  end
+
   # devise_for :users, controllers: {
   #   confirmations: "users/confirmations"
   # }

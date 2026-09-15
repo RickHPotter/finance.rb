@@ -320,6 +320,73 @@ ALTER SEQUENCE public.audit_versions_id_seq OWNED BY public.audit_versions.id;
 
 
 --
+-- Name: baby_name_decisions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.baby_name_decisions (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    baby_name_id bigint NOT NULL,
+    choice character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT baby_name_decisions_choice_check CHECK (((choice)::text = ANY ((ARRAY['rejected'::character varying, 'accepted'::character varying, 'later'::character varying])::text[])))
+);
+
+
+--
+-- Name: baby_name_decisions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.baby_name_decisions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: baby_name_decisions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.baby_name_decisions_id_seq OWNED BY public.baby_name_decisions.id;
+
+
+--
+-- Name: baby_names; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.baby_names (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    "position" integer NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: baby_names_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.baby_names_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: baby_names_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.baby_names_id_seq OWNED BY public.baby_names.id;
+
+
+--
 -- Name: banks; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1615,6 +1682,20 @@ ALTER TABLE ONLY public.audit_versions ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
+-- Name: baby_name_decisions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.baby_name_decisions ALTER COLUMN id SET DEFAULT nextval('public.baby_name_decisions_id_seq'::regclass);
+
+
+--
+-- Name: baby_names id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.baby_names ALTER COLUMN id SET DEFAULT nextval('public.baby_names_id_seq'::regclass);
+
+
+--
 -- Name: banks id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1884,6 +1965,22 @@ ALTER TABLE ONLY public.audit_operations
 
 ALTER TABLE ONLY public.audit_versions
     ADD CONSTRAINT audit_versions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: baby_name_decisions baby_name_decisions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.baby_name_decisions
+    ADD CONSTRAINT baby_name_decisions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: baby_names baby_names_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.baby_names
+    ADD CONSTRAINT baby_names_pkey PRIMARY KEY (id);
 
 
 --
@@ -2365,6 +2462,41 @@ CREATE INDEX index_audit_versions_on_operation_id_and_id ON public.audit_version
 --
 
 CREATE INDEX index_audit_versions_on_owner_id_and_created_at ON public.audit_versions USING btree (owner_id, created_at);
+
+
+--
+-- Name: index_baby_name_decisions_on_baby_name_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_baby_name_decisions_on_baby_name_id ON public.baby_name_decisions USING btree (baby_name_id);
+
+
+--
+-- Name: index_baby_name_decisions_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_baby_name_decisions_on_user_id ON public.baby_name_decisions USING btree (user_id);
+
+
+--
+-- Name: index_baby_name_decisions_on_user_id_and_baby_name_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_baby_name_decisions_on_user_id_and_baby_name_id ON public.baby_name_decisions USING btree (user_id, baby_name_id);
+
+
+--
+-- Name: index_baby_names_on_active_and_position; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_baby_names_on_active_and_position ON public.baby_names USING btree (active, "position");
+
+
+--
+-- Name: index_baby_names_on_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_baby_names_on_name ON public.baby_names USING btree (name);
 
 
 --
@@ -3271,6 +3403,14 @@ ALTER TABLE ONLY public.user_bank_accounts
 
 
 --
+-- Name: baby_name_decisions fk_rails_1adbc5247b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.baby_name_decisions
+    ADD CONSTRAINT fk_rails_1adbc5247b FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: installments fk_rails_215da81c23; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3340,6 +3480,14 @@ ALTER TABLE ONLY public.conversation_participants
 
 ALTER TABLE ONLY public.cash_transactions
     ADD CONSTRAINT fk_rails_39eafa9ae9 FOREIGN KEY (context_id) REFERENCES public.contexts(id);
+
+
+--
+-- Name: baby_name_decisions fk_rails_3a72d80624; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.baby_name_decisions
+    ADD CONSTRAINT fk_rails_3a72d80624 FOREIGN KEY (baby_name_id) REFERENCES public.baby_names(id);
 
 
 --
@@ -3789,6 +3937,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260915120000'),
 ('20260911100000'),
 ('20260911090000'),
 ('20260909090000'),

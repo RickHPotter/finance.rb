@@ -22,6 +22,9 @@ application.register("balances-mobile", BalancesMobileController)
 import BalancesMonthlyAnalysisController from "./balances_monthly_analysis_controller"
 application.register("balances-monthly-analysis", BalancesMonthlyAnalysisController)
 
+import BabyNameSwipeController from "./baby_name_swipe_controller"
+application.register("baby-name-swipe", BabyNameSwipeController)
+
 import BlinkingPlaceholderController from "./blinking_placeholder_controller"
 application.register("blinking-placeholder", BlinkingPlaceholderController)
 

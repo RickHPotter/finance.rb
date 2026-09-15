@@ -1,0 +1,112 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+RSpec.describe "Baby names", type: :request do
+  let(:user) { create(:user) }
+  let!(:first_name) { create(:baby_name, name: "Arthur", position: 1) }
+  let!(:second_name) { create(:baby_name, name: "Theo", position: 2) }
+
+  describe "GET /baby_names" do
+    it "requires authentication" do
+      get baby_names_path
+
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "shows the next name and the user's counts" do
+      sign_in user
+      create(:baby_name_decision, user:, baby_name: second_name, choice: "accepted")
+
+      get baby_names_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Arthur", "0 / 1", "1 of 2 decided")
+      expect(response.body).not_to include(">Theo<")
+    end
+
+    it "shows postponed names again after all unseen names are handled" do
+      sign_in user
+      create(:baby_name_decision, user:, baby_name: first_name, choice: "later")
+      create(:baby_name_decision, user:, baby_name: second_name, choice: "rejected")
+
+      get baby_names_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Arthur", "1 of 2 decided", "1 for later")
+      expect(response.body).not_to include("That’s every name.")
+    end
+
+    it "uses the authenticated user's locale" do
+      sign_in user
+      user.profile.update!(locale: "pt-BR")
+
+      get baby_names_path
+
+      expect(response.body).to include("Como vamos chamar você?", "0 de 2 decididos", "Decidir depois")
+      expect(response.body).not_to include("What will we call you?")
+    end
+
+    it "does not include another user's decisions in the queue or totals" do
+      other_user = create(:user, :different)
+      create(:baby_name_decision, user: other_user, baby_name: first_name, choice: "accepted")
+      sign_in user
+
+      get baby_names_path
+
+      expect(response.body).to include("Arthur", "0 / 0", "0 of 2 decided")
+    end
+
+    it "cycles a repeatedly postponed name behind the other postponed names" do
+      sign_in user
+      first_decision = create(:baby_name_decision, user:, baby_name: first_name, choice: "later", updated_at: 2.minutes.ago)
+      create(:baby_name_decision, user:, baby_name: second_name, choice: "later", updated_at: 1.minute.ago)
+
+      post baby_name_decision_path(first_name), params: { choice: "later" }
+      get baby_names_path
+
+      expect(first_decision.reload.updated_at).to be_within(2.seconds).of(Time.current)
+      expect(response.body).to include("Theo")
+      expect(response.body).not_to include(">Arthur<")
+    end
+  end
+
+  describe "POST /baby_names/:baby_name_id/decision" do
+    before { sign_in user }
+
+    it "persists the signed-in user's choice" do
+      expect do
+        post baby_name_decision_path(first_name), params: { choice: "accepted" }
+      end.to change(user.baby_name_decisions, :count).by(1)
+
+      expect(response).to redirect_to(baby_names_path)
+      expect(user.baby_name_decisions.last).to be_accepted
+    end
+
+    it "does not replace an existing choice on a repeated submission" do
+      create(:baby_name_decision, user:, baby_name: first_name, choice: "rejected")
+
+      post baby_name_decision_path(first_name), params: { choice: "accepted" }
+
+      expect(response).to redirect_to(baby_names_path)
+      expect(user.baby_name_decisions.find_by(baby_name: first_name)).to be_rejected
+    end
+
+    it "allows a postponed name to receive a final choice" do
+      create(:baby_name_decision, user:, baby_name: first_name, choice: "later")
+
+      post baby_name_decision_path(first_name), params: { choice: "accepted" }
+
+      expect(response).to redirect_to(baby_names_path)
+      expect(user.baby_name_decisions.find_by(baby_name: first_name)).to be_accepted
+    end
+
+    it "rejects an invalid choice" do
+      expect do
+        post baby_name_decision_path(first_name), params: { choice: "maybe" }
+      end.not_to change(BabyNameDecision, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
+end

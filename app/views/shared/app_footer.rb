@@ -9,7 +9,7 @@ class Views::Shared::AppFooter < Views::Base
 
   def view_template
     ShellContainer(tag: :footer, class: "antialiased pt-2 max-w-auto max-w-[1420px] mx-auto") do
-      div(class: "flex justify-between items-center") do
+      div(class: "flex flex-wrap items-center justify-between gap-2") do
         div(class: "flex items-center gap-2") do
           theme_switcher
           locale_links
@@ -106,7 +106,12 @@ class Views::Shared::AppFooter < Views::Base
   end
 
   def action_links
-    div(class: "flex gap-2") do
+    div(class: "flex flex-wrap justify-end gap-2") do
+      FooterLink(href: baby_names_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do
+        plain I18n.t("baby_names.pwa.shortcut_name")
+        render_icon(:light_bulb)
+      end
+
       FooterLink(href: donation_static_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do
         plain I18n.t(:donate)
         render_icon(:heart)
