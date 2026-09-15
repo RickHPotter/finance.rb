@@ -38,7 +38,7 @@ class Views::BabyNames::Index < Views::Base
 
     {
       controller: "baby-name-swipe",
-      baby_name_swipe_timeout_value: 5_000,
+      baby_name_swipe_timeout_value: 20_000,
       baby_name_swipe_later_label_value: I18n.t("baby_names.actions.later"),
       action: "keydown.left@window->baby-name-swipe#reject keydown.right@window->baby-name-swipe#accept keydown.down@window->baby-name-swipe#later"
     }

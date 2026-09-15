@@ -3,7 +3,7 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   static targets = ["card", "rejectForm", "acceptForm", "laterForm", "laterButton", "rejectStamp", "acceptStamp"]
   static values = {
-    timeout: { type: Number, default: 5000 },
+    timeout: { type: Number, default: 20000 },
     laterLabel: { type: String, default: "Decide later" }
   }
 
