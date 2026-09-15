@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "rails_helper"
-RSpec.describe "Concurrent reference reallocation" do
+RSpec.describe "Concurrent reference reallocation", :non_transactional do
   self.use_transactional_tests = false
 
   before { truncate_audit_storage }

@@ -42,7 +42,8 @@ The JSON artifact has a schema version and unique run identifier. It records:
 - formatter start, first-example start, last-example finish, and RSpec finish;
 - RSpec load time, example time, counts, failures, and pending examples;
 - each example's stable ID, description, file, line, rerun argument, status, duration,
-  uncached SQL count, cached SQL count, FactoryBot count, and factory-name breakdown;
+  uncached SQL count, cached SQL count, SQL operation-name breakdown, FactoryBot count,
+  and factory-name breakdown;
 - exception class and message for a failed example.
 
 `post_rspec_seconds` includes work after RSpec emits its summary, including SimpleCov

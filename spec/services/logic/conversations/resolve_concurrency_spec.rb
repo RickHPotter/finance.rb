@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Logic::Conversations::Resolve do
+RSpec.describe Logic::Conversations::Resolve, :non_transactional do
   self.use_transactional_tests = false
 
   it "returns the same canonical conversation to two concurrent callers" do

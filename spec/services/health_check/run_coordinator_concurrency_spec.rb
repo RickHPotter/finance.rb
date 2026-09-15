@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Concurrent Health Check reruns" do
+RSpec.describe "Concurrent Health Check reruns", :non_transactional do
   self.use_transactional_tests = false
 
   let!(:admin) { create(:user, :random, admin: true) }

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Canonical conversation persistence" do
+RSpec.describe "Canonical conversation persistence", :non_transactional do
   self.use_transactional_tests = false
 
   it "lets the database choose one winner when two canonical main threads race" do

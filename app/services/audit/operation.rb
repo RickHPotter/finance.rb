@@ -29,7 +29,11 @@ class Audit::Operation
     def ensure_persisted!
       return create_unknown_operation! unless Audit::Current.active?
 
-      AuditOperation.find_by(id: Audit::Current.operation_id) || AuditOperation.create!(operation_attributes)
+      operation_cache = Audit::Current.operation_cache ||= {}
+      cached_operation = operation_cache[Audit::Current.operation_id]
+      return cached_operation if cached_operation&.persisted?
+
+      operation_cache[Audit::Current.operation_id] = AuditOperation.find_by(id: Audit::Current.operation_id) || AuditOperation.create!(operation_attributes)
     end
 
     private
@@ -48,7 +52,8 @@ class Audit::Operation
         parent_operation_id: record_id(options[:parent_operation_id]),
         rollback_of_operation_id: record_id(options[:rollback_of_operation_id]),
         selected_version_id: record_id(options[:selected_version_id]),
-        metadata: normalize_metadata(options.fetch(:metadata, {}))
+        metadata: normalize_metadata(options.fetch(:metadata, {})),
+        operation_cache: {}
       }
     end
 

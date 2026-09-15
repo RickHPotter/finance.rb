@@ -35,7 +35,8 @@ module RSpecPerformance
         sql_count: 0,
         cached_sql_count: 0,
         factory_count: 0,
-        factories: Hash.new(0)
+        factories: Hash.new(0),
+        sql_names: Hash.new(0)
       )
 
       mutex.synchronize do
@@ -57,6 +58,7 @@ module RSpecPerformance
           current[:cached_sql_count] += 1
         else
           current[:sql_count] += 1
+          current[:sql_names][payload.fetch(:name, :unknown).to_s] += 1
         end
       end
     end
@@ -82,6 +84,7 @@ module RSpecPerformance
         data[:exception] = exception_payload(result.exception)
         data.delete(:started_monotonic)
         data[:factories] = data.fetch(:factories).sort.to_h
+        data[:sql_names] = data.fetch(:sql_names).sort.to_h
         @last_example_finished_at = data.fetch(:finished_at)
         @current_example_id = nil
       end
@@ -114,7 +117,7 @@ module RSpecPerformance
         run_id: ENV.fetch("RSPEC_PERFORMANCE_RUN_ID", nil),
         pid: Process.pid,
         suite_started_at: started_at.iso8601(6),
-        example: example.except(:started_monotonic, :factories)
+        example: example.except(:started_monotonic, :factories, :sql_names)
       }
     end
 

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Conversation participant read cursor concurrency" do
+RSpec.describe "Conversation participant read cursor concurrency", :non_transactional do
   self.use_transactional_tests = false
 
   it "keeps the greatest visible message when two views advance concurrently" do

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Conversation policy revocation concurrency" do
+RSpec.describe "Conversation policy revocation concurrency", :non_transactional do
   self.use_transactional_tests = false
 
   it "serializes friendship revocation after an authorized mutation" do

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Concurrent allocation mutation application" do
+RSpec.describe "Concurrent allocation mutation application", :non_transactional do
   self.use_transactional_tests = false
 
   before { truncate_audit_storage }

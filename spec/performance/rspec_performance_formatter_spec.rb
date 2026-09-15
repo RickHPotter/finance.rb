@@ -64,6 +64,7 @@ RSpec.describe RSpecPerformance::Artifact do
       "cached_sql_count" => 1,
       "factory_count" => 1,
       "factories" => { "cash_transaction" => 1 },
+      "sql_names" => { "CashInstallment Load" => 1 },
       "status" => "passed"
     )
     expect(path.sub_ext(".active.json")).not_to exist

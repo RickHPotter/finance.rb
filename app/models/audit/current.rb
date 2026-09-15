@@ -10,7 +10,8 @@ class Audit::Current < ActiveSupport::CurrentAttributes
             :parent_operation_id,
             :rollback_of_operation_id,
             :selected_version_id,
-            :metadata
+            :metadata,
+            :operation_cache
 
   def self.active?
     operation_id.present?

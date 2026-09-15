@@ -54,7 +54,7 @@ RSpec.describe CashTransactable, type: :concern do
   end
 
   def validate(installments_prices)
-    CashTransaction.order(:year, :month).each_with_index do |cash_transaction, index|
+    user.main_context.cash_transactions.card_payment.where(user_card: [ user_card, user_card_two ]).order(:year, :month).each_with_index do |cash_transaction, index|
       expected_comment = cash_transaction.card_installments.first&.comment
       expect(cash_transaction.comment).to eq(expected_comment)
       expect(cash_transaction.price).to eq installments_prices[index]

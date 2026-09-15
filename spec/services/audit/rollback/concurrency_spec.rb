@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Concurrent audit rollback application" do
+RSpec.describe "Concurrent audit rollback application", :non_transactional do
   self.use_transactional_tests = false
 
   before { truncate_audit_storage }

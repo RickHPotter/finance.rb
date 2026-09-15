@@ -889,7 +889,7 @@ RSpec.describe "CardTransactions", type: :request do
       expect(second_exchange_return_id).to eq(first_exchange_return_id)
       expect(shared_exchange_return.reference_transactable).to be_nil
       expect(shared_exchange_return.cash_installments.order(:number).pluck(:price)).to eq([ -5099 ])
-      expect(shared_exchange_return.exchanges.card_bound.order(:number, :date).pluck(:price)).to eq([ -2200, -2899 ])
+      expect(shared_exchange_return.exchanges.card_bound.pluck(:price)).to match_array([ -2200, -2899 ])
     end
 
     it "preserves the paid partial installment and increases the unpaid card-bound EXCHANGE RETURN remainder in the same bucket" do

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Concurrent Health Check repair application" do
+RSpec.describe "Concurrent Health Check repair application", :non_transactional do
   self.use_transactional_tests = false
 
   before { truncate_audit_storage }

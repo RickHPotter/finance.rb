@@ -151,6 +151,14 @@ The integration behavior is recorded in `07-spec-integration-isolation.md`.
 
 ## Slice 5 — Optimize Measured Application Hot Paths
 
+Status: complete as of 2026-09-14. The reprofiled production-heavy cluster was reference
+reallocation and rollback. Request-local audit-operation caching, database-backed parent
+validation, destination-reference materialization, and bounded final verification remove
+185 SQL statements from the twelve-month control while retaining every audit operation
+and version. The example improved from 2.371955s to 2.071973s at fixed seed `20260914`;
+service-boundary `AuditOperation Load` queries fell from 107 to 1. Measurements and
+invariant coverage are recorded in `08-measured-hot-path-optimization.md`.
+
 **Goal:** improve production paths that remain expensive after fixture cleanup.
 
 ### Deliverables

@@ -213,16 +213,15 @@ RSpec.describe Audit::Rollback::Adapters::Reference do
     original_april_closing_date = april_reference.reference_closing_date
     march_invoice = create_invoice(march_reference, price: -1_000)
     april_invoice = create_invoice(april_reference, price: -1_200)
-    expect(
-      Logic::References.merge(
-        user_card,
-        "2026-03-01",
-        "2026-04-01",
-        merge_mode: Logic::References::COMBINE_INTO_TARGET,
-        context:
-      )
-    ).to be_truthy
-    operation = AuditOperation.last
+    merge_result = Logic::References.merge_result(
+      user_card,
+      "2026-03-01",
+      "2026-04-01",
+      merge_mode: Logic::References::COMBINE_INTO_TARGET,
+      context:
+    )
+    expect(merge_result).to be_applied
+    operation = merge_result.operation
 
     preview, result = apply(operation)
     expect(preview).to have_attributes(state: "previewable")
