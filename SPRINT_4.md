@@ -1580,11 +1580,11 @@ Goal: let Piggy Bank valuation remain useful when the bank provides no daily pro
 history and the amount economically available before day 30 differs from gross yield
 because of IOF.
 
-Status: product and architecture documentation approved and Slice 1 characterization
-completed on 2026-09-15. The bank-observed net redeemable total is the authoritative
-input. Contribution-level IOF-free dates use an editable default of contribution date
-plus 30 calendar days. Development next proceeds to the write-free reconciliation
-preview.
+Status: product and architecture documentation approved and Slices 1-2 completed on
+2026-09-15. The bank-observed net redeemable total is the authoritative input.
+Contribution-level IOF-free dates use an editable default of contribution date plus 30
+calendar days. A write-free, deterministic, graph-validated reconciliation preview is
+now available; development next proceeds to atomic apply.
 
 Exploration direction:
 

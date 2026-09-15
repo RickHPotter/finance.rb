@@ -36,6 +36,13 @@ Commit: `spec: characterize piggy bank valuation reconciliation`
 
 ## Slice 2: Add a Write-Free Reconciliation Preview
 
+Status: complete as of 2026-09-15. `PiggyBankReconciliations::Preview` now resolves only
+the supplied user's current-context generated return, validates canonical contribution,
+valuation, parent, and installment arithmetic, calculates against the unpaid projection,
+and returns immutable ready/no-op/invalid plans. Its deterministic digest binds the
+observation, calculation, configuration, and complete relevant graph. The affected
+Piggy Bank regression suite passed with 115 examples and no writes are performed.
+
 1. Introduce a focused value object/service that resolves a canonical owned return
    group and calculates entirely in integer cents.
 2. Validate observation date/value, graph integrity, group state, and required
