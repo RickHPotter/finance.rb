@@ -48,9 +48,10 @@ RSpec.describe "Finance resource navigation", type: :request do
       subscriptions_path(format: :turbo_stream) => subscriptions_path,
       new_subscription_path(format: :turbo_stream) => new_subscription_path
     }.each do |stream_path, canonical_path|
+      sign_in user
       get stream_path
 
-      expect(response).to have_http_status(:moved_permanently)
+      expect(response).to have_http_status(:moved_permanently), "expected #{stream_path} to redirect permanently"
       expect(response).to redirect_to(canonical_path)
     end
   end

@@ -223,6 +223,15 @@ complete suite.
 
 ## Slice 7 — Rebaseline, Budget, and Close
 
+Status: complete as of 2026-09-15. Three comparable fixed-seed serial runs and two
+alternate-seed runs pass all 2,111 examples. The fixed-seed process median is 372.71
+seconds, with an 8.31% observed range; uncached SQL varies by only 81 statements and
+factory creation is identical across all three samples. Warning-only budgets now use
+that measured variance, the activation outlier is eliminated, suite-order session
+assumptions found by repetition are explicit, and parallel execution remains deferred
+until shared database and artifact isolation are proven. Complete evidence and the
+manual/operational handoff are recorded in `10-closure-report.md`.
+
 **Goal:** prove improvements are repeatable and establish sustainable guardrails.
 
 ### Deliverables

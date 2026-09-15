@@ -1330,14 +1330,14 @@ References:
 - Issues:
   - [#64](https://github.com/RickHPotter/finance.rb/issues/64)
 
-Status: planning and activation audit complete as of 2026-09-14. The first supplied
-profile is sufficient to start implementation: it identifies a sequence-dependent spec
-fixture responsible for 338.07 seconds of a 12-minute-38-second run. Repeatable
-instrumentation, the bounded regression correction, and a post-correction baseline are
-the first delivery slices; performance budgets and parallel execution remain deferred
-until stable evidence exists. Focused local RSpec runs will skip SimpleCov by default,
-an explicit local coverage command will remain available, and `bin/ci` will always run
-the authoritative coverage path.
+Status: implementation and automated closure complete as of 2026-09-15. The pathological
+338.07-second sequence-chasing fixture is bounded, factory and integration behavior is
+deterministic, measured application work has non-timing regression coverage, and the
+suite has explicit fast, feature, operational, full, profiling, coverage, and fixed-seed
+workflows. Three comparable fixed-seed runs pass all 2,111 examples with a 372.71-second
+median process time; two alternate seeds also pass. CI retains authoritative 92.52%
+coverage, warning budgets are based on measured variance, and parallel execution remains
+deliberately deferred until worker isolation is proven.
 
 Goal: make the growing RSpec suite fast and predictable enough for daily use while
 using slow or hanging examples to identify application paths that perform unnecessary
@@ -1464,6 +1464,7 @@ References:
 - [implementation slices](docs/sprints/4-kakashi/kakashi-20/03-implementation-slices.md)
 - [decisions and test matrix](docs/sprints/4-kakashi/kakashi-20/04-decisions-and-test-matrix.md)
 - [profiling workflow](docs/sprints/4-kakashi/kakashi-20/05-profiling-workflow.md)
+- [closure report](docs/sprints/4-kakashi/kakashi-20/10-closure-report.md)
 
 ### KAKASHI-21: Choose how a user-card reference merge reallocates installments
 
