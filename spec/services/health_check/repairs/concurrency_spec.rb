@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Concurrent Health Check repair application" do
+RSpec.describe "Concurrent Health Check repair application", :non_transactional do
   self.use_transactional_tests = false
 
   before { truncate_audit_storage }
@@ -17,11 +17,14 @@ RSpec.describe "Concurrent Health Check repair application" do
       key: "canonical_reference"
     )
     preview = build_preview(scope:)
+    mutation_started = Queue.new
+    release_mutation = Queue.new
 
     allow_any_instance_of(HealthCheck::Repairs::Apply).to receive(:locked_preview).and_return(preview)
     allow_any_instance_of(HealthCheck::Repairs::Apply).to receive(:schedule_rerun).and_return(nil)
     allow_any_instance_of(HealthCheck::Repairs::Apply).to receive(:mutate!) do |service, current_preview|
-      sleep(0.1)
+      mutation_started << true
+      wait_for_signal(release_mutation, description: "the health-check repair mutation release")
       AuditOperation.create!(
         source: :admin_repair,
         result: :committed,
@@ -36,7 +39,7 @@ RSpec.describe "Concurrent Health Check repair application" do
     threads = 2.times.map do |index|
       Thread.new do
         ready << true
-        release.pop
+        wait_for_signal(release, description: "the health-check repair race release")
         ActiveRecord::Base.connection_pool.with_connection do
           HealthCheck::Repairs::Apply.new(
             definition:,
@@ -48,9 +51,11 @@ RSpec.describe "Concurrent Health Check repair application" do
         end
       end
     end
-    2.times { ready.pop }
+    2.times { wait_for_signal(ready, description: "a health-check repair racer to become ready") }
     2.times { release << true }
-    results = threads.map(&:value)
+    wait_for_signal(mutation_started, description: "the first health-check repair mutation to start")
+    release_mutation << true
+    results = threads.map { |thread| thread_value(thread, description: "a health-check repair racer") }
 
     expect(results.map(&:status)).to eq(%w[applied applied])
     expect(results.map(&:duplicate)).to contain_exactly(false, true)

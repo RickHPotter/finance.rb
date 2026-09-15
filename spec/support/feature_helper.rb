@@ -68,6 +68,31 @@ module FeatureBrowser
 
   class << self
     def paths
+      @paths ||= resolve_paths
+    end
+
+    def verify!
+      paths
+    rescue StandardError => e
+      abort("RSpec browser prerequisite failed: #{e.class}: #{e.message}")
+    end
+
+    def selected?
+      RSpec.world.filtered_examples.values.flatten.any? { |example| example.metadata[:type] == :feature }
+    end
+
+    def shutdown!
+      Capybara.send(:session_pool).each_value do |session|
+        session.driver.quit if session.driver.respond_to?(:quit)
+      rescue StandardError => e
+        warn("Unable to quit Capybara driver: #{e.class}: #{e.message}")
+      end
+      Capybara.reset_sessions!
+    end
+
+    private
+
+    def resolve_paths
       browser_path = usable_path(ENV.fetch("CHROME_EXECUTABLE", nil)) || CHROME_CANDIDATES.find { |path| usable_path(path) }
       driver_path = usable_path(ENV.fetch("CHROMEDRIVER_EXECUTABLE", nil))
       return { browser_path:, driver_path: } if browser_path && driver_path
@@ -81,8 +106,6 @@ module FeatureBrowser
         driver_path: driver_path || managed_paths.fetch("driver_path")
       }
     end
-
-    private
 
     def usable_path(path)
       return if path.blank? || !File.executable?(path)
@@ -111,4 +134,8 @@ end
 RSpec.configure do |config|
   config.include FeatureHelper
   config.include TranslateHelper
+  config.before(:suite) { FeatureBrowser.verify! if FeatureBrowser.selected? }
+  config.after(:suite) { FeatureBrowser.shutdown! }
 end
+
+at_exit { FeatureBrowser.shutdown! }

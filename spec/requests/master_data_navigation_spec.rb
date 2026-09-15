@@ -118,9 +118,10 @@ RSpec.describe "Category and entity navigation", type: :request do
       entity_path(entity, format: :turbo_stream) => entity_path(entity),
       edit_entity_path(entity, format: :turbo_stream) => edit_entity_path(entity)
     }.each do |stream_path, canonical_path|
+      sign_in user
       get stream_path
 
-      expect(response).to have_http_status(:moved_permanently)
+      expect(response).to have_http_status(:moved_permanently), "expected #{stream_path} to redirect permanently"
       expect(response).to redirect_to(canonical_path)
     end
   end

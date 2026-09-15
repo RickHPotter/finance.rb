@@ -30,13 +30,22 @@ RSpec.describe Audit::Operation do
 
     it "persists one operation lazily and reuses it for nested work" do
       records = []
+      operation_loads = 0
+      subscriber = lambda do |_name, _start, _finish, _id, payload|
+        operation_loads += 1 if payload[:name] == "AuditOperation Load" && !payload[:cached]
+      end
 
-      described_class.run(actor:, context:, source: :web) do
-        records << described_class.ensure_persisted!
-        described_class.run(source: :import) { records << described_class.ensure_persisted! }
+      ActiveSupport::Notifications.subscribed(subscriber, "sql.active_record") do
+        described_class.run(actor:, context:, source: :web) do
+          records << described_class.ensure_persisted!
+          described_class.run(source: :import) { records << described_class.ensure_persisted! }
+          records << described_class.ensure_persisted!
+        end
       end
 
       expect(records.map(&:id).uniq.one?).to be(true)
+      expect(records.map(&:object_id).uniq.one?).to be(true)
+      expect(operation_loads).to eq(1)
       expect(records.first).to have_attributes(actor_id: actor.id, context_id: context.id, source: "web", result: "committed")
     end
 
@@ -68,6 +77,24 @@ RSpec.describe Audit::Operation do
           raise ActiveRecord::Rollback
         end
       end.not_to change(AuditOperation, :count)
+    end
+
+    it "replaces a request-local cached operation after its transaction rolls back" do
+      first_operation = nil
+      replacement_operation = nil
+
+      described_class.run(source: :web) do
+        AuditOperation.transaction(requires_new: true) do
+          first_operation = described_class.ensure_persisted!
+          raise ActiveRecord::Rollback
+        end
+        replacement_operation = described_class.ensure_persisted!
+      end
+
+      expect(first_operation).not_to be_persisted
+      expect(replacement_operation).to be_persisted
+      expect(replacement_operation.id).to eq(first_operation.id)
+      expect(AuditOperation.where(id: replacement_operation.id).count).to eq(1)
     end
 
     it "rejects unsupported sources and unbounded metadata shapes" do

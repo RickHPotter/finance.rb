@@ -39,14 +39,14 @@ module FactoryHelper
 
     return FactoryBot.create(model, *traits, options) if reference.empty?
 
-    existing_reference = reference.values.first&.public_send(model.to_s.pluralize)&.sample
+    existing_reference = reference.values.first&.public_send(model.to_s.pluralize)&.reorder(:id)&.first
     return existing_reference if existing_reference
 
     options = options.merge(reference)
     FactoryBot.create(model, *traits, options)
   end
 
-  # Prepares a polymorphic setting to be used in a Custom {FactoryBot} method, by randomly selecting one of the given models
+  # Prepares a polymorphic setting to be used in a Custom {FactoryBot} method, by selecting the first of the given models
   # and forwarding it to the original {#custom_create} method.
   #
   # @param models [Array<Symbol>] Array of symbols, each representing a model that has a factory.
@@ -65,7 +65,7 @@ module FactoryHelper
     raise ArgumentError, "You must provide an array" unless models.is_a?(Array)
     raise ArgumentError, "You must provide a non-empty array" if models.empty?
 
-    custom_create(models.sample, reference:, traits:, options:)
+    custom_create(models.first, reference:, traits:, options:)
   end
 
   %i[different random].map do |trait|

@@ -1,11 +1,18 @@
 # frozen_string_literal: true
 
-require "simplecov"
-SimpleCov.start do
-  skip "/spec/"
-  skip "/app/helpers/"
-  skip "/app/controllers/"
-  skip "/config/"
+if ENV["COVERAGE"] == "true"
+  require "fileutils"
+  require "simplecov"
+
+  FileUtils.rm_f(File.expand_path("../coverage/.resultset.json", __dir__)) if ENV["COVERAGE_RESET"] == "true"
+  SimpleCov.command_name(ENV.fetch("COVERAGE_COMMAND_NAME", "rspec"))
+  SimpleCov.merge_timeout(3_600)
+  SimpleCov.start do
+    skip "/spec/"
+    skip "/app/helpers/"
+    skip "/app/controllers/"
+    skip "/config/"
+  end
 end
 
 # This file is copied to spec/ when you run 'rails generate rspec:install'
@@ -33,12 +40,20 @@ Capybara.default_max_wait_time = 5
 # Checks for pending migrations and applies them before tests are run.
 # If you are not using ActiveRecord, you can remove these lines.
 begin
+  ActiveRecord::Base.connection.execute("SELECT 1")
   ActiveRecord::Migration.maintain_test_schema!
 rescue ActiveRecord::PendingMigrationError => e
   abort e.to_s.strip
+rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::NoDatabaseError, PG::Error => e
+  detail = e.message.presence || e.cause&.message.presence || "connection unavailable"
+  abort("RSpec PostgreSQL prerequisite failed: #{e.class}: #{detail}")
 end
 
 RSpec.configure do |config|
+  config.define_derived_metadata(file_path: %r{/spec/services/audit/rollback/}) { |metadata| metadata[:operational] = true }
+  config.define_derived_metadata(file_path: %r{/spec/services/reference_merges/}) { |metadata| metadata[:operational] = true }
+  config.define_derived_metadata(file_path: /_concurrency_spec\.rb\z/) { |metadata| metadata[:operational] = true }
+
   config.include FactoryBot::Syntax::Methods
   config.include ActiveJob::TestHelper
   config.include ActionMailbox::TestHelper

@@ -45,9 +45,10 @@ RSpec.describe "Bank-account and user-card navigation", type: :request do
       user_card_path(user_card, format: :turbo_stream) => user_card_path(user_card),
       edit_user_card_path(user_card, format: :turbo_stream) => edit_user_card_path(user_card)
     }.each do |stream_path, canonical_path|
+      sign_in user
       get stream_path
 
-      expect(response).to have_http_status(:moved_permanently)
+      expect(response).to have_http_status(:moved_permanently), "expected #{stream_path} to redirect permanently"
       expect(response).to redirect_to(canonical_path)
     end
   end

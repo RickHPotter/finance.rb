@@ -33,6 +33,7 @@ RSpec.describe "Static", type: :request do
       get donation_static_path
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include("href=\"#{baby_names_path}\"")
     end
   end
 

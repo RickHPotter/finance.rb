@@ -183,7 +183,11 @@ class ReferenceMerges::ReallocationApply
   end
 
   def destination_reference_for(date)
-    plan.user_card.references.find_by(context: plan.context, month: date.month, year: date.year) || create_destination_reference!(date)
+    destination_references[date] ||= create_destination_reference!(date)
+  end
+
+  def destination_references
+    @destination_references ||= plan.user_card.references.where(context: plan.context).index_by { |reference| Date.new(reference.year, reference.month, 1) }
   end
 
   def create_destination_reference!(date)
@@ -218,10 +222,10 @@ class ReferenceMerges::ReallocationApply
 
   def verify_final_graph!
     @locked_plan.buckets.each do |bucket|
-      CardInstallment.unscoped.where(id: bucket.installment_ids).find_each do |installment|
+      CardInstallment.unscoped.where(id: bucket.installment_ids).includes(:cash_transaction).find_each do |installment|
         verify_installment!(installment, bucket.destination_date)
       end
-      Exchange.where(id: bucket.exchange_ids).find_each { |exchange| verify_exchange!(exchange, bucket.destination_date) }
+      Exchange.where(id: bucket.exchange_ids).includes(:cash_transaction).find_each { |exchange| verify_exchange!(exchange, bucket.destination_date) }
     end
 
     verify_source_removed!
@@ -269,9 +273,14 @@ class ReferenceMerges::ReallocationApply
   end
 
   def verify_projection_total!(projection)
+    @verified_projection_ids ||= Set.new
+    return if @verified_projection_ids.include?(projection.id)
+
     expected_price = Exchange.where(cash_transaction_id: projection.id).sum(:price)
     raise IntegrityError unless projection.price == expected_price
     raise IntegrityError unless projection.cash_installments.sum(:price) == expected_price
+
+    @verified_projection_ids << projection.id
   end
 
   def recalculate_balances!

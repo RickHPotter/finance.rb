@@ -678,6 +678,7 @@ RSpec.describe "Budgets", type: :request do
 
       main_card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,

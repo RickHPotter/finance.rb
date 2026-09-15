@@ -404,6 +404,7 @@ RSpec.describe Message, type: :model do
       sender_user_card = create(:user_card, :random, user: sender, card: create(:card, :random, bank: create(:bank, :random)))
       origin_card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user: sender,
         context: sender.main_context,
         user_card: sender_user_card,

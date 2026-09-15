@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 require "rails_helper"
-require "timeout"
-
-RSpec.describe "Concurrent reference reallocation" do
+RSpec.describe "Concurrent reference reallocation", :non_transactional do
   self.use_transactional_tests = false
 
   before { truncate_audit_storage }
@@ -44,15 +42,15 @@ RSpec.describe "Concurrent reference reallocation" do
     threads = 2.times.map do
       Thread.new do
         ready << true
-        release.pop
+        wait_for_signal(release, description: "the reference reallocation race release")
         ActiveRecord::Base.connection_pool.with_connection do
           ReferenceMerges::ReallocationApply.new(plan:).call
         end
       end
     end
-    2.times { ready.pop }
+    2.times { wait_for_signal(ready, description: "a reference reallocation racer to become ready") }
     2.times { release << true }
-    results = threads.map(&:value)
+    results = threads.map { |thread| thread_value(thread, description: "a reference reallocation racer") }
 
     expect(results.map(&:status)).to contain_exactly("applied", "rejected")
     expect(results.find(&:rejected?).reason_code).to eq("stale_plan")
@@ -90,7 +88,7 @@ RSpec.describe "Concurrent reference reallocation" do
     threads = modes.map do |merge_mode|
       Thread.new do
         ready << true
-        release.pop
+        wait_for_signal(release, description: "the reference merge race release")
         ActiveRecord::Base.connection_pool.with_connection do
           Logic::References.merge_result(
             user_card,
@@ -102,9 +100,9 @@ RSpec.describe "Concurrent reference reallocation" do
         end
       end
     end
-    2.times { ready.pop }
+    2.times { wait_for_signal(ready, description: "a reference merge racer to become ready") }
     2.times { release << true }
-    results = threads.map(&:value)
+    results = threads.map { |thread| thread_value(thread, description: "a reference merge racer") }
 
     expect(results.map(&:status)).to contain_exactly("applied", "rejected")
     expect(user_card.references.where(context:, month: 8, year: 2026)).not_to exist
@@ -127,12 +125,12 @@ RSpec.describe "Concurrent reference reallocation" do
         ApplicationRecord.transaction do
           ReferenceMerges::Lock.acquire!(user_card: first_card, context:)
           locked << true
-          release.pop
+          wait_for_signal(release, description: "the first card reference lock release")
         end
       end
     end
 
-    locked.pop
+    wait_for_signal(locked, description: "the first card reference lock")
     independent_lock = Thread.new do
       ActiveRecord::Base.connection_pool.with_connection do
         ApplicationRecord.transaction { ReferenceMerges::Lock.acquire!(user_card: second_card, context:) }
@@ -140,11 +138,11 @@ RSpec.describe "Concurrent reference reallocation" do
       true
     end
 
-    expect(Timeout.timeout(5) { independent_lock.value }).to be(true)
+    expect(thread_value(independent_lock, description: "the independent card reference lock")).to be(true)
   ensure
     release << true if release
-    holder&.join
-    independent_lock&.join
+    join_thread(holder, description: "the first card reference lock holder") if holder
+    join_thread(independent_lock, description: "the independent card reference lock") if independent_lock
   end
 
   private

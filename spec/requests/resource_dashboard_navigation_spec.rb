@@ -64,9 +64,10 @@ RSpec.describe "Resource dashboard navigation", type: :request do
     }
 
     expected_links.each do |show_path, expected_href|
+      sign_in user
       get show_path
 
-      expect(response).to have_http_status(:success)
+      expect(response).to have_http_status(:success), "expected #{show_path} to render its dashboard"
       expect(parsed_document.css("a").map { |link| link["href"] }).to include(expected_href)
     end
   end
@@ -140,8 +141,10 @@ RSpec.describe "Resource dashboard navigation", type: :request do
     foreign_user = create(:user, :random)
     foreign_account = create(:user_bank_account, :random, user: foreign_user)
 
+    sign_in user
     get cash_transaction_path(cash_transaction, return_to: user_bank_account_path(foreign_account))
 
+    expect(response).to have_http_status(:success)
     expect(parsed_document.css("a").map { |link| link["href"] }).to include(
       edit_cash_transaction_path(cash_transaction, return_to: cash_transactions_path)
     )

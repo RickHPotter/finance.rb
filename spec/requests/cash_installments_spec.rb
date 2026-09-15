@@ -19,9 +19,22 @@ RSpec.describe "CashInstallments", type: :request do
     expect(response).to redirect_to(root_path)
   end
 
+  def counterpart_entity(owner:, counterpart:)
+    friendship = owner.friendship_with(counterpart)
+    if friendship&.accepted_state?
+      return owner.entities.find_or_create_by!(friendship:) do |entity_record|
+        entity_record.entity_name = counterpart.first_name.upcase
+      end
+    end
+
+    owner.entities.find_or_create_by!(entity_name: counterpart.first_name.upcase) do |entity_record|
+      entity_record.entity_user = counterpart
+    end
+  end
+
   def create_shared_return_pair(sender:, receiver:, sender_context: sender.main_context, receiver_context: receiver.main_context, link_reference: true) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-    sender.entities.find_or_create_by!(entity_name: receiver.first_name.upcase) { |entity_record| entity_record.entity_user = receiver }
-    receiver_counterpart = receiver.entities.find_or_create_by!(entity_name: sender.first_name.upcase) { |entity_record| entity_record.entity_user = sender }
+    counterpart_entity(owner: sender, counterpart: receiver)
+    receiver_counterpart = counterpart_entity(owner: receiver, counterpart: sender)
     sender_bank_account = create(:user_bank_account, user: sender, bank: create(:bank, :random))
     receiver_bank_account = create(:user_bank_account, user: receiver, bank: create(:bank, :random))
 
@@ -78,14 +91,8 @@ RSpec.describe "CashInstallments", type: :request do
   end
 
   def create_card_origin_shared_return_bundle(sender:, receiver:, sender_context: sender.main_context, receiver_context: receiver.main_context) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-    sender_entity_for_receiver =
-      sender.entities.find_or_create_by!(entity_name: receiver.first_name.upcase) do |entity_record|
-        entity_record.entity_user = receiver
-      end
-    receiver_entity_for_sender =
-      receiver.entities.find_or_create_by!(entity_name: sender.first_name.upcase) do |entity_record|
-        entity_record.entity_user = sender
-      end
+    sender_entity_for_receiver = counterpart_entity(owner: sender, counterpart: receiver)
+    receiver_entity_for_sender = counterpart_entity(owner: receiver, counterpart: sender)
 
     sender_card = create(:card, :random, bank: create(:bank, :random))
     sender_user_card = create(:user_card, :random, user: sender, card: sender_card)
@@ -93,6 +100,7 @@ RSpec.describe "CashInstallments", type: :request do
 
     origin_card_transaction = create(
       :card_transaction,
+      :with_allocations,
       user: sender,
       context: sender_context,
       user_card: sender_user_card,
@@ -172,14 +180,8 @@ RSpec.describe "CashInstallments", type: :request do
   end
 
   def create_reimbursement_shared_return_bundle(sender:, receiver:, sender_context: sender.main_context, receiver_context: receiver.main_context) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-    sender_entity_for_receiver =
-      sender.entities.find_or_create_by!(entity_name: receiver.first_name.upcase) do |entity_record|
-        entity_record.entity_user = receiver
-      end
-    receiver_entity_for_sender =
-      receiver.entities.find_or_create_by!(entity_name: sender.first_name.upcase) do |entity_record|
-        entity_record.entity_user = sender
-      end
+    sender_entity_for_receiver = counterpart_entity(owner: sender, counterpart: receiver)
+    receiver_entity_for_sender = counterpart_entity(owner: receiver, counterpart: sender)
 
     sender_bank_account = create(:user_bank_account, user: sender, bank: create(:bank, :random))
     receiver_bank_account = create(:user_bank_account, user: receiver, bank: create(:bank, :random))
@@ -419,6 +421,7 @@ RSpec.describe "CashInstallments", type: :request do
     it "mirrors the split settlement back to card-bound exchange rows" do
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
@@ -958,6 +961,7 @@ RSpec.describe "CashInstallments", type: :request do
     it "reflects paid state on card-bound exchanges without rewriting their own dates" do
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
@@ -1525,6 +1529,7 @@ RSpec.describe "CashInstallments", type: :request do
     it "keeps card-bound exchange dates unchanged when shared settlement installments are paid in bulk" do
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
@@ -1569,6 +1574,8 @@ RSpec.describe "CashInstallments", type: :request do
     it "creates one paid-state message per mirrored shared return transaction even when headers match" do
       sender = create(:user, :random)
       receiver = user
+      create(:friendship, :accepted, user: sender, friend: receiver)
+      assistant_conversation = resolve_assistant_conversation(sender, receiver)
       _origin_card_transaction, sender_shared_return_one, receiver_shared_return_one =
         create_card_origin_shared_return_bundle(sender:, receiver:)
       _origin_cash_transaction, sender_shared_return_two, receiver_shared_return_two =
@@ -1578,6 +1585,7 @@ RSpec.describe "CashInstallments", type: :request do
       receiver_shared_return_one.update!(description: receiver_shared_return_two.description)
       sender_shared_return_one.update!(description: sender_shared_return_two.description)
 
+      sign_in receiver
       post pay_multiple_cash_installments_path, params: {
         ids: [
           receiver_shared_return_one.cash_installments.find_by!(number: 1).id,
@@ -1588,7 +1596,6 @@ RSpec.describe "CashInstallments", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      assistant_conversation = conversation_scope_for(sender, receiver).assistant.order(:id).last
       paid_state_messages = assistant_conversation.messages.where(body: "notification:paid_state").order(:id)
 
       expect(response).to have_http_status(:ok)
@@ -1927,6 +1934,7 @@ RSpec.describe "CashInstallments", type: :request do
     it "keeps card-bound exchange dates unchanged when shared settlement installments are transferred" do
       card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),

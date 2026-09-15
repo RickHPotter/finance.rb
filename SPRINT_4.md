@@ -1330,6 +1330,15 @@ References:
 - Issues:
   - [#64](https://github.com/RickHPotter/finance.rb/issues/64)
 
+Status: implementation and automated closure complete as of 2026-09-15. The pathological
+338.07-second sequence-chasing fixture is bounded, factory and integration behavior is
+deterministic, measured application work has non-timing regression coverage, and the
+suite has explicit fast, feature, operational, full, profiling, coverage, and fixed-seed
+workflows. Three comparable fixed-seed runs pass all 2,111 examples with a 372.71-second
+median process time; two alternate seeds also pass. CI retains authoritative 92.52%
+coverage, warning budgets are based on measured variance, and parallel execution remains
+deliberately deferred until worker isolation is proven.
+
 Goal: make the growing RSpec suite fast and predictable enough for daily use while
 using slow or hanging examples to identify application paths that perform unnecessary
 database, callback, projection, rendering, or notification work.
@@ -1447,6 +1456,15 @@ Explicitly out of scope:
 - blanket mocking of application internals
 - arbitrary timing assertions tied to one development machine
 - parallelization as a substitute for fixing deadlocks, N+1 queries, or callback storms
+
+References:
+
+- [performance and spec quality contract](docs/sprints/4-kakashi/kakashi-20/01-performance-and-spec-quality-contract.md)
+- [current baseline and gap inventory](docs/sprints/4-kakashi/kakashi-20/02-current-baseline-and-gap-inventory.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-20/03-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-20/04-decisions-and-test-matrix.md)
+- [profiling workflow](docs/sprints/4-kakashi/kakashi-20/05-profiling-workflow.md)
+- [closure report](docs/sprints/4-kakashi/kakashi-20/10-closure-report.md)
 
 ### KAKASHI-21: Choose how a user-card reference merge reallocates installments
 

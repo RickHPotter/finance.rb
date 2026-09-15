@@ -1,0 +1,68 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "English"
+require "fileutils"
+require "json"
+require "pathname"
+require "securerandom"
+require "time"
+require "dotenv"
+
+root = Pathname(__dir__).join("..").expand_path
+environment_path = root.join(root.join(".env.test").exist? ? ".env.test" : ".env")
+Dotenv.load(environment_path)
+
+configured_artifact_path = Pathname(ENV.fetch("RSPEC_PROFILE_PATH", "tmp/rspec-profile.json"))
+artifact_path = configured_artifact_path.absolute? ? configured_artifact_path : root.join(configured_artifact_path).expand_path
+formatter_path = root.join("spec/performance/rspec_performance_formatter.rb")
+seed = ENV.fetch("RSPEC_PROFILE_SEED", "20260914")
+top_count = ENV.fetch("RSPEC_PROFILE_TOP", "10")
+arguments = ARGV.dup
+
+unless arguments.any? { |argument| argument == "--seed" || argument.start_with?("--seed=") }
+  arguments.push("--seed", seed)
+end
+unless arguments.any? { |argument| argument == "--profile" || argument.start_with?("--profile=") }
+  arguments.push("--profile", top_count)
+end
+
+arguments.push(
+  "--require", formatter_path.to_s,
+  "--format", "progress",
+  "--format", "RSpecPerformance::Formatter"
+)
+
+FileUtils.mkdir_p(artifact_path.dirname)
+process_started_at = Time.now.utc
+process_started_monotonic = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+run_id = SecureRandom.uuid
+
+environment = {
+  "RSPEC_PERFORMANCE_PROFILE_PATH" => artifact_path.to_s,
+  "RSPEC_PERFORMANCE_RUN_ID" => run_id
+}
+success = system(environment, root.join("bin/rspec").to_s, *arguments)
+status = $CHILD_STATUS
+
+process_finished_at = Time.now.utc
+process_duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - process_started_monotonic
+candidate_payload = artifact_path.exist? ? JSON.parse(artifact_path.read) : {}
+payload = candidate_payload["run_id"] == run_id ? candidate_payload : { "schema_version" => 1, "run_id" => run_id, "examples" => [] }
+formatter_started_at = payload.dig("suite", "formatter_started_at")
+rspec_finished_at = payload.dig("suite", "rspec_finished_at")
+payload["process"] = {
+  "started_at" => process_started_at.iso8601(6),
+  "finished_at" => process_finished_at.iso8601(6),
+  "duration_seconds" => process_duration.round(6),
+  "pre_formatter_seconds" => formatter_started_at ? (Time.iso8601(formatter_started_at) - process_started_at).round(6) : nil,
+  "post_rspec_seconds" => rspec_finished_at ? (process_finished_at - Time.iso8601(rspec_finished_at)).round(6) : nil,
+  "exit_status" => status&.exitstatus,
+  "termsig" => status&.termsig,
+  "command" => [ "bin/rspec", *arguments ]
+}
+artifact_path.write(JSON.pretty_generate(payload))
+
+warn "RSpec performance artifact: #{artifact_path.relative_path_from(root)}"
+exit(success ? 0 : status&.exitstatus || 1)

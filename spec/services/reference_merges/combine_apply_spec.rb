@@ -51,6 +51,7 @@ RSpec.describe ReferenceMerges::CombineApply do
     target_invoice = create_invoice(target_reference)
     card_transaction = create(
       :card_transaction,
+      :with_allocations,
       user:,
       context:,
       user_card:,

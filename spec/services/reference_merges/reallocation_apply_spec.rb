@@ -136,9 +136,16 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     plan = build_plan
 
     result = nil
-    expect { result = described_class.new(plan:).call }.to change { AuditOperation.where(source: :web, result: :committed).count }.by(1)
+    audit_operation_loads = 0
+    subscriber = lambda do |_name, _start, _finish, _id, payload|
+      audit_operation_loads += 1 if payload[:name] == "AuditOperation Load" && !payload[:cached]
+    end
+    ActiveSupport::Notifications.subscribed(subscriber, "sql.active_record") do
+      expect { result = described_class.new(plan:).call }.to change { AuditOperation.where(source: :web, result: :committed).count }.by(1)
+    end
 
     expect(result).to be_applied
+    expect(audit_operation_loads).to eq(1)
     expect(result.operation.metadata).to include(
       "reference_merge_mode" => Logic::References::REALLOCATE_INSTALLMENTS,
       "user_card_id" => user_card.id,

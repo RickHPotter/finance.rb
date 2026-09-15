@@ -31,6 +31,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
 
       matching_card = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         price: -8_000,
@@ -77,6 +78,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
 
       healthy_source = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         description: "Healthy source",
@@ -103,6 +105,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
 
       stale_source = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         description: "Stale source",
@@ -961,6 +964,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
 
       source_card = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,
@@ -1013,6 +1017,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
 
       target_source_card = create(
         :card_transaction,
+        :with_allocations,
         user:,
         context: user.main_context,
         user_card:,

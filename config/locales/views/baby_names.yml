@@ -1,0 +1,64 @@
+en:
+  baby_names:
+    page_title: "Gigi & Rikki · Baby names"
+    back_to_finance: "Back to finance"
+    couple: "Gigi & Rikki"
+    question: "What will we call you?"
+    stats:
+      rejected: "No"
+      accepted: "Yes"
+      ratio: "No / Yes"
+      swipe_left: "Swipe left"
+      swipe_right: "Swipe right"
+      progress: "%{decided} of %{total} decided"
+      later: "%{count} for later"
+    card:
+      rejected_stamp: "NO"
+      accepted_stamp: "YES"
+      greeting: "Hello, little one"
+      story: "Could this be the name at the start of every story?"
+      hint: "Drag or tap below"
+    actions:
+      label: "Choose this name"
+      rejected: "✕  No"
+      accepted: "Yes  ♥"
+      later: "Decide later"
+    finished:
+      title: "That’s every name."
+      body: "You decided on all %{count}. Your favourites are safely saved for the two of you."
+      back: "Back to the app"
+    pwa:
+      shortcut_name: "Baby names"
+      description: "Choose a name for Gigi and Rikki's baby"
+pt-BR:
+  baby_names:
+    page_title: "Gigi & Rikki · Nomes do bebê"
+    back_to_finance: "Voltar às finanças"
+    couple: "Gigi & Rikki"
+    question: "Como vamos chamar você?"
+    stats:
+      rejected: "Não"
+      accepted: "Sim"
+      ratio: "Não / Sim"
+      swipe_left: "Deslize à esquerda"
+      swipe_right: "Deslize à direita"
+      progress: "%{decided} de %{total} decididos"
+      later: "%{count} para depois"
+    card:
+      rejected_stamp: "NÃO"
+      accepted_stamp: "SIM"
+      greeting: "Olá, pequenino"
+      story: "Será este o nome no começo de todas as suas histórias?"
+      hint: "Deslize ou toque abaixo"
+    actions:
+      label: "Escolha para este nome"
+      rejected: "✕  Não"
+      accepted: "Sim  ♥"
+      later: "Decidir depois"
+    finished:
+      title: "Esses são todos os nomes."
+      body: "Vocês decidiram sobre os %{count}. Seus favoritos estão guardados com segurança para vocês dois."
+      back: "Voltar ao app"
+    pwa:
+      shortcut_name: "Nomes do bebê"
+      description: "Escolha um nome para o bebê de Gigi e Rikki"

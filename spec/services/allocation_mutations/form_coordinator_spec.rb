@@ -34,7 +34,7 @@ RSpec.describe AllocationMutations::FormCoordinator do
   end
 
   it "accepts the same payer replacement contract for a paid card transaction" do
-    transaction = create(:card_transaction)
+    transaction = create(:card_transaction, :with_allocations)
     old_allocation = transaction.entity_transactions.first
     old_allocation.update!(price: transaction.price, price_to_be_returned: transaction.price, is_payer: true)
     new_entity = create(:entity, user: transaction.user, entity_name: "NEW CARD PAYER")
@@ -52,7 +52,7 @@ RSpec.describe AllocationMutations::FormCoordinator do
   end
 
   it "protects an exchange-bearing friend identity from an in-place replacement" do
-    transaction = create(:card_transaction)
+    transaction = create(:card_transaction, :with_allocations)
     allocation = transaction.entity_transactions.first
     friend = create(:user, :random)
     other_friend = create(:user, :random)

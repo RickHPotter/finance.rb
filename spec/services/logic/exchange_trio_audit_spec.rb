@@ -32,6 +32,7 @@ RSpec.describe Logic::ExchangeTrioAudit do
 
       origin_card_transaction = create(
         :card_transaction,
+        :with_allocations,
         user: sender,
         context: sender.main_context,
         user_card: sender_user_card,

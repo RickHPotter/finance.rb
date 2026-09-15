@@ -122,7 +122,7 @@ RSpec.describe "Health check diagnostic adapters" do
   end
 
   it "only exposes an unambiguous, unpaid Card Projection target as repairable" do
-    source = create(:card_transaction, user: admin, context:)
+    source = create(:card_transaction, :with_allocations, user: admin, context:)
     source_entity = source.entity_transactions.first
     source_entity.update!(is_payer: true, price: source.price, price_to_be_returned: source.price)
     exchange = create(

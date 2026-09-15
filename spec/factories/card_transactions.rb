@@ -14,21 +14,26 @@ FactoryBot.define do
     user_card { custom_create(:user_card, reference: { user: }) }
 
     card_installments { build_list(:card_installment, 1, price:, number: 1) }
-    category_transactions do
-      category = create(:category, :random, user:)
-      build_list(:category_transaction, 1, :random, category:, transactable: nil)
-    end
-    entity_transactions do
-      build_list(
-        :entity_transaction,
-        1,
-        :random,
-        is_payer: false,
-        entity: random_custom_create(:entity, reference: { user: }),
-        transactable: nil,
-        price: 0,
-        price_to_be_returned: 0
-      )
+    category_transactions { [] }
+    entity_transactions { [] }
+
+    trait :with_allocations do
+      category_transactions do
+        category = create(:category, :random, user:)
+        build_list(:category_transaction, 1, :random, category:, transactable: nil)
+      end
+      entity_transactions do
+        build_list(
+          :entity_transaction,
+          1,
+          :random,
+          is_payer: false,
+          entity: random_custom_create(:entity, reference: { user: }),
+          transactable: nil,
+          price: 0,
+          price_to_be_returned: 0
+        )
+      end
     end
 
     trait :different do
