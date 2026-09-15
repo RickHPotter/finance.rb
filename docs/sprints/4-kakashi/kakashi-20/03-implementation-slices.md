@@ -186,6 +186,14 @@ invariant coverage are recorded in `08-measured-hot-path-optimization.md`.
 
 ## Slice 6 — Separate Fast Feedback from Expensive Coverage
 
+Status: complete as of 2026-09-15. `bin/specs` now exposes focused, fast, feature,
+operational, full, coverage, and fixed-seed reproduction profiles. Raw focused RSpec
+runs skip SimpleCov, while local coverage remains explicit and CI merges mandatory
+coverage across three disjoint, timed phases. Feature prerequisites are resolved only
+when feature examples are selected, PostgreSQL/environment failures are explicit, and
+CI preserves a structured profile per phase. The workflow and partition contract is
+recorded in `09-spec-workflows.md`.
+
 **Goal:** report common correctness failures earlier while keeping one authoritative
 complete suite.
 

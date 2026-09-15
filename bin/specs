@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "dotenv"
+require "pathname"
+require_relative "../lib/rspec_workflow"
+
+begin
+  root = Pathname(__dir__).join("..").expand_path
+  profile = ARGV.shift
+
+  unless profile
+    abort <<~USAGE
+      Usage: bin/specs PROFILE [RSpec arguments]
+      Profiles: #{RspecWorkflow::PROFILES.join(", ")}
+    USAGE
+  end
+
+  environment_path = [ root.join(".env.test"), root.join(".env") ].find(&:exist?)
+  if environment_path
+    Dotenv.load(environment_path)
+  elsif ENV["DATABASE_URL"].to_s.empty?
+    abort("RSpec environment unavailable: add .env.test (preferred), add .env, or provide DATABASE_URL.")
+  end
+
+  arguments = RspecWorkflow.arguments_for(profile, ARGV, seed: ENV.fetch("RSPEC_SEED", RspecWorkflow::DEFAULT_SEED))
+  ENV["RAILS_ENV"] = "test"
+
+  if RspecWorkflow.coverage_profile?(profile)
+    ENV["COVERAGE"] = "true"
+    ENV["COVERAGE_RESET"] = "true"
+  end
+  ENV["COVERAGE_COMMAND_NAME"] ||= "rspec-#{profile}" if ENV["COVERAGE"] == "true"
+
+  runner = if RspecWorkflow.reproduction_profile?(profile) || !ENV["RSPEC_PROFILE_PATH"].to_s.empty?
+             root.join("bin/rspec-profile")
+           else
+             root.join("bin/rspec")
+           end
+
+  exec(runner.to_s, *arguments)
+rescue RspecWorkflow::UnknownProfileError
+  abort("Unknown RSpec profile #{profile.inspect}. Choose: #{RspecWorkflow::PROFILES.join(", ")}.")
+rescue RspecWorkflow::MissingFocusedPathError
+  abort("The focused profile needs at least one spec path or location.")
+end

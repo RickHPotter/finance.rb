@@ -63,5 +63,20 @@ jobs:
       - name: Precompile assets
         run: bin/rails assets:precompile
 
-      - name: Run tests
-        run: bin/rspec
+      - name: Run fast correctness specs
+        run: COVERAGE=true COVERAGE_RESET=true COVERAGE_COMMAND_NAME=rspec-fast RSPEC_PROFILE_PATH=tmp/ci-rspec-fast.json bin/specs fast
+
+      - name: Run feature specs
+        run: COVERAGE=true COVERAGE_COMMAND_NAME=rspec-feature RSPEC_PROFILE_PATH=tmp/ci-rspec-feature.json bin/specs feature
+
+      - name: Run operational specs
+        run: COVERAGE=true COVERAGE_COMMAND_NAME=rspec-operational RSPEC_PROFILE_PATH=tmp/ci-rspec-operational.json bin/specs operational
+
+      - name: Preserve RSpec timing and coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rspec-performance-and-coverage
+          path: |
+            tmp/ci-rspec-*.json
+            coverage/
