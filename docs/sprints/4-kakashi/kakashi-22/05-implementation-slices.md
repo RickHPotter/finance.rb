@@ -63,6 +63,15 @@ Commit: `feat: preview piggy bank net reconciliation`
 
 ## Slice 3: Apply Reconciliation Atomically
 
+Status: complete as of 2026-09-18. `PiggyBankReconciliations::Apply` locks the Piggy Bank
+return-group boundary, recalculates against the fresh graph state, rejects stale preview
+digests, and applies nonzero reconciliation deltas atomically. A zero delta returns a
+successful no-op with zero writes. The existing `piggy_bank_sync` projection logic
+preserves paid installments and updates only the unpaid remainder. PostgreSQL
+concurrency and failure-injection specs verify deterministic retry rejection and atomic
+rollback. The affected Piggy Bank suite passed with 26 focused service examples and 67
+overall examples.
+
 1. Add an apply service using one database transaction and a deterministic lock at the
    Piggy Bank return-group boundary.
 2. Recalculate after locking and reject stale preview digests before mutation.
