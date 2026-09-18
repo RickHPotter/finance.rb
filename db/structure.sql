@@ -330,7 +330,7 @@ CREATE TABLE public.baby_name_decisions (
     choice character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT baby_name_decisions_choice_check CHECK (((choice)::text = ANY ((ARRAY['rejected'::character varying, 'accepted'::character varying, 'later'::character varying])::text[])))
+    CONSTRAINT baby_name_decisions_choice_check CHECK (((choice)::text = ANY (ARRAY[('rejected'::character varying)::text, ('accepted'::character varying)::text, ('later'::character varying)::text])))
 );
 
 

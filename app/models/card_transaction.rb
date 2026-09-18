@@ -330,7 +330,7 @@ end
 #
 # Indexes
 #
-#  idx_card_transactions_description_trgm                  (description) USING gin
+#  idx_card_transactions_description_trgm                  (description gin_trgm_ops) USING gin
 #  idx_card_transactions_price                             (price)
 #  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
 #  index_card_transactions_on_context_id                   (context_id)

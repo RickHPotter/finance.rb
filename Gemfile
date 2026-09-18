@@ -3,13 +3,13 @@
 source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby "4.0.0"
-gem "rails", "~> 8.1"
+ruby "4.0.7"
+gem "rails"
 
 gem "activerecord-import"
 gem "bootsnap", require: false
 gem "jsbundling-rails"
-gem "paper_trail", "~> 17.0"
+gem "paper_trail"
 gem "pg"
 gem "propshaft"
 gem "puma"
@@ -21,11 +21,11 @@ gem "tailwindcss-rails"
 gem "turbo-rails"
 
 gem "image_processing"
-gem "ruby-vips", "~> 2.0", require: false
+gem "ruby-vips", require: false
 
 # UI
 gem "phlex-rails"
-gem "tailwind_merge", "~> 1.1"
+gem "tailwind_merge"
 
 # Authentication
 gem "devise"
@@ -46,6 +46,8 @@ gem "web-push"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[windows jruby]
+
+gem "json", "< 3.0"
 
 group :development, :test do
   gem "bullet"
