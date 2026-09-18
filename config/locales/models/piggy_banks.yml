@@ -13,6 +13,18 @@ en:
     select_return: Select an open return
     source: Piggy Bank Source
     sources: Piggy Bank Sources
+    actions:
+      reconcile_valuation: Reconcile valuation
+    return_section:
+      title: Piggy Bank Return
+      baseline: Contributed principal
+      adjustments: Recognized adjustments
+      paid_return: Paid return
+      remaining: Recorded remaining balance
+      reconcile_banner_title: Sparse valuation reconciliation
+      reconcile_banner_description: Record the bank-observed net redeemable total to adjust the unpaid return projection.
+      contributions_title: Grouped contributions
+    settled_notice: This Piggy Bank return is fully settled. Reconciliation is unavailable.
   activerecord:
     models:
       piggy_bank:
@@ -62,6 +74,18 @@ pt-BR:
     select_return: Selecione um retorno aberto
     source: Cofrinho de Origem
     sources: Origens do Cofrinho
+    actions:
+      reconcile_valuation: Reconciliar valorização
+    return_section:
+      title: Retorno do Cofrinho
+      baseline: Principal aportado
+      adjustments: Valorizações reconhecidas
+      paid_return: Retorno pago
+      remaining: Saldo restante registrado
+      reconcile_banner_title: Reconciliação esparsa de valorização
+      reconcile_banner_description: Registre o saldo líquido resgatável observado no banco para ajustar a projeção não paga.
+      contributions_title: Aportes agrupados
+    settled_notice: Este retorno de cofrinho está totalmente liquidado. A reconciliação não está disponível.
   activerecord:
     models:
       piggy_bank:

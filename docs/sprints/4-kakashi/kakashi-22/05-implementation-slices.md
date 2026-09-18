@@ -120,6 +120,17 @@ Commit: `feat: rollback piggy bank reconciliations`
 
 ## Slice 5: Deliver the Reconciliation Workflow
 
+Status: completed on 2026-09-18. Added narrow nested routes for
+`resource :piggy_bank_reconciliation, only: %i[new create]` with `post :preview`. Added
+`PiggyBankReconciliationsController` with `new`, `preview`, and `create` (apply) actions.
+Built localized Phlex views (`Views::PiggyBankReconciliations::New` and
+`Views::PiggyBankReconciliations::PreviewCard`) and `PiggyBankReconciliation` ActiveModel
+model. Integrated `piggy_bank_return_section` and header action on `Views::CashTransactions::Show`
+for open returns. Verified write-free preview, atomic apply, zero-change noop, stale
+digest rejection, double-submit protection, stacked failure notifications on 422,
+404 foreign scoping, safe return_to, Turbo and HTML navigation, and mobile/dark mode
+compliance in 21 request specs. All 55 reconciliation specs pass.
+
 1. Add narrow authenticated routes/controller actions for form, preview, and apply.
 2. Add the action to the generated Piggy Bank return detail surface.
 3. Build a localized Phlex form and comparison preview using shared inputs/components.

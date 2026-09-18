@@ -203,7 +203,12 @@ class PiggyBankReconciliations::Preview
   def normalize_date(value)
     return value.to_date if value.respond_to?(:to_date) && !value.is_a?(String)
 
-    Date.iso8601(value) if value.is_a?(String) && value.match?(/\A\d{4}-\d{2}-\d{2}\z/)
+    if value.is_a?(String)
+      date_str = value.split("T").first
+      return Date.iso8601(date_str) if date_str&.match?(/\A\d{4}-\d{2}-\d{2}\z/)
+    end
+
+    nil
   rescue Date::Error
     nil
   end
