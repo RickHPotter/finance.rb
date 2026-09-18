@@ -93,6 +93,16 @@ Commit: `feat: reconcile piggy bank net value`
 
 ## Slice 4: Make Reconciliation Fully Auditable and Reversible
 
+Status: complete as of 2026-09-18. Reconciliation apply operations record complete
+scalar metadata on the root `AuditOperation` and attribute projection changes to
+`piggy_bank_sync`. The existing guarded rollback engine preview is verified as
+previewable without gaps; rollback restores the exact pre-apply canonical business graph
+across positive, negative, and partial-withdrawal scenarios while deleting the created
+investment. Later mutations to the valuation, return transaction, or installments
+reliably produce conflicted states that block rollback. Rollback failure and integrity
+failures abort atomically. The dedicated rollback suite passed with 8 examples and the
+full affected Piggy Bank suite passed with 75 examples.
+
 1. Attach stable reconciliation metadata to the root `AuditOperation`.
 2. Verify every generated Investment/return/installment version belongs to that one
    operation and uses the expected mutation source.

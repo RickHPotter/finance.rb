@@ -73,7 +73,7 @@ class Audit::Rollback::Adapters::Investment < Audit::Rollback::Adapters::Base
       record = CashTransaction.unscoped.find_by(id: row.item_id)
       next unless record
 
-      attributes = row.before_state.slice("comment", "description", "price")
+      attributes = row.before_state.slice("comment", "description", "price", "starting_price", "paid")
       Audit::BulkMutation.update_columns!(record, attributes)
     end
   end
