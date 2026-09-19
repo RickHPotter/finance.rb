@@ -27,6 +27,8 @@ RSpec.describe "Static", type: :request do
   end
 
   describe "[ GET /static/donation ]" do
+    let(:user) { create(:user, id: 1) }
+
     before { sign_in user }
 
     it "renders successfully" do

@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class Views::Layouts::Application < Views::Base
+  include CacheHelper
+  include TranslateHelper
+
   register_output_helper :csrf_meta_tags
   register_output_helper :csp_meta_tag
   register_output_helper :stylesheet_link_tag
@@ -61,6 +64,8 @@ class Views::Layouts::Application < Views::Base
             render partial "shared/flash"
           end
 
+          desktop_sticky_controls
+
           section class: "mt-6 flex min-h-0 flex-1 flex-col w-full" do
             div class: "flex min-h-0 flex-1 flex-col w-full" do
               div class: "mb-6 flex shrink-0 justify-center" do
@@ -109,6 +114,57 @@ class Views::Layouts::Application < Views::Base
   end
 
   private
+
+  def desktop_sticky_controls
+    desktop_sticky_context
+    desktop_sticky_logout
+    desktop_sticky_donate
+  end
+
+  def desktop_sticky_context
+    return unless current_context
+
+    div(
+      id: "desktop_context_info",
+      class: "fixed top-4 left-4 z-40 hidden md:flex items-center gap-1.5 text-xs text-gray-400 " \
+             "bg-slate-900/80 backdrop-blur-xs px-3 py-1.5 rounded-full border border-slate-700/80 shadow-md"
+    ) do
+      span(class: "text-gray-500 uppercase text-2xs") { "#{Context.model_name.human}:" }
+      span(class: "font-semibold text-slate-200") { current_context.name }
+    end
+  end
+
+  def desktop_sticky_logout
+    return unless current_user
+
+    div(id: "desktop_logout", class: "fixed top-4 right-4 z-40 hidden md:flex items-center") do
+      FooterLink(
+        href: destroy_user_session_path,
+        wrapper_class: "text-sm text-white",
+        class: "flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/80 shadow-md " \
+               "text-sm text-white hover:bg-gray-700/80 backdrop-blur-xs transition-colors",
+        data: { turbo_method: :delete }
+      ) do
+        plain I18n.t(:sign_out)
+        render_icon(:leave)
+      end
+    end
+  end
+
+  def desktop_sticky_donate
+    div(id: "desktop_donate", class: "fixed bottom-4 left-4 z-40 hidden md:flex items-center") do
+      FooterLink(
+        href: donation_static_path,
+        wrapper_class: "text-sm text-white",
+        class: "flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/80 shadow-md " \
+               "text-sm text-white hover:bg-gray-700/80 backdrop-blur-xs transition-colors",
+        data: { turbo_frame: "_top", turbo_prefetch: false }
+      ) do
+        plain I18n.t(:donate)
+        render_icon(:heart)
+      end
+    end
+  end
 
   def main_tab
     rails_view_context.instance_variable_get(:@main_tab)

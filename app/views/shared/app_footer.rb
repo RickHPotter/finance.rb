@@ -9,15 +9,8 @@ class Views::Shared::AppFooter < Views::Base
 
   def view_template
     ShellContainer(tag: :footer, class: "antialiased pt-2 max-w-auto max-w-[1420px] mx-auto") do
-      div(class: "flex flex-wrap items-center justify-between gap-2") do
-        div(class: "flex items-center gap-2") do
-          theme_switcher
-          locale_links
-        end
-        action_links
-      end
-
-      context_switcher(class: "flex justify-center mb-2")
+      mobile_section
+      desktop_section
 
       button(data: { controller: "push", action: "push#subscribe" }, class: "pt-16 mb-2 text-xs flex mx-auto") { "🔔" }
 
@@ -36,6 +29,46 @@ class Views::Shared::AppFooter < Views::Base
 
   private
 
+  def mobile_section
+    div(class: "block md:hidden") do
+      div(class: "flex items-center justify-between w-full px-4 py-2") do
+        donate_link
+        baby_names_link if current_user&.id&.in?(BabyNamesAccess::ALLOWED_USER_IDS)
+        logout_link if current_user
+      end
+
+      div(class: "flex justify-center items-center py-2") do
+        theme_switcher(id: "theme_toggle_mobile")
+      end
+
+      div(class: "flex justify-center items-center py-2") do
+        locale_links
+      end
+
+      if current_context
+        div(class: "flex justify-center items-center gap-1.5 py-2 text-xs text-gray-400") do
+          span(class: "text-gray-500 uppercase text-2xs") { "#{Context.model_name.human}:" }
+          span(class: "font-semibold text-slate-200") { current_context.name }
+        end
+      end
+    end
+  end
+
+  def desktop_section
+    div(class: "hidden md:block") do
+      div(class: "flex items-center justify-between w-full py-1") do
+        theme_switcher(id: "theme_toggle")
+        locale_links
+      end
+
+      if current_user&.id&.in?(BabyNamesAccess::ALLOWED_USER_IDS)
+        div(class: "flex justify-center mb-2") do
+          baby_names_link
+        end
+      end
+    end
+  end
+
   def current_user
     rails_view_context.current_user
   end
@@ -44,25 +77,24 @@ class Views::Shared::AppFooter < Views::Base
     rails_view_context.current_context
   end
 
-  def context_switcher(class:)
-    return unless current_user
+  def baby_names_link
+    FooterLink(href: baby_names_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do
+      plain I18n.t("baby_names.pwa.shortcut_name")
+      render_icon(:light_bulb)
+    end
+  end
 
-    div(class:) do
-      div(class: "flex flex-wrap items-center justify-center gap-2 px-2") do
-        span(class: "text-xs text-gray-500") { Context.model_name.human }
+  def donate_link
+    FooterLink(href: donation_static_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do
+      plain I18n.t(:donate)
+      render_icon(:heart)
+    end
+  end
 
-        current_user.contexts.active.order(main: :desc, created_at: :asc).each do |context|
-          active = current_context&.id == context.id
-          button_to switch_context_path(context),
-                    method: :patch,
-                    params: { return_to: request.fullpath },
-                    form: { data: { turbo_frame: "_top", turbo_action: "replace" } },
-                    data: { turbo_prefetch: false },
-                    class: context_button_class(active) do
-            plain context.name
-          end
-        end
-      end
+  def logout_link
+    FooterLink(href: destroy_user_session_path, class: "flex items-center gap-2 p-2", data: { turbo_method: :delete }) do
+      plain I18n.t(:sign_out)
+      render_icon(:leave)
     end
   end
 
@@ -83,9 +115,9 @@ class Views::Shared::AppFooter < Views::Base
     end
   end
 
-  def theme_switcher
+  def theme_switcher(id: "theme_toggle")
     button(
-      id: "theme_toggle",
+      id:,
       type: "button",
       title: "Switch theme",
       aria: { pressed: "false" },
@@ -105,56 +137,11 @@ class Views::Shared::AppFooter < Views::Base
     end
   end
 
-  def action_links
-    div(class: "flex flex-wrap justify-end gap-2") do
-      if current_user&.id&.in?(BabyNamesAccess::ALLOWED_USER_IDS)
-        FooterLink(href: baby_names_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do
-          plain I18n.t("baby_names.pwa.shortcut_name")
-          render_icon(:light_bulb)
-        end
-      end
-
-      FooterLink(href: donation_static_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do
-        plain I18n.t(:donate)
-        render_icon(:heart)
-      end
-
-      if current_user
-        FooterLink(href: destroy_user_session_path, class: "flex items-center gap-2 p-2", data: { turbo_method: :delete }) do
-          plain I18n.t(:sign_out)
-          render_icon(:leave)
-        end
-      end
-    end
-  end
-
   def docs_link(class:)
     div(class:) do
       a(class: "flex items-center text-sm text-gray-600 hover:text-gray-500", href: "https://rickhpotter.github.io/30fev_docs.ts/", target: "_blank") do
         I18n.t("pages.docs")
       end
     end
-  end
-
-  def context_button_class(active)
-    classes = %w[
-      rounded-full
-      border
-      px-3
-      py-1
-      text-xs
-      transition-colors
-    ]
-
-    if active
-      classes.push(%w[border-red-400 bg-red-500 text-white])
-    else
-      classes.push(
-        "border-gray-300", "bg-white", "text-gray-700", "hover:border-red-300", "hover:text-red-600",
-        "dark:border-slate-700", "dark:bg-slate-950", "dark:text-slate-200", "dark:hover:border-emerald-400", "dark:hover:text-emerald-300"
-      )
-    end
-
-    classes.join(" ")
   end
 end
