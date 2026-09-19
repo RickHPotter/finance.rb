@@ -133,7 +133,7 @@ end
 #
 # Indexes
 #
-#  index_conversations_on_activity                     (last_message_at,id)
+#  index_conversations_on_activity                     (last_message_at DESC,id DESC)
 #  index_conversations_on_friendship_id                (friendship_id)
 #  index_conversations_on_kind                         (kind)
 #  index_conversations_on_main_canonical_identity      (friendship_id,kind) UNIQUE WHERE ((friendship_id IS NOT NULL) AND (scenario_key IS NULL))

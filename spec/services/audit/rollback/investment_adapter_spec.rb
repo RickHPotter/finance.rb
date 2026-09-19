@@ -148,4 +148,33 @@ RSpec.describe Audit::Rollback::Adapters::Investment do
     expect(return_projection.reload.price).to eq(5_800)
     expect(return_projection.cash_installments.where(paid: false).sum(:price)).to eq(5_800)
   end
+
+  it "removes a newly created Piggy Bank valuation and restores its linked return projection" do
+    return_projection = PaperTrail.request(enabled: false) { create_piggy_bank_return }
+    valuation = nil
+    operation = audited_operation do
+      valuation = create(
+        :investment,
+        user:,
+        context:,
+        user_bank_account: account,
+        investment_type:,
+        description: "OBSERVED NET RECONCILIATION",
+        price: 800,
+        date: Date.new(2027, 3, 12),
+        month: 3,
+        year: 2027,
+        piggy_bank_return_cash_transaction: return_projection
+      )
+    end
+
+    preview, result = apply(operation)
+
+    expect(operation.audit_versions.pluck(:item_subtype)).to include("Investment", "CashTransaction", "CashInstallment")
+    expect(preview).to have_attributes(state: "previewable")
+    expect(result).to have_attributes(status: "applied")
+    expect(Investment).not_to exist(valuation.id)
+    expect(return_projection.reload.price).to eq(5_000)
+    expect(return_projection.cash_installments.where(paid: false).sum(:price)).to eq(5_000)
+  end
 end

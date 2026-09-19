@@ -229,8 +229,14 @@ module Views
       end
 
       def piggy_bank_fields
-        piggy_bank = transactable.piggy_bank || PiggyBank.new(return_date: transactable.date, return_price: transactable.price.to_i.abs)
+        default_iof_exempt_on = transactable.date.present? ? (transactable.date.to_date + 30.days) : nil
+        piggy_bank = transactable.piggy_bank || PiggyBank.new(
+          return_date: transactable.date,
+          return_price: transactable.price.to_i.abs,
+          iof_exempt_on: default_iof_exempt_on
+        )
         return_date_id = "piggy_bank_return_date_#{form.index}"
+        iof_exempt_on_id = "piggy_bank_iof_exempt_on_#{form.index}"
         return_price_id = "piggy_bank_return_price_#{form.index}"
 
         div(class: "hidden grid grid-cols-1 gap-4 pb-3", data: { piggy_bank_mode: "piggy", entity_form_index: form.index }) do
@@ -257,6 +263,20 @@ module Views
                 value: piggy_bank.return_date,
                 id: return_date_id
               )
+            end
+
+            div do
+              bold_label(piggy_bank_form, :iof_exempt_on, iof_exempt_on_id)
+              render Views::Shared::DatetimeInput.new(
+                form: piggy_bank_form,
+                field: :iof_exempt_on,
+                value: piggy_bank.iof_exempt_on,
+                id: iof_exempt_on_id,
+                show_time: false
+              )
+              p(class: "mt-1 text-[0.65rem] leading-tight text-slate-500 dark:text-slate-400") do
+                I18n.t("piggy_banks.iof_exempt_on_hint")
+              end
             end
 
             div do

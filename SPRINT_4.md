@@ -1580,6 +1580,15 @@ Goal: let Piggy Bank valuation remain useful when the bank provides no daily pro
 history and the amount economically available before day 30 differs from gross yield
 because of IOF.
 
+Status: completed on 2026-09-19. Product and architecture documentation approved and all
+7 slices completed. The bank-observed net redeemable total is the authoritative input.
+Contribution-level IOF-free dates use an editable default of contribution date plus 30
+calendar days. Write-free preview, locked apply, full guarded rollback, the
+user-facing reconciliation workflow on the return detail surface, contribution IOF
+availability tracking, reporting integration in Monthly Analysis, and comprehensive
+regressions are delivered. Production-shaped manual verification is documented in
+`05-manual-verification.md` and closure findings are recorded in `06-closure-report.md`.
+
 Exploration direction:
 
 - reuse linked signed `Investment` rows as valuation deltas instead of requiring daily
@@ -1596,12 +1605,36 @@ Exploration direction:
 - retain current paid-history, audit-operation, projection synchronization, and guarded
   rollback guarantees
 
-This direction is not locked. It depends on confirming what the bank exposes during the
-30-day period and whether each contribution has an independent IOF clock.
+Locked direction:
 
-Reference:
+- reconciliation targets one Piggy Bank return group and accepts an observed current
+  balance, never a manually calculated profit delta;
+- the adjustment is calculated against the current unpaid return projection, so prior
+  withdrawals remain immutable;
+- the existing linked `Investment` remains the signed financial valuation record;
+- IOF is not calculated, daily yield is not synthesized, and gross yield is not treated
+  as redeemable income;
+- contribution availability is separate from the projected withdrawal date and belongs
+  to each `PiggyBank` link;
+- legacy/customized `return_price` values are not silently reinterpreted or migrated;
+- reconciliation is scoped, locked, atomic, audited, stale-safe, and eligible for
+  guarded operation-wide rollback.
+
+Approved bank-product inputs:
+
+- the bank exposes a current net redeemable total before withdrawal;
+- the app proposes contribution date plus 30 calendar days as the IOF-free date and
+  allows the user to edit it.
+
+References:
 
 - [product exploration](docs/sprints/4-kakashi/kakashi-22/01-piggy-bank-net-valuation-exploration.md)
+- [product and data contract](docs/sprints/4-kakashi/kakashi-22/02-product-and-data-contract.md)
+- [current behavior and gap inventory](docs/sprints/4-kakashi/kakashi-22/03-current-behavior-and-gap-inventory.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-22/04-decisions-and-test-matrix.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-22/05-implementation-slices.md)
+- [manual verification](docs/sprints/4-kakashi/kakashi-22/05-manual-verification.md)
+- [closure report](docs/sprints/4-kakashi/kakashi-22/06-closure-report.md)
 
 ## CONCLUSION
 

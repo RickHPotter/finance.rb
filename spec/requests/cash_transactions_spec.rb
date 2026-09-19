@@ -1498,6 +1498,33 @@ RSpec.describe "CashTransactions", type: :request do
       expect(grouped_return.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 7_000, false ] ])
     end
 
+    it "creates a Piggy Bank contribution with explicit custom iof_exempt_on" do
+      piggy_bank_category = user.built_in_category("PIGGY BANK")
+      source_date = Date.new(2026, 9, 1)
+
+      post cash_transactions_path, params: {
+        cash_transaction: {
+          description: "Custom availability reserve",
+          price: -3_000,
+          date: source_date,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          cash_installments_attributes: [ { number: 1, date: source_date, price: -3_000, paid: true } ],
+          category_transactions_attributes: [ { category_id: piggy_bank_category.id } ],
+          entity_transactions_attributes: [ { entity_id: entity.id, price: 0, price_to_be_returned: 0 } ],
+          piggy_bank_attributes: {
+            return_date: 3.months.from_now,
+            return_price: 3_000,
+            iof_exempt_on: "2026-10-15"
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      source = CashTransaction.find_by!(description: "Custom availability reserve")
+      expect(source.piggy_bank.iof_exempt_on).to eq(Date.new(2026, 10, 15))
+    end
+
     it "shows generic and detailed failure notifications when create validation fails" do
       expect do
         post cash_transactions_path,
@@ -2306,6 +2333,77 @@ RSpec.describe "CashTransactions", type: :request do
       expect(piggy_bank.reload.return_price).to eq(600)
       expect(generated_return.reload.price).to eq(600)
       expect(generated_return.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 100, true ], [ 500, false ] ])
+    end
+
+    it "allows updating a Piggy Bank contribution to change or clear iof_exempt_on" do
+      source = create_piggy_bank_source(description: "Editable reserve", price: 1_000, return_price: 1_000)
+      piggy_bank = source.piggy_bank
+      source_installment = source.cash_installments.first
+      category_transaction = source.category_transactions.first
+      entity_transaction = source.entity_transactions.first
+
+      put cash_transaction_path(source), params: {
+        cash_transaction: {
+          description: source.description,
+          price: source.price,
+          date: source.date.strftime("%Y-%m-%dT%H:%M"),
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          cash_installments_attributes: [ { id: source_installment.id, number: 1, date: source.date.strftime("%Y-%m-%dT%H:%M"), price: source.price, paid: true } ],
+          category_transactions_attributes: [ { id: category_transaction.id, category_id: category_transaction.category_id } ],
+          entity_transactions_attributes: [
+            {
+              id: entity_transaction.id,
+              entity_id: entity_transaction.entity_id,
+              price: entity_transaction.price,
+              price_to_be_returned: entity_transaction.price_to_be_returned,
+              loan_return_percentage: entity_transaction.loan_return_percentage,
+              exchanges_attributes: []
+            }
+          ],
+          piggy_bank_attributes: {
+            id: piggy_bank.id,
+            return_date: piggy_bank.return_date.strftime("%Y-%m-%dT%H:%M"),
+            return_price: 1_000,
+            iof_exempt_on: "2026-10-25"
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      expect(piggy_bank.reload.iof_exempt_on).to eq(Date.new(2026, 10, 25))
+
+      put cash_transaction_path(source), params: {
+        cash_transaction: {
+          description: source.description,
+          price: source.price,
+          date: source.date.strftime("%Y-%m-%dT%H:%M"),
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          cash_installments_attributes: [ { id: source_installment.id, number: 1, date: source.date.strftime("%Y-%m-%dT%H:%M"), price: source.price, paid: true } ],
+          category_transactions_attributes: [ { id: category_transaction.id, category_id: category_transaction.category_id } ],
+          entity_transactions_attributes: [
+            {
+              id: entity_transaction.id,
+              entity_id: entity_transaction.entity_id,
+              price: entity_transaction.price,
+              price_to_be_returned: entity_transaction.price_to_be_returned,
+              loan_return_percentage: entity_transaction.loan_return_percentage,
+              exchanges_attributes: []
+            }
+          ],
+          piggy_bank_attributes: {
+            id: piggy_bank.id,
+            return_date: piggy_bank.return_date.strftime("%Y-%m-%dT%H:%M"),
+            return_price: 1_000,
+            iof_exempt_on: ""
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      expect(piggy_bank.reload.iof_exempt_on).to be_nil
+      expect(piggy_bank.iof_status).to eq(:not_recorded)
     end
 
     it "shows generic and detailed failure notifications when update validation fails" do

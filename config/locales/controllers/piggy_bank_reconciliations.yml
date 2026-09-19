@@ -1,0 +1,119 @@
+en:
+  piggy_bank_reconciliations:
+    applied: "Piggy Bank valuation reconciled successfully."
+    noop: "Piggy Bank valuation already matches the bank-observed total."
+    default_investment_description: "OBSERVED NET RECONCILIATION"
+    reasons:
+      stale_preview: "The Piggy Bank data changed since the preview was calculated — please review the updated values."
+      invalid_observation_date: "Observation date is invalid."
+      invalid_observed_value: "Observed net redeemable value must be greater than zero."
+      return_not_found: "Piggy Bank return transaction not found."
+      invalid_return: "The selected transaction is not a generated Piggy Bank return."
+      settled_return: "This Piggy Bank return is already fully settled."
+      invalid_return_graph: "The Piggy Bank graph has inconsistent arithmetic. Run health check."
+      missing_investment_configuration: "Missing required Piggy Bank Investment configuration."
+      invalid_adjustment_target: "The adjustment would reduce the lifetime return to or below the paid amount."
+      validation_failed: "Validation failed while applying reconciliation."
+      apply_failed: "Failed to apply reconciliation. Changes were rolled back."
+      unexpected_failure: "An unexpected error occurred. Please try again."
+    form:
+      eyebrow: "Piggy Bank Valuation"
+      title: "Reconcile Valuation"
+      subtitle: "Observe current bank redeemable balance"
+      observed_on_label: "Observation date"
+      observed_net_label: "Bank-observed net redeemable value"
+      observed_net_hint: "Enter the current total redeemable amount substantiated by your bank."
+      description_label: "Description / Note"
+      description_placeholder: "e.g., BANK STATEMENT OBSERVATION"
+      preview_button: "Calculate preview"
+      apply_button: "Apply reconciliation"
+      apply_noop_button: "Confirm no change"
+      cancel: "Back to return"
+      context_title: "Current recorded state"
+      recorded_lifetime: "Lifetime recorded return"
+      paid_return: "Untouched paid history"
+      recorded_remaining: "Recorded remaining balance"
+      contributions_count: "Linked contributions"
+    preview:
+      title: "Reconciliation preview"
+      recorded_remaining: "Recorded remaining"
+      observed_net: "Observed net redeemable"
+      calculated_delta: "Calculated adjustment"
+      untouched_paid: "Untouched paid history"
+      resulting_lifetime: "Resulting lifetime return"
+      noop_badge: "No change required"
+      noop_message: "The recorded remaining balance already matches the bank-observed value. No Investment will be created."
+      ready_badge: "Ready to apply"
+      ready_message: "Applying will create one linked Investment and update the unpaid return projection."
+  notification:
+    not_reconciled: "%{model} could not be reconciled."
+  activerecord:
+    models:
+      piggy_bank_reconciliation:
+        one: "Piggy Bank Reconciliation"
+        other: "Piggy Bank Reconciliations"
+  activemodel:
+    models:
+      piggy_bank_reconciliation:
+        one: "Piggy Bank Reconciliation"
+        other: "Piggy Bank Reconciliations"
+
+pt-BR:
+  piggy_bank_reconciliations:
+    applied: "Valorização do cofrinho reconciliada com sucesso."
+    noop: "A valorização do cofrinho já corresponde ao valor total observado no banco."
+    default_investment_description: "RECONCILIAÇÃO LÍQUIDA OBSERVADA"
+    reasons:
+      stale_preview: "Os dados do cofrinho mudaram desde o cálculo da pré-visualização — revise os valores atualizados."
+      invalid_observation_date: "Data de observação inválida."
+      invalid_observed_value: "O valor líquido resgatável observado deve ser maior que zero."
+      return_not_found: "Transação de retorno do cofrinho não encontrada."
+      invalid_return: "A movimentação selecionada não é um retorno gerado de cofrinho."
+      settled_return: "Este retorno de cofrinho já está totalmente liquidado."
+      invalid_return_graph: "O gráfico do cofrinho possui aritmética inconsistente. Execute a verificação de integridade."
+      missing_investment_configuration: "Configuração de tipo de investimento do cofrinho ausente."
+      invalid_adjustment_target: "O ajuste reduziria o retorno acumulado para o valor pago ou menos."
+      validation_failed: "Falha de validação ao aplicar a reconciliação."
+      apply_failed: "Falha ao aplicar a reconciliação. As alterações foram revertidas."
+      unexpected_failure: "Ocorreu um erro inesperado. Tente novamente."
+    form:
+      eyebrow: "Valorização do Cofrinho"
+      title: "Reconciliar Valorização"
+      subtitle: "Observar saldo atual resgatável no banco"
+      observed_on_label: "Data da observação"
+      observed_net_label: "Valor líquido resgatável observado no banco"
+      observed_net_hint: "Informe o valor total atual que o banco comprova como disponível para resgate."
+      description_label: "Descrição / Nota"
+      description_placeholder: "ex.: OBSERVAÇÃO DE EXTRATO BANCÁRIO"
+      preview_button: "Calcular pré-visualização"
+      apply_button: "Aplicar reconciliação"
+      apply_noop_button: "Confirmar sem alterações"
+      cancel: "Voltar ao retorno"
+      context_title: "Estado atual registrado"
+      recorded_lifetime: "Retorno acumulado registrado"
+      paid_return: "Histórico pago inalterado"
+      recorded_remaining: "Saldo restante registrado"
+      contributions_count: "Aportes vinculados"
+    preview:
+      title: "Pré-visualização da reconciliação"
+      recorded_remaining: "Restante registrado"
+      observed_net: "Líquido resgatável observado"
+      calculated_delta: "Ajuste calculado"
+      untouched_paid: "Histórico pago inalterado"
+      resulting_lifetime: "Retorno acumulado resultante"
+      noop_badge: "Nenhuma alteração necessária"
+      noop_message: "O saldo restante registrado já corresponde ao valor observado no banco. Nenhum Investimento será criado."
+      ready_badge: "Pronto para aplicar"
+      ready_message: "A aplicação criará um Investimento vinculado e atualizará a projeção de retorno não paga."
+  notification:
+    not_reconciled: "%{model} não pôde ser reconciliada."
+  activerecord:
+    models:
+      piggy_bank_reconciliation:
+        one: "Reconciliação do Cofrinho"
+        other: "Reconciliações do Cofrinho"
+  activemodel:
+    models:
+      piggy_bank_reconciliation:
+        one: "Reconciliação do Cofrinho"
+        other: "Reconciliações do Cofrinho"

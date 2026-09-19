@@ -2,8 +2,14 @@
 
 ## Status
 
-This document records discovery and a recommended direction for later work. It is not
-yet a locked product/data contract and does not authorize implementation.
+This document preserves the original discovery and alternatives. It is not the active
+implementation contract. The proposed contract, approval gates, and slices drafted on
+2026-09-15 are recorded in:
+
+- [product and data contract](02-product-and-data-contract.md)
+- [current behavior and gap inventory](03-current-behavior-and-gap-inventory.md)
+- [decisions and test matrix](04-decisions-and-test-matrix.md)
+- [implementation slices](05-implementation-slices.md)
 
 The design must be revisited with real bank examples before development, especially
 where the bank exposes gross balance, net redemption value, taxes, or only a final

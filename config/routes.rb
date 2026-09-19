@@ -115,6 +115,10 @@ Rails.application.routes.draw do
       patch :fix_exchange_projection
     end
 
+    resource :piggy_bank_reconciliation, only: %i[new create], controller: "piggy_bank_reconciliations" do
+      post :preview
+    end
+
     collection do
       get :month_year
       post :add_to_subscription
@@ -252,11 +256,11 @@ Rails.application.routes.draw do
     get "cash_transactions", action: :show, as: :legacy_external_cash_transactions, defaults: { ledger_kind: :cash, ledger_endpoint: :index }
     get "cash_transactions/search", action: :show, as: :legacy_search_external_cash_transactions, defaults: { ledger_kind: :cash, ledger_endpoint: :index }
     get "cash_transactions/month_year", action: :show, as: :legacy_month_year_external_cash_transactions,
-                                               defaults: { ledger_kind: :cash, ledger_endpoint: :month_year }
+                                        defaults: { ledger_kind: :cash, ledger_endpoint: :month_year }
     get "card_transactions", action: :show, as: :legacy_external_card_transactions, defaults: { ledger_kind: :card, ledger_endpoint: :index }
     get "card_transactions/search", action: :show, as: :legacy_search_external_card_transactions, defaults: { ledger_kind: :card, ledger_endpoint: :index }
     get "card_transactions/month_year", action: :show, as: :legacy_month_year_external_card_transactions,
-                                               defaults: { ledger_kind: :card, ledger_endpoint: :month_year }
+                                        defaults: { ledger_kind: :card, ledger_endpoint: :month_year }
   end
 
   scope "/shared/:share_token", as: :external, module: "ledgers/external" do
