@@ -78,7 +78,10 @@ class Views::PiggyBankReconciliations::New < Views::Base
         method: :post,
         id: "piggy_bank_reconciliation_form",
         class: "space-y-4",
-        data: { controller: "price-mask" }
+        data: {
+          controller: "price-mask",
+          action: "submit->price-mask#removeMasks"
+        }
       ) do |f|
         hidden_field_tag :return_to, return_to if return_to.present?
 
@@ -133,11 +136,13 @@ class Views::PiggyBankReconciliations::New < Views::Base
         end
 
         div(class: "flex flex-wrap items-center gap-3 pt-2") do
-          f.submit(
-            I18n.t("piggy_bank_reconciliations.form.preview_button"),
+          Button(
+            type: :submit,
             id: "preview_piggy_bank_reconciliation",
-            class: "#{submit_button_class(:edit)} cursor-pointer"
-          )
+            class: "w-auto #{submit_button_class(:edit)} cursor-pointer"
+          ) do
+            I18n.t("piggy_bank_reconciliations.form.preview_button")
+          end
           link_to(
             I18n.t("piggy_bank_reconciliations.form.cancel"),
             cancel_path,

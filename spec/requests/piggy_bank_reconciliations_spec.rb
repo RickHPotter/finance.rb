@@ -126,6 +126,20 @@ RSpec.describe "Piggy bank reconciliations" do
       expect(response.body).to include(I18n.t("piggy_bank_reconciliations.form.apply_noop_button"))
     end
 
+    it "handles masked currency inputs formatted like 'R$ 43.173.67' or '43.173,67'" do
+      post preview_cash_transaction_piggy_bank_reconciliation_path(return_transaction),
+           params: { observed_on: "2026-09-15", observed_net: "R$ 55.00" }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("+ R$ 5.00")
+
+      post preview_cash_transaction_piggy_bank_reconciliation_path(return_transaction),
+           params: { observed_on: "2026-09-15", observed_net: "R$ 43.173.67" }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("+ R$ 43,123.67")
+    end
+
     it "returns 422 with stacked notifications when observed net value is invalid" do
       post preview_cash_transaction_piggy_bank_reconciliation_path(return_transaction),
            params: { observed_on: "2026-09-15", observed_net: "0" },
@@ -135,6 +149,7 @@ RSpec.describe "Piggy bank reconciliations" do
       expect(response.body).to include('turbo-stream action="update" target="notification"')
       expect(response.body).to include('turbo-stream action="append" target="notification"')
       expect(response.body).to include(I18n.t("piggy_bank_reconciliations.reasons.invalid_observed_value"))
+      expect(response.body).not_to include("Observed net Observed net")
       expect(response.body).to include('turbo-stream action="update" target="piggy_bank_reconciliation_preview"')
     end
 

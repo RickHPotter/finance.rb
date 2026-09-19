@@ -259,8 +259,22 @@ class PiggyBankReconciliationsController < ApplicationController
     return value if value.is_a?(Integer)
 
     str = value.to_s.strip
-    return str.to_i if str.match?(/\A\d+\z/)
+    return nil if str.blank?
+    return parse_masked_cents(str) if masked_currency?(str)
 
+    parse_numeric_cents(str)
+  end
+
+  def masked_currency?(str)
+    str.include?("R$") || (str.count(".") > 1 && !str.include?(","))
+  end
+
+  def parse_masked_cents(str)
+    cleaned = str.gsub(/[^\d-]/, "")
+    cleaned.present? ? cleaned.to_i : nil
+  end
+
+  def parse_numeric_cents(str)
     if str.include?(".") && str.include?(",")
       str = str.rindex(",") > str.rindex(".") ? str.tr(".", "").tr(",", ".") : str.delete(",")
     end

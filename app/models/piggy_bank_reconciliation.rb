@@ -26,14 +26,7 @@ class PiggyBankReconciliation
     return if plan.blank? || plan.valid?
 
     message = I18n.t("piggy_bank_reconciliations.reasons.#{plan.reason_code}", default: plan.reason_code.to_s.humanize)
-    case plan.reason_code
-    when :invalid_observation_date
-      errors.add(:observed_on, message)
-    when :invalid_observed_value
-      errors.add(:observed_net, message)
-    else
-      errors.add(:base, message)
-    end
+    errors.add(:base, message)
   end
 
   def add_result_errors(result)

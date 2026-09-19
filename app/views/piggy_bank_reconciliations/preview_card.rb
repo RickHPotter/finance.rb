@@ -131,11 +131,13 @@ class Views::PiggyBankReconciliations::PreviewCard < Views::Base
       hidden_field_tag :return_to, return_to if return_to.present?
 
       button_label = plan.noop? ? I18n.t("piggy_bank_reconciliations.form.apply_noop_button") : I18n.t("piggy_bank_reconciliations.form.apply_button")
-      f.submit(
-        button_label,
+      Button(
+        type: :submit,
         id: "apply_piggy_bank_reconciliation",
         class: "#{submit_button_class(:new)} w-full sm:w-auto cursor-pointer"
-      )
+      ) do
+        button_label
+      end
     end
   end
 
