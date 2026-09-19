@@ -15,16 +15,18 @@ end
 #
 #  id           :bigint           not null, primary key
 #  choice       :string           not null
+#  position     :integer          indexed => [user_id]
 #  created_at   :datetime         not null
 #  updated_at   :datetime         not null
 #  baby_name_id :bigint           not null, indexed, uniquely indexed => [user_id]
-#  user_id      :bigint           not null, indexed, uniquely indexed => [baby_name_id]
+#  user_id      :bigint           not null, indexed, uniquely indexed => [baby_name_id], indexed => [position]
 #
 # Indexes
 #
 #  index_baby_name_decisions_on_baby_name_id              (baby_name_id)
 #  index_baby_name_decisions_on_user_id                   (user_id)
 #  index_baby_name_decisions_on_user_id_and_baby_name_id  (user_id,baby_name_id) UNIQUE
+#  index_baby_name_decisions_on_user_id_and_position      (user_id,position)
 #
 # Foreign Keys
 #

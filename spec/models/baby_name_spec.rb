@@ -20,6 +20,12 @@ RSpec.describe BabyName, type: :model do
 
     expect(build(:baby_name, name: "theo")).not_to be_valid
   end
+
+  it "normalizes name to title case" do
+    record = create(:baby_name, name: "nicholas")
+
+    expect(record.name).to eq("Nicholas")
+  end
 end
 
 # == Schema Information
@@ -29,7 +35,7 @@ end
 #
 #  id         :bigint           not null, primary key
 #  active     :boolean          default(TRUE), not null, indexed => [position]
-#  name       :string           not null, uniquely indexed
+#  name       :string           not null
 #  position   :integer          not null, indexed => [active]
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
@@ -37,5 +43,5 @@ end
 # Indexes
 #
 #  index_baby_names_on_active_and_position  (active,position)
-#  index_baby_names_on_name                 (name) UNIQUE
+#  index_baby_names_on_lower_name           (lower((name)::text)) UNIQUE
 #

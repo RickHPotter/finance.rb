@@ -46,6 +46,7 @@ class User < ApplicationRecord
   has_many :push_subscriptions, class_name: "PushSubscription", dependent: :destroy
   has_many :baby_name_decisions, dependent: :destroy
   has_many :reviewed_baby_names, through: :baby_name_decisions, source: :baby_name
+  has_one :baby_name_process_state, dependent: :destroy
 
   # @validations ..............................................................
   validates :email, presence: true

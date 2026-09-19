@@ -107,9 +107,11 @@ class Views::Shared::AppFooter < Views::Base
 
   def action_links
     div(class: "flex flex-wrap justify-end gap-2") do
-      FooterLink(href: baby_names_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do
-        plain I18n.t("baby_names.pwa.shortcut_name")
-        render_icon(:light_bulb)
+      if current_user&.id&.in?(BabyNamesAccess::ALLOWED_USER_IDS)
+        FooterLink(href: baby_names_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do
+          plain I18n.t("baby_names.pwa.shortcut_name")
+          render_icon(:light_bulb)
+        end
       end
 
       FooterLink(href: donation_static_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do

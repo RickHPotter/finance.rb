@@ -14,6 +14,11 @@ Rails.application.routes.draw do
 
   resources :baby_names, only: :index do
     resource :decision, only: :create, controller: "baby_name_decisions"
+    collection do
+      get :review
+      get :rank
+      post :rank, to: "baby_names#submit_rank"
+    end
   end
 
   # devise_for :users, controllers: {

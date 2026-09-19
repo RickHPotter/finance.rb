@@ -330,6 +330,7 @@ CREATE TABLE public.baby_name_decisions (
     choice character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    "position" integer,
     CONSTRAINT baby_name_decisions_choice_check CHECK (((choice)::text = ANY (ARRAY[('rejected'::character varying)::text, ('accepted'::character varying)::text, ('later'::character varying)::text])))
 );
 
@@ -351,6 +352,39 @@ CREATE SEQUENCE public.baby_name_decisions_id_seq
 --
 
 ALTER SEQUENCE public.baby_name_decisions_id_seq OWNED BY public.baby_name_decisions.id;
+
+
+--
+-- Name: baby_name_process_states; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.baby_name_process_states (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    phase character varying DEFAULT 'phase_1'::character varying NOT NULL,
+    phase_completed boolean DEFAULT false NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: baby_name_process_states_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.baby_name_process_states_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: baby_name_process_states_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.baby_name_process_states_id_seq OWNED BY public.baby_name_process_states.id;
 
 
 --
@@ -1690,6 +1724,13 @@ ALTER TABLE ONLY public.baby_name_decisions ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
+-- Name: baby_name_process_states id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.baby_name_process_states ALTER COLUMN id SET DEFAULT nextval('public.baby_name_process_states_id_seq'::regclass);
+
+
+--
 -- Name: baby_names id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1974,6 +2015,14 @@ ALTER TABLE ONLY public.audit_versions
 
 ALTER TABLE ONLY public.baby_name_decisions
     ADD CONSTRAINT baby_name_decisions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: baby_name_process_states baby_name_process_states_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.baby_name_process_states
+    ADD CONSTRAINT baby_name_process_states_pkey PRIMARY KEY (id);
 
 
 --
@@ -2487,6 +2536,20 @@ CREATE UNIQUE INDEX index_baby_name_decisions_on_user_id_and_baby_name_id ON pub
 
 
 --
+-- Name: index_baby_name_decisions_on_user_id_and_position; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_baby_name_decisions_on_user_id_and_position ON public.baby_name_decisions USING btree (user_id, "position");
+
+
+--
+-- Name: index_baby_name_process_states_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_baby_name_process_states_on_user_id ON public.baby_name_process_states USING btree (user_id);
+
+
+--
 -- Name: index_baby_names_on_active_and_position; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2494,10 +2557,10 @@ CREATE INDEX index_baby_names_on_active_and_position ON public.baby_names USING 
 
 
 --
--- Name: index_baby_names_on_name; Type: INDEX; Schema: public; Owner: -
+-- Name: index_baby_names_on_lower_name; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_baby_names_on_name ON public.baby_names USING btree (name);
+CREATE UNIQUE INDEX index_baby_names_on_lower_name ON public.baby_names USING btree (lower((name)::text));
 
 
 --
@@ -3555,6 +3618,14 @@ ALTER TABLE ONLY public.budgets
 
 
 --
+-- Name: baby_name_process_states fk_rails_609bfa93c7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.baby_name_process_states
+    ADD CONSTRAINT fk_rails_609bfa93c7 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: contexts fk_rails_6d2943ccf8; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3945,6 +4016,8 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260919142600'),
+('20260919142000'),
 ('20260919130000'),
 ('20260915120000'),
 ('20260911100000'),
