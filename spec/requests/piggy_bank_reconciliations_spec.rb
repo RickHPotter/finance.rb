@@ -215,6 +215,7 @@ RSpec.describe "Piggy bank reconciliations" do
 
       expect(response).to redirect_to(cash_transaction_path(return_transaction))
       expect(Investment.last.price).to eq(-500)
+      expect(Investment.last.description).to eq("OBSERVED NET RECONCILIATION")
 
       return_transaction.reload
       expect(return_transaction.price).to eq(4_500)

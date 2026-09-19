@@ -159,7 +159,7 @@ RSpec.describe Audit::Rollback::Adapters::Investment do
         context:,
         user_bank_account: account,
         investment_type:,
-        description: "Observed net reconciliation",
+        description: "OBSERVED NET RECONCILIATION",
         price: 800,
         date: Date.new(2027, 3, 12),
         month: 3,

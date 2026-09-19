@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class PiggyBankReconciliations::Apply
-  DEFAULT_DESCRIPTION = "Observed net reconciliation"
+  DEFAULT_DESCRIPTION = "OBSERVED NET RECONCILIATION"
 
   attr_reader :user, :context, :return_cash_transaction_id, :observed_net_cents,
               :observed_on, :digest, :description, :request_id
@@ -136,7 +136,11 @@ class PiggyBankReconciliations::Apply
   end
 
   def normalized_description
-    description&.strip.presence || DEFAULT_DESCRIPTION
+    description&.strip.presence || default_description
+  end
+
+  def default_description
+    I18n.t("piggy_bank_reconciliations.default_investment_description", default: DEFAULT_DESCRIPTION).upcase
   end
 
   def result(status:, reason_code: nil, plan: nil, investment: nil, return_cash_transaction: nil, operation: nil, issues: [])

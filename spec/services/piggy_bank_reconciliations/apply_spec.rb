@@ -121,7 +121,16 @@ RSpec.describe PiggyBankReconciliations::Apply do
     result = apply(observed_net_cents: 5_300)
 
     expect(result).to be_applied
-    expect(result.investment.description).to eq(described_class::DEFAULT_DESCRIPTION)
+    expect(result.investment.description).to eq("OBSERVED NET RECONCILIATION")
+  end
+
+  it "uses the localized default description in Portuguese" do
+    result = I18n.with_locale(:"pt-BR") do
+      apply(observed_net_cents: 5_300)
+    end
+
+    expect(result).to be_applied
+    expect(result.investment.description).to eq("RECONCILIAÇÃO LÍQUIDA OBSERVADA")
   end
 
   it "applies a negative correction delta and updates unpaid projection" do

@@ -89,7 +89,7 @@ pt-BR:
     iof_status:
       available: Disponível
       waiting: Aguardando
-      not_recorded: Não registrada
+      not_recorded: Não informada
     lot:
       contributed_label: Aportado
       iof_free_label: Livre de IOF
