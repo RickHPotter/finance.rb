@@ -1580,13 +1580,14 @@ Goal: let Piggy Bank valuation remain useful when the bank provides no daily pro
 history and the amount economically available before day 30 differs from gross yield
 because of IOF.
 
-Status: product and architecture documentation approved and Slices 1-6 completed on
-2026-09-19. The bank-observed net redeemable total is the authoritative input.
+Status: completed on 2026-09-19. Product and architecture documentation approved and all
+7 slices completed. The bank-observed net redeemable total is the authoritative input.
 Contribution-level IOF-free dates use an editable default of contribution date plus 30
 calendar days. Write-free preview, locked apply, full guarded rollback, the
-user-facing reconciliation workflow on the return detail surface, and contribution IOF
-availability tracking are now delivered; development next proceeds to reporting,
-regression, and closure.
+user-facing reconciliation workflow on the return detail surface, contribution IOF
+availability tracking, reporting integration in Monthly Analysis, and comprehensive
+regressions are delivered. Production-shaped manual verification is documented in
+`05-manual-verification.md` and closure findings are recorded in `06-closure-report.md`.
 
 Exploration direction:
 
@@ -1632,6 +1633,8 @@ References:
 - [current behavior and gap inventory](docs/sprints/4-kakashi/kakashi-22/03-current-behavior-and-gap-inventory.md)
 - [decisions and test matrix](docs/sprints/4-kakashi/kakashi-22/04-decisions-and-test-matrix.md)
 - [implementation slices](docs/sprints/4-kakashi/kakashi-22/05-implementation-slices.md)
+- [manual verification](docs/sprints/4-kakashi/kakashi-22/05-manual-verification.md)
+- [closure report](docs/sprints/4-kakashi/kakashi-22/06-closure-report.md)
 
 ## CONCLUSION
 

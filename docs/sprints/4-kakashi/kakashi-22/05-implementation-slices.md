@@ -180,6 +180,14 @@ Commit: `feat: track piggy bank IOF availability`
 
 ## Slice 7: Reporting, Regression, and Manual Closure
 
+Status: completed on 2026-09-19. Verified reconciliation-created deltas in Monthly Analysis
+(`Logic::Finder::MonthlyAnalysisJson`) across observation months, negative corrections, zero-delta
+absences, partial withdrawal preservation, and investment navigation. Executed full regression
+suites across models, services, requests, health checks, financial auditable, and rollback
+adapters. Created production-shaped manual verification checklist (`05-manual-verification.md`)
+and comprehensive closure report (`06-closure-report.md`) detailing delivered behavior,
+operational notes, test evidence, and deferred items. All RuboCop and test gates passing.
+
 1. Verify reconciliation-created deltas in Monthly Analysis and Investment navigation.
 2. Cover positive/negative observation-month recognition, partial withdrawal, and
    zero-change absence.

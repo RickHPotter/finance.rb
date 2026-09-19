@@ -348,6 +348,80 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       expect(valuation_sources).to all(include(identity: include(record_type: "Investment"), role: "valuation", origin: "valuation",
                                                path: include("/investments/")))
     end
+
+    it "recognizes reconciliation-created deltas in the observation month with investment navigation" do
+      entity = create(:entity, user:, entity_name: "RESERVE BANK")
+      source = create_piggy_bank_source(entity:, description: "Reconciled reserve", price: -5_000, paid: true, parent_month: 6)
+      grouped_return = source.piggy_bank.return_cash_transaction
+      InvestmentType.find_or_create_by!(investment_type_code: PiggyBankReconciliations::Preview::INVESTMENT_TYPE_CODE) do |type|
+        type.investment_type_name_fallback = "Other - Piggy Bank"
+        type.built_in = true
+      end
+
+      preview = PiggyBankReconciliations::Preview.new(
+        user:,
+        context:,
+        return_cash_transaction_id: grouped_return.id,
+        observed_net_cents: 5_074,
+        observed_on: "2026-07-15"
+      ).call
+      apply_result = PiggyBankReconciliations::Apply.from_plan(preview).call
+      expect(apply_result.status).to eq(:applied)
+      created_investment = apply_result.investment
+
+      expect(payload[:piggy_banks]).to include(
+        total_contributed: 0.0,
+        total_withdrawn: 0.0,
+        recognized_profit_loss: 0.74
+      )
+      group = payload.dig(:piggy_banks, :groups).sole
+      expect(group).to include(
+        return_cash_transaction_id: grouped_return.id,
+        recognized_profit_loss: 0.74
+      )
+      expect(group.dig(:sources, :recognized_profit_loss)).to contain_exactly(
+        include(
+          identity: { record_type: "Investment", record_id: created_investment.id },
+          role: "valuation",
+          origin: "valuation",
+          amount_cents: 74,
+          path: include("/investments/#{created_investment.id}")
+        )
+      )
+
+      zero_preview = PiggyBankReconciliations::Preview.new(
+        user:,
+        context:,
+        return_cash_transaction_id: grouped_return.id,
+        observed_net_cents: 5_074,
+        observed_on: "2026-07-20"
+      ).call
+      zero_apply = PiggyBankReconciliations::Apply.from_plan(zero_preview).call
+      expect(zero_apply.status).to eq(:noop)
+      expect(zero_apply.investment).to be_nil
+
+      downward_preview = PiggyBankReconciliations::Preview.new(
+        user:,
+        context:,
+        return_cash_transaction_id: grouped_return.id,
+        observed_net_cents: 5_050,
+        observed_on: "2026-07-25"
+      ).call
+      downward_apply = PiggyBankReconciliations::Apply.from_plan(downward_preview).call
+      expect(downward_apply.status).to eq(:applied)
+
+      updated_payload = described_class.new(user:, context:, month: "2026-07").call
+      expect(updated_payload[:piggy_banks]).to include(recognized_profit_loss: 0.50)
+      updated_group = updated_payload.dig(:piggy_banks, :groups).sole
+      expect(updated_group[:recognized_profit_loss]).to eq(0.50)
+      expect(updated_group.dig(:sources, :recognized_profit_loss).map { |s| s[:amount_cents] }).to contain_exactly(74, -24)
+
+      june_payload = described_class.new(user:, context:, month: "2026-06").call
+      expect(june_payload[:piggy_banks]).to include(
+        total_contributed: 50.0,
+        recognized_profit_loss: 0.0
+      )
+    end
   end
 
   describe "query behavior" do
@@ -431,9 +505,11 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
   end
 
   def create_piggy_bank_source(entity:, description:, price:, paid:, **options)
+    month = options[:parent_month] || 7
+    return_month = options[:return_month] || 7
     piggy_bank = PiggyBank.new(
       return_price: price.abs,
-      return_date: Date.new(2026, 7, 31),
+      return_date: Date.new(2026, return_month, 31),
       return_cash_transaction: options[:return_transaction]
     )
     create(
@@ -442,11 +518,11 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       context: options.fetch(:context, context),
       user_bank_account: account,
       description:,
-      date: Date.new(2026, 7, 10),
-      month: 7,
+      date: Date.new(2026, month, 10),
+      month:,
       year: 2026,
       price:,
-      cash_installments: [ build(:cash_installment, number: 1, price:, date: Date.new(2026, 7, 10), month: 7, year: 2026, paid:) ],
+      cash_installments: [ build(:cash_installment, number: 1, price:, date: Date.new(2026, month, 10), month:, year: 2026, paid:) ],
       category_transactions: [ CategoryTransaction.new(category: user.built_in_category("PIGGY BANK")) ],
       entity_transactions: [ EntityTransaction.new(entity:, price: 0, price_to_be_returned: 0, is_payer: false) ],
       piggy_bank:
