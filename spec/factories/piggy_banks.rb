@@ -14,6 +14,7 @@ end
 # Database name: primary
 #
 #  id                         :bigint           not null, primary key
+#  iof_exempt_on              :date             indexed
 #  return_date                :datetime         not null
 #  return_price               :integer          not null
 #  created_at                 :datetime         not null
@@ -23,6 +24,7 @@ end
 #
 # Indexes
 #
+#  index_piggy_banks_on_iof_exempt_on               (iof_exempt_on)
 #  index_piggy_banks_on_return_cash_transaction_id  (return_cash_transaction_id)
 #  index_piggy_banks_on_source_cash_transaction_id  (source_cash_transaction_id) UNIQUE
 #

@@ -328,5 +328,60 @@ RSpec.describe "Piggy bank reconciliations" do
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include(I18n.t("piggy_banks.return_section.title"))
     end
+
+    it "renders contribution lots with contribution date, baseline, availability date, and status badges" do
+      second_source = build(
+        :cash_transaction,
+        user:,
+        context:,
+        user_bank_account: account,
+        description: "Secondary lot",
+        price: -2_000,
+        cash_installments: [ build(:cash_installment, number: 1, price: -2_000, date: Date.new(2026, 8, 1)) ],
+        category_transactions: [ CategoryTransaction.new(category: user.built_in_category("PIGGY BANK")) ],
+        entity_transactions: [ EntityTransaction.new(entity:, price: 0, price_to_be_returned: 0, is_payer: false) ],
+        piggy_bank: PiggyBank.new(
+          return_cash_transaction: return_transaction,
+          return_price: 2_000,
+          return_date: return_transaction.date,
+          iof_exempt_on: 10.days.from_now.to_date
+        )
+      )
+      second_source.save!
+
+      return_transaction.piggy_bank_return_links.first.update!(iof_exempt_on: 5.days.ago.to_date)
+
+      get cash_transaction_path(return_transaction)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Observed reserve")
+      expect(response.body).to include("Secondary lot")
+      expect(response.body).to include(I18n.t("piggy_banks.iof_status.available"))
+      expect(response.body).to include(I18n.t("piggy_banks.iof_status.waiting"))
+      expect(response.body).to include('data-piggy-bank-iof-status="available"')
+      expect(response.body).to include('data-piggy-bank-iof-status="waiting"')
+    end
+
+    it "renders not_recorded status when iof_exempt_on is blank" do
+      return_transaction.piggy_bank_return_links.first.update_columns(iof_exempt_on: nil)
+
+      get cash_transaction_path(return_transaction)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(I18n.t("piggy_banks.iof_status.not_recorded"))
+      expect(response.body).to include('data-piggy-bank-iof-status="not_recorded"')
+    end
+
+    it "renders localized IOF availability labels in Portuguese" do
+      return_transaction.piggy_bank_return_links.first.update!(iof_exempt_on: 5.days.ago.to_date)
+
+      get cash_transaction_path(return_transaction, locale: "pt-BR")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Aportes agrupados")
+      expect(response.body).to include("Disponível")
+      expect(response.body).to include("Aportado:")
+      expect(response.body).to include("Livre de IOF:")
+    end
   end
 end

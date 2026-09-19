@@ -1355,6 +1355,7 @@ CREATE TABLE public.piggy_banks (
     return_price integer NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    iof_exempt_on date,
     CONSTRAINT piggy_banks_return_price_positive CHECK ((return_price > 0))
 );
 
@@ -3186,6 +3187,13 @@ CREATE INDEX index_messages_on_user_id ON public.messages USING btree (user_id);
 
 
 --
+-- Name: index_piggy_banks_on_iof_exempt_on; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_piggy_banks_on_iof_exempt_on ON public.piggy_banks USING btree (iof_exempt_on);
+
+
+--
 -- Name: index_piggy_banks_on_return_cash_transaction_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3937,6 +3945,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260919130000'),
 ('20260915120000'),
 ('20260911100000'),
 ('20260911090000'),

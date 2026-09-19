@@ -191,7 +191,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def piggy_bank_contributions_list
-    links = cash_transaction.piggy_bank_return_links.includes(:source_cash_transaction)
+    links = cash_transaction.piggy_bank_return_links.includes(:source_cash_transaction).order(:created_at, :id)
     return if links.empty?
 
     div(class: "space-y-2") do
@@ -203,20 +203,61 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
         next if source.blank?
 
         div(class: link_card_class) do
-          div(class: "flex items-center justify-between") do
-            link_to(
-              source.description,
-              cash_transaction_path(source, return_to: cash_transaction_path(cash_transaction)),
-              class: "truncate text-sm font-bold text-slate-950 hover:underline dark:text-slate-100",
-              data: { turbo_frame: "_top" }
-            )
-            span(class: "font-mono text-sm font-bold text-slate-950 dark:text-slate-100") do
-              money(link.return_price)
+          div(class: "flex items-start justify-between gap-2") do
+            div(class: "min-w-0 flex-1 space-y-1") do
+              div(class: "flex items-center gap-2 flex-wrap") do
+                link_to(
+                  source.description,
+                  cash_transaction_path(source, return_to: cash_transaction_path(cash_transaction)),
+                  class: "truncate text-sm font-bold text-slate-950 hover:underline dark:text-slate-100",
+                  data: { turbo_frame: "_top" }
+                )
+                piggy_bank_iof_status_badge(link)
+              end
+              div(class: "flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400") do
+                span do
+                  "#{I18n.t('piggy_banks.lot.contributed_label')}: #{I18n.l(source.date.to_date, format: :short)}"
+                end
+                span do
+                  if link.iof_exempt_on.present?
+                    "#{I18n.t('piggy_banks.lot.iof_free_label')}: #{I18n.l(link.iof_exempt_on, format: :short)}"
+                  else
+                    "#{I18n.t('piggy_banks.lot.iof_free_label')}: #{I18n.t('piggy_banks.iof_status.not_recorded')}"
+                  end
+                end
+              end
+            end
+            div(class: "shrink-0 text-right") do
+              p(class: "font-mono text-sm font-bold text-slate-950 dark:text-slate-100") do
+                money(link.return_price)
+              end
+              p(class: "text-2xs uppercase tracking-wider text-slate-400 dark:text-slate-500") do
+                I18n.t("piggy_banks.return_section.baseline")
+              end
             end
           end
         end
       end
     end
+  end
+
+  def piggy_bank_iof_status_badge(link)
+    status = link.iof_status
+    label = I18n.t("piggy_banks.iof_status.#{status}")
+    classes =
+      case status
+      when :available
+        "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+      when :waiting
+        "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+      else
+        "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+      end
+
+    span(
+      class: "inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-bold uppercase tracking-[0.14em] #{classes}",
+      data: { piggy_bank_iof_status: status.to_s }
+    ) { label }
   end
 
   def piggy_bank_baseline_cents

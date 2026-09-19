@@ -351,6 +351,127 @@ RSpec.describe PiggyBank, type: :model do
     expect { source.destroy! }.to change(described_class, :count).by(-1)
     expect(CashTransaction.exists?(return_id)).to be(false)
   end
+
+  describe "IOF availability tracking" do
+    it "proposes default iof_exempt_on as source contribution date + 30 calendar days on creation" do
+      source = build_source
+      source.date = Date.new(2026, 8, 1)
+      source.save!
+
+      expect(source.piggy_bank.iof_exempt_on).to eq(Date.new(2026, 8, 31))
+      expect(source.piggy_bank.iof_status(Date.new(2026, 8, 15))).to eq(:waiting)
+      expect(source.piggy_bank.iof_status(Date.new(2026, 8, 31))).to eq(:available)
+      expect(source.piggy_bank.iof_status(Date.new(2026, 9, 5))).to eq(:available)
+    end
+
+    it "allows a custom iof_exempt_on date upon creation" do
+      source = build_source
+      source.date = Date.new(2026, 8, 1)
+      source.piggy_bank.iof_exempt_on = Date.new(2026, 8, 20)
+      source.save!
+
+      expect(source.piggy_bank.reload.iof_exempt_on).to eq(Date.new(2026, 8, 20))
+    end
+
+    it "allows iof_exempt_on to be explicitly set to nil on creation" do
+      source = build_source
+      source.date = Date.new(2026, 8, 1)
+      source.piggy_bank.iof_exempt_on = nil
+      source.save!
+
+      expect(source.piggy_bank.reload.iof_exempt_on).to be_nil
+      expect(source.piggy_bank.iof_status).to eq(:not_recorded)
+      expect(source.piggy_bank.iof_not_recorded?).to be(true)
+    end
+
+    it "preserves legacy records with blank iof_exempt_on without forced backfill" do
+      source = build_source
+      source.save!
+      source.piggy_bank.update_columns(iof_exempt_on: nil)
+
+      reloaded = described_class.find(source.piggy_bank.id)
+      expect(reloaded.iof_exempt_on).to be_nil
+      expect(reloaded.iof_status).to eq(:not_recorded)
+      expect(reloaded).to be_valid
+    end
+
+    it "maintains independent availability clocks when multiple contributions share one return group" do
+      first_source = build_source(price: -2_000, return_price: 2_000)
+      first_source.date = Date.new(2026, 7, 1)
+      first_source.save!
+      shared_return = first_source.piggy_bank.return_cash_transaction
+
+      second_source = build_attached_source(shared_return, price: -3_000, return_price: 3_000)
+      second_source.date = Date.new(2026, 8, 1)
+      second_source.save!
+
+      first_link = first_source.piggy_bank
+      second_link = second_source.piggy_bank
+
+      expect(first_link.iof_exempt_on).to eq(Date.new(2026, 7, 31))
+      expect(second_link.iof_exempt_on).to eq(Date.new(2026, 8, 31))
+
+      reference_date = Date.new(2026, 8, 15)
+      expect(first_link.iof_status(reference_date)).to eq(:available)
+      expect(first_link.iof_exempt?(reference_date)).to be(true)
+      expect(second_link.iof_status(reference_date)).to eq(:waiting)
+      expect(second_link.iof_waiting?(reference_date)).to be(true)
+    end
+
+    it "does not alter return_date, return_price, or installments when iof_exempt_on changes" do
+      source = build_source
+      source.date = Date.new(2026, 8, 1)
+      source.save!
+      piggy_bank = source.piggy_bank
+      return_transaction = piggy_bank.return_cash_transaction
+
+      original_return_date = return_transaction.date
+      original_return_price = return_transaction.price
+      original_installments = return_transaction.cash_installments.order(:number).pluck(:id, :date, :price)
+
+      piggy_bank.update!(iof_exempt_on: Date.new(2026, 9, 15))
+
+      return_transaction.reload
+      expect(return_transaction.date).to eq(original_return_date)
+      expect(return_transaction.price).to eq(original_return_price)
+      expect(return_transaction.cash_installments.order(:number).pluck(:id, :date, :price)).to eq(original_installments)
+    end
+
+    it "does not alter iof_exempt_on when return_date changes" do
+      source = build_source
+      source.date = Date.new(2026, 8, 1)
+      source.save!
+      piggy_bank = source.piggy_bank
+
+      expect do
+        piggy_bank.update!(return_date: piggy_bank.return_date + 10.days)
+      end.not_to(change { piggy_bank.reload.iof_exempt_on })
+    end
+
+    it "blocks iof_exempt_on changes when return history has been paid" do
+      source = build_source
+      source.date = Date.new(2026, 8, 1)
+      source.save!
+      piggy_bank = source.piggy_bank
+      piggy_bank.return_cash_transaction.cash_installments.first.update!(paid: true)
+
+      expect(piggy_bank.update(iof_exempt_on: Date.new(2026, 9, 15))).to be(false)
+      expect(piggy_bank.errors.of_kind?(:base, :paid_history_locked)).to be(true)
+    end
+
+    it "creates financial audit version when iof_exempt_on is updated" do
+      source = build_source
+      source.date = Date.new(2026, 8, 1)
+      source.save!
+      piggy_bank = source.piggy_bank
+
+      expect do
+        Audit::Operation.run(actor: user, context: user.main_context, source: :web) do
+          piggy_bank.update!(iof_exempt_on: Date.new(2026, 9, 20))
+        end
+      end.to change(AuditVersion, :count).by(1)
+    end
+  end
 end
 
 # == Schema Information
@@ -359,6 +480,7 @@ end
 # Database name: primary
 #
 #  id                         :bigint           not null, primary key
+#  iof_exempt_on              :date             indexed
 #  return_date                :datetime         not null
 #  return_price               :integer          not null
 #  created_at                 :datetime         not null
@@ -368,6 +490,7 @@ end
 #
 # Indexes
 #
+#  index_piggy_banks_on_iof_exempt_on               (iof_exempt_on)
 #  index_piggy_banks_on_return_cash_transaction_id  (return_cash_transaction_id)
 #  index_piggy_banks_on_source_cash_transaction_id  (source_cash_transaction_id) UNIQUE
 #

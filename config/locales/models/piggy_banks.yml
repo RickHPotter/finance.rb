@@ -13,6 +13,15 @@ en:
     select_return: Select an open return
     source: Piggy Bank Source
     sources: Piggy Bank Sources
+    iof_exempt_on: IOF-Free Date
+    iof_exempt_on_hint: Propose 30 days after contribution date to avoid IOF on redemption.
+    iof_status:
+      available: Available
+      waiting: Waiting
+      not_recorded: Not recorded
+    lot:
+      contributed_label: Contributed
+      iof_free_label: IOF-free
     actions:
       reconcile_valuation: Reconcile valuation
     return_section:
@@ -32,6 +41,7 @@ en:
         other: Piggy Banks
     attributes:
       piggy_bank:
+        iof_exempt_on: IOF-Free Date
         return_date: Return Date
         return_price: Return Price
         return_cash_transaction_id: Existing Return
@@ -74,6 +84,15 @@ pt-BR:
     select_return: Selecione um retorno aberto
     source: Cofrinho de Origem
     sources: Origens do Cofrinho
+    iof_exempt_on: Data de Isenção do IOF
+    iof_exempt_on_hint: Sugere 30 dias após o aporte para evitar IOF no resgate.
+    iof_status:
+      available: Disponível
+      waiting: Aguardando
+      not_recorded: Não registrada
+    lot:
+      contributed_label: Aportado
+      iof_free_label: Livre de IOF
     actions:
       reconcile_valuation: Reconciliar valorização
     return_section:
@@ -93,6 +112,7 @@ pt-BR:
         other: Cofrinhos
     attributes:
       piggy_bank:
+        iof_exempt_on: Data de Isenção do IOF
         return_date: Data do Retorno
         return_price: Valor do Retorno
         return_cash_transaction_id: Retorno Existente

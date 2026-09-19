@@ -151,8 +151,17 @@ Commit: `feat: add piggy bank reconciliation workflow`
 
 ## Slice 6: Track Contribution IOF Availability
 
-1. Add the approved nullable contribution-level availability field and database index
-   if its query path warrants one.
+Status: completed on 2026-09-19. Added nullable `PiggyBank#iof_exempt_on` (`date`) column
+and index. Proposes default of source contribution date plus 30 calendar days for new
+contributions without calculating IOF money, while allowing full editing or clearing. Added
+permitted strong param in `CashTransactionsController` and form input in
+`Views::EntityTransactions::FieldsSheet`. Enhanced both return dashboard
+(`Views::CashTransactions::Show`) and contributions sheet
+(`Views::PiggyBanks::ContributionsSheet`) to show each lot's contribution date, baseline,
+availability date, and waiting/available/not_recorded status badge. Verified independent
+clocks for grouped contributions, nullable preservation of legacy records without backfill,
+paid-history locking, and that availability changes do not move return date, return price,
+or cash installments. Full suite of 89 Piggy Bank model, service, and request specs passes.
 2. Apply the approved manual/default initialization rule without calculating IOF money.
 3. Add editing/validation through the authoritative contribution/source flow.
 4. Show each lot's contribution date, baseline, availability date, and waiting/available

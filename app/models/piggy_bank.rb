@@ -44,6 +44,7 @@ class PiggyBank < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation :inherit_return_group_date, if: :return_cash_transaction
+  before_validation :assign_default_iof_exempt_on, on: :create
   after_create :create_return_projection!, unless: :return_cash_transaction_id?
   after_create :sync_return_projection!, if: :return_cash_transaction_id?
   after_update :sync_return_projection!, if: :saved_change_to_projection?
@@ -60,6 +61,39 @@ class PiggyBank < ApplicationRecord
 
   def return_group_open?
     return_cash_transaction&.piggy_bank_group_open? || false
+  end
+
+  def iof_exempt_on=(value)
+    @iof_exempt_on_explicitly_assigned = true
+    super
+  end
+
+  def iof_exempt_on_explicitly_assigned?
+    @iof_exempt_on_explicitly_assigned == true
+  end
+
+  def default_iof_exempt_on
+    source_date = source_cash_transaction&.date
+    source_date ? (source_date.to_date + 30.days) : nil
+  end
+
+  def iof_status(reference_date = Time.zone.today)
+    return :not_recorded if iof_exempt_on.blank?
+
+    reference = reference_date || Time.zone.today
+    iof_exempt_on > reference ? :waiting : :available
+  end
+
+  def iof_exempt?(reference_date = Time.zone.today)
+    iof_status(reference_date) == :available
+  end
+
+  def iof_waiting?(reference_date = Time.zone.today)
+    iof_status(reference_date) == :waiting
+  end
+
+  def iof_not_recorded?
+    iof_status == :not_recorded
   end
 
   # The form submits datetime-local values with minute precision. Preserve the
@@ -280,9 +314,16 @@ class PiggyBank < ApplicationRecord
 
   def prevent_paid_history_projection_change
     return unless paid_history?
-    return unless will_save_change_to_return_date?
+    return unless will_save_change_to_return_date? || will_save_change_to_iof_exempt_on?
 
     errors.add(:base, :paid_history_locked)
+  end
+
+  def assign_default_iof_exempt_on
+    return if iof_exempt_on_explicitly_assigned?
+    return if iof_exempt_on.present?
+
+    self.iof_exempt_on = default_iof_exempt_on
   end
 end
 
@@ -292,6 +333,7 @@ end
 # Database name: primary
 #
 #  id                         :bigint           not null, primary key
+#  iof_exempt_on              :date             indexed
 #  return_date                :datetime         not null
 #  return_price               :integer          not null
 #  created_at                 :datetime         not null
@@ -301,6 +343,7 @@ end
 #
 # Indexes
 #
+#  index_piggy_banks_on_iof_exempt_on               (iof_exempt_on)
 #  index_piggy_banks_on_return_cash_transaction_id  (return_cash_transaction_id)
 #  index_piggy_banks_on_source_cash_transaction_id  (source_cash_transaction_id) UNIQUE
 #

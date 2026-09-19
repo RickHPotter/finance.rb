@@ -104,7 +104,10 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     cash_transaction.cash_installments = duplicated_cash_installments_for(existing_cash_transaction)
     cash_transaction.category_transactions = existing_cash_transaction.category_transactions.map(&:dup)
     cash_transaction.entity_transactions = duplicated_entity_transactions_for(existing_cash_transaction)
-    cash_transaction.build_piggy_bank(existing_cash_transaction.piggy_bank.slice(:return_date, :return_price)) if existing_cash_transaction.piggy_bank.present?
+    if existing_cash_transaction.piggy_bank.present?
+      cash_transaction.build_piggy_bank(existing_cash_transaction.piggy_bank.slice(:return_date, :return_price,
+                                                                                   :iof_exempt_on))
+    end
 
     cash_transaction
   end
