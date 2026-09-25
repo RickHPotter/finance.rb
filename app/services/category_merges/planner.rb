@@ -25,6 +25,7 @@ class CategoryMerges::Planner
   def validate_categories
     return conflict(:source_not_found) if source.blank?
     return conflict(:destination_not_found) if destination.blank?
+    return conflict(:source_has_children) if source.subcategories.any?
     return conflict(:source_inactive) unless source.active?
     return conflict(:destination_inactive) unless destination.active?
     return conflict(:source_protected) if source.built_in?

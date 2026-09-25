@@ -87,5 +87,12 @@ RSpec.describe "Category merge previews" do
       post merge_preview_category_path(protected_category), params: preview_params, headers: { "Accept" => "text/vnd.turbo-stream.html" }
       expect(response.body).to include(I18n.t("category_merges.reasons.source_protected"))
     end
+
+    it "renders conflict reason when source has subcategories" do
+      create(:category, :random, user:, parent_category: source)
+
+      post merge_preview_category_path(source), params: preview_params, headers: { "Accept" => "text/vnd.turbo-stream.html" }
+      expect(response.body).to include(I18n.t("category_merges.reasons.source_has_children"))
+    end
   end
 end
