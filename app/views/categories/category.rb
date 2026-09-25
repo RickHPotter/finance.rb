@@ -28,11 +28,13 @@ class Views::Categories::Category < Views::Base
 
   def desktop_row
     div(
-      class: "grid grid-cols-8 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white " \
+      class: "grid grid-cols-8 border-b border-slate-200 #{row_background_class} hover:bg-white " \
              "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800",
       data: { id: category.id, datatable_target: :row }
     ) do
-      div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
+      div(class: "col-span-2 px-3 py-3 flex items-center #{category.subcategory? ? 'pl-8' : 'mx-auto'} font-lekton font-semibold") do
+        span(class: "text-slate-400 dark:text-slate-500 mr-2 font-mono text-sm select-none") { "↳" } if category.subcategory?
+
         CategoryBadge(
           category:,
           href: category_path(category, return_to:),
@@ -40,6 +42,15 @@ class Views::Categories::Category < Views::Base
           class: "whitespace-nowrap px-4 shadow-md",
           data: { turbo_frame: "_top", turbo_prefetch: false }
         )
+
+        if category.parent?
+          span(
+            class: "ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-300",
+            title: "#{category.subcategories.size} #{I18n.t('categories.subcategories_label')}"
+          ) do
+            plain category.subcategories.size.to_s
+          end
+        end
       end
 
       div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300") do
@@ -47,45 +58,56 @@ class Views::Categories::Category < Views::Base
       end
 
       div(class: "jump_to_card_transactions px-2 py-3 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md") do
-        if category.card_transactions_count.positive?
+        if display_card_transactions_count.positive?
           link_to(
-            category.card_transactions_count,
+            display_card_transactions_count,
             search_card_transactions_path(card_transaction: { category_id: category.id }, all_month_years: true),
             class: "text-indigo-600 hover:underline dark:text-sky-300",
             data: { turbo_frame: "_top", turbo_prefetch: false }
           )
         else
-          span { category.card_transactions_count }
+          span { display_card_transactions_count }
         end
       end
 
       div(class: "flex items-center justify-center px-2 py-3 font-lekton font-normal text-lg whitespace-nowrap") do
         span do
-          from_cent_based_to_float(category.card_transactions_total, "R$")
+          from_cent_based_to_float(display_card_transactions_total, "R$")
         end
       end
 
       div(class: "jump_to_cash_transactions px-2 py-3 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md") do
-        if category.cash_transactions_count.positive?
+        if display_cash_transactions_count.positive?
           link_to(
-            category.cash_transactions_count,
+            display_cash_transactions_count,
             cash_transactions_path(cash_transaction: { category_id: category.id }, all_month_years: true),
             class: "text-indigo-600 hover:underline dark:text-sky-300",
             data: { turbo_frame: "_top", turbo_prefetch: false }
           )
         else
-          span { category.cash_transactions_count }
+          span { display_cash_transactions_count }
         end
       end
 
       div(class: "flex items-center justify-center px-2 py-3 font-lekton font-normal text-lg whitespace-nowrap") do
         span do
-          from_cent_based_to_float(category.cash_transactions_total, "R$")
+          from_cent_based_to_float(display_cash_transactions_total, "R$")
         end
       end
 
       div(class: "flex items-center justify-center px-2 py-3") do
         div(class: "flex items-center justify-end gap-1") do
+          if !category.built_in? && !category.subcategory?
+            link_to(
+              new_category_path(parent_category_id: category.id, return_to:),
+              id: "add_subcategory_#{category.id}",
+              class: add_subcategory_button_class,
+              title: I18n.t("categories.actions.add_subcategory"),
+              aria: { label: I18n.t("categories.actions.add_subcategory") },
+              data: { turbo_frame: "_top", turbo_prefetch: false }
+            ) { cached_icon(:plus) }
+          end
+
           link_to(edit_category_path(category, return_to:), id: "edit_category_#{category.id}",
                                                             class: action_button_class,
                                                             title: action_message(:edit),
@@ -120,9 +142,18 @@ class Views::Categories::Category < Views::Base
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             cached_icon :category
+            span(class: "text-sm text-slate-300 font-medium") { "#{category.parent_category.name} /" } if category.subcategory?
             link_to(category.name, category_path(category, return_to:), id: "show_category_#{category.id}",
                                                                         class: "text-lg font-semibold underline underline-offset-[3px]",
                                                                         data: { turbo_frame: "_top", turbo_prefetch: false })
+            if category.parent?
+              span(
+                class: "rounded-full bg-slate-200/80 px-2 py-0.5 text-xs font-semibold text-slate-800 dark:bg-slate-700 dark:text-slate-200",
+                title: "#{category.subcategories.size} #{I18n.t('categories.subcategories_label')}"
+              ) do
+                plain category.subcategories.size.to_s
+              end
+            end
           end
 
           status_badge
@@ -137,7 +168,7 @@ class Views::Categories::Category < Views::Base
               span(class: "ml-2 dark:text-slate-400") { pluralise_model(CardTransaction, 2) }
             end
 
-            div(class: "flex items-center") { span(class: "text-sm font-semibold text-slate-800 dark:text-slate-100") { category.card_transactions_count } }
+            div(class: "flex items-center") { span(class: "text-sm font-semibold text-slate-800 dark:text-slate-100") { display_card_transactions_count } }
           end
 
           div(class: "space-y-1") do
@@ -147,7 +178,7 @@ class Views::Categories::Category < Views::Base
             end
 
             div(class: "flex items-center") do
-              span(class: "text-sm font-semibold text-slate-800 mr-auto dark:text-slate-100") { from_cent_based_to_float(category.card_transactions_total, "R$") }
+              span(class: "text-sm font-semibold text-slate-800 mr-auto dark:text-slate-100") { from_cent_based_to_float(display_card_transactions_total, "R$") }
             end
           end
         end
@@ -159,7 +190,7 @@ class Views::Categories::Category < Views::Base
               span(class: "ml-2 dark:text-slate-400") { pluralise_model(CashTransaction, 2) }
             end
 
-            div(class: "flex items-center") { span(class: "text-sm font-semibold text-slate-800 dark:text-slate-100") { category.cash_transactions_count } }
+            div(class: "flex items-center") { span(class: "text-sm font-semibold text-slate-800 dark:text-slate-100") { display_cash_transactions_count } }
           end
 
           div(class: "space-y-1") do
@@ -169,12 +200,26 @@ class Views::Categories::Category < Views::Base
             end
 
             div(class: "flex items-center") do
-              span(class: "text-sm font-semibold text-slate-800 mr-auto dark:text-slate-100") { from_cent_based_to_float(category.cash_transactions_total, "R$") }
+              span(class: "text-sm font-semibold text-slate-800 mr-auto dark:text-slate-100") { from_cent_based_to_float(display_cash_transactions_total, "R$") }
             end
           end
         end
 
-        div(class: "mt-4 flex justify-end gap-2 border-t border-slate-200 pt-3 dark:border-slate-700") do
+        div(class: "mt-4 flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-3 dark:border-slate-700") do
+          if !category.built_in? && !category.subcategory?
+            Button(
+              link: new_category_path(parent_category_id: category.id, return_to:),
+              variant: :outline,
+              class: "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-slate-800",
+              data: { turbo_frame: "_top", turbo_prefetch: false }
+            ) do
+              span(class: "inline-flex items-center gap-2") do
+                cached_icon(:plus)
+                plain I18n.t("categories.actions.add_subcategory")
+              end
+            end
+          end
+
           Button(
             link: search_card_transactions_path(card_transaction: { category_id: category.id }, all_month_years: true),
             variant: :outline,
@@ -203,6 +248,36 @@ class Views::Categories::Category < Views::Base
         div(class: "mt-3 flex justify-end") { merge_trigger(mobile: true) } if merge_source?
       end
     end
+  end
+
+  def add_subcategory_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-emerald-300 bg-emerald-50 text-emerald-700 " \
+      "shadow-sm transition hover:border-emerald-600 hover:bg-emerald-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
+      "dark:text-emerald-300 dark:hover:border-emerald-500 dark:hover:bg-slate-800 [&_svg]:size-4"
+  end
+
+  def row_background_class
+    if category.subcategory?
+      "bg-slate-50/80 dark:bg-slate-950/40"
+    else
+      cycle("bg-gray-100", "bg-gray-200")
+    end
+  end
+
+  def display_card_transactions_count
+    category.parent? ? category.rollup_card_transactions_count : category.card_transactions_count
+  end
+
+  def display_card_transactions_total
+    category.parent? ? category.rollup_card_transactions_total : category.card_transactions_total
+  end
+
+  def display_cash_transactions_count
+    category.parent? ? category.rollup_cash_transactions_count : category.cash_transactions_count
+  end
+
+  def display_cash_transactions_total
+    category.parent? ? category.rollup_cash_transactions_total : category.cash_transactions_total
   end
 
   def merge_trigger(mobile: false)

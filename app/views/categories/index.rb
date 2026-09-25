@@ -69,8 +69,8 @@ class Views::Categories::Index < Views::Base
                 ]
               )
 
-              if categories.present?
-                categories.each do |record|
+              if hierarchical_categories.present?
+                hierarchical_categories.each do |record|
                   render Views::Categories::Category.new(category: record, mobile: false, return_to: index_context[:return_to])
                 end
               else
@@ -93,8 +93,8 @@ class Views::Categories::Index < Views::Base
             end
 
             div(class: "mb-8", data: { datatable_target: "table" }) do
-              if categories.present?
-                categories.each do |record|
+              if hierarchical_categories.present?
+                hierarchical_categories.each do |record|
                   render Views::Categories::Category.new(category: record, mobile: true, return_to: index_context[:return_to])
                 end
               else
@@ -111,6 +111,26 @@ class Views::Categories::Index < Views::Base
           ) { cached_icon(:bigger_plus) }
         end
       end
+    end
+  end
+
+  def hierarchical_categories
+    @hierarchical_categories ||= begin
+      top_level = categories.select { |c| c.parent_category_id.nil? }
+      subcategories_by_parent = categories.reject { |c| c.parent_category_id.nil? }.group_by(&:parent_category_id)
+
+      result = []
+      top_level.each do |parent|
+        result << parent
+        children = subcategories_by_parent.delete(parent.id) || []
+        result.concat(children.sort_by { |c| c.category_name.downcase })
+      end
+
+      subcategories_by_parent.each_value do |orphans|
+        result.concat(orphans.sort_by { |c| c.category_name.downcase })
+      end
+
+      result
     end
   end
 end

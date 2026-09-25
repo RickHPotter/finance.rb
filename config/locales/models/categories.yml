@@ -28,6 +28,9 @@ en:
     form:
       none_parent: "None (Standalone / Top-Level Category)"
       has_subcategories_hint: "This category has subcategories and cannot have a parent category."
+    actions:
+      add_subcategory: "Add Subcategory"
+    subcategories_label: "subcategories"
   activerecord:
     models:
       category:
@@ -109,6 +112,9 @@ pt-BR:
     form:
       none_parent: "Nenhuma (Categoria Principal)"
       has_subcategories_hint: "Esta categoria possui subcategorias e não pode ter uma categoria pai."
+    actions:
+      add_subcategory: "Adicionar Subcategoria"
+    subcategories_label: "subcategorias"
   activerecord:
     models:
       category:

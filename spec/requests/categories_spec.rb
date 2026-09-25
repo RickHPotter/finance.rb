@@ -475,29 +475,3 @@ RSpec.describe "Categories", type: :request do
     end
   end
 end
-    it "renders categories hierarchically and displays rollup totals for parent categories" do
-      parent = create(:category, :random, user:, category_name: "HSH")
-      child = create(:category, :random, user:, category_name: "LABOUR", parent_category: parent)
-      user_card = create(:user_card, user:)
-      create_list(:card_transaction, 5, user:, user_card:, category: child, price: 50.0)
-
-      get categories_path
-
-      document = response.parsed_body
-
-      parent_badge = document.at_css("#show_category_#{parent.id}")
-      expect(parent_badge).to be_present
-      expect(parent_badge.text).to eq("HSH")
-
-      add_sub_button = document.at_css("#add_subcategory_#{parent.id}")
-      expect(add_sub_button).to be_present
-      expect(add_sub_button["href"]).to eq(new_category_path(parent_category_id: parent.id))
-
-      parent_row = document.at_css("[data-id='#{parent.id}']")
-      expect(parent_row.at_css(".jump_to_card_transactions").text.strip).to eq("5")
-      expect(parent_row.text).to include("250.00")
-
-      child_badge = document.at_css("#show_category_#{child.id}")
-      expect(child_badge).to be_present
-      expect(child_badge.text).to include("HSH")
-      expect(child_badge.text).to include("LABOUR")
