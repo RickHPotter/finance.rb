@@ -2,7 +2,7 @@
 
 module Logic
   class CardInstallments
-    def self.find_ref_month_year_by_params(financial_scope, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
+    def self.find_ref_month_year_by_params(financial_scope, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
       card_transaction_params = card_transaction_params.to_h.deep_dup.with_indifferent_access
       search_params = search_params.to_h.deep_dup.with_indifferent_access
 
@@ -12,6 +12,7 @@ module Logic
       search_term  = search_params.delete(:search_term) || ""
       attach_to_subscription_id = search_params.delete(:attach_to_subscription_id)
       category_ids = card_transaction_params.delete(:category_id).presence
+      category_ids = Category.subtree_ids_for(category_ids) if category_ids.present?
       entity_ids   = card_transaction_params.delete(:entity_id).presence
       sort, direction = IndexState::CardTransactions.resolve_sort(
         sort: search_params.delete(:sort),

@@ -24,6 +24,13 @@ module IndexState
       compact_array(value).map(&:to_i)
     end
 
+    def expanded_category_ids(value)
+      ids = compact_array(value)
+      return [] if ids.blank?
+
+      current_user.categories.subtree_ids_for(ids)
+    end
+
     def values_from(source, *keys)
       keys.index_with { |key| source[key] }
     end

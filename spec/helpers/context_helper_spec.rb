@@ -40,5 +40,19 @@ RSpec.describe ContextHelper do
 
       expect(option).to eq([ "Travel card", user_card.id, { alias: "visa" } ])
     end
+
+    it "formats category options hierarchically with parent alias tokens for subcategories" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+      child = create(:category, :random, user:, category_name: "LABOUR", parent_category: parent)
+
+      helper_host.set_categories
+      categories = helper_host.instance_variable_get(:@categories)
+
+      parent_option = categories.find { |(_label, id, _data)| id == parent.id }
+      child_option = categories.find { |(_label, id, _data)| id == child.id }
+
+      expect(parent_option).to eq([ "HSH", parent.id, { alias: "hsh" } ])
+      expect(child_option).to eq([ "HSH / LABOUR", child.id, { alias: "hsh | labour | hsh labour" } ])
+    end
   end
 end

@@ -5389,6 +5389,68 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).not_to include("Unrelated cash source", "Unrelated exact drill-down budget")
     end
 
+    it "filters transactions hierarchically, including all subcategories when filtering by parent category" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+      child = create(:category, :random, user:, category_name: "LABOUR", parent_category: parent)
+      other = create(:category, :random, user:, category_name: "LEISURE")
+
+      create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Parent Cash Transaction",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        category_transactions: [ CategoryTransaction.new(category: parent) ]
+      )
+      create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Child Cash Transaction",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        category_transactions: [ CategoryTransaction.new(category: child) ]
+      )
+      create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Other Cash Transaction",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        category_transactions: [ CategoryTransaction.new(category: other) ]
+      )
+
+      month_year = Time.zone.today.strftime("%Y%m")
+
+      get month_year_cash_transactions_path, params: {
+        month_year:,
+        cash_transaction: { user_bank_account_id: user_bank_account.id, category_id: parent.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Parent Cash Transaction")
+      expect(response.body).to include("Child Cash Transaction")
+      expect(response.body).not_to include("Other Cash Transaction")
+
+      get month_year_cash_transactions_path, params: {
+        month_year:,
+        cash_transaction: { user_bank_account_id: user_bank_account.id, category_id: child.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include("Parent Cash Transaction")
+      expect(response.body).to include("Child Cash Transaction")
+      expect(response.body).not_to include("Other Cash Transaction")
+    end
+
     it "responds successfully for an existing month_year" do
       post cash_transactions_path, params: cash_transaction.params, headers: turbo_stream_headers
       month_year = Time.zone.today.strftime("%Y%m")

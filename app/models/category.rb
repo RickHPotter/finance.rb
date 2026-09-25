@@ -50,6 +50,13 @@ class Category < ApplicationRecord
   enum :text_colour_mode, { automatic: "automatic", manual: "manual" }, default: :automatic, prefix: :text_colour, validate: true
 
   # @class_methods ............................................................
+
+  def self.subtree_ids_for(category_ids)
+    return [] if category_ids.blank?
+
+    where(id: category_ids).includes(:subcategories).flat_map(&:subtree_ids).uniq
+  end
+
   # @public_instance_methods ..................................................
 
   # @return [Boolean].
@@ -85,7 +92,7 @@ class Category < ApplicationRecord
   end
 
   def parent?
-    subcategories.any?
+    subcategories.loaded? ? subcategories.any? : subcategories.exists?
   end
 
   def subcategory?
@@ -97,23 +104,23 @@ class Category < ApplicationRecord
   end
 
   def subtree_ids
-    [ id ] + subcategory_ids
+    [ id ] + (subcategories.loaded? ? subcategories.map(&:id) : subcategory_ids)
   end
 
   def rollup_card_transactions_count
-    card_transactions_count + subcategories.sum(:card_transactions_count)
+    card_transactions_count + (subcategories.loaded? ? subcategories.sum(&:card_transactions_count) : subcategories.sum(:card_transactions_count))
   end
 
   def rollup_card_transactions_total
-    card_transactions_total + subcategories.sum(:card_transactions_total)
+    card_transactions_total + (subcategories.loaded? ? subcategories.sum(&:card_transactions_total) : subcategories.sum(:card_transactions_total))
   end
 
   def rollup_cash_transactions_count
-    cash_transactions_count + subcategories.sum(:cash_transactions_count)
+    cash_transactions_count + (subcategories.loaded? ? subcategories.sum(&:cash_transactions_count) : subcategories.sum(:cash_transactions_count))
   end
 
   def rollup_cash_transactions_total
-    cash_transactions_total + subcategories.sum(:cash_transactions_total)
+    cash_transactions_total + (subcategories.loaded? ? subcategories.sum(&:cash_transactions_total) : subcategories.sum(:cash_transactions_total))
   end
 
   # @protected_instance_methods ...............................................

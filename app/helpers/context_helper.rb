@@ -26,7 +26,7 @@ module ContextHelper
   end
 
   def set_categories
-    @categories = current_user.custom_categories.active.order(:category_name).map { |category| [ category.name, category.id ] }
+    @categories = format_category_options(current_user.custom_categories.active)
   end
 
   def set_entities
@@ -36,7 +36,7 @@ module ContextHelper
   end
 
   def set_all_categories
-    @categories = current_user.categories.active.order(:category_name).map { |category| [ category.name, category.id ] }
+    @categories = format_category_options(current_user.categories.active)
   end
 
   def set_investment_types
@@ -58,5 +58,38 @@ module ContextHelper
           .gsub(/\s+/, " ")
           .strip
     end.uniq.join(" | ")
+  end
+
+  def format_category_options(scope)
+    order_categories_hierarchically(scope.includes(:parent_category, :subcategories).to_a).map do |category|
+      format_category_combobox_option(category)
+    end
+  end
+
+  def order_categories_hierarchically(categories)
+    top_level = categories.select { |c| c.parent_category_id.nil? }
+    subcategories_by_parent = categories.reject { |c| c.parent_category_id.nil? }.group_by(&:parent_category_id)
+
+    ordered = []
+    top_level.sort_by { |c| c.name.downcase }.each do |parent|
+      ordered << parent
+      children = subcategories_by_parent.delete(parent.id) || []
+      ordered.concat(children.sort_by { |c| c.name.downcase })
+    end
+    subcategories_by_parent.each_value do |orphans|
+      ordered.concat(orphans.sort_by { |c| c.name.downcase })
+    end
+    ordered
+  end
+
+  def format_category_combobox_option(category)
+    if category.subcategory?
+      parent_name = category.parent_category.name
+      label = "#{parent_name} / #{category.name}"
+      alias_str = combobox_alias(parent_name, category.name, "#{parent_name} #{category.name}")
+      [ label, category.id, { alias: alias_str } ]
+    else
+      [ category.name, category.id, { alias: combobox_alias(category.name) } ]
+    end
   end
 end
