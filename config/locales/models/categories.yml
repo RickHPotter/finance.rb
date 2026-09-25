@@ -25,6 +25,9 @@ en:
       focus: Focus
       selected: Selected
       disabled: Disabled
+    form:
+      none_parent: "None (Standalone / Top-Level Category)"
+      has_subcategories_hint: "This category has subcategories and cannot have a parent category."
   activerecord:
     models:
       category:
@@ -103,6 +106,9 @@ pt-BR:
       focus: Foco
       selected: Selecionada
       disabled: Desativada
+    form:
+      none_parent: "Nenhuma (Categoria Principal)"
+      has_subcategories_hint: "Esta categoria possui subcategorias e não pode ter uma categoria pai."
   activerecord:
     models:
       category:

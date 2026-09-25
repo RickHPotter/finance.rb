@@ -40,6 +40,37 @@ RSpec.describe "Categories", type: :request do
       expect(badge["style"]).to include("background-color: #4b5563", "color: #ffffff")
       expect(badge["class"]).not_to include("hover:opacity")
     end
+
+    it "renders categories grouped hierarchically with compound badges and subcategory action buttons" do
+      parent = create(:category, :random, user:, category_name: "HSH", colour: "#112233", card_transactions_count: 2, card_transactions_total: 10_000)
+      child = create(:category, :random, user:, category_name: "LABOUR", colour: "#445566", parent_category: parent, card_transactions_count: 3,
+                                         card_transactions_total: 15_000)
+
+      get categories_path
+
+      expect(response).to have_http_status(:success)
+      document = response.parsed_body
+
+      parent_badge = document.at_css("#show_category_#{parent.id}")
+      expect(parent_badge).to be_present
+      expect(parent_badge.text).to eq("HSH")
+
+      add_sub_button = document.at_css("#add_subcategory_#{parent.id}")
+      expect(add_sub_button).to be_present
+      expect(add_sub_button["href"]).to eq(new_category_path(parent_category_id: parent.id))
+
+      parent_row = document.at_css("[data-id='#{parent.id}']")
+      expect(parent_row.at_css(".jump_to_card_transactions").text.strip).to eq("5")
+      expect(parent_row.text).to include("250.00")
+
+      child_badge = document.at_css("#show_category_#{child.id}")
+      expect(child_badge).to be_present
+      expect(child_badge.text).to include("HSH")
+      expect(child_badge.text).to include("LABOUR")
+      expect(child_badge.at_css("[data-category-child-badge='true']")).to be_present
+
+      expect(document.at_css("#add_subcategory_#{child.id}")).to be_nil
+    end
   end
 
   describe "[ #show ]" do
@@ -168,6 +199,33 @@ RSpec.describe "Categories", type: :request do
         "normal", "normal", "normal", "hover", "focus", "selected", "disabled"
       )
     end
+
+    it "renders the parent category selector with eligible top-level categories" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+      child = create(:category, :random, user:, category_name: "LABOUR", parent_category: parent)
+
+      get new_category_path
+
+      document = response.parsed_body
+      selector = document.at_css("#category_parent_category_id")
+
+      expect(selector).to be_present
+      options = selector.css("option").map(&:text)
+      expect(options).to include(parent.name)
+      expect(options).not_to include(child.name)
+    end
+
+    it "pre-selects parent category when parent_category_id param is provided" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+
+      get new_category_path(parent_category_id: parent.id)
+
+      document = response.parsed_body
+      selected_option = document.at_css("#category_parent_category_id option[selected]")
+
+      expect(selected_option).to be_present
+      expect(selected_option["value"]).to eq(parent.id.to_s)
+    end
   end
 
   describe "[ #edit ]" do
@@ -184,6 +242,19 @@ RSpec.describe "Categories", type: :request do
       expect(form.at_css("[data-category-colour-preview-target='manualFields'][aria-hidden='false']")).to be_present
       expect(form.at_css("input[name='category[text_colour]']")["value"]).to eq("#ffffff")
       expect(form.at_css("[data-category-colour-preview-target='ratio']").text).to eq("21.00:1")
+    end
+
+    it "disables the parent selector and renders an informative note when category has subcategories" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+      create(:category, :random, user:, category_name: "LABOUR", parent_category: parent)
+
+      get edit_category_path(parent)
+
+      document = response.parsed_body
+      selector = document.at_css("#category_parent_category_id[disabled]")
+
+      expect(selector).to be_present
+      expect(response.body).to include(I18n.t("categories.form.has_subcategories_hint"))
     end
   end
 
@@ -256,6 +327,69 @@ RSpec.describe "Categories", type: :request do
       expect(rendered_form.at_css("input[name='category[colour]']")["value"]).to eq("#abcd")
       expect(rendered_form.css("[style]").pluck("style")).not_to include(a_string_including("#abcd"))
     end
+
+    it "creates a subcategory assigned to a parent category" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+
+      expect do
+        post categories_path, params: {
+          category: {
+            category_name: "Labour",
+            colour: "#123456",
+            text_colour_mode: "automatic",
+            active: true,
+            user_id: user.id,
+            parent_category_id: parent.id
+          }
+        }, headers: turbo_stream_headers
+      end.to change(Category, :count).by(1)
+
+      child = user.categories.find_by!(category_name: "Labour")
+      expect(child.parent_category).to eq(parent)
+      expect(child.parent_category_id).to eq(parent.id)
+    end
+
+    it "allows subcategories with the same name under different parents" do
+      parent1 = create(:category, :random, user:, category_name: "HSH")
+      parent2 = create(:category, :random, user:, category_name: "Assets")
+      create(:category, :random, user:, category_name: "Supplies", parent_category: parent1)
+
+      expect do
+        post categories_path, params: {
+          category: {
+            category_name: "Supplies",
+            colour: "#654321",
+            text_colour_mode: "automatic",
+            active: true,
+            user_id: user.id,
+            parent_category_id: parent2.id
+          }
+        }, headers: turbo_stream_headers
+      end.to change(Category, :count).by(1)
+
+      child2 = user.categories.find_by!(category_name: "Supplies", parent_category_id: parent2.id)
+      expect(child2.parent_category).to eq(parent2)
+    end
+
+    it "rejects duplicate subcategory name under the same parent" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+      create(:category, :random, user:, category_name: "Labour", parent_category: parent)
+
+      expect do
+        post categories_path, params: {
+          category: {
+            category_name: "Labour",
+            colour: "#123456",
+            text_colour_mode: "automatic",
+            active: true,
+            user_id: user.id,
+            parent_category_id: parent.id
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(Category, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
   end
 
   describe "[ #update ]" do
@@ -278,6 +412,38 @@ RSpec.describe "Categories", type: :request do
       expect(category.text_colour_mode).to eq("automatic")
       expect(category.text_colour).to be_nil
     end
+
+    it "updates the parent category of a subcategory or clears it" do
+      parent1 = create(:category, :random, user:, category_name: "HSH")
+      parent2 = create(:category, :random, user:, category_name: "Assets")
+      child = create(:category, :random, user:, category_name: "Tools", parent_category: parent1)
+
+      patch category_path(child), params: {
+        category: {
+          category_name: child.category_name,
+          colour: child.colour,
+          text_colour_mode: "automatic",
+          active: child.active,
+          user_id: user.id,
+          parent_category_id: parent2.id
+        }
+      }, headers: turbo_stream_headers
+
+      expect(child.reload.parent_category).to eq(parent2)
+
+      patch category_path(child), params: {
+        category: {
+          category_name: child.category_name,
+          colour: child.colour,
+          text_colour_mode: "automatic",
+          active: child.active,
+          user_id: user.id,
+          parent_category_id: ""
+        }
+      }, headers: turbo_stream_headers
+
+      expect(child.reload.parent_category).to be_nil
+    end
   end
 
   describe "[ #destroy ]" do
@@ -288,6 +454,18 @@ RSpec.describe "Categories", type: :request do
         delete category_path(category), headers: turbo_stream_headers
       end.to change(Category, :count).by(-1)
     end
+
+    it "prevents destroying a parent category that has subcategories" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+      create(:category, :random, user:, category_name: "Labour", parent_category: parent)
+
+      expect do
+        delete category_path(parent), headers: turbo_stream_headers
+      end.not_to change(Category, :count)
+
+      expect(response).to redirect_to(categories_path)
+      expect(flash[:alert]).to eq(I18n.t("notification.not_destroyed_because_has_subcategoriesa", model: Category.model_name.human))
+    end
   end
 
   def pie_payloads(body)
@@ -297,3 +475,29 @@ RSpec.describe "Categories", type: :request do
     end
   end
 end
+    it "renders categories hierarchically and displays rollup totals for parent categories" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+      child = create(:category, :random, user:, category_name: "LABOUR", parent_category: parent)
+      user_card = create(:user_card, user:)
+      create_list(:card_transaction, 5, user:, user_card:, category: child, price: 50.0)
+
+      get categories_path
+
+      document = response.parsed_body
+
+      parent_badge = document.at_css("#show_category_#{parent.id}")
+      expect(parent_badge).to be_present
+      expect(parent_badge.text).to eq("HSH")
+
+      add_sub_button = document.at_css("#add_subcategory_#{parent.id}")
+      expect(add_sub_button).to be_present
+      expect(add_sub_button["href"]).to eq(new_category_path(parent_category_id: parent.id))
+
+      parent_row = document.at_css("[data-id='#{parent.id}']")
+      expect(parent_row.at_css(".jump_to_card_transactions").text.strip).to eq("5")
+      expect(parent_row.text).to include("250.00")
+
+      child_badge = document.at_css("#show_category_#{child.id}")
+      expect(child_badge).to be_present
+      expect(child_badge.text).to include("HSH")
+      expect(child_badge.text).to include("LABOUR")

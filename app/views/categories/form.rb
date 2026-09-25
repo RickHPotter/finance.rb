@@ -56,6 +56,31 @@ class Views::Categories::Form < Views::Base
           )
         end
 
+        div(class: "w-full mb-6") do
+          bold_label(form, :parent_category_id, "category_parent_category_id")
+
+          div(class: "mt-1") do
+            if category.parent?
+              form.select(
+                :parent_category_id,
+                [],
+                { include_blank: I18n.t("categories.form.none_parent") },
+                { id: "category_parent_category_id", class: "#{input_class_without_icon} px-3 py-2 opacity-60 cursor-not-allowed", disabled: true }
+              )
+              p(class: "mt-1 text-xs text-amber-600 dark:text-amber-400 font-medium") do
+                plain I18n.t("categories.form.has_subcategories_hint")
+              end
+            else
+              form.select(
+                :parent_category_id,
+                parent_category_options,
+                { include_blank: I18n.t("categories.form.none_parent"), selected: category.parent_category_id },
+                { id: "category_parent_category_id", class: "#{input_class_without_icon} px-3 py-2" }
+              )
+            end
+          end
+        end
+
         CategoryColourAccessibilityFields(form:, category:)
 
         bold_label(form, :active)
@@ -94,5 +119,11 @@ class Views::Categories::Form < Views::Base
 
   def colour_translation(key)
     I18n.t("categories.colour_accessibility.#{key}")
+  end
+
+  def parent_category_options
+    scope = current_user.custom_categories.top_level.active.order(:category_name)
+    scope = scope.where.not(id: category.id) if category.persisted?
+    scope.map { |cat| [ cat.name, cat.id ] }
   end
 end

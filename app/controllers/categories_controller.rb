@@ -16,7 +16,7 @@ class CategoriesController < ApplicationController
   end
 
   def new
-    @category = current_user.categories.new
+    @category = current_user.categories.new(parent_category_id: params[:parent_category_id])
     set_return_to
     render_top_level Views::Categories::New.new(current_user:, category: @category, return_to: @return_to)
   end
@@ -120,7 +120,7 @@ class CategoriesController < ApplicationController
   def categories_scope
     build_index_context if @index_context.blank?
 
-    scope = current_user.categories
+    scope = current_user.categories.includes(:parent_category, :subcategories)
     scope = scope.where(active: status_values) if @index_context[:status].present?
 
     scope = Search::NormalizedText.apply(scope, @index_context[:search_term], "categories.category_name")
@@ -146,15 +146,16 @@ class CategoriesController < ApplicationController
   end
 
   def category_params
-    params.require(:category).permit(:category_name, :colour, :text_colour_mode, :text_colour, :active, :user_id)
+    params.require(:category).permit(:category_name, :colour, :text_colour_mode, :text_colour, :active, :user_id, :parent_category_id)
   end
 
   def destroyable_category?
-    !@category.built_in? && @category.card_transactions.empty? && @category.cash_transactions.empty? && @category.investments.empty?
+    !@category.built_in? && @category.subcategories.empty? && @category.card_transactions.empty? && @category.cash_transactions.empty? && @category.investments.empty?
   end
 
   def category_destroy_failure_notification
     return notification_model(:not_destroyeda, Category) if @category.built_in?
+    return notification_model(:not_destroyed_because_has_subcategoriesa, Category) if @category.subcategories.any?
 
     @category.errors.full_messages.to_sentence.presence || notification_model(:not_destroyed_because_has_transactionsa, Category)
   end
