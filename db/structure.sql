@@ -707,7 +707,9 @@ CREATE TABLE public.categories (
     updated_at timestamp(6) without time zone NOT NULL,
     text_colour_mode character varying DEFAULT 'automatic'::character varying NOT NULL,
     text_colour character varying,
+    parent_category_id bigint,
     CONSTRAINT categories_colour_hex_format CHECK (((colour)::text ~ '^#[0-9a-f]{6}$'::text)),
+    CONSTRAINT categories_no_self_parent CHECK (((parent_category_id IS NULL) OR (parent_category_id <> id))),
     CONSTRAINT categories_text_colour_hex_format CHECK (((text_colour IS NULL) OR ((text_colour)::text ~ '^#[0-9a-f]{6}$'::text))),
     CONSTRAINT categories_text_colour_mode_payload CHECK (((((text_colour_mode)::text = 'automatic'::text) AND (text_colour IS NULL)) OR (((text_colour_mode)::text = 'manual'::text) AND (text_colour IS NOT NULL)))),
     CONSTRAINT categories_text_colour_mode_values CHECK (((text_colour_mode)::text = ANY (ARRAY[('automatic'::character varying)::text, ('manual'::character varying)::text])))
@@ -2725,6 +2727,13 @@ CREATE INDEX index_cash_transactions_on_user_id ON public.cash_transactions USIN
 
 
 --
+-- Name: index_categories_on_parent_category_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_categories_on_parent_category_id ON public.categories USING btree (parent_category_id);
+
+
+--
 -- Name: index_categories_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2732,10 +2741,10 @@ CREATE INDEX index_categories_on_user_id ON public.categories USING btree (user_
 
 
 --
--- Name: index_category_name_on_composite_key; Type: INDEX; Schema: public; Owner: -
+-- Name: index_categories_on_user_id_parent_and_name; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_category_name_on_composite_key ON public.categories USING btree (user_id, category_name);
+CREATE UNIQUE INDEX index_categories_on_user_id_parent_and_name ON public.categories USING btree (user_id, parent_category_id, category_name) NULLS NOT DISTINCT;
 
 
 --
@@ -3810,6 +3819,14 @@ ALTER TABLE ONLY public.cash_transactions
 
 
 --
+-- Name: categories fk_rails_b7f1bb9825; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT fk_rails_b7f1bb9825 FOREIGN KEY (parent_category_id) REFERENCES public.categories(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: investments fk_rails_b8201a883b; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4016,6 +4033,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260925110000'),
 ('20260919142600'),
 ('20260919142000'),
 ('20260919130000'),

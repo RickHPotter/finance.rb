@@ -47,6 +47,8 @@ en:
         statuses:
           active: Active
           inactive: Inactive
+        parent_category_id: Parent Category
+        parent_category: Parent Category
         card_advance: Card Advance
         card_installment: Card Installment
         card_payment: Card Payment
@@ -64,6 +66,15 @@ en:
           attributes:
             text_colour:
               insufficient_contrast: "must have at least %{minimum} contrast against the background (measured %{ratio}; try %{suggestion})"
+            parent_category_id:
+              cannot_be_self: "cannot be its own parent category"
+              cannot_be_child_of_child: "cannot belong to a category that is already a subcategory"
+              cannot_have_parent_when_has_children: "cannot have a parent category because it already has subcategories"
+              must_belong_to_same_user: "must belong to the same user"
+              built_in_cannot_have_parent: "built-in categories cannot have a parent category"
+              built_in_cannot_be_parent: "built-in categories cannot be used as a parent category"
+            active:
+              cannot_be_active_when_parent_inactive: "cannot be active while its parent category is inactive"
 
 pt-BR:
   categories:
@@ -114,6 +125,8 @@ pt-BR:
         statuses:
           active: Ativa
           inactive: Inativa
+        parent_category_id: Categoria Pai
+        parent_category: Categoria Pai
         card_advance: Antecipação de Cartão
         card_installment: Parcelamento de Cartão
         card_payment: Pagamento de Cartão
@@ -131,3 +144,12 @@ pt-BR:
           attributes:
             text_colour:
               insufficient_contrast: "deve ter contraste mínimo de %{minimum} com o fundo (medido %{ratio}; tente %{suggestion})"
+            parent_category_id:
+              cannot_be_self: "não pode ser sua própria categoria pai"
+              cannot_be_child_of_child: "não pode pertencer a uma categoria que já é uma subcategoria"
+              cannot_have_parent_when_has_children: "não pode ter uma categoria pai porque já possui subcategorias"
+              must_belong_to_same_user: "deve pertencer ao mesmo usuário"
+              built_in_cannot_have_parent: "categorias do sistema não podem ter uma categoria pai"
+              built_in_cannot_be_parent: "categorias do sistema não podem ser usadas como categoria pai"
+            active:
+              cannot_be_active_when_parent_inactive: "não pode ser ativa enquanto a categoria pai estiver inativa"
