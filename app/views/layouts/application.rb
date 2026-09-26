@@ -127,7 +127,7 @@ class Views::Layouts::Application < Views::Base
     div(
       id: "desktop_context_info",
       class: "fixed top-4 left-4 z-40 hidden md:flex items-center gap-1.5 text-xs text-gray-400 " \
-             "bg-slate-900/80 backdrop-blur-xs px-3 py-1.5 rounded-full border border-slate-700/80 shadow-md"
+             "bg-slate-900/80 backdrop-blur-xs px-3 py-1.5 rounded-full border border-slate-700/80 shadow-md pointer-events-none"
     ) do
       span(class: "text-gray-500 uppercase text-2xs") { "#{Context.model_name.human}:" }
       span(class: "font-semibold text-slate-200") { current_context.name }

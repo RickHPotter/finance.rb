@@ -99,8 +99,11 @@ export default class extends Controller {
 
   syncNavigationState() {
     if (!this.validMonth(this.monthInputTarget.value)) return
+    if (!window.location.pathname.startsWith("/balances")) return
 
     const url = new URL(window.location.href)
+    if (url.searchParams.get("month") === this.monthInputTarget.value) return
+
     url.searchParams.set("month", this.monthInputTarget.value)
     window.history.replaceState(window.history.state, "", url)
   }
