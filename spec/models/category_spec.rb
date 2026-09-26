@@ -307,6 +307,12 @@ RSpec.describe Category, type: :model do
         expect(user.categories.parents).to contain_exactly(parent)
         expect(user.categories.where(built_in: false).leaves).to contain_exactly(child1, child2, standalone)
       end
+
+      it "returns hierarchical name using arrow separator for subcategories" do
+        expect(parent.hierarchical_name).to eq(parent.name)
+        expect(child1.hierarchical_name).to eq("#{parent.name} → #{child1.name}")
+        expect(child1.hierarchical_name(" / ")).to eq("#{parent.name} / #{child1.name}")
+      end
     end
   end
 end

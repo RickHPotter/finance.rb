@@ -136,6 +136,29 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include('data-reactive-form-preserve-installment-prices-value="true"')
     end
 
+    it "renders the hierarchical category name on edit for subcategories" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+      child = create(:category, :random, user:, category_name: "LAND & PROPERTY", parent_category: parent)
+      trans = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Card property expense",
+        price: 50_000,
+        category_transactions_attributes: [ { category_id: child.id } ],
+        card_installments_attributes: [ { number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, price: 50_000 } ]
+      )
+
+      get edit_card_transaction_path(trans)
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+      category_name_span = document.at_css("[data-nested-form-target='target'] .categories_category_name")
+      expect(category_name_span).to be_present
+      expect(category_name_span.text.strip).to eq("HSH → LAND & PROPERTY")
+    end
+
     it "renders card-bound exchange datetimes as read-only while keeping their canonical values enabled" do
       transaction = create(
         :card_transaction,
@@ -2198,6 +2221,13 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include("Parent Transaction")
       expect(response.body).to include("Child Transaction")
       expect(response.body).not_to include("Other Transaction")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      category_pill = document.at_css("[data-datatable-target='category'][data-id*='#{child.id}']")
+      expect(category_pill).to be_present
+      expect(category_pill.text).to include("HSH")
+      expect(category_pill.text).to include("→")
+      expect(category_pill.text).to include("LABOUR")
 
       get month_year_card_transactions_path(
         month_year:,

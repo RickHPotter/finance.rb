@@ -73,9 +73,10 @@ RSpec.describe Components::CategoryBadge, type: :component do
 
       expect(badge.name).to eq("span")
       expect(badge.text).to include("HSH")
+      expect(badge.text).to include("→")
       expect(badge.text).to include("LABOUR")
       expect(badge["style"]).to include("background-color: #000000")
-      expect(badge["aria-label"]).to eq("HSH - LABOUR")
+      expect(badge["aria-label"]).to eq("HSH → LABOUR")
 
       child_badge = badge.at_css("[data-category-child-badge='true']")
       expect(child_badge).to be_present
@@ -104,8 +105,8 @@ RSpec.describe Components::CategoryBadge, type: :component do
       swatch = document.at_css("span[data-category-colour]")
 
       expect(swatch["class"]).to include("size-5", "rounded-full")
-      expect(swatch["aria-label"]).to eq("HSH - LABOUR")
-      expect(swatch.at_css(".sr-only").text).to eq("HSH - LABOUR")
+      expect(swatch["aria-label"]).to eq("HSH → LABOUR")
+      expect(swatch.at_css(".sr-only").text).to eq("HSH → LABOUR")
     end
   end
 

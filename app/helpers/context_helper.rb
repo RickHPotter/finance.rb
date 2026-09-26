@@ -85,8 +85,8 @@ module ContextHelper
   def format_category_combobox_option(category)
     if category.subcategory?
       parent_name = category.parent_category.name
-      label = "#{parent_name} / #{category.name}"
-      alias_str = combobox_alias(parent_name, category.name, "#{parent_name} #{category.name}")
+      label = category.hierarchical_name
+      alias_str = combobox_alias(parent_name, category.name, "#{parent_name} #{category.name}", label)
       [ label, category.id, { alias: alias_str } ]
     else
       [ category.name, category.id, { alias: combobox_alias(category.name) } ]

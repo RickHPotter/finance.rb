@@ -56,7 +56,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
                                        .includes(
                                          :cash_installments,
                                          :categories,
-                                         category_transactions: :category,
+                                         category_transactions: { category: :parent_category },
                                          entity_transactions: %i[entity exchanges]
                                        )
                                        .find(params[:id])

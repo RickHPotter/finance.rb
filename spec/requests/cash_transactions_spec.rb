@@ -287,6 +287,28 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include('data-reactive-form-preserve-installment-prices-value="true"')
     end
 
+    it "renders the hierarchical category name on edit for subcategories" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+      child = create(:category, :random, user:, category_name: "LAND & PROPERTY", parent_category: parent)
+      trans = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Property expense",
+        price: 50_000,
+        category_transactions_attributes: [ { category_id: child.id } ]
+      )
+
+      get edit_cash_transaction_path(trans)
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+      category_name_span = document.at_css("[data-nested-form-target='target'] .categories_category_name")
+      expect(category_name_span).to be_present
+      expect(category_name_span.text.strip).to eq("HSH → LAND & PROPERTY")
+    end
+
     it "lists every grouped contribution on a Piggy Bank return edit form" do
       first_source = create_piggy_bank_source(description: "First reserve")
       grouped_return = first_source.piggy_bank.return_cash_transaction
@@ -5439,6 +5461,13 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include("Parent Cash Transaction")
       expect(response.body).to include("Child Cash Transaction")
       expect(response.body).not_to include("Other Cash Transaction")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      category_pill = document.at_css("[data-datatable-target='category'][data-id*='#{child.id}']")
+      expect(category_pill).to be_present
+      expect(category_pill.text).to include("HSH")
+      expect(category_pill.text).to include("→")
+      expect(category_pill.text).to include("LABOUR")
 
       get month_year_cash_transactions_path, params: {
         month_year:,

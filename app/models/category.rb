@@ -83,6 +83,12 @@ class Category < ApplicationRecord
     attributes["category_name"]
   end
 
+  def hierarchical_name(separator = " → ")
+    return "#{parent_category.name}#{separator}#{name}" if subcategory? && parent_category.present?
+
+    name
+  end
+
   def update_card_transactions_count_and_total
     update_columns(card_transactions_count: card_transactions.count, card_transactions_total: card_transactions.sum(:price))
   end

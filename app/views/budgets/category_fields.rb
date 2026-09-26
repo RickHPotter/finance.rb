@@ -19,7 +19,7 @@ class Views::Budgets::CategoryFields < Views::Base
             style: presentation.inline_style
           ) do
             span(class: "categories_category_name text-nowrap", data: { dynamic_description_target: :category }) do
-              budget_category&.category&.name
+              budget_category&.category&.hierarchical_name
             end
 
             button(

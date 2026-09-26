@@ -53,7 +53,7 @@ class Views::CardTransactions::FormControls < Views::Base
       div(id: "card_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
         render Views::Shared::SingleSelectCombobox.new(
           name: :category_transaction,
-          options: categories.map { |label, value| [ label, value, {} ] },
+          options: categories.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
           selected_value: nil,
           placeholder: model_attribute(card_transaction, :category_id),
           autofocus: autofocus_target == :category_transaction,

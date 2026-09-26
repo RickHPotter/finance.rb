@@ -52,7 +52,7 @@ RSpec.describe ContextHelper do
       child_option = categories.find { |(_label, id, _data)| id == child.id }
 
       expect(parent_option).to eq([ "HSH", parent.id, { alias: "hsh" } ])
-      expect(child_option).to eq([ "HSH / LABOUR", child.id, { alias: "hsh | labour | hsh labour" } ])
+      expect(child_option).to eq([ "HSH → LABOUR", child.id, { alias: "hsh | labour | hsh labour | hsh → labour" } ])
     end
   end
 end

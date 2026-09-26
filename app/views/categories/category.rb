@@ -142,7 +142,7 @@ class Views::Categories::Category < Views::Base
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             cached_icon :category
-            span(class: "text-sm text-slate-300 font-medium") { "#{category.parent_category.name} /" } if category.subcategory?
+            span(class: "text-sm text-slate-300 font-medium") { "#{category.parent_category.name} →" } if category.subcategory?
             link_to(category.name, category_path(category, return_to:), id: "show_category_#{category.id}",
                                                                         class: "text-lg font-semibold underline underline-offset-[3px]",
                                                                         data: { turbo_frame: "_top", turbo_prefetch: false })

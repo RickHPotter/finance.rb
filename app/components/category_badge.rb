@@ -98,7 +98,7 @@ module Components
 
     def accessible_label
       if category.respond_to?(:parent_category) && category.parent_category.present?
-        "#{category.parent_category.name} - #{label}"
+        "#{category.parent_category.name} → #{label}"
       else
         label
       end
@@ -108,7 +108,8 @@ module Components
       if variant == :swatch
         span(class: "sr-only") { accessible_label }
       elsif subcategory?
-        span(class: "font-bold tracking-tight text-xs mr-0.5") { category.parent_category.name }
+        span(class: "font-bold tracking-tight text-xs") { category.parent_category.name }
+        span(class: "opacity-75 text-xs font-medium") { "→" }
         span(
           class: "inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold border shadow-xs",
           style: child_state_style,

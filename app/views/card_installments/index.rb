@@ -358,7 +358,8 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   def card_category_popover_items(card_transaction)
     categories_for(card_transaction).map do |category|
       {
-        name: category.name,
+        name: category.hierarchical_name,
+        category:,
         style: CategoryColours::Presentation.for(category).inline_style
       }
     end

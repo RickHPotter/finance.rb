@@ -68,7 +68,16 @@ class Views::Categories::Popover < Views::Base
   end
 
   def render_pill(item, class:)
-    span(class:, style: item[:style], data: { category_colour: "true" }) { item[:name] }
+    if item[:category]&.subcategory? && item[:category].parent_category.present?
+      parent = item[:category].parent_category
+      span(class:, style: item[:style], data: { category_colour: "true" }) do
+        span(class: "font-semibold opacity-80") { parent.name }
+        span(class: "opacity-75 mx-1 font-medium") { "→" }
+        span(class: "font-bold") { item[:category].name }
+      end
+    else
+      span(class:, style: item[:style], data: { category_colour: "true" }) { item[:name] }
+    end
   end
 
   def mobile_container_class

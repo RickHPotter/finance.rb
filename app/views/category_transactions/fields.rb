@@ -27,7 +27,7 @@ module Views
                        "dark:rounded-md dark:shadow-sm dark:ring-1 dark:ring-slate-950/40",
                 style: presentation.inline_style
               ) do
-                span(class: "categories_category_name text-nowrap") { category_transaction&.category&.name }
+                span(class: "categories_category_name text-nowrap") { category_transaction&.category&.hierarchical_name }
 
                 unless transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
                   button(
