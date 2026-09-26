@@ -4,9 +4,9 @@ module Components
   class CategoryBadge < Base
     VARIANTS = %i[badge swatch].freeze
 
-    attr_reader :category, :compound, :href, :label, :presentation, :variant
+    attr_reader :category, :compound, :count, :href, :label, :presentation, :variant
 
-    def initialize(category:, href: nil, label: nil, variant: :badge, compound: true, selected: false, disabled: false, **attrs)
+    def initialize(category:, href: nil, label: nil, variant: :badge, compound: true, selected: false, disabled: false, count: nil, **attrs)
       raise ArgumentError, "invalid category badge variant" unless variant.in?(VARIANTS)
 
       @category = category
@@ -16,6 +16,7 @@ module Components
       @compound = compound
       @selected = selected
       @disabled = disabled
+      @count = count == false ? nil : (count || default_count)
       @presentation = CategoryColours::Presentation.for(category)
 
       attrs.delete(:style)
@@ -48,8 +49,6 @@ module Components
       ]
       classes << if variant == :swatch
                    "size-5 rounded-full p-0"
-                 elsif subcategory?
-                   "rounded-md pl-2 pr-1 py-0.5 text-xs gap-1.5"
                  else
                    "rounded-md px-2 py-1 text-sm"
                  end
@@ -63,33 +62,30 @@ module Components
       attrs[:data] = (attrs[:data] || {}).merge(
         category_colour: "true",
         category_id: category.id,
-        contrast_ratio: active_presentation.ratio_label,
+        contrast_ratio: presentation.ratio_label,
         selected: selected?.to_s
       )
       attrs[:aria] = (attrs[:aria] || {}).merge(label: accessible_label, disabled: disabled?.to_s)
       attrs[:aria][:current] = "true" if selected? && href.present?
     end
 
+    def default_count
+      return category.subcategories.size if category.respond_to?(:parent?) && category.parent?
+
+      nil
+    rescue StandardError
+      nil
+    end
+
+    def count_bubble?
+      variant == :badge && @count.present? && @count.positive?
+    end
+
     def subcategory?
       compound && variant == :badge && category.respond_to?(:parent_category) && category.parent_category.present?
     end
 
-    def parent_presentation
-      @parent_presentation ||= CategoryColours::Presentation.for(category.parent_category)
-    end
-
-    def active_presentation
-      subcategory? ? parent_presentation : presentation
-    end
-
     def state_style
-      return active_presentation.disabled_style if disabled?
-      return active_presentation.selected_style if selected?
-
-      active_presentation.inline_style
-    end
-
-    def child_state_style
       return presentation.disabled_style if disabled?
       return presentation.selected_style if selected?
 
@@ -97,27 +93,38 @@ module Components
     end
 
     def accessible_label
-      if category.respond_to?(:parent_category) && category.parent_category.present?
-        "#{category.parent_category.name} → #{label}"
-      else
-        label
-      end
+      base =
+        if category.respond_to?(:parent_category) && category.parent_category.present?
+          "#{category.parent_category.name} → #{label}"
+        else
+          label
+        end
+
+      return "#{base} (#{@count})" if count_bubble?
+
+      base
     end
 
     def badge_content
       if variant == :swatch
         span(class: "sr-only") { accessible_label }
       elsif subcategory?
-        span(class: "font-bold tracking-tight text-xs") { category.parent_category.name }
-        span(class: "opacity-75 text-xs font-medium") { "→" }
-        span(
-          class: "inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold border shadow-xs",
-          style: child_state_style,
-          data: { category_child_badge: "true" }
-        ) { label }
+        span(class: "font-semibold opacity-75") { category.parent_category.name }
+        span(class: "opacity-75 mx-1 font-medium") { "→" }
+        span(class: "font-bold", data: { category_child_badge: "true" }) { label }
+        render_count_bubble if count_bubble?
       else
         plain label
+        render_count_bubble if count_bubble?
       end
+    end
+
+    def render_count_bubble
+      span(
+        class: "ml-1.5 inline-flex items-center justify-center rounded-full bg-current/15 px-1.5 py-0.5 text-[10px] font-bold leading-none",
+        title: "#{@count} #{I18n.t('categories.subcategories_label')}",
+        data: { category_subcategories_count: "true" }
+      ) { @count.to_s }
     end
 
     def selected?

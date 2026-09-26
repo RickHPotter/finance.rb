@@ -32,7 +32,7 @@ class Views::Categories::Category < Views::Base
              "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800",
       data: { id: category.id, datatable_target: :row }
     ) do
-      div(class: "col-span-2 px-3 py-3 flex items-center #{category.subcategory? ? 'pl-8' : 'mx-auto'} font-lekton font-semibold") do
+      div(class: "col-span-2 px-3 py-3 flex items-center justify-center mx-auto font-lekton font-semibold") do
         span(class: "text-slate-400 dark:text-slate-500 mr-2 font-mono text-sm select-none") { "↳" } if category.subcategory?
 
         CategoryBadge(
@@ -42,15 +42,6 @@ class Views::Categories::Category < Views::Base
           class: "whitespace-nowrap px-4 shadow-md",
           data: { turbo_frame: "_top", turbo_prefetch: false }
         )
-
-        if category.parent?
-          span(
-            class: "ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-300",
-            title: "#{category.subcategories.size} #{I18n.t('categories.subcategories_label')}"
-          ) do
-            plain category.subcategories.size.to_s
-          end
-        end
       end
 
       div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300") do
@@ -142,14 +133,18 @@ class Views::Categories::Category < Views::Base
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             cached_icon :category
-            span(class: "text-sm text-slate-300 font-medium") { "#{category.parent_category.name} →" } if category.subcategory?
+            if category.subcategory?
+              span(class: "text-sm font-semibold opacity-75") { category.parent_category.name }
+              span(class: "opacity-75 mx-1 font-medium") { "→" }
+            end
             link_to(category.name, category_path(category, return_to:), id: "show_category_#{category.id}",
                                                                         class: "text-lg font-semibold underline underline-offset-[3px]",
                                                                         data: { turbo_frame: "_top", turbo_prefetch: false })
             if category.parent?
               span(
-                class: "rounded-full bg-slate-200/80 px-2 py-0.5 text-xs font-semibold text-slate-800 dark:bg-slate-700 dark:text-slate-200",
-                title: "#{category.subcategories.size} #{I18n.t('categories.subcategories_label')}"
+                class: "inline-flex items-center justify-center rounded-full bg-current/15 px-2 py-0.5 text-xs font-bold leading-none",
+                title: "#{category.subcategories.size} #{I18n.t('categories.subcategories_label')}",
+                data: { category_subcategories_count: "true" }
               ) do
                 plain category.subcategories.size.to_s
               end

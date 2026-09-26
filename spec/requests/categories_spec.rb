@@ -67,7 +67,8 @@ RSpec.describe "Categories", type: :request do
 
       parent_badge = document.at_css("#show_category_#{parent.id}")
       expect(parent_badge).to be_present
-      expect(parent_badge.text).to eq("HSH")
+      expect(parent_badge.text).to include("HSH")
+      expect(parent_badge.at_css("[data-category-subcategories-count='true']").text).to eq("1")
 
       add_sub_button = document.at_css("#add_subcategory_#{parent.id}")
       expect(add_sub_button).to be_present

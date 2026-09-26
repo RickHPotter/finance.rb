@@ -75,13 +75,12 @@ RSpec.describe Components::CategoryBadge, type: :component do
       expect(badge.text).to include("HSH")
       expect(badge.text).to include("→")
       expect(badge.text).to include("LABOUR")
-      expect(badge["style"]).to include("background-color: #000000")
+      expect(badge["style"]).to include("background-color: #ffffff")
       expect(badge["aria-label"]).to eq("HSH → LABOUR")
 
       child_badge = badge.at_css("[data-category-child-badge='true']")
       expect(child_badge).to be_present
       expect(child_badge.text).to eq("LABOUR")
-      expect(child_badge["style"]).to include("background-color: #ffffff")
     end
 
     it "renders a link compound badge when href is provided" do
@@ -107,6 +106,32 @@ RSpec.describe Components::CategoryBadge, type: :component do
       expect(swatch["class"]).to include("size-5", "rounded-full")
       expect(swatch["aria-label"]).to eq("HSH → LABOUR")
       expect(swatch.at_css(".sr-only").text).to eq("HSH → LABOUR")
+    end
+  end
+
+  context "when category is a parent category with subcategories" do
+    let(:user) { build_stubbed(:user) }
+    let(:parent) { build_stubbed(:category, id: 10, user:, category_name: "HSH", colour: "#000000") }
+    let(:child) { build_stubbed(:category, id: 42, user:, category_name: "LABOUR", parent_category: parent) }
+
+    before do
+      allow(parent).to receive(:parent?).and_return(true)
+      allow(parent).to receive(:subcategories).and_return([ child ])
+    end
+
+    it "renders the subcategories count bubble inside the badge" do
+      document = render_component(category: parent, id: "category_badge_10")
+      badge = document.at_css("#category_badge_10")
+
+      bubble = badge.at_css("[data-category-subcategories-count='true']")
+      expect(bubble).to be_present
+      expect(bubble.text).to eq("1")
+      expect(badge["aria-label"]).to eq("HSH (1)")
+    end
+
+    it "omits the bubble when count: false is passed" do
+      document = render_component(category: parent, count: false)
+      expect(document.at_css("[data-category-subcategories-count='true']")).to be_nil
     end
   end
 
