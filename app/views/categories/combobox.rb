@@ -30,7 +30,7 @@ class Views::Categories::Combobox < Views::Base
 
           categories.each do |category_name, id, option_data|
             item_alias = option_data&.fetch(:alias, nil)
-            ComboboxItem(class: combobox_item_class) do
+            ComboboxItem(class: combobox_item_class, **(item_alias ? { data: { alias: item_alias } } : {})) do
               ComboboxCheckbox(
                 name:,
                 value: id,

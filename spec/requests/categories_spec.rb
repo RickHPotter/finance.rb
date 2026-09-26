@@ -29,6 +29,20 @@ RSpec.describe "Categories", type: :request do
       expect(response.parsed_body.at_css("#show_category_#{category.id}")).to be_present
     end
 
+    it "considers parent category when searching, bringing children when searching for parent" do
+      parent = create(:category, user:, category_name: "HSH")
+      child = create(:category, user:, category_name: "LAND & PROPERTY", parent_category: parent)
+      unrelated = create(:category, user:, category_name: "GROCERIES")
+
+      get categories_path(search_term: "hsh")
+
+      expect(response).to have_http_status(:success)
+      document = response.parsed_body
+      expect(document.at_css("#show_category_#{parent.id}")).to be_present
+      expect(document.at_css("#show_category_#{child.id}")).to be_present
+      expect(document.at_css("#show_category_#{unrelated.id}")).to be_nil
+    end
+
     it "renders category links with the complete resolved pair" do
       category = create(:category, user:, category_name: "Dark category", colour: "#4b5563")
 

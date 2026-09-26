@@ -120,12 +120,17 @@ class CategoriesController < ApplicationController
   def categories_scope
     build_index_context if @index_context.blank?
 
-    scope = current_user.categories.includes(:parent_category, :subcategories)
+    scope = current_user.categories.includes(:parent_category, :subcategories).left_outer_joins(:parent_category)
     scope = scope.where(active: status_values) if @index_context[:status].present?
 
-    scope = Search::NormalizedText.apply(scope, @index_context[:search_term], "categories.category_name")
+    scope = Search::NormalizedText.apply(
+      scope,
+      @index_context[:search_term],
+      "categories.category_name",
+      "parent_categories_categories.category_name"
+    )
 
-    scope.order(active: :desc, category_name: :asc)
+    scope.distinct.order(active: :desc, category_name: :asc)
   end
 
   def status_values
