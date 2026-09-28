@@ -103,6 +103,42 @@ RSpec.describe "CardTransactions", type: :request do
       expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present
     end
 
+    it "renders the split purchase toggle and line items template" do
+      user_card_one
+
+      get new_card_transaction_path
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+
+      split_toggle = document.at_css('input[type="checkbox"][name="card_transaction[split_purchase]"]')
+      expect(split_toggle).to be_present
+      expect(split_toggle["data-composite-transaction-target"]).to eq("splitToggle")
+
+      template = document.at_css('template[data-composite-transaction-target="template"]')
+      expect(template).to be_present
+      expect(template.inner_html).to include("card_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
+    end
+
+    it "renders line items for a composite card transaction on edit" do
+      cat1 = create(:category, :random, user:)
+      cat2 = create(:category, :random, user:)
+      composite = create(:card_transaction, user:, price: -3_000, user_card: user_card_one)
+      create(:line_item, transactable: composite, description: "Card Item A", price: -1_000, category_id: cat1.id)
+      create(:line_item, transactable: composite, description: "Card Item B", price: -2_000, category_id: cat2.id)
+
+      get edit_card_transaction_path(composite)
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+
+      split_toggle = document.at_css('input[type="checkbox"][name="card_transaction[split_purchase]"]')
+      expect(split_toggle.key?("checked")).to be(true)
+
+      item_descriptions = document.css('input[name*="[description]"]').map { |i| i["value"] }
+      expect(item_descriptions).to include("Card Item A", "Card Item B")
+    end
+
     it "renders the card-specific form skeleton on edit" do
       user_card_one
       existing_card_transaction = create(

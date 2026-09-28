@@ -23,6 +23,7 @@ class Views::CardTransactions::Form < Views::Base
     set_cards
     set_user_cards
     set_categories
+    set_leaf_categories
     set_entities
 
     @user_cards << card_transaction.user_card.slice(:user_card_name, :id).values if card_transaction.user_card.inactive?
@@ -48,7 +49,8 @@ class Views::CardTransactions::Form < Views::Base
         id: :transaction_form,
         class: "contents text-slate-100",
         data: {
-          controller: "reactive-form price-mask",
+          controller: "reactive-form price-mask composite-transaction",
+          composite_transaction_composite_value: card_transaction.composite?,
           reactive_form_preserve_installment_prices_value: card_transaction.persisted?,
           action: "submit->price-mask#removeMasks",
           operation_type: card_transaction.operation_type
@@ -79,8 +81,17 @@ class Views::CardTransactions::Form < Views::Base
           autofocus_target:,
           user_card_date:
         )
+        render Views::Transactions::FormLineItemsSection.new(
+          form:,
+          transaction: card_transaction,
+          categories: @leaf_categories,
+          entities: @entities
+        )
         render Views::CardTransactions::FormInstallmentsSection.new(form:, card_transaction:)
-        div(class: "mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-0") do
+        div(
+          class: "mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-0 #{'hidden' if card_transaction.composite?}",
+          data: { composite_transaction_target: "allocationsContainer" }
+        ) do
           render Views::Transactions::FormCategoriesSection.new(form:, transaction: card_transaction)
           render Views::Transactions::FormEntitiesSection.new(form:, transaction: card_transaction)
         end

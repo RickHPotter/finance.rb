@@ -42,7 +42,10 @@ class Views::CashTransactions::FormControls < Views::Base
   end
 
   def category_and_entity_fields
-    div(class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0") do
+    div(
+      class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0 #{'hidden' if cash_transaction.composite?}",
+      data: { composite_transaction_target: "headerAllocations" }
+    ) do
       div(id: "cash_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
         render Views::Shared::SingleSelectCombobox.new(
           name: :category_transaction,
@@ -100,7 +103,7 @@ class Views::CashTransactions::FormControls < Views::Base
         tabindex: -1,
         title: action_message(:toggle_sign),
         disabled: cash_transaction.card_payment?,
-        data: { action: "click->price-mask#toggleSign", target: ".sign-based" }
+        data: { action: "click->price-mask#toggleSign click->composite-transaction#recalculate", target: ".sign-based" }
       ) { sign }
 
       div(class: "w-7/12 lg:w-7/12") do
@@ -114,9 +117,10 @@ class Views::CashTransactions::FormControls < Views::Base
           disabled: cash_transaction.card_payment?,
           data: { price_mask_target: :input,
                   controller: "input-select",
+                  composite_transaction_target: :parentPrice,
                   reactive_form_target: :priceInput,
-                  action: "click->input-select#select input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices " \
-                          "input->reactive-form#syncPiggyBankDefault",
+                  action: "click->input-select#select input->price-mask#applyMask input->composite-transaction#recalculate " \
+                          "input->reactive-form#updateInstallmentsPrices input->reactive-form#syncPiggyBankDefault",
                   sign: }
       end
 

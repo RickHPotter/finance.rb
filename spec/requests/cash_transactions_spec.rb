@@ -93,6 +93,40 @@ RSpec.describe "CashTransactions", type: :request do
       expect(price_input["name"]).to eq("cash_transaction[cash_installments_attributes][0][price]")
     end
 
+    it "renders the split purchase toggle and line items template" do
+      get new_cash_transaction_path
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+
+      split_toggle = document.at_css('input[type="checkbox"][name="cash_transaction[split_purchase]"]')
+      expect(split_toggle).to be_present
+      expect(split_toggle["data-composite-transaction-target"]).to eq("splitToggle")
+
+      template = document.at_css('template[data-composite-transaction-target="template"]')
+      expect(template).to be_present
+      expect(template.inner_html).to include("cash_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
+    end
+
+    it "renders line items for a composite transaction on edit" do
+      cat1 = create(:category, :random, user:)
+      cat2 = create(:category, :random, user:)
+      composite = create(:cash_transaction, user:, price: 3_000, user_bank_account:)
+      create(:line_item, transactable: composite, description: "Item A", price: 1_000, category_id: cat1.id)
+      create(:line_item, transactable: composite, description: "Item B", price: 2_000, category_id: cat2.id)
+
+      get edit_cash_transaction_path(composite)
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+
+      split_toggle = document.at_css('input[type="checkbox"][name="cash_transaction[split_purchase]"]')
+      expect(split_toggle.key?("checked")).to be(true)
+
+      item_descriptions = document.css('input[name*="[description]"]').map { |i| i["value"] }
+      expect(item_descriptions).to include("Item A", "Item B")
+    end
+
     it "marks a Piggy Bank entity when its return differs from the source transaction" do
       source = create_piggy_bank_source(description: "Discounted reserve", price: 800, return_price: 500)
 

@@ -22,6 +22,7 @@ class Views::CashTransactions::Form < Views::Base
     set_banks
     set_user_bank_accounts
     set_categories
+    set_leaf_categories
     set_entities
   end
 
@@ -31,7 +32,8 @@ class Views::CashTransactions::Form < Views::Base
                 id: :transaction_form,
                 class: "contents text-slate-100",
                 data: {
-                  controller: "reactive-form price-mask",
+                  controller: "reactive-form price-mask composite-transaction",
+                  composite_transaction_composite_value: cash_transaction.composite?,
                   reactive_form_type_value: "CashTransaction",
                   reactive_form_preserve_installment_prices_value: cash_transaction.persisted?,
                   action: "submit->price-mask#removeMasks"
@@ -70,8 +72,17 @@ class Views::CashTransactions::Form < Views::Base
           categories: @categories,
           entities: @entities
         )
+        render Views::Transactions::FormLineItemsSection.new(
+          form:,
+          transaction: cash_transaction,
+          categories: @leaf_categories,
+          entities: @entities
+        )
         render Views::CashTransactions::FormInstallmentsSection.new(form:, cash_transaction:)
-        div(class: "mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-0") do
+        div(
+          class: "mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-0 #{'hidden' if cash_transaction.composite?}",
+          data: { composite_transaction_target: "allocationsContainer" }
+        ) do
           render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
           render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
         end

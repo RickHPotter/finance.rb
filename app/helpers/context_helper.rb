@@ -29,6 +29,14 @@ module ContextHelper
     @categories = format_category_options(current_user.custom_categories.active)
   end
 
+  def set_leaf_categories
+    scope = current_user.custom_categories.active.includes(:parent_category, :subcategories)
+    leafs = scope.select { |category| category.subcategories.empty? }
+    @leaf_categories = order_categories_hierarchically(leafs).map do |category|
+      format_category_combobox_option(category)
+    end
+  end
+
   def set_entities
     @entities = current_user.entities.active.includes(friendship: { user: :profile, friend: :profile }).order(:entity_name).map do |entity|
       [ entity.name, entity.id ]
