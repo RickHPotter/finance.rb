@@ -29,8 +29,10 @@ en:
               piggy_bank_return_system_managed: "Piggy Bank Return transactions are managed from their Piggy Bank source."
               piggy_bank_requires_one_entity: "A Piggy Bank transaction must have exactly one entity."
               piggy_bank_paid_history_locked: "A Piggy Bank with paid return history cannot be changed or deleted."
+              composite_requires_at_least_two_items: "A split purchase must have at least two line items."
             price:
               piggy_bank_source_negative: "must be negative for a Piggy Bank transaction"
+              line_items_sum_mismatch: "does not match line items total (difference: %{difference})"
     attributes:
       cash_transaction:
         self: Cash Transaction
@@ -108,8 +110,10 @@ pt-BR:
               piggy_bank_return_system_managed: "Retornos do Cofrinho são gerenciados a partir do Cofrinho de origem."
               piggy_bank_requires_one_entity: "Uma movimentação de Cofrinho deve ter exatamente uma entidade."
               piggy_bank_paid_history_locked: "Um Cofrinho com histórico de retorno pago não pode ser alterado ou apagado."
+              composite_requires_at_least_two_items: "Uma compra dividida deve ter pelo menos dois itens."
             price:
               piggy_bank_source_negative: "deve ser negativo para uma movimentação de Cofrinho"
+              line_items_sum_mismatch: "não corresponde ao total dos itens (diferença: %{difference})"
     attributes:
       cash_transaction:
         self: Movimentação

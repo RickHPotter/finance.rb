@@ -21,6 +21,7 @@ class Category < ApplicationRecord
   has_many :card_transactions, through: :category_transactions, source: :transactable, source_type: "CardTransaction"
   has_many :cash_transactions, through: :category_transactions, source: :transactable, source_type: "CashTransaction"
   has_many :investments, through: :category_transactions, source: :transactable, source_type: "Investment"
+  has_many :line_items, through: :category_transactions, source: :transactable, source_type: "LineItem"
 
   # @validations ..............................................................
   validates :category_name, presence: true, uniqueness: { scope: %i[user_id parent_category_id] }

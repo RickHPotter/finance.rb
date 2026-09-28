@@ -44,7 +44,9 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
            foreign_key: :piggy_bank_return_cash_transaction_id,
            inverse_of: :piggy_bank_return_cash_transaction,
            dependent: :restrict_with_error
+  has_many :line_items, as: :transactable, dependent: :destroy, inverse_of: :transactable
   accepts_nested_attributes_for :piggy_bank, allow_destroy: true
+  accepts_nested_attributes_for :line_items, allow_destroy: true
 
   # @validations ..............................................................
   validates :context, presence: true
@@ -54,8 +56,11 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   validate :friend_notification_intent_present_for_exchange_category
   validate :validate_piggy_bank_source_contract
   validate :prevent_paid_piggy_bank_rewrite, on: :update
+  validate :validate_composite_line_items_count
+  validate :validate_line_items_price_sum
 
   # @callbacks ................................................................
+  before_validation :clear_parent_allocations_if_composite
   before_validation :assign_default_context
   before_validation :remove_piggy_bank_without_source_category
   before_validation :derive_piggy_bank_entity_allocation
@@ -97,19 +102,36 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def self.duplicate(id)
-    existing_cash_transaction = includes(:piggy_bank, :cash_installments, :category_transactions, entity_transactions: %i[entity exchanges]).find(id)
+    existing_cash_transaction = includes(:piggy_bank, :cash_installments, :category_transactions, :line_items,
+                                         entity_transactions: %i[entity exchanges]).find(id)
 
     cash_transaction = existing_cash_transaction.dup
     cash_transaction.duplicate = true
     cash_transaction.cash_installments = duplicated_cash_installments_for(existing_cash_transaction)
     cash_transaction.category_transactions = existing_cash_transaction.category_transactions.map(&:dup)
     cash_transaction.entity_transactions = duplicated_entity_transactions_for(existing_cash_transaction)
+    if existing_cash_transaction.composite?
+      cash_transaction.line_items = existing_cash_transaction.line_items.map do |item|
+        duplicated_item = item.dup
+        duplicated_item.category_transactions = item.category_transactions.map(&:dup)
+        duplicated_item.entity_transactions = item.entity_transactions.map(&:dup)
+        duplicated_item
+      end
+    end
     if existing_cash_transaction.piggy_bank.present?
       cash_transaction.build_piggy_bank(existing_cash_transaction.piggy_bank.slice(:return_date, :return_price,
                                                                                    :iof_exempt_on))
     end
 
     cash_transaction
+  end
+
+  def composite?
+    active_line_items.any?
+  end
+
+  def active_line_items
+    line_items.reject(&:marked_for_destruction?)
   end
 
   def entity_bundle
@@ -744,6 +766,29 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     return if destroyed?
 
     Logic::RecalculateCountAndTotalService.new(cash_transaction: self).call
+  end
+
+  def clear_parent_allocations_if_composite
+    return unless composite?
+
+    category_transactions.each(&:mark_for_destruction)
+    entity_transactions.each(&:mark_for_destruction)
+  end
+
+  def validate_composite_line_items_count
+    return unless composite?
+
+    errors.add(:base, :composite_requires_at_least_two_items) if active_line_items.size < 2
+  end
+
+  def validate_line_items_price_sum
+    return unless composite?
+
+    line_items_sum = active_line_items.sum(&:price)
+    return if line_items_sum == price
+
+    difference = (price - line_items_sum).abs
+    errors.add(:price, :line_items_sum_mismatch, difference:)
   end
 end
 

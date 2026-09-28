@@ -29,12 +29,17 @@ class CardTransaction < ApplicationRecord
   belongs_to :context, optional: false
   belongs_to :user_card, counter_cache: true
   belongs_to :reference_transactable, polymorphic: true, optional: true
+  has_many :line_items, as: :transactable, dependent: :destroy, inverse_of: :transactable
+  accepts_nested_attributes_for :line_items, allow_destroy: true
 
   # @validations ..............................................................
   validates :context, presence: true
   validates :description, :card_installments_count, presence: true
+  validate :validate_composite_line_items_count
+  validate :validate_line_items_price_sum
 
   # @callbacks ................................................................
+  before_validation :clear_parent_allocations_if_composite
   before_validation :assign_default_context
   before_validation :set_paid, on: :create
   after_initialize :build_default_card_installments
@@ -46,15 +51,32 @@ class CardTransaction < ApplicationRecord
   scope :subscription_candidates, -> { where(subscription_id: nil) }
   # @class_methods ............................................................
   def self.duplicate(id)
-    existing_card_transaction = includes(:card_installments, :category_transactions, entity_transactions: %i[entity exchanges]).find(id)
+    existing_card_transaction = includes(:card_installments, :category_transactions, :line_items,
+                                         entity_transactions: %i[entity exchanges]).find(id)
 
     card_transaction = existing_card_transaction.dup
     card_transaction.duplicate = true
     card_transaction.card_installments = duplicated_card_installments_for(existing_card_transaction)
     card_transaction.category_transactions = existing_card_transaction.category_transactions.map(&:dup)
     card_transaction.entity_transactions = duplicated_entity_transactions_for(existing_card_transaction)
+    if existing_card_transaction.composite?
+      card_transaction.line_items = existing_card_transaction.line_items.map do |item|
+        duplicated_item = item.dup
+        duplicated_item.category_transactions = item.category_transactions.map(&:dup)
+        duplicated_item.entity_transactions = item.entity_transactions.map(&:dup)
+        duplicated_item
+      end
+    end
 
     card_transaction
+  end
+
+  def composite?
+    active_line_items.any?
+  end
+
+  def active_line_items
+    line_items.reject(&:marked_for_destruction?)
   end
 
   def self.new_advanced_payment(user, params, context: user.main_context)
@@ -299,6 +321,29 @@ class CardTransaction < ApplicationRecord
     end => cash_transaction
 
     Logic::RecalculateCountAndTotalService.new(card_transaction: self, cash_transaction:).call
+  end
+
+  def clear_parent_allocations_if_composite
+    return unless composite?
+
+    category_transactions.each(&:mark_for_destruction)
+    entity_transactions.each(&:mark_for_destruction)
+  end
+
+  def validate_composite_line_items_count
+    return unless composite?
+
+    errors.add(:base, :composite_requires_at_least_two_items) if active_line_items.size < 2
+  end
+
+  def validate_line_items_price_sum
+    return unless composite?
+
+    line_items_sum = active_line_items.sum(&:price)
+    return if line_items_sum == price
+
+    difference = (price - line_items_sum).abs
+    errors.add(:price, :line_items_sum_mismatch, difference:)
   end
 end
 

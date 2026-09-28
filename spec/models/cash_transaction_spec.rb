@@ -31,8 +31,8 @@ RSpec.describe CashTransaction, type: :model do
     context "( associations )" do
       bt_models = %i[user]
       bto_models = %i[user_card user_bank_account investment_type reference_transactable subscription]
-      hm_models = %i[card_installments investments exchanges cash_installments category_transactions categories entity_transactions entities]
-      na_models = %i[category_transactions entity_transactions]
+      hm_models = %i[card_installments investments exchanges cash_installments category_transactions categories entity_transactions entities line_items]
+      na_models = %i[category_transactions entity_transactions line_items]
 
       bt_models.each { |model| it { should belong_to(model) } }
       bto_models.each { |model| it { should belong_to(model).optional } }
@@ -49,6 +49,75 @@ RSpec.describe CashTransaction, type: :model do
   end
 
   describe "[ business logic ]" do
+    describe "composite transactions" do
+      let(:user) { create(:user) }
+      let(:context) { user.main_context }
+      let(:user_bank_account) { create(:user_bank_account, user:) }
+      let(:food_category) { create(:category, user:, category_name: "FOOD_LEAF") }
+      let(:tools_category) { create(:category, user:, category_name: "TOOLS_LEAF") }
+
+      it "is not composite when having no line items" do
+        transaction = build(:cash_transaction, user:, context:, user_bank_account:, price: 100_00)
+        expect(transaction).not_to be_composite
+      end
+
+      it "is composite when having line items" do
+        transaction = build(:cash_transaction, user:, context:, user_bank_account:, price: 100_00)
+        transaction.line_items.build(description: "Item 1", price: 60_00, category: food_category)
+        transaction.line_items.build(description: "Item 2", price: 40_00, category: tools_category)
+
+        expect(transaction).to be_composite
+        expect(transaction).to be_valid
+      end
+
+      it "validates that composite transactions require at least two line items" do
+        transaction = build(:cash_transaction, user:, context:, user_bank_account:, price: 100_00)
+        transaction.line_items.build(description: "Single Item", price: 100_00, category: food_category)
+
+        expect(transaction).not_to be_valid
+        expect(transaction.errors[:base]).to include(
+          I18n.t("activerecord.errors.models.cash_transaction.attributes.base.composite_requires_at_least_two_items")
+        )
+      end
+
+      it "validates that line items sum must equal transaction price" do
+        transaction = build(:cash_transaction, user:, context:, user_bank_account:, price: 100_00)
+        transaction.line_items.build(description: "Item 1", price: 60_00, category: food_category)
+        transaction.line_items.build(description: "Item 2", price: 30_00, category: tools_category)
+
+        expect(transaction).not_to be_valid
+        expect(transaction.errors[:price]).to be_present
+      end
+
+      it "clears parent category and entity transactions on save when composite" do
+        transaction = create(:cash_transaction, user:, context:, user_bank_account:, price: 100_00)
+        transaction.categories << food_category
+        expect(transaction.category_transactions.count).to eq(1)
+
+        transaction.assign_attributes(
+          line_items_attributes: [
+            { description: "Item 1", price: 60_00, category_id: food_category.id },
+            { description: "Item 2", price: 40_00, category_id: tools_category.id }
+          ]
+        )
+        transaction.save!
+
+        expect(transaction.reload.category_transactions.count).to eq(0)
+        expect(transaction.line_items.count).to eq(2)
+      end
+
+      it "duplicates line items when duplicating a composite transaction" do
+        transaction = create(:cash_transaction, user:, context:, user_bank_account:, price: 100_00)
+        transaction.line_items.create!(description: "Item 1", price: 60_00, category: food_category)
+        transaction.line_items.create!(description: "Item 2", price: 40_00, category: tools_category)
+
+        duplicate = described_class.duplicate(transaction.id)
+
+        expect(duplicate).to be_composite
+        expect(duplicate.line_items.size).to eq(2)
+        expect(duplicate.line_items.map(&:description)).to contain_exactly("Item 1", "Item 2")
+      end
+    end
     it "duplicates installments without carrying paid state" do
       transaction = create(
         :cash_transaction,

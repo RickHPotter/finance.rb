@@ -25,7 +25,7 @@ class Audit::OwnershipResolver
       when *DIRECT_USER_MODELS then Ownership.new(owner_id: record.user_id, context_id: nil)
       when "CashInstallment" then resolve_association(record, :cash_transaction)
       when "CardInstallment" then resolve_association(record, :card_transaction)
-      when "CategoryTransaction", "EntityTransaction" then resolve_association(record, :transactable)
+      when "LineItem", "CategoryTransaction", "EntityTransaction" then resolve_association(record, :transactable)
       when "BudgetCategory", "BudgetEntity" then resolve_association(record, :budget)
       when "Exchange" then resolve_association(record.entity_transaction, :transactable)
       when "Reference" then Ownership.new(owner_id: record.user_card&.user_id, context_id: record.context_id)

@@ -1284,6 +1284,41 @@ ALTER SEQUENCE public.ledger_shares_id_seq OWNED BY public.ledger_shares.id;
 
 
 --
+-- Name: line_items; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.line_items (
+    id bigint NOT NULL,
+    transactable_type character varying NOT NULL,
+    transactable_id bigint NOT NULL,
+    description character varying NOT NULL,
+    price integer DEFAULT 0 NOT NULL,
+    comment text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: line_items_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.line_items_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: line_items_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.line_items_id_seq OWNED BY public.line_items.id;
+
+
+--
 -- Name: message_actions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1894,6 +1929,13 @@ ALTER TABLE ONLY public.ledger_shares ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: line_items id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.line_items ALTER COLUMN id SET DEFAULT nextval('public.line_items_id_seq'::regclass);
+
+
+--
 -- Name: message_actions id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2209,6 +2251,14 @@ ALTER TABLE ONLY public.investments
 
 ALTER TABLE ONLY public.ledger_shares
     ADD CONSTRAINT ledger_shares_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: line_items line_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.line_items
+    ADD CONSTRAINT line_items_pkey PRIMARY KEY (id);
 
 
 --
@@ -3116,6 +3166,13 @@ CREATE UNIQUE INDEX index_ledger_shares_on_public_id ON public.ledger_shares USI
 --
 
 CREATE UNIQUE INDEX index_ledger_shares_on_token_digest ON public.ledger_shares USING btree (token_digest);
+
+
+--
+-- Name: index_line_items_on_transactable_type_and_transactable_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_line_items_on_transactable_type_and_transactable_id ON public.line_items USING btree (transactable_type, transactable_id);
 
 
 --
@@ -4033,6 +4090,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260928120000'),
 ('20260925110000'),
 ('20260919142600'),
 ('20260919142000'),

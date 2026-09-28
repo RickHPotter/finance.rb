@@ -6,6 +6,7 @@ class Audit::Rollback::Registry
     "CardTransaction" => Audit::Rollback::Adapters::CardTransaction,
     "CashInstallment" => Audit::Rollback::Adapters::Installment,
     "CardInstallment" => Audit::Rollback::Adapters::Installment,
+    "LineItem" => Audit::Rollback::Adapters::LineItem,
     "CategoryTransaction" => Audit::Rollback::Adapters::CategoryTransaction,
     "EntityTransaction" => Audit::Rollback::Adapters::EntityTransaction,
     "Category" => Audit::Rollback::Adapters::Category,

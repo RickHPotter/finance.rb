@@ -20,6 +20,7 @@ class Entity < ApplicationRecord
   has_many :ledger_shares, dependent: :destroy
   has_many :card_transactions, through: :entity_transactions, source: :transactable, source_type: "CardTransaction"
   has_many :cash_transactions, through: :entity_transactions, source: :transactable, source_type: "CashTransaction"
+  has_many :line_items, through: :entity_transactions, source: :transactable, source_type: "LineItem"
 
   # @validations ..............................................................
   validates :entity_name, presence: true
