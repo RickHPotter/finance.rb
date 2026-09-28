@@ -3,14 +3,15 @@
 module Params
   class CashTransactions
     attr_accessor :description, :date, :month, :year, :price, :paid, :user_id, :user_card_id, :user_bank_account_id, :subscription_id, :cash_installments,
-                  :category_transactions, :entity_transactions, :friend_notification_intent
+                  :category_transactions, :entity_transactions, :friend_notification_intent, :line_items
 
-    def initialize(cash_transaction: {}, cash_installments: {}, category_transactions: {}, entity_transactions: {})
+    def initialize(cash_transaction: {}, cash_installments: {}, category_transactions: {}, entity_transactions: {}, line_items: nil)
       assign_cash_transaction(cash_transaction)
 
       @cash_installments = cash_installments
       @entity_transactions = entity_transactions
       @category_transactions = category_transactions
+      @line_items = line_items
     end
 
     def params
@@ -29,9 +30,14 @@ module Params
           friend_notification_intent:,
           cash_installments_attributes:,
           category_transactions_attributes:,
-          entity_transactions_attributes:
-        }
+          entity_transactions_attributes:,
+          line_items_attributes:
+        }.compact
       }
+    end
+
+    def line_items_attributes
+      line_items
     end
 
     # no base => cash_installments = { count: 2 }

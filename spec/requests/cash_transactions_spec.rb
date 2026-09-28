@@ -2259,6 +2259,103 @@ RSpec.describe "CashTransactions", type: :request do
         cash_transaction_path(id: receiver_transaction, message_id: destroy_message.id)
       )
     end
+
+    context "when creating a composite transaction" do
+      let(:grocery_category) { create(:category, user:, category_name: "GROCERIES") }
+      let(:supply_category) { create(:category, user:, category_name: "SUPPLIES") }
+
+      it "creates the transaction with line items and persists line item categories" do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Composite market trip",
+            price: 10_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_bank_account_id: user_bank_account.id,
+            line_items_attributes: [
+              { description: "Groceries", price: 6_000, category_id: grocery_category.id },
+              { description: "Supplies", price: 4_000, category_id: supply_category.id }
+            ]
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:see_other)
+        created_transaction = CashTransaction.last
+        expect(created_transaction.description).to eq("Composite market trip")
+        expect(created_transaction).to be_composite
+        expect(created_transaction.line_items.count).to eq(2)
+        expect(created_transaction.line_items.pluck(:description)).to contain_exactly("Groceries", "Supplies")
+        expect(created_transaction.line_items.pluck(:price)).to contain_exactly(6_000, 4_000)
+        expect(created_transaction.line_items.map(&:category_id)).to contain_exactly(grocery_category.id, supply_category.id)
+      end
+
+      it "leaves parent category and entity allocations empty" do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Composite trip without parent allocations",
+            price: 10_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_bank_account_id: user_bank_account.id,
+            category_transactions_attributes: [ { category_id: grocery_category.id } ],
+            entity_transactions_attributes: [ { entity_id: entity.id, price: 0, price_to_be_returned: 0 } ],
+            line_items_attributes: [
+              { description: "Groceries", price: 6_000, category_id: grocery_category.id },
+              { description: "Supplies", price: 4_000, category_id: supply_category.id }
+            ]
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:see_other)
+        created_transaction = CashTransaction.last
+        expect(created_transaction.category_transactions.count).to eq(0)
+        expect(created_transaction.entity_transactions.count).to eq(0)
+        expect(created_transaction.line_items.count).to eq(2)
+      end
+
+      it "fails when line item prices do not sum to parent price" do
+        expect do
+          post cash_transactions_path, params: {
+            cash_transaction: {
+              description: "Mismatched sum",
+              price: 10_000,
+              date: Time.zone.today,
+              month: Time.zone.today.month,
+              year: Time.zone.today.year,
+              user_bank_account_id: user_bank_account.id,
+              line_items_attributes: [
+                { description: "Groceries", price: 5_000, category_id: grocery_category.id },
+                { description: "Supplies", price: 4_000, category_id: supply_category.id }
+              ]
+            }
+          }, headers: turbo_stream_headers
+        end.not_to change(CashTransaction, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it "fails when only one line item is provided" do
+        expect do
+          post cash_transactions_path, params: {
+            cash_transaction: {
+              description: "Single item composite",
+              price: 10_000,
+              date: Time.zone.today,
+              month: Time.zone.today.month,
+              year: Time.zone.today.year,
+              user_bank_account_id: user_bank_account.id,
+              line_items_attributes: [
+                { description: "Single item", price: 10_000, category_id: grocery_category.id }
+              ]
+            }
+          }, headers: turbo_stream_headers
+        end.not_to change(CashTransaction, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+    end
   end
 
   describe "[ #update ]" do
@@ -5216,6 +5313,50 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Derived Bound Card")
       expect(response.body).not_to include("Main Bound Card")
+    end
+
+    context "with a composite transaction" do
+      let(:grocery_category) { create(:category, user:, category_name: "GROCERIES_UPDATE") }
+      let(:supply_category) { create(:category, user:, category_name: "SUPPLIES_UPDATE") }
+      let(:pharmacy_category) { create(:category, user:, category_name: "PHARMACY_UPDATE") }
+
+      it "updates existing line items, adds new line items, and destroys removed line items" do
+        existing_composite = create(
+          :cash_transaction,
+          user:,
+          context: user.main_context,
+          user_bank_account:,
+          description: "Original composite",
+          price: 10_000,
+          date: Time.zone.today,
+          month: Time.zone.today.month,
+          year: Time.zone.today.year
+        )
+        item1 = existing_composite.line_items.create!(description: "Item 1", price: 6_000, category_id: grocery_category.id)
+        item2 = existing_composite.line_items.create!(description: "Item 2", price: 4_000, category_id: supply_category.id)
+
+        patch cash_transaction_path(existing_composite), params: {
+          cash_transaction: {
+            description: "Updated composite",
+            price: 12_000,
+            line_items_attributes: {
+              "0" => { id: item1.id, description: "Updated Item 1", price: 7_000, category_id: grocery_category.id },
+              "1" => { id: item2.id, _destroy: "1" },
+              "2" => { description: "New Item 3", price: 5_000, category_id: pharmacy_category.id }
+            }
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:see_other)
+        existing_composite.reload
+        expect(existing_composite.description).to eq("Updated composite")
+        expect(existing_composite.price).to eq(12_000)
+        expect(existing_composite.line_items.count).to eq(2)
+        expect(existing_composite.line_items.pluck(:description)).to contain_exactly("Updated Item 1", "New Item 3")
+        expect(existing_composite.line_items.pluck(:price)).to contain_exactly(7_000, 5_000)
+        expect(existing_composite.line_items.map(&:category_id)).to contain_exactly(grocery_category.id, pharmacy_category.id)
+        expect(LineItem.exists?(item2.id)).to be(false)
+      end
     end
   end
 

@@ -204,6 +204,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def handle_category_params
+    return if @cash_transaction.composite? || composite_line_items_submitted?(effective_cash_transaction_params)
     return if effective_cash_transaction_params[:category_id].nil?
 
     new_category_id = effective_cash_transaction_params[:category_id].to_i
@@ -218,6 +219,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def handle_entity_params
+    return if @cash_transaction.composite? || composite_line_items_submitted?(effective_cash_transaction_params)
+
     current_entities = @cash_transaction.entity_transactions.pluck(:entity_id)
 
     entity_id = effective_cash_transaction_params[:entity_id]&.to_i
@@ -384,6 +387,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       deduplicated_cash_transaction_params(effective_cash_transaction_params).except(:source_message_id)
     )
     params = strip_non_exchange_friend_notification_intent(params)
+    params = clear_composite_parent_allocations(params) if composite_line_items_submitted?(params)
     counterpart_reference = canonical_message_reference_transactable
     if counterpart_reference.present?
       return params.merge(reference_transactable_type: counterpart_reference.class.name,
@@ -401,6 +405,12 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def synchronize_submitted_category_transactions!
+    if composite_line_items_submitted?(effective_cash_transaction_params)
+      @cash_transaction.category_transactions.each(&:mark_for_destruction)
+      @cash_transaction.entity_transactions.each(&:mark_for_destruction)
+      return
+    end
+
     return unless effective_cash_transaction_params.key?(:category_transactions_attributes)
 
     submitted_category_ids = effective_category_ids
@@ -569,7 +579,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def collect_nested_cash_transaction_error_messages
     nested_records = @cash_transaction.cash_installments.to_a +
                      @cash_transaction.entity_transactions.to_a +
-                     @cash_transaction.entity_transactions.flat_map(&:exchanges)
+                     @cash_transaction.entity_transactions.flat_map(&:exchanges) +
+                     @cash_transaction.line_items.to_a
 
     nested_records.flat_map { |record| record.errors.full_messages }.compact_blank.uniq
   end
@@ -986,6 +997,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       id: [], subscription_id: [], user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
+      line_items_attributes: %i[id description price comment category_id entity_id _destroy],
       piggy_bank_attributes: %i[id return_cash_transaction_id return_date return_price iof_exempt_on _destroy],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
@@ -1122,6 +1134,23 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       category_transactions_attributes: deduplicate_nested_attributes(attributes[:category_transactions_attributes], key: :category_id),
       entity_transactions_attributes: deduplicate_nested_attributes(attributes[:entity_transactions_attributes], key: :entity_id)
     )
+  end
+
+  def clear_composite_parent_allocations(attributes)
+    attributes.except(
+      :category_id,
+      :entity_id,
+      :category_transactions_attributes,
+      :entity_transactions_attributes
+    )
+  end
+
+  def composite_line_items_submitted?(attributes)
+    return false unless attributes.key?(:line_items_attributes)
+
+    normalized_nested_attributes(attributes[:line_items_attributes]).any? do |entry|
+      !ActiveModel::Type::Boolean.new.cast(entry[:_destroy])
+    end
   end
 
   def sanitized_cash_transaction_params_for_assignment(attributes)

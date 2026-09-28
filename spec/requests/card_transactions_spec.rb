@@ -1518,6 +1518,43 @@ RSpec.describe "CardTransactions", type: :request do
       expect(exchange_return.cash_installments.order(:number).pluck(:price)).to eq([ -12_000 ])
       expect(exchange_return.cash_installments.order(:number).pluck(:paid)).to eq([ false ])
     end
+
+    context "with a composite transaction" do
+      let(:clothing_category) { create(:category, user:, category_name: "CLOTHING_CARD") }
+      let(:electronics_category) { create(:category, user:, category_name: "ELECTRONICS_CARD") }
+
+      it "creates composite card transaction with negative prices matching card transaction price" do
+        post card_transactions_path, params: {
+          card_transaction: {
+            description: "Composite card purchase",
+            price: -10_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_card_id: user_card_one.id,
+            card_installments_attributes: [
+              { number: 1, price: -5_000, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year },
+              { number: 2, price: -5_000, date: 1.month.from_now.to_date, month: 1.month.from_now.month, year: 1.month.from_now.year }
+            ],
+            line_items_attributes: [
+              { description: "Shirt", price: -4_000, category_id: clothing_category.id },
+              { description: "Headphones", price: -6_000, category_id: electronics_category.id }
+            ]
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:see_other)
+        created_transaction = CardTransaction.last
+        expect(created_transaction).to be_composite
+        expect(created_transaction.price).to eq(-10_000)
+        expect(created_transaction.card_installments.count).to eq(2)
+        expect(created_transaction.card_installments.sum(&:price)).to eq(-10_000)
+        expect(created_transaction.line_items.count).to eq(2)
+        expect(created_transaction.line_items.pluck(:price)).to contain_exactly(-4_000, -6_000)
+        expect(created_transaction.line_items.map(&:category_id)).to contain_exactly(clothing_category.id, electronics_category.id)
+        expect(created_transaction.category_transactions.count).to eq(0)
+      end
+    end
   end
 
   describe "[ #update ]" do
@@ -2669,6 +2706,35 @@ RSpec.describe "CardTransactions", type: :request do
       follow_redirect! if response.redirect?
       expect(response).to have_http_status(:success)
       expect(response.body).to include(existing_card_transaction.description)
+    end
+
+    it "duplicates a composite card transaction and preserves line items" do
+      clothing_category = create(:category, user:, category_name: "CLOTHING_DUP")
+      electronics_category = create(:category, user:, category_name: "ELECTRONICS_DUP")
+
+      existing_composite = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Composite source for duplication",
+        price: -10_000,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+      existing_composite.line_items.create!(description: "Shirt", price: -4_000, category: clothing_category)
+      existing_composite.line_items.create!(description: "Headphones", price: -6_000, category: electronics_category)
+
+      get duplicate_card_transaction_path(existing_composite)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Composite source for duplication")
+      duplicate_record = controller.instance_variable_get(:@card_transaction)
+      expect(duplicate_record).to be_composite
+      expect(duplicate_record.line_items.size).to eq(2)
+      expect(duplicate_record.line_items.map(&:description)).to contain_exactly("Shirt", "Headphones")
+      expect(duplicate_record.line_items.map(&:price)).to contain_exactly(-4_000, -6_000)
     end
 
     it "drops duplicated payer entities that no longer have exchanges when replacing the entity with a regular one" do
