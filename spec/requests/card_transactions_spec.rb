@@ -2087,6 +2087,36 @@ RSpec.describe "CardTransactions", type: :request do
       expect(document.at_css("#priceSum")["data-price"]).to eq("-1000")
     end
 
+    it "renders the composite badge and line items popover content for composite card transactions" do
+      cat1 = create(:category, :random, user:)
+      cat2 = create(:category, :random, user:)
+      composite = create(
+        :card_transaction,
+        user:,
+        description: "Composite Card Purchase",
+        price: -4_000,
+        user_card: user_card_one,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -4_000, date: Date.new(2026, 4, 10), month: 4, year: 2026)
+        ]
+      )
+      create(:line_item, transactable: composite, description: "Cable", price: -1_500, category_id: cat1.id)
+      create(:line_item, transactable: composite, description: "Adapter", price: -2_500, category_id: cat2.id)
+
+      get month_year_card_transactions_path, params: {
+        month_year: "202604",
+        user_card_id: user_card_one.id
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("transactions.composite.badge", count: 2))
+      expect(response.body).to include("Cable")
+      expect(response.body).to include("Adapter")
+    end
+
     it "renders single and multiple category allocations through either display mode" do
       dark_category = create(:category, user:, category_name: "LEISURE", colour: "#4b5563")
       light_category = create(:category, user:, category_name: "ASSINATURA", colour: "#fde68a")
@@ -2730,6 +2760,23 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include(cash_transaction_path(transaction.card_installments.first.cash_transaction))
       expect(response.body).to include("user_card_id")
       expect(response.body).to include(user_card_one.id.to_s)
+    end
+
+    it "renders the line items breakdown section and aggregated categories for a composite card transaction" do
+      cat1 = create(:category, :random, user:)
+      cat2 = create(:category, :random, user:)
+      composite = create(:card_transaction, user:, price: -5_000, user_card: user_card_one)
+      create(:line_item, transactable: composite, description: "Book", price: -2_000, category_id: cat1.id)
+      create(:line_item, transactable: composite, description: "Pen", price: -3_000, category_id: cat2.id)
+
+      get card_transaction_path(composite)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("transactions.composite.breakdown"))
+      expect(response.body).to include("Book")
+      expect(response.body).to include("Pen")
+      expect(response.body).to include(cat1.name)
+      expect(response.body).to include(cat2.name)
     end
   end
 

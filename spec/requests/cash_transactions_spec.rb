@@ -604,6 +604,23 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(user_bank_account.user_bank_account_name)
     end
 
+    it "renders the line items breakdown section and aggregated categories for a composite transaction" do
+      cat1 = create(:category, :random, user:)
+      cat2 = create(:category, :random, user:)
+      composite = create(:cash_transaction, user:, price: 5_000, user_bank_account:)
+      create(:line_item, transactable: composite, description: "Office Supplies", price: 2_000, category_id: cat1.id)
+      create(:line_item, transactable: composite, description: "Snacks", price: 3_000, category_id: cat2.id)
+
+      get cash_transaction_path(composite)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("transactions.composite.breakdown"))
+      expect(response.body).to include("Office Supplies")
+      expect(response.body).to include("Snacks")
+      expect(response.body).to include(cat1.name)
+      expect(response.body).to include(cat2.name)
+    end
+
     it "does not render broken reference links to transactions outside the current context" do
       foreign_user = create(:user, :random)
       foreign_bank = create(:bank, :random)
@@ -5666,6 +5683,35 @@ RSpec.describe "CashTransactions", type: :request do
 
       follow_redirect! if response.redirect?
       expect(response).to have_http_status(:success)
+    end
+
+    it "renders the composite badge and line items popover content for composite transactions" do
+      cat1 = create(:category, :random, user:)
+      cat2 = create(:category, :random, user:)
+      composite = create(
+        :cash_transaction,
+        user:,
+        description: "Composite Lunch",
+        price: 3_000,
+        user_bank_account:,
+        date: Time.zone.today,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, price: 3_000, paid: false)
+        ]
+      )
+      create(:line_item, transactable: composite, description: "Burger", price: 1_800, category_id: cat1.id)
+      create(:line_item, transactable: composite, description: "Fries", price: 1_200, category_id: cat2.id)
+
+      month_year = Time.zone.today.strftime("%Y%m")
+      get month_year_cash_transactions_path, params: {
+        month_year:,
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("transactions.composite.badge", count: 2))
+      expect(response.body).to include("Burger")
+      expect(response.body).to include("Fries")
     end
 
     it "renders row actions in the menu while keeping description links pointed at edit" do

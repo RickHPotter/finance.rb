@@ -60,6 +60,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               end
 
               render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
+              render Views::Transactions::CompositeBadge.new(transaction: card_transaction) if card_transaction.composite?
 
               span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
                 pretty_installments(card_installment.number, card_installment.card_installments_count)
@@ -183,6 +184,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             end
 
             render_description_link(card_transaction, class: "flex-5 truncate text-md underline underline-offset-[3px]")
+            render Views::Transactions::CompositeBadge.new(transaction: card_transaction) if card_transaction.composite?
 
             span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
               pretty_installments(card_installment.number, card_installment.card_installments_count)
@@ -316,8 +318,14 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def entities_for(card_transaction)
-    card_transaction.entity_transactions.includes(:entity).sort_by do |entity_transaction|
-      [ entity_transaction.entity&.entity_name.to_s, entity_transaction.id.to_i ]
+    if card_transaction.composite?
+      card_transaction.line_items.flat_map(&:entity_transactions).sort_by do |entity_transaction|
+        [ entity_transaction.entity&.entity_name.to_s, entity_transaction.id.to_i ]
+      end
+    else
+      card_transaction.entity_transactions.includes(:entity).sort_by do |entity_transaction|
+        [ entity_transaction.entity&.entity_name.to_s, entity_transaction.id.to_i ]
+      end
     end
   end
 
@@ -366,7 +374,12 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def categories_for(card_transaction)
-    CategoryColours::Ordering.from_allocations(card_transaction.category_transactions)
+    if card_transaction.composite?
+      distinct_categories = card_transaction.line_items.flat_map(&:categories).uniq
+      distinct_categories.sort_by { |c| c.hierarchical_name.downcase }
+    else
+      CategoryColours::Ordering.from_allocations(card_transaction.category_transactions)
+    end
   end
 
   def row_presentation(card_transaction)

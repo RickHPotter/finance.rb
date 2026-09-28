@@ -32,6 +32,11 @@ en:
       remaining: "Remaining:"
       over_allocated: "Over by:"
       min_items_needed: "Min 2 items needed"
+      badge: "Split [%{count}]"
+      breakdown: "Line Items"
+      breakdown_title: "Line Items Breakdown"
+      percentage: "% of Total"
+      no_items: "No line items recorded."
 
 pt-BR:
   activerecord:
@@ -67,3 +72,8 @@ pt-BR:
       remaining: "Restante:"
       over_allocated: "Excedente:"
       min_items_needed: "Mínimo 2 itens necessários"
+      badge: "Divisão [%{count}]"
+      breakdown: "Itens da Compra"
+      breakdown_title: "Detalhamento de Itens"
+      percentage: "% do Total"
+      no_items: "Nenhum item registrado."

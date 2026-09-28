@@ -21,7 +21,14 @@ module Logic
       )
 
       joins      = { card_transaction: %i[categories entities] }
-      inclusions = { card_transaction: [ { categories: :parent_category }, { category_transactions: { category: :parent_category } }, :entities ] }
+      inclusions = {
+        card_transaction: [
+          { categories: :parent_category },
+          { category_transactions: { category: :parent_category } },
+          :entities,
+          { line_items: [ { categories: :parent_category }, :entities ] }
+        ]
+      }
       inclusions[:card_transaction] << :user_card if card_transaction_params[:user_card_id].blank?
 
       card_installment_ids = card_transaction_params.delete(:card_installment_ids)

@@ -23,6 +23,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
         div(class: "mt-6 space-y-4") do
           summary_grid
+          render Views::Transactions::ShowLineItemsSection.new(transaction: card_transaction) if card_transaction.composite?
           installments_and_invoices_section
           exchanges_section
           links_section
@@ -603,11 +604,19 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def categories
-    @categories ||= card_transaction.categories.order(:category_name).to_a
+    @categories ||= if card_transaction.composite?
+                      card_transaction.line_items.flat_map(&:categories).uniq.sort_by { |c| c.name.downcase }
+                    else
+                      card_transaction.categories.order(:category_name).to_a
+                    end
   end
 
   def entities
-    @entities ||= card_transaction.entities.order(:entity_name).to_a
+    @entities ||= if card_transaction.composite?
+                    card_transaction.line_items.flat_map(&:entities).uniq.sort_by { |e| e.name.downcase }
+                  else
+                    card_transaction.entities.order(:entity_name).to_a
+                  end
   end
 
   def exchange_entity_transactions

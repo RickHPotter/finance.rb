@@ -53,7 +53,8 @@ module Logic
                              { categories: :parent_category },
                              :entities,
                              { category_transactions: { category: :parent_category } },
-                             { entity_transactions: :entity }
+                             { entity_transactions: :entity },
+                             { line_items: [ { categories: :parent_category }, :entities ] }
                            ])
                  .preload(cash_transaction: :reference_transactable)
                  .where(options[:conditions])
