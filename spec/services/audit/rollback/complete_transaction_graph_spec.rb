@@ -119,6 +119,70 @@ RSpec.describe "Complete transaction graph rollback" do
     expect(projection.reload).to have_attributes(projection_before)
   end
 
+  it "uncreates a composite cash transaction, its line items, and their allocations on rollback" do
+    cat1 = create(:category, :random, user:)
+    cat2 = create(:category, :random, user:)
+    created_transaction = nil
+
+    operation = audited_operation do
+      created_transaction = create(
+        :cash_transaction,
+        user:,
+        context:,
+        user_bank_account: account,
+        description: "Composite Grocery Run",
+        price: 5_000,
+        category_transactions: [],
+        entity_transactions: []
+      )
+      create(:line_item, transactable: created_transaction, description: "Vegetables", price: 2_000, category_id: cat1.id)
+      create(:line_item, transactable: created_transaction, description: "Meat", price: 3_000, category_id: cat2.id)
+    end
+
+    preview, result = apply(operation)
+
+    expect(preview).to have_attributes(state: "previewable")
+    expect(preview.rows.flat_map(&:support_issues)).to be_empty
+    expect(result).to have_attributes(status: "applied")
+    expect(CashTransaction.exists?(created_transaction.id)).to be(false)
+    expect(LineItem.where(transactable_type: "CashTransaction", transactable_id: created_transaction.id)).to be_empty
+  end
+
+  it "restores previous line item state when rolling back a composite transaction edit" do
+    cat1 = create(:category, :random, user:)
+    cat2 = create(:category, :random, user:)
+    transaction = PaperTrail.request(enabled: false) do
+      t = create(
+        :cash_transaction,
+        user:,
+        context:,
+        user_bank_account: account,
+        description: "Composite Hardware",
+        price: 6_000,
+        category_transactions: [],
+        entity_transactions: []
+      )
+      create(:line_item, transactable: t, description: "Screws", price: 2_000, category_id: cat1.id)
+      create(:line_item, transactable: t, description: "Paint", price: 4_000, category_id: cat2.id)
+      t
+    end
+
+    item1, item2 = transaction.line_items.order(:id)
+
+    operation = audited_operation do
+      item1.update!(description: "Nails", price: 1_500)
+      item2.update!(description: "Primer", price: 4_500)
+    end
+
+    preview, result = apply(operation)
+
+    expect(preview).to have_attributes(state: "previewable")
+    expect(preview.rows.flat_map(&:support_issues)).to be_empty
+    expect(result).to have_attributes(status: "applied")
+    expect(item1.reload).to have_attributes(description: "Screws", price: 2_000)
+    expect(item2.reload).to have_attributes(description: "Paint", price: 4_000)
+  end
+
   it "keeps an unknown future generated transaction shape read-only" do
     transaction = PaperTrail.request(enabled: false) { create(:cash_transaction, user:, context:) }
     PaperTrail.request(enabled: false) { transaction.update_column(:cash_transaction_type, "FutureProjection") }
