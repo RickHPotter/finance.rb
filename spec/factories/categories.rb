@@ -16,6 +16,19 @@ FactoryBot.define do
       sequence(:category_name) { |n| "#{Faker::Hobby.activity} #{rand(10..99)} #{n}".upcase }
       user { random_custom_create(:user) }
     end
+
+    trait :parent_category do
+      category_name { "HOME" }
+    end
+
+    trait :child_category do
+      category_name { "SUPPLIES" }
+      parent_category { association(:category, user:) }
+    end
+
+    trait :subcategory do
+      child_category
+    end
   end
 end
 
@@ -31,20 +44,23 @@ end
 #  card_transactions_total :integer          default(0), not null
 #  cash_transactions_count :integer          default(0), not null
 #  cash_transactions_total :integer          default(0), not null
-#  category_name           :string           not null, uniquely indexed => [user_id]
+#  category_name           :string           not null, uniquely indexed => [user_id, parent_category_id]
 #  colour                  :string           default("#f1f5f9"), not null
 #  text_colour             :string
 #  text_colour_mode        :string           default("automatic"), not null
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
-#  user_id                 :bigint           not null, indexed, uniquely indexed => [category_name]
+#  parent_category_id      :bigint           indexed, uniquely indexed => [user_id, category_name]
+#  user_id                 :bigint           not null, indexed, uniquely indexed => [parent_category_id, category_name]
 #
 # Indexes
 #
-#  index_categories_on_user_id           (user_id)
-#  index_category_name_on_composite_key  (user_id,category_name) UNIQUE
+#  index_categories_on_parent_category_id       (parent_category_id)
+#  index_categories_on_user_id                  (user_id)
+#  index_categories_on_user_id_parent_and_name  (user_id,parent_category_id,category_name) UNIQUE NULLS NOT DISTINCT
 #
 # Foreign Keys
 #
+#  fk_rails_...  (parent_category_id => categories.id) ON DELETE => restrict
 #  fk_rails_...  (user_id => users.id)
 #

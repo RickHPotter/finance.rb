@@ -233,7 +233,7 @@ module IndexState
 
     def association_filters
       {}.tap do |associations|
-        category_ids = compact_array(source_context[:category_id])
+        category_ids = expanded_category_ids(source_context[:category_id])
         entity_ids = compact_array(source_context[:entity_id])
         associations[:categories] = { id: category_ids } if category_ids.present?
         associations[:entities] = { id: entity_ids } if entity_ids.present?

@@ -15,7 +15,7 @@ end
 #
 #  id         :bigint           not null, primary key
 #  active     :boolean          default(TRUE), not null, indexed => [position]
-#  name       :string           not null, uniquely indexed
+#  name       :string           not null
 #  position   :integer          not null, indexed => [active]
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
@@ -23,5 +23,5 @@ end
 # Indexes
 #
 #  index_baby_names_on_active_and_position  (active,position)
-#  index_baby_names_on_name                 (name) UNIQUE
+#  index_baby_names_on_lower_name           (lower((name)::text)) UNIQUE
 #

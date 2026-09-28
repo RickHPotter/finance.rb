@@ -50,9 +50,9 @@ module Logic
                  .left_joins(cash_transaction: %i[categories entities])
                  .where(year:, month:)
                  .includes(cash_transaction: [
-                             :categories,
+                             { categories: :parent_category },
                              :entities,
-                             { category_transactions: :category },
+                             { category_transactions: { category: :parent_category } },
                              { entity_transactions: :entity }
                            ])
                  .preload(cash_transaction: :reference_transactable)

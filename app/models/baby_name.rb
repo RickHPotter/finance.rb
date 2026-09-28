@@ -13,6 +13,8 @@ class BabyName < ApplicationRecord
   validates :position, presence: true, numericality: { only_integer: true, greater_than: 0 }
 
   # @callbacks ................................................................
+  before_validation :normalize_capitalization
+
   # @scopes ...................................................................
   scope :active, -> { where(active: true) }
   scope :in_display_order, -> { order(:position, :id) }
@@ -20,9 +22,16 @@ class BabyName < ApplicationRecord
 
   # @additional_config ........................................................
   # @class_methods ............................................................
+  def self.canonical_name(str)
+    str.to_s.strip.split(/\s+/).map(&:capitalize).join(" ")
+  end
+
   # @public_instance_methods ..................................................
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
+  def normalize_capitalization
+    self.name = self.class.canonical_name(name) if name.present?
+  end
 end
 
 # == Schema Information
@@ -32,7 +41,7 @@ end
 #
 #  id         :bigint           not null, primary key
 #  active     :boolean          default(TRUE), not null, indexed => [position]
-#  name       :string           not null, uniquely indexed
+#  name       :string           not null
 #  position   :integer          not null, indexed => [active]
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
@@ -40,5 +49,5 @@ end
 # Indexes
 #
 #  index_baby_names_on_active_and_position  (active,position)
-#  index_baby_names_on_name                 (name) UNIQUE
+#  index_baby_names_on_lower_name           (lower((name)::text)) UNIQUE
 #

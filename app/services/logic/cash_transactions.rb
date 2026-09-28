@@ -162,8 +162,9 @@ module Logic
     end
 
     def self.build_conditions_for_associations(params)
-      category_id = (params.delete(:category_id).presence || {}).compact_blank
-      entity_id = (params.delete(:entity_id).presence || {}).compact_blank
+      category_id = Array(params.delete(:category_id)).compact_blank
+      category_id = Category.subtree_ids_for(category_id) if category_id.present?
+      entity_id = Array(params.delete(:entity_id)).compact_blank
 
       {
         categories: { id: category_id }.compact_blank,
@@ -178,9 +179,9 @@ module Logic
       search_term = search_params.delete(:search_term) || ""
       attach_to_subscription_id = search_params.delete(:attach_to_subscription_id)
       category_ids = cash_transaction_params.delete(:category_id).presence
-      category_ids = [ category_ids ].flatten.compact_blank if category_ids.present?
+      category_ids = Category.subtree_ids_for(Array(category_ids).compact_blank) if category_ids.present?
       entity_ids   = cash_transaction_params.delete(:entity_id).presence
-      entity_ids   = [ entity_ids ].flatten.compact_blank if entity_ids.present?
+      entity_ids   = Array(entity_ids).compact_blank if entity_ids.present?
 
       cash_installment_ids = cash_transaction_params[:cash_installment_ids]
       if cash_installment_ids.present?

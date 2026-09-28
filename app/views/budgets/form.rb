@@ -55,7 +55,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
             bold_label(form, :categories)
             render Views::Shared::SingleSelectCombobox.new(
               name: :budget_category,
-              options: @categories.map { |label, value| [ label, value, {} ] },
+              options: @categories.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
               selected_value: nil,
               placeholder: model_attribute(budget, :category_id),
               input_data: {

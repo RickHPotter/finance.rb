@@ -1,8 +1,7 @@
 en:
   baby_names:
-    page_title: "Gigi & Rikki · Baby names"
+    page_title: "Baby names"
     back_to_finance: "Back to finance"
-    couple: "Gigi & Rikki"
     question: "What will we call you?"
     stats:
       rejected: "No"
@@ -16,7 +15,6 @@ en:
       rejected_stamp: "NO"
       accepted_stamp: "YES"
       greeting: "Hello, little one"
-      story: "Could this be the name at the start of every story?"
       hint: "Drag or tap below"
     actions:
       label: "Choose this name"
@@ -26,15 +24,48 @@ en:
     finished:
       title: "That’s every name."
       body: "You decided on all %{count}. Your favourites are safely saved for the two of you."
+      waiting_body: "You decided on all %{count}. Waiting for your partner to finish so both of you can proceed to Phase II."
+      both_done_title: "You're both ready for Phase II!"
+      both_done_body: "All %{count} names have been reviewed by both of you. It's time to rank your personal favorites."
+      start_phase2: "Start Phase II · Ranking"
       back: "Back to the app"
+    rank:
+      save: "Save & Submit Ranking"
+      waiting_partner_title: "Phase submitted!"
+      waiting_partner_body: "Waiting for your partner to finish so both of you can proceed to the next phase."
+      phase2:
+        title: "Phase II · Your Favorites"
+        subtitle: "Drag to rank the names you accepted, from top favorite to least."
+      phase3:
+        title: "Phase III · Repescagem"
+        subtitle: "These are names your partner accepted that you didn't. Select and rank your top picks to bring to the finals."
+        quota: "Top %{n} names will advance to the final round."
+      phase4:
+        title: "Phase IV · Final Ranking"
+        subtitle: "This is the final round. Rank all candidate names to decide the winner!"
+      completed:
+        title: "Final Results 🎉"
+        subtitle: "Here are the top baby names ranked by both of you together!"
+        combined_score: "Combined score: %{score}"
+        score_label: "Score"
+        points: "%{count} pts"
+    review:
+      button: "Review"
+      title: "Review"
+      back: "Back to names"
+      all: "All"
+      accepted: "Accepted"
+      rejected: "Rejected"
+      later: "Later"
+      unreviewed: "Unreviewed"
+      empty: "No names found in this filter."
     pwa:
       shortcut_name: "Baby names"
       description: "Choose a name for Gigi and Rikki's baby"
 pt-BR:
   baby_names:
-    page_title: "Gigi & Rikki · Nomes do bebê"
+    page_title: "Nomes do bebê"
     back_to_finance: "Voltar às finanças"
-    couple: "Gigi & Rikki"
     question: "Como vamos chamar você?"
     stats:
       rejected: "Não"
@@ -48,7 +79,6 @@ pt-BR:
       rejected_stamp: "NÃO"
       accepted_stamp: "SIM"
       greeting: "Olá, pequenino"
-      story: "Será este o nome no começo de todas as suas histórias?"
       hint: "Deslize ou toque abaixo"
     actions:
       label: "Escolha para este nome"
@@ -58,7 +88,41 @@ pt-BR:
     finished:
       title: "Esses são todos os nomes."
       body: "Vocês decidiram sobre os %{count}. Seus favoritos estão guardados com segurança para vocês dois."
+      waiting_body: "Você decidiu sobre os %{count}. Aguardando seu par terminar para que ambos possam avançar para a Fase II."
+      both_done_title: "Vocês dois estão prontos para a Fase II!"
+      both_done_body: "Todos os %{count} nomes foram avaliados por vocês dois. É hora de ordenar seus favoritos pessoais."
+      start_phase2: "Iniciar Fase II · Ordenação"
       back: "Voltar ao app"
+    rank:
+      save: "Salvar e Enviar Ordenação"
+      waiting_partner_title: "Fase enviada!"
+      waiting_partner_body: "Aguardando seu par terminar para que ambos possam avançar para a próxima fase."
+      phase2:
+        title: "Fase II · Seus Favoritos"
+        subtitle: "Arraste para ordenar os nomes que você aceitou, do mais preferido ao menos."
+      phase3:
+        title: "Fase III · Repescagem"
+        subtitle: "Estes são nomes que seu par aceitou e você não. Selecione e ordene suas preferências para levar à final."
+        quota: "Os %{n} melhores nomes avançarão para a rodada final."
+      phase4:
+        title: "Fase IV · Ordenação Final"
+        subtitle: "Esta é a rodada final. Ordene todos os nomes candidatos para decidir os vencedores!"
+      completed:
+        title: "Resultado Final 🎉"
+        subtitle: "Aqui estão os nomes favoritos escolhidos por vocês dois juntos!"
+        combined_score: "Pontuação combinada: %{score}"
+        score_label: "Pontos"
+        points: "%{count} pts"
+    review:
+      button: "Revisar"
+      title: "Revisão"
+      back: "Voltar aos nomes"
+      all: "Todos"
+      accepted: "Aceitos"
+      rejected: "Rejeitados"
+      later: "Depois"
+      unreviewed: "Não avaliado"
+      empty: "Nenhum nome encontrado neste filtro."
     pwa:
       shortcut_name: "Nomes do bebê"
       description: "Escolha um nome para o bebê de Gigi e Rikki"

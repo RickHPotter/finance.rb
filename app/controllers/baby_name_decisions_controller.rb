@@ -3,6 +3,8 @@
 class BabyNameDecisionsController < ApplicationController
   layout "baby_names"
 
+  include BabyNamesAccess
+
   skip_before_action :resolve_current_context
   skip_after_action :check_reasoning
 
@@ -11,13 +13,17 @@ class BabyNameDecisionsController < ApplicationController
     decision = current_user.baby_name_decisions.find_or_initialize_by(baby_name:)
     choice = permitted_choice
 
-    if decision.new_record? || decision.later?
+    if params[:return_to] == "review" || decision.new_record? || decision.later?
       decision.choice = choice
       decision.touch if decision.persisted? && !decision.changed?
     end
     decision.save!
 
-    redirect_to baby_names_path, status: :see_other
+    if params[:return_to] == "review"
+      redirect_to review_baby_names_path(filter: params[:filter].presence), status: :see_other
+    else
+      redirect_to baby_names_path, status: :see_other
+    end
   rescue ActionController::ParameterMissing, ActiveRecord::RecordInvalid
     head :unprocessable_content
   end

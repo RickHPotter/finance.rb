@@ -65,8 +65,8 @@ class Views::Budgets::FormCategoriesSection < Views::Base
   end
 
   def budget_categories_association
-    association = budget.budget_categories.includes(:category)
-    association if association.exists?
+    association = budget.budget_categories.reject(&:marked_for_destruction?)
+    association if association.present?
   end
 
   def render_item(budget_category_fields)

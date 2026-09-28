@@ -25,6 +25,9 @@ application.register("balances-monthly-analysis", BalancesMonthlyAnalysisControl
 import BabyNameSwipeController from "./baby_name_swipe_controller"
 application.register("baby-name-swipe", BabyNameSwipeController)
 
+import BabyNameSortController from "./baby_name_sort_controller"
+application.register("baby-name-sort", BabyNameSortController)
+
 import BlinkingPlaceholderController from "./blinking_placeholder_controller"
 application.register("blinking-placeholder", BlinkingPlaceholderController)
 

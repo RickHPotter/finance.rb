@@ -64,7 +64,7 @@ module Logic
     end
 
     def category_ids
-      @category_ids ||= active_allocations(budget.budget_categories).filter_map(&:category_id).uniq
+      @category_ids ||= Category.subtree_ids_for(active_allocations(budget.budget_categories).filter_map(&:category_id).uniq)
     end
 
     def entity_ids

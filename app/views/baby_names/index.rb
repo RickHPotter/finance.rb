@@ -4,13 +4,14 @@ class Views::BabyNames::Index < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
 
-  attr_reader :baby_name, :stats, :total, :current_user
+  attr_reader :baby_name, :stats, :total, :current_user, :flow
 
-  def initialize(baby_name:, stats:, total:, current_user:)
+  def initialize(baby_name:, stats:, total:, current_user:, flow: nil)
     @baby_name = baby_name
     @stats = stats
     @total = total
     @current_user = current_user
+    @flow = flow
   end
 
   def view_template
@@ -58,22 +59,23 @@ class Views::BabyNames::Index < Views::Base
         end
 
         div(class: "text-center") do
-          p(class: "text-xs font-semibold uppercase tracking-[0.28em] text-blue-200") { I18n.t("baby_names.couple") }
-          h1(class: "mt-1 text-lg font-bold tracking-tight") { I18n.t("baby_names.question") }
+          h1(class: "text-lg font-bold tracking-tight") { I18n.t("baby_names.question") }
         end
 
-        div(class: "size-11")
+        link_to(review_baby_names_path,
+                class: "flex h-11 items-center justify-center rounded-full bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur active:scale-95",
+                aria_label: I18n.t("baby_names.review.button")) do
+          I18n.t("baby_names.review.button")
+        end
       end
 
       div(class: "mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur") do
-        stat(label: I18n.t("baby_names.stats.rejected"), value: rejected_count, alignment: "text-right", colour: "text-rose-300",
-             direction: I18n.t("baby_names.stats.swipe_left"))
+        stat(alignment: "text-right", colour: "text-rose-300", direction: I18n.t("baby_names.stats.swipe_left"))
         div(class: "text-center") do
           p(class: "text-2xs uppercase tracking-[0.2em] text-slate-400") { I18n.t("baby_names.stats.ratio") }
           p(class: "mt-0.5 text-xl font-bold tabular-nums text-white") { "#{rejected_count} / #{accepted_count}" }
         end
-        stat(label: I18n.t("baby_names.stats.accepted"), value: accepted_count, alignment: "text-left", colour: "text-emerald-300",
-             direction: I18n.t("baby_names.stats.swipe_right"))
+        stat(alignment: "text-left", colour: "text-emerald-300", direction: I18n.t("baby_names.stats.swipe_right"))
       end
 
       div(class: "mt-3 flex items-center justify-between px-1 text-xs text-slate-400") do
@@ -83,11 +85,9 @@ class Views::BabyNames::Index < Views::Base
     end
   end
 
-  def stat(label:, value:, alignment:, colour:, direction:)
+  def stat(alignment:, colour:, direction:)
     div(class: alignment) do
-      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500") { label }
-      p(class: "sr-only") { value.to_s }
-      p(class: "mt-0.5 text-sm font-semibold #{colour}") { direction }
+      p(class: "text-sm font-semibold #{colour}") { direction }
     end
   end
 
@@ -109,8 +109,6 @@ class Views::BabyNames::Index < Views::Base
 
         p(class: "text-xs font-semibold uppercase tracking-[0.35em] text-blue-500") { I18n.t("baby_names.card.greeting") }
         h2(class: "mt-4 font-garamond text-6xl font-bold tracking-tight sm:text-7xl") { baby_name.name }
-        div(class: "mt-5 h-px w-12 bg-amber-400")
-        p(class: "mt-5 max-w-64 text-sm leading-relaxed text-slate-500") { I18n.t("baby_names.card.story") }
         p(class: "absolute bottom-6 text-2xs font-semibold uppercase tracking-[0.22em] text-slate-400") { I18n.t("baby_names.card.hint") }
       end
     end
@@ -159,13 +157,34 @@ class Views::BabyNames::Index < Views::Base
   end
 
   def finished_state
+    both_done = flow&.partner_phase_completed?
+
     section(class: "relative z-10 flex flex-1 flex-col items-center justify-center px-5 text-center") do
-      div(class: "flex size-24 items-center justify-center rounded-full bg-emerald-400/15 text-5xl") { "♥" }
-      h2(class: "mt-7 font-garamond text-5xl font-bold") { I18n.t("baby_names.finished.title") }
-      p(class: "mt-4 max-w-sm leading-relaxed text-slate-300") do
-        I18n.t("baby_names.finished.body", count: total)
+      div(class: "flex size-24 items-center justify-center rounded-full bg-emerald-400/15 text-5xl") { both_done ? "🎉" : "♥" }
+      h2(class: "mt-7 font-garamond text-5xl font-bold") do
+        both_done ? I18n.t("baby_names.finished.both_done_title") : I18n.t("baby_names.finished.title")
       end
-      link_to(I18n.t("baby_names.finished.back"), root_path, class: "mt-8 rounded-2xl bg-white px-6 py-3 font-bold text-slate-900 active:scale-95")
+      p(class: "mt-4 max-w-sm leading-relaxed text-slate-300") do
+        if both_done
+          I18n.t("baby_names.finished.both_done_body", count: total)
+        elsif flow&.partner
+          I18n.t("baby_names.finished.waiting_body", count: total)
+        else
+          I18n.t("baby_names.finished.body", count: total)
+        end
+      end
+
+      if both_done
+        link_to(I18n.t("baby_names.finished.start_phase2"), rank_baby_names_path,
+                class: "mt-8 rounded-2xl bg-white px-8 py-3.5 font-bold text-slate-900 active:scale-95 shadow-lg shadow-white/10")
+      else
+        div(class: "mt-8 flex flex-col gap-3 w-full max-w-xs") do
+          link_to(I18n.t("baby_names.review.button"), review_baby_names_path,
+                  class: "w-full rounded-2xl border border-white/20 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur active:scale-95")
+          link_to(I18n.t("baby_names.finished.back"), root_path,
+                  class: "w-full rounded-2xl bg-white px-6 py-3 font-bold text-slate-900 active:scale-95")
+        end
+      end
     end
   end
 

@@ -28,8 +28,9 @@ class Views::Categories::Combobox < Views::Base
             span { action_message(:select_all) }
           end
 
-          categories.each do |category_name, id|
-            ComboboxItem(class: combobox_item_class) do
+          categories.each do |category_name, id, option_data|
+            item_alias = option_data&.fetch(:alias, nil)
+            ComboboxItem(class: combobox_item_class, **(item_alias ? { data: { alias: item_alias } } : {})) do
               ComboboxCheckbox(
                 name:,
                 value: id,
@@ -37,8 +38,9 @@ class Views::Categories::Combobox < Views::Base
                 data: {
                   ruby_ui__combobox_target: "input",
                   action: "change->ruby-ui--combobox#inputChanged change->reactive-form#submitWithDelay",
-                  text: category_name
-                }
+                  text: category_name,
+                  alias: item_alias
+                }.compact
               )
               span { category_name }
             end

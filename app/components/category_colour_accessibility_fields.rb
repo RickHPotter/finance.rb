@@ -142,7 +142,7 @@ module Components
     def preview_canvas(label_key, classes)
       div(class: "rounded-lg border border-slate-400 p-4 #{classes}") do
         p(class: "mb-3 text-xs font-bold uppercase tracking-[0.14em]") { colour_translation(label_key) }
-        CategoryBadge(category:, label: preview_label, data: preview_data("normal"))
+        CategoryBadge(category:, label: preview_label, compound: false, data: preview_data("normal"))
       end
     end
 
@@ -162,6 +162,7 @@ module Components
         CategoryBadge(
           category:,
           label: preview_label,
+          compound: false,
           selected: state == :selected,
           disabled: state == :disabled,
           data: preview_data(state)

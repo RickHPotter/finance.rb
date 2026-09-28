@@ -20,6 +20,23 @@ RSpec.describe CategoryTransaction, type: :model do
       bt_models.each { |model| it { should belong_to(model) } }
     end
   end
+
+  describe "[ hierarchy assignment ]" do
+    let(:user) { create(:user, :random) }
+    let(:parent) { create(:category, :parent_category, user:) }
+    let(:child) { create(:category, :child_category, user:, parent_category: parent) }
+    let(:cash_transaction) { create(:cash_transaction, :random, user:) }
+
+    it "allows assigning a parent category to a transaction" do
+      ct = build(:category_transaction, category: parent, transactable: cash_transaction)
+      expect(ct).to be_valid
+    end
+
+    it "allows assigning a subcategory to a transaction" do
+      ct = build(:category_transaction, category: child, transactable: cash_transaction)
+      expect(ct).to be_valid
+    end
+  end
 end
 
 # == Schema Information

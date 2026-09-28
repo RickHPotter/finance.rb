@@ -60,6 +60,81 @@ RSpec.describe Components::CategoryBadge, type: :component do
     expect { described_class.new(category:, variant: :unknown) }.to raise_error(ArgumentError, "invalid category badge variant")
   end
 
+  context "when category is a subcategory" do
+    let(:user) { build_stubbed(:user) }
+    let(:parent) { build_stubbed(:category, id: 10, user:, category_name: "HSH", colour: "#000000", text_colour: "#ffffff", text_colour_mode: "manual") }
+    let(:child) do
+      build_stubbed(:category, id: 42, user:, category_name: "LABOUR", colour: "#ffffff", text_colour: "#000000", text_colour_mode: "manual", parent_category: parent)
+    end
+
+    it "renders a compound badge wrapping parent name and child badge" do
+      document = render_component(category: child, id: "category_badge_42")
+      badge = document.at_css("#category_badge_42")
+
+      expect(badge.name).to eq("span")
+      expect(badge.text).to include("HSH")
+      expect(badge.text).to include("→")
+      expect(badge.text).to include("LABOUR")
+      expect(badge["style"]).to include("background-color: #ffffff")
+      expect(badge["aria-label"]).to eq("HSH → LABOUR")
+
+      child_badge = badge.at_css("[data-category-child-badge='true']")
+      expect(child_badge).to be_present
+      expect(child_badge.text).to eq("LABOUR")
+    end
+
+    it "renders a link compound badge when href is provided" do
+      document = render_component(category: child, href: "/categories/42")
+      badge = document.at_css("a")
+
+      expect(badge["href"]).to eq("/categories/42")
+      expect(badge.at_css("[data-category-child-badge='true']")).to be_present
+    end
+
+    it "renders single badge when compound: false is passed" do
+      document = render_component(category: child, compound: false)
+      badge = document.at_css("span")
+
+      expect(badge.text).to eq("LABOUR")
+      expect(badge.at_css("[data-category-child-badge='true']")).to be_nil
+    end
+
+    it "renders swatch with accessible compound name" do
+      document = render_component(category: child, variant: :swatch)
+      swatch = document.at_css("span[data-category-colour]")
+
+      expect(swatch["class"]).to include("size-5", "rounded-full")
+      expect(swatch["aria-label"]).to eq("HSH → LABOUR")
+      expect(swatch.at_css(".sr-only").text).to eq("HSH → LABOUR")
+    end
+  end
+
+  context "when category is a parent category with subcategories" do
+    let(:user) { build_stubbed(:user) }
+    let(:parent) { build_stubbed(:category, id: 10, user:, category_name: "HSH", colour: "#000000") }
+    let(:child) { build_stubbed(:category, id: 42, user:, category_name: "LABOUR", parent_category: parent) }
+
+    before do
+      allow(parent).to receive(:parent?).and_return(true)
+      allow(parent).to receive(:subcategories).and_return([ child ])
+    end
+
+    it "renders the subcategories count bubble inside the badge" do
+      document = render_component(category: parent, id: "category_badge_10")
+      badge = document.at_css("#category_badge_10")
+
+      bubble = badge.at_css("[data-category-subcategories-count='true']")
+      expect(bubble).to be_present
+      expect(bubble.text).to eq("1")
+      expect(badge["aria-label"]).to eq("HSH (1)")
+    end
+
+    it "omits the bubble when count: false is passed" do
+      document = render_component(category: parent, count: false)
+      expect(document.at_css("[data-category-subcategories-count='true']")).to be_nil
+    end
+  end
+
   def render_component(**attributes)
     Nokogiri::HTML.fragment(described_class.new(**attributes).call)
   end

@@ -205,7 +205,8 @@ class Views::Budgets::Budgets < Views::Base
   def budget_category_popover_items(budget)
     categories_for(budget).map do |category|
       {
-        name: category.name,
+        name: category.hierarchical_name,
+        category:,
         style: CategoryColours::Presentation.for(category).inline_style
       }
     end

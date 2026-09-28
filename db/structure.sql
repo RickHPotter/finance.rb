@@ -330,6 +330,7 @@ CREATE TABLE public.baby_name_decisions (
     choice character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    "position" integer,
     CONSTRAINT baby_name_decisions_choice_check CHECK (((choice)::text = ANY (ARRAY[('rejected'::character varying)::text, ('accepted'::character varying)::text, ('later'::character varying)::text])))
 );
 
@@ -351,6 +352,39 @@ CREATE SEQUENCE public.baby_name_decisions_id_seq
 --
 
 ALTER SEQUENCE public.baby_name_decisions_id_seq OWNED BY public.baby_name_decisions.id;
+
+
+--
+-- Name: baby_name_process_states; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.baby_name_process_states (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    phase character varying DEFAULT 'phase_1'::character varying NOT NULL,
+    phase_completed boolean DEFAULT false NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: baby_name_process_states_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.baby_name_process_states_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: baby_name_process_states_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.baby_name_process_states_id_seq OWNED BY public.baby_name_process_states.id;
 
 
 --
@@ -673,7 +707,9 @@ CREATE TABLE public.categories (
     updated_at timestamp(6) without time zone NOT NULL,
     text_colour_mode character varying DEFAULT 'automatic'::character varying NOT NULL,
     text_colour character varying,
+    parent_category_id bigint,
     CONSTRAINT categories_colour_hex_format CHECK (((colour)::text ~ '^#[0-9a-f]{6}$'::text)),
+    CONSTRAINT categories_no_self_parent CHECK (((parent_category_id IS NULL) OR (parent_category_id <> id))),
     CONSTRAINT categories_text_colour_hex_format CHECK (((text_colour IS NULL) OR ((text_colour)::text ~ '^#[0-9a-f]{6}$'::text))),
     CONSTRAINT categories_text_colour_mode_payload CHECK (((((text_colour_mode)::text = 'automatic'::text) AND (text_colour IS NULL)) OR (((text_colour_mode)::text = 'manual'::text) AND (text_colour IS NOT NULL)))),
     CONSTRAINT categories_text_colour_mode_values CHECK (((text_colour_mode)::text = ANY (ARRAY[('automatic'::character varying)::text, ('manual'::character varying)::text])))
@@ -1690,6 +1726,13 @@ ALTER TABLE ONLY public.baby_name_decisions ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
+-- Name: baby_name_process_states id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.baby_name_process_states ALTER COLUMN id SET DEFAULT nextval('public.baby_name_process_states_id_seq'::regclass);
+
+
+--
 -- Name: baby_names id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1974,6 +2017,14 @@ ALTER TABLE ONLY public.audit_versions
 
 ALTER TABLE ONLY public.baby_name_decisions
     ADD CONSTRAINT baby_name_decisions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: baby_name_process_states baby_name_process_states_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.baby_name_process_states
+    ADD CONSTRAINT baby_name_process_states_pkey PRIMARY KEY (id);
 
 
 --
@@ -2487,6 +2538,20 @@ CREATE UNIQUE INDEX index_baby_name_decisions_on_user_id_and_baby_name_id ON pub
 
 
 --
+-- Name: index_baby_name_decisions_on_user_id_and_position; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_baby_name_decisions_on_user_id_and_position ON public.baby_name_decisions USING btree (user_id, "position");
+
+
+--
+-- Name: index_baby_name_process_states_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_baby_name_process_states_on_user_id ON public.baby_name_process_states USING btree (user_id);
+
+
+--
 -- Name: index_baby_names_on_active_and_position; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2494,10 +2559,10 @@ CREATE INDEX index_baby_names_on_active_and_position ON public.baby_names USING 
 
 
 --
--- Name: index_baby_names_on_name; Type: INDEX; Schema: public; Owner: -
+-- Name: index_baby_names_on_lower_name; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_baby_names_on_name ON public.baby_names USING btree (name);
+CREATE UNIQUE INDEX index_baby_names_on_lower_name ON public.baby_names USING btree (lower((name)::text));
 
 
 --
@@ -2662,6 +2727,13 @@ CREATE INDEX index_cash_transactions_on_user_id ON public.cash_transactions USIN
 
 
 --
+-- Name: index_categories_on_parent_category_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_categories_on_parent_category_id ON public.categories USING btree (parent_category_id);
+
+
+--
 -- Name: index_categories_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2669,10 +2741,10 @@ CREATE INDEX index_categories_on_user_id ON public.categories USING btree (user_
 
 
 --
--- Name: index_category_name_on_composite_key; Type: INDEX; Schema: public; Owner: -
+-- Name: index_categories_on_user_id_parent_and_name; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_category_name_on_composite_key ON public.categories USING btree (user_id, category_name);
+CREATE UNIQUE INDEX index_categories_on_user_id_parent_and_name ON public.categories USING btree (user_id, parent_category_id, category_name) NULLS NOT DISTINCT;
 
 
 --
@@ -3555,6 +3627,14 @@ ALTER TABLE ONLY public.budgets
 
 
 --
+-- Name: baby_name_process_states fk_rails_609bfa93c7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.baby_name_process_states
+    ADD CONSTRAINT fk_rails_609bfa93c7 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: contexts fk_rails_6d2943ccf8; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3736,6 +3816,14 @@ ALTER TABLE ONLY public.budget_categories
 
 ALTER TABLE ONLY public.cash_transactions
     ADD CONSTRAINT fk_rails_abaf8bf6ce FOREIGN KEY (user_card_id) REFERENCES public.user_cards(id);
+
+
+--
+-- Name: categories fk_rails_b7f1bb9825; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT fk_rails_b7f1bb9825 FOREIGN KEY (parent_category_id) REFERENCES public.categories(id) ON DELETE RESTRICT;
 
 
 --
@@ -3945,6 +4033,9 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260925110000'),
+('20260919142600'),
+('20260919142000'),
 ('20260919130000'),
 ('20260915120000'),
 ('20260911100000'),

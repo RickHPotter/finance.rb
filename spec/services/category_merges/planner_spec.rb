@@ -255,6 +255,19 @@ RSpec.describe CategoryMerges::Planner do
       expect(result).to be_conflict
       expect(result.reason_code).to eq(:destination_protected)
     end
+
+    it "returns conflict :source_has_children when source has subcategories" do
+      create(:category, :random, user:, parent_category: source)
+      result = plan
+      expect(result).to be_conflict
+      expect(result.reason_code).to eq(:source_has_children)
+    end
+
+    it "allows merging into a parent category" do
+      create(:category, :random, user:, parent_category: destination)
+      result = plan
+      expect(result).to be_eligible
+    end
   end
 
   # ---------------------------------------------------------------------------

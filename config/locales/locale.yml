@@ -20,6 +20,8 @@ en:
     not_destroyeda: "%{model} was not destroyed."
     not_destroyed_because_has_transactions: "%{model} with transactions cannot be deleted."
     not_destroyed_because_has_transactionsa: "%{model} with transactions cannot be deleted."
+    not_destroyed_because_has_subcategories: "%{model} with subcategories cannot be deleted."
+    not_destroyed_because_has_subcategoriesa: "%{model} with subcategories cannot be deleted."
     user_card_needed: Please add a user card before creating a %{model}.
     alert: "Attention!"
     notice: "Notice"
@@ -433,6 +435,8 @@ pt-BR:
     not_destroyeda: "%{model} não foi excluída."
     not_destroyed_because_has_transactions: "%{model} com transações não pode ser excluído."
     not_destroyed_because_has_transactionsa: "%{model} com transações não pode ser excluída."
+    not_destroyed_because_has_subcategories: "%{model} com subcategorias não pode ser excluído."
+    not_destroyed_because_has_subcategoriesa: "%{model} com subcategorias não pode ser excluída."
     user_card_needed: Por favor, adicione um cartão antes de criar uma %{model}.
     alert: "Atenção!"
     notice: "Aviso"

@@ -136,6 +136,29 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include('data-reactive-form-preserve-installment-prices-value="true"')
     end
 
+    it "renders the hierarchical category name on edit for subcategories" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+      child = create(:category, :random, user:, category_name: "LAND & PROPERTY", parent_category: parent)
+      trans = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Card property expense",
+        price: 50_000,
+        category_transactions_attributes: [ { category_id: child.id } ],
+        card_installments_attributes: [ { number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, price: 50_000 } ]
+      )
+
+      get edit_card_transaction_path(trans)
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+      category_name_span = document.at_css("[data-nested-form-target='target'] .categories_category_name")
+      expect(category_name_span).to be_present
+      expect(category_name_span.text.strip).to eq("HSH → LAND & PROPERTY")
+    end
+
     it "renders card-bound exchange datetimes as read-only while keeping their canonical values enabled" do
       transaction = create(
         :card_transaction,
@@ -2143,6 +2166,78 @@ RSpec.describe "CardTransactions", type: :request do
       expect(datetime_wrapper["data-datetime-input-max-datetime-value"]).to eq(payment_window.maximum.strftime("%Y-%m-%dT%H:%M"))
       expect(canonical_input["value"]).to eq("#{date_input['value']}T#{time_input['value']}")
       expect(document.at_css("##{modal_id} input[type='datetime-local']")).to be_nil
+    end
+
+    it "filters transactions hierarchically, including all subcategories when filtering by parent category" do
+      parent = create(:category, :random, user:, category_name: "HSH")
+      child = create(:category, :random, user:, category_name: "LABOUR", parent_category: parent)
+      other = create(:category, :random, user:, category_name: "LEISURE")
+
+      create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Parent Transaction",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        category_transactions: [ CategoryTransaction.new(category: parent) ],
+        card_installments: [ build(:card_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year) ]
+      )
+      create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Child Transaction",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        category_transactions: [ CategoryTransaction.new(category: child) ],
+        card_installments: [ build(:card_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year) ]
+      )
+      create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Other Transaction",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        category_transactions: [ CategoryTransaction.new(category: other) ],
+        card_installments: [ build(:card_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year) ]
+      )
+
+      month_year = "#{Time.zone.today.year}#{Time.zone.today.month.to_s.rjust(2, '0')}"
+
+      get month_year_card_transactions_path(
+        month_year:,
+        card_transaction: { user_card_id: user_card_one.id, category_id: parent.id }
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Parent Transaction")
+      expect(response.body).to include("Child Transaction")
+      expect(response.body).not_to include("Other Transaction")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      category_pill = document.at_css("[data-datatable-target='category'][data-id*='#{child.id}']")
+      expect(category_pill).to be_present
+      expect(category_pill.text).to include("HSH")
+      expect(category_pill.text).to include("→")
+      expect(category_pill.text).to include("LABOUR")
+
+      get month_year_card_transactions_path(
+        month_year:,
+        card_transaction: { user_card_id: user_card_one.id, category_id: child.id }
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include("Parent Transaction")
+      expect(response.body).to include("Child Transaction")
+      expect(response.body).not_to include("Other Transaction")
     end
   end
 

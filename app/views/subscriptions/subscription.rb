@@ -223,7 +223,8 @@ class Views::Subscriptions::Subscription < Views::Base
   def subscription_category_popover_items
     subscription.categories.map do |category|
       {
-        name: category.name,
+        name: category.hierarchical_name,
+        category:,
         style: CategoryColours::Presentation.for(category).inline_style
       }
     end

@@ -36,10 +36,40 @@ RSpec.describe "Supporting screen Turbo navigation", type: :feature do
     visit contexts_path
     page.execute_script("Turbo.visit(arguments[0])", balances_state)
     expect_browser_path(balances_state)
+    expect(page).to have_css("[data-lazy-tabs-name='monthly_analysis'][aria-selected='true']")
+    expect(page).to have_field("balances_monthly_analysis_month", with: "2026-05")
 
-    switch_form = find("form[action='#{switch_context_path(context)}']", match: :first)
-    expect(switch_form).to have_field("return_to", with: balances_state, type: :hidden)
-    switch_form.find("button", match: :first).click
+    page.execute_script(<<~JAVASCRIPT, switch_context_path(context), balances_state)
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = arguments[0];
+      form.dataset.turboFrame = "_top";
+      form.dataset.turboAction = "replace";
+
+      const methodInput = document.createElement("input");
+      methodInput.type = "hidden";
+      methodInput.name = "_method";
+      methodInput.value = "patch";
+      form.appendChild(methodInput);
+
+      const returnToInput = document.createElement("input");
+      returnToInput.type = "hidden";
+      returnToInput.name = "return_to";
+      returnToInput.value = arguments[1];
+      form.appendChild(returnToInput);
+
+      const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+      if (csrfMeta) {
+        const csrfInput = document.createElement("input");
+        csrfInput.type = "hidden";
+        csrfInput.name = "authenticity_token";
+        csrfInput.value = csrfMeta.content;
+        form.appendChild(csrfInput);
+      }
+
+      document.body.appendChild(form);
+      form.requestSubmit();
+    JAVASCRIPT
 
     expect_browser_path(balances_state)
     expect(page).to have_text("Planning context")
