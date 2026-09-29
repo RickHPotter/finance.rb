@@ -71,7 +71,9 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def edit
-    @card_transaction = current_context.card_transactions.find(params[:id])
+    @card_transaction = current_context.card_transactions
+                                       .includes(line_items: %i[category_transactions entity_transactions])
+                                       .find(params[:id])
     set_return_to
 
     render_top_level Views::CardTransactions::Edit.new(current_user:, card_transaction: @card_transaction, return_to: @return_to)

@@ -44,8 +44,8 @@ class Views::Transactions::ShowLineItemsSection < Views::Base
   end
 
   def render_desktop_table
-    div(class: "overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700") do
-      div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-2xs font-bold uppercase tracking-[0.18em] text-white") do
+    div(class: "overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700/80") do
+      div(class: "grid grid-cols-12 bg-slate-950/90 px-4 py-2.5 text-2xs font-bold uppercase tracking-[0.16em] text-slate-400") do
         span(class: "col-span-4") { I18n.t("activerecord.attributes.line_item.description") }
         span(class: "col-span-3") { I18n.t("activerecord.attributes.line_item.category_id") }
         span(class: "col-span-2") { I18n.t("activerecord.attributes.line_item.entity_id") }
@@ -63,7 +63,7 @@ class Views::Transactions::ShowLineItemsSection < Views::Base
     category = item.categories.first
     entity = item.entities.first
 
-    div(class: "grid grid-cols-12 items-center border-t border-slate-200 px-4 py-3 text-sm dark:border-slate-800 bg-white dark:bg-slate-900") do
+    div(class: "grid grid-cols-12 items-center border-t border-slate-200 px-4 py-2.5 text-sm dark:border-slate-800 bg-white dark:bg-slate-900") do
       div(class: "col-span-4 min-w-0 pr-2") do
         p(class: "font-semibold text-slate-950 dark:text-slate-100 truncate") { item.description }
         p(class: "text-xs text-slate-500 dark:text-slate-400 truncate") { item.comment } if item.comment.present?
