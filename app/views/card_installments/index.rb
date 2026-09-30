@@ -188,7 +188,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             end
 
             if card_transaction.composite?
-              div(class: "flex-1 flex items-center min-w-0 gap-1.5 ml-2") do
+              div(class: "flex-1 flex items-center justify-center min-w-0 gap-1.5 ml-2") do
                 render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment)
                 render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
               end

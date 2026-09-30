@@ -169,7 +169,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
         div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
           if cash_transaction.composite?
-            div(class: "flex-1 flex items-center min-w-0 gap-1.5") do
+            div(class: "flex-1 flex items-center justify-center min-w-0 gap-1.5") do
               render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment)
               render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
             end
