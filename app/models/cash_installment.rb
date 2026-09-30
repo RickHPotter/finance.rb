@@ -25,13 +25,23 @@ class CashInstallment < Installment
   default_scope { where(installment_type: :CashInstallment) }
 
   scope :due_today, -> { where(paid: false, date: [ Time.zone.today.beginning_of_day..Time.zone.today.end_of_day ]) }
-  scope :by_categories, ->(categories) { joins(cash_transaction: :categories).where(cash_transaction: { categories: }) }
-  scope :by_entities, ->(entities) { joins(cash_transaction: :entities).where(cash_transaction: { entities: }) }
-  scope :by_categories_and_entities, ->(categories, entities) { joins(cash_transaction: %i[categories entities]).where(cash_transaction: { categories:, entities: }) }
+  scope :by_categories, lambda { |categories|
+    category_ids = Category.subtree_ids_for(categories)
+    where(cash_transaction_id: CashTransaction.matching_category_ids(category_ids))
+  }
+  scope :by_entities, lambda { |entities|
+    entity_ids = if entities.is_a?(ActiveRecord::Relation)
+                   entities.select(:id)
+                 else
+                   Array(entities).map { |e| e.is_a?(Entity) ? e.id : e }
+                 end
+    where(cash_transaction_id: CashTransaction.matching_entity_ids(entity_ids))
+  }
+  scope :by_categories_and_entities, lambda { |categories, entities|
+    by_categories(categories).by_entities(entities)
+  }
   scope :by_categories_or_entities, lambda { |categories, entities|
-    joins(cash_transaction: %i[categories entities]).where(cash_transaction: { categories: }).or(
-      joins(cash_transaction: %i[categories entities]).where(cash_transaction: { entities: })
-    ).distinct
+    by_categories(categories).or(by_entities(entities))
   }
 
   # @additional_config ........................................................

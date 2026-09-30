@@ -5709,9 +5709,41 @@ RSpec.describe "CashTransactions", type: :request do
       }
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(I18n.t("transactions.composite.badge", count: 2))
+      expect(response.body).to include(I18n.t("transactions.composite.breakdown_title"))
       expect(response.body).to include("Burger")
       expect(response.body).to include("Fries")
+    end
+
+    it "finds composite transactions when searching by category_id or line item description" do
+      cat = create(:category, :random, user:)
+      composite = create(
+        :cash_transaction,
+        user:,
+        description: "Bulk Supermarket",
+        price: 5_000,
+        user_bank_account:,
+        date: Time.zone.today,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, price: 5_000, paid: false)
+        ]
+      )
+      create(:line_item, transactable: composite, description: "Fancy Cheese", price: 5_000, category_id: cat.id)
+
+      month_year = Time.zone.today.strftime("%Y%m")
+
+      get month_year_cash_transactions_path, params: {
+        month_year:,
+        cash_transaction: { category_id: cat.id }
+      }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Bulk Supermarket")
+
+      get month_year_cash_transactions_path, params: {
+        month_year:,
+        search_term: "Cheese"
+      }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Bulk Supermarket")
     end
 
     it "renders row actions in the menu while keeping description links pointed at edit" do

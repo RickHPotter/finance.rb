@@ -313,6 +313,17 @@ RSpec.describe Category, type: :model do
         expect(child1.hierarchical_name).to eq("#{parent.name} → #{child1.name}")
         expect(child1.hierarchical_name(" / ")).to eq("#{parent.name} / #{child1.name}")
       end
+
+      it "includes composite line items in count and total" do
+        target_category = create(:category, :random, user:)
+        composite = create(:cash_transaction, user:, context: user.main_context, price: 100_00)
+        create(:line_item, transactable: composite, description: "Item 1", price: 60_00, category_id: target_category.id)
+        create(:line_item, transactable: composite, description: "Item 2", price: 40_00, category_id: target_category.id)
+
+        target_category.update_cash_transactions_count_and_total
+        expect(target_category.cash_transactions_count).to eq(1)
+        expect(target_category.cash_transactions_total).to eq(100_00)
+      end
     end
   end
 end

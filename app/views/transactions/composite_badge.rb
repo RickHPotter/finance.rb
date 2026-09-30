@@ -7,10 +7,11 @@ class Views::Transactions::CompositeBadge < Views::Base
   include CacheHelper
   include ComponentsHelper
 
-  attr_reader :transaction
+  attr_reader :transaction, :installment
 
-  def initialize(transaction:)
+  def initialize(transaction:, installment: nil)
     @transaction = transaction
+    @installment = installment
   end
 
   def view_template
@@ -20,67 +21,157 @@ class Views::Transactions::CompositeBadge < Views::Base
       PopoverTrigger(class: "inline-flex items-center") do
         button(
           type: :button,
-          class: badge_classes,
+          class: trigger_button_classes,
           title: I18n.t("transactions.composite.breakdown_title"),
           data: {
             action: "click->datatable#stopPropagation mousedown->datatable#stopPropagation"
           }
         ) do
           cached_icon(:category)
-          span { I18n.t("transactions.composite.badge", count: line_items.size) }
         end
       end
 
-      PopoverContent(class: "z-60 opacity-100! p-0 w-72 rounded-xl border border-slate-700/80 bg-slate-900 shadow-2xl text-slate-100 overflow-hidden") do
-        div(class: "flex items-center justify-between bg-slate-800/60 px-3 py-2 border-b border-slate-700/60") do
-          p(class: "text-2xs font-bold uppercase tracking-wider text-slate-400") do
-            I18n.t("transactions.composite.breakdown_title")
-          end
-          span(class: "rounded-full bg-purple-500/20 px-2 py-0.5 text-2xs font-semibold text-purple-300 border border-purple-500/30") do
-            "#{line_items.size}×"
-          end
-        end
-
-        div(class: "max-h-56 overflow-y-auto divide-y divide-slate-700/40") do
-          line_items.each do |item|
-            render_item(item)
-          end
-        end
-
-        div(class: "flex items-center justify-between bg-slate-800/40 px-3 py-2 border-t border-slate-700/60 text-xs font-bold") do
-          span(class: "text-slate-400") { I18n.t("transactions.composite.parent_total") }
-          span(class: "font-mono text-slate-100") { money(transaction.price) }
-        end
+      PopoverContent(class: popover_content_classes) do
+        header_section
+        table_header
+        table_body
+        footer_section
       end
     end
   end
 
   private
 
-  def badge_classes
-    "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wide " \
-      "bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30 transition-colors cursor-pointer"
+  def trigger_button_classes
+    "inline-flex items-center justify-center size-6 rounded p-0.5 " \
+      "text-purple-600 hover:bg-purple-100 hover:text-purple-800 " \
+      "dark:text-purple-400 dark:hover:bg-purple-950/50 dark:hover:text-purple-300 " \
+      "transition-colors cursor-pointer shrink-0 [&_svg]:size-4"
+  end
+
+  def popover_content_classes
+    "z-60 opacity-100! p-0 w-[24rem] sm:w-[28rem] rounded-xl border " \
+      "border-slate-200 bg-white text-slate-900 shadow-2xl " \
+      "dark:border-slate-700/80 dark:bg-slate-900 dark:text-slate-100 overflow-hidden"
+  end
+
+  def header_section
+    div(class: "flex items-center justify-between bg-slate-50 px-3 py-2 border-b border-slate-200 dark:bg-slate-800/60 dark:border-slate-700/60") do
+      div(class: "flex items-center gap-1.5 [&_svg]:size-4 text-slate-600 dark:text-slate-400") do
+        cached_icon(:category)
+        p(class: "text-2xs font-bold uppercase tracking-wider") do
+          I18n.t("transactions.composite.breakdown_title")
+        end
+      end
+      span(class: "rounded-full bg-purple-500/10 px-2 py-0.5 text-2xs font-semibold text-purple-700 border border-purple-300 " \
+                  "dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30") do
+        "#{line_items.size} #{I18n.t('activerecord.models.line_item.other').downcase}"
+      end
+    end
+  end
+
+  def table_header
+    div(class: "grid grid-cols-12 bg-slate-100/80 px-3 py-1.5 text-2xs font-bold uppercase tracking-wider " \
+               "text-slate-500 border-b border-slate-200 dark:bg-slate-800/40 dark:border-slate-700/60 dark:text-slate-400") do
+      span(class: "col-span-5 text-left") { I18n.t("activerecord.attributes.line_item.description") }
+      span(class: "col-span-3 text-left") { I18n.t("activerecord.attributes.line_item.category_id") }
+      span(class: "col-span-2 text-left") { I18n.t("activerecord.attributes.line_item.entity_id") }
+      span(class: "col-span-2 text-right") { I18n.t("activerecord.attributes.line_item.price") }
+    end
+  end
+
+  def table_body
+    div(class: "max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60") do
+      line_items.each do |item|
+        render_item(item)
+      end
+    end
   end
 
   def render_item(item)
     category = item.categories.first
     entity = item.entities.first
 
-    div(class: "flex items-start justify-between gap-3 px-3 py-2 text-xs") do
-      div(class: "min-w-0 flex-1 space-y-1") do
-        p(class: "font-semibold text-slate-200 truncate") { item.description }
-        div(class: "flex flex-wrap items-center gap-1") do
-          CategoryBadge(category:, class: "text-2xs") if category.present?
-          if entity.present?
-            span(class: "inline-flex items-center gap-1 text-2xs text-slate-400") do
-              image_tag(asset_path("avatars/#{entity.avatar_name}"), class: "h-3.5 w-3.5 rounded-full") if entity.avatar_name.present?
-              plain entity.entity_name
-            end
-          end
+    div(class: "grid grid-cols-12 items-center gap-1 px-3 py-2 text-xs hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors") do
+      div(class: "col-span-5 min-w-0 pr-1 text-left") do
+        p(class: "font-semibold text-slate-800 dark:text-slate-200 truncate text-xs") { item.description }
+        p(class: "text-2xs text-slate-400 truncate") { item.comment } if item.comment.present?
+      end
+
+      div(class: "col-span-3 min-w-0 pr-1 text-left") do
+        if category.present?
+          CategoryBadge(category:, class: "text-2xs truncate max-w-full")
+        else
+          span(class: "text-slate-400 text-2xs") { "-" }
         end
       end
 
-      span(class: "font-mono font-bold text-slate-100 shrink-0 pt-0.5") { money(item.price) }
+      div(class: "col-span-2 min-w-0 pr-1 text-left") do
+        if entity.present?
+          span(class: "inline-flex items-center gap-1 text-2xs text-slate-600 dark:text-slate-400 truncate") do
+            image_tag(asset_path("avatars/#{entity.avatar_name}"), class: "size-3.5 rounded-full shrink-0") if entity.avatar_name.present?
+            span(class: "truncate") { entity.entity_name }
+          end
+        else
+          span(class: "text-slate-400 text-2xs") { "-" }
+        end
+      end
+
+      div(
+        class: "col-span-2 text-right font-mono font-bold text-slate-800 dark:text-slate-100 text-xs shrink-0 whitespace-nowrap",
+        title: item_price_title(item)
+      ) do
+        money(item_display_price(item))
+      end
+    end
+  end
+
+  def footer_section
+    div(class: "flex items-center justify-between bg-slate-50 px-3 py-2 border-t border-slate-200 text-xs font-bold " \
+               "dark:bg-slate-800/50 dark:border-slate-700/60") do
+      if multi_installment?
+        div(class: "flex items-center gap-1.5") do
+          span(class: "text-slate-500 dark:text-slate-400 font-normal") do
+            "#{I18n.t('transactions.composite.installment', default: 'Parcela')}:"
+          end
+          span(class: "font-mono text-slate-800 dark:text-slate-100") { money(installment.price) }
+        end
+        div(class: "flex items-center gap-1.5") do
+          span(class: "text-slate-500 dark:text-slate-400 font-normal") { I18n.t("transactions.composite.parent_total") }
+          span(class: "font-mono text-slate-800 dark:text-slate-100") { money(transaction.price) }
+        end
+      else
+        span(class: "text-slate-500 dark:text-slate-400 font-normal") { I18n.t("transactions.composite.parent_total") }
+        span(class: "font-mono text-slate-800 dark:text-slate-100") { money(transaction.price) }
+      end
+    end
+  end
+
+  def multi_installment?
+    installment.present? && installments_count > 1
+  end
+
+  def installments_count
+    if transaction.is_a?(CardTransaction)
+      transaction.card_installments_count.to_i
+    else
+      transaction.cash_installments_count.to_i
+    end
+  end
+
+  def item_display_price(item)
+    if multi_installment?
+      (item.price.to_d / installments_count).round
+    else
+      item.price
+    end
+  end
+
+  def item_price_title(item)
+    if multi_installment?
+      "#{I18n.t('transactions.composite.parent_total')} #{money(item.price)}"
+    else
+      money(item.price)
     end
   end
 

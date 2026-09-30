@@ -42,8 +42,9 @@ class Views::CashTransactions::FormControls < Views::Base
   end
 
   def category_and_entity_fields
+    composite = cash_transaction.composite?
     div(
-      class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0 #{'hidden' if cash_transaction.composite?}",
+      class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0 #{'pointer-events-none opacity-50' if composite}",
       data: { composite_transaction_target: "headerAllocations" }
     ) do
       div(id: "cash_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
@@ -52,7 +53,7 @@ class Views::CashTransactions::FormControls < Views::Base
           options: categories.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
           selected_value: nil,
           placeholder: model_attribute(cash_transaction, :category_id),
-          disabled: cash_transaction.card_payment? || cash_transaction.exchange_return?,
+          disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return?,
           input_data: {
             action: "change->reactive-form#insertCategory"
           }
@@ -65,7 +66,7 @@ class Views::CashTransactions::FormControls < Views::Base
           options: entities.map { |label, value| [ label, value, {} ] },
           selected_value: nil,
           placeholder: model_attribute(cash_transaction, :entity_id),
-          disabled: cash_transaction.card_payment? || cash_transaction.exchange_return?,
+          disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return?,
           input_data: {
             action: "change->reactive-form#insertEntity"
           }

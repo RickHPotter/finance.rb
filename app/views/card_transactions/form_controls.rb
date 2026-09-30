@@ -49,8 +49,9 @@ class Views::CardTransactions::FormControls < Views::Base
   end
 
   def category_and_entity_fields
+    composite = card_transaction.composite?
     div(
-      class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0 #{'hidden' if card_transaction.composite?}",
+      class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0 #{'pointer-events-none opacity-50' if composite}",
       data: { composite_transaction_target: "headerAllocations" }
     ) do
       div(id: "card_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
@@ -60,6 +61,7 @@ class Views::CardTransactions::FormControls < Views::Base
           selected_value: nil,
           placeholder: model_attribute(card_transaction, :category_id),
           autofocus: autofocus_target == :category_transaction,
+          disabled: composite,
           input_data: {
             action: "change->reactive-form#insertCategory"
           }
@@ -73,6 +75,7 @@ class Views::CardTransactions::FormControls < Views::Base
           selected_value: nil,
           placeholder: model_attribute(card_transaction, :entity_id),
           autofocus: autofocus_target == :entity_transaction,
+          disabled: composite,
           input_data: {
             action: "change->reactive-form#insertEntity"
           }

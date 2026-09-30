@@ -88,6 +88,28 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
       .where("cash_transaction_type IS NULL OR cash_transaction_type NOT IN (?)", %w[CardInstallment CardTransaction Investment PiggyBank])
       .where.not(id: protected_transaction_ids)
   }
+  scope :matching_category_ids, lambda { |category_ids|
+    return all if category_ids.blank?
+
+    direct_ids = CategoryTransaction.where(transactable_type: "CashTransaction", category_id: category_ids).select(:transactable_id)
+    line_item_tx_ids = LineItem.where(
+      transactable_type: "CashTransaction",
+      id: CategoryTransaction.where(transactable_type: "LineItem", category_id: category_ids).select(:transactable_id)
+    ).select(:transactable_id)
+
+    where(id: direct_ids).or(where(id: line_item_tx_ids))
+  }
+  scope :matching_entity_ids, lambda { |entity_ids|
+    return all if entity_ids.blank?
+
+    direct_ids = EntityTransaction.where(transactable_type: "CashTransaction", entity_id: entity_ids).select(:transactable_id)
+    line_item_tx_ids = LineItem.where(
+      transactable_type: "CashTransaction",
+      id: EntityTransaction.where(transactable_type: "LineItem", entity_id: entity_ids).select(:transactable_id)
+    ).select(:transactable_id)
+
+    where(id: direct_ids).or(where(id: line_item_tx_ids))
+  }
 
   # @public_instance_methods ..................................................
 

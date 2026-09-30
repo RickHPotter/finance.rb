@@ -203,18 +203,40 @@ module Logic
       conditions.merge!(paid:) if paid.in?([ true, false ])
 
       relation = financial_scope.cash_installments.left_joins({ cash_transaction: %i[categories entities] }).where(conditions)
-
-      relation = Search::NormalizedText.apply(relation, search_term, "cash_transactions.description")
+      relation = apply_search_term_filter(relation, financial_scope, search_term)
 
       relation = relation.where(cash_transaction_id: financial_scope.cash_transactions.subscription_candidates.select(:id)) if attach_to_subscription_id.present?
 
-      relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
-      relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
+      relation = relation.where(cash_transaction_id: financial_scope.cash_transactions.matching_category_ids(category_ids)) if category_ids.present?
+      relation = relation.where(cash_transaction_id: financial_scope.cash_transactions.matching_entity_ids(entity_ids)) if entity_ids.present?
       relation = Logic::CashInstallments.apply_exchange_bound_type_filter(relation, conditions[:exchange_bound_type])
 
       relation = relation.distinct.select("installments.id, installments.month, installments.year")
 
       relation.group_by { |record| Date.new(record.year, record.month, 1).strftime("%Y%m").to_i }
+    end
+
+    def self.apply_search_term_filter(relation, financial_scope, search_term)
+      return relation if search_term.blank?
+
+      matching_line_item_tx_ids = Search::NormalizedText.apply(
+        LineItem.where(transactable_type: "CashTransaction"),
+        search_term,
+        "line_items.description"
+      ).select(:transactable_id)
+
+      matching_tx_ids = Search::NormalizedText.apply(
+        financial_scope.cash_transactions,
+        search_term,
+        "cash_transactions.description"
+      ).select(:id)
+
+      all_matching_tx_ids = financial_scope.cash_transactions
+                                           .where(id: matching_tx_ids)
+                                           .or(financial_scope.cash_transactions.where(id: matching_line_item_tx_ids))
+                                           .select(:id)
+
+      relation.where(cash_transaction_id: all_matching_tx_ids)
     end
   end
 end

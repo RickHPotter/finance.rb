@@ -49,6 +49,28 @@ class CardTransaction < ApplicationRecord
 
   # @scopes ...................................................................
   scope :subscription_candidates, -> { where(subscription_id: nil) }
+  scope :matching_category_ids, lambda { |category_ids|
+    return all if category_ids.blank?
+
+    direct_ids = CategoryTransaction.where(transactable_type: "CardTransaction", category_id: category_ids).select(:transactable_id)
+    line_item_tx_ids = LineItem.where(
+      transactable_type: "CardTransaction",
+      id: CategoryTransaction.where(transactable_type: "LineItem", category_id: category_ids).select(:transactable_id)
+    ).select(:transactable_id)
+
+    where(id: direct_ids).or(where(id: line_item_tx_ids))
+  }
+  scope :matching_entity_ids, lambda { |entity_ids|
+    return all if entity_ids.blank?
+
+    direct_ids = EntityTransaction.where(transactable_type: "CardTransaction", entity_id: entity_ids).select(:transactable_id)
+    line_item_tx_ids = LineItem.where(
+      transactable_type: "CardTransaction",
+      id: EntityTransaction.where(transactable_type: "LineItem", entity_id: entity_ids).select(:transactable_id)
+    ).select(:transactable_id)
+
+    where(id: direct_ids).or(where(id: line_item_tx_ids))
+  }
   # @class_methods ............................................................
   def self.duplicate(id)
     existing_card_transaction = includes(:card_installments, :category_transactions, :line_items,

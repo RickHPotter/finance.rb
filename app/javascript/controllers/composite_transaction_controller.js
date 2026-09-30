@@ -55,11 +55,19 @@ export default class extends Controller {
     }
 
     if (this.hasHeaderAllocationsTarget) {
-      this.headerAllocationsTarget.classList.toggle("hidden", isSplit)
+      this.headerAllocationsTarget.classList.toggle("pointer-events-none", isSplit)
+      this.headerAllocationsTarget.classList.toggle("opacity-50", isSplit)
+      this.headerAllocationsTarget.querySelectorAll("button, input").forEach(el => {
+        el.disabled = isSplit
+      })
     }
 
     if (this.hasAllocationsContainerTarget) {
-      this.allocationsContainerTarget.classList.toggle("hidden", isSplit)
+      this.allocationsContainerTarget.classList.toggle("pointer-events-none", isSplit)
+      this.allocationsContainerTarget.classList.toggle("opacity-50", isSplit)
+      this.allocationsContainerTarget.querySelectorAll("button, input").forEach(el => {
+        el.disabled = isSplit
+      })
     }
   }
 

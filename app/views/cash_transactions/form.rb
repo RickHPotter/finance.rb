@@ -80,7 +80,7 @@ class Views::CashTransactions::Form < Views::Base
         )
         render Views::CashTransactions::FormInstallmentsSection.new(form:, cash_transaction:)
         div(
-          class: "mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-0 #{'hidden' if cash_transaction.composite?}",
+          class: "mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-0 #{'pointer-events-none opacity-50' if cash_transaction.composite?}",
           data: { composite_transaction_target: "allocationsContainer" }
         ) do
           render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)

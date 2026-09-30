@@ -24,13 +24,23 @@ class CardInstallment < Installment
   # @scopes ...................................................................
   default_scope { where(installment_type: :CardInstallment) }
 
-  scope :by_categories, ->(categories) { joins(card_transaction: :categories).where(card_transaction: { categories: }) }
-  scope :by_entities, ->(entities) { joins(card_transaction: :entities).where(card_transaction: { entities: }) }
-  scope :by_categories_and_entities, ->(categories, entities) { joins(card_transaction: %i[categories entities]).where(card_transaction: { categories:, entities: }) }
+  scope :by_categories, lambda { |categories|
+    category_ids = Category.subtree_ids_for(categories)
+    where(card_transaction_id: CardTransaction.matching_category_ids(category_ids))
+  }
+  scope :by_entities, lambda { |entities|
+    entity_ids = if entities.is_a?(ActiveRecord::Relation)
+                   entities.select(:id)
+                 else
+                   Array(entities).map { |e| e.is_a?(Entity) ? e.id : e }
+                 end
+    where(card_transaction_id: CardTransaction.matching_entity_ids(entity_ids))
+  }
+  scope :by_categories_and_entities, lambda { |categories, entities|
+    by_categories(categories).by_entities(entities)
+  }
   scope :by_categories_or_entities, lambda { |categories, entities|
-    joins(card_transaction: %i[categories entities]).where(card_transaction: { categories: }).or(
-      joins(card_transaction: %i[categories entities]).where(card_transaction: { entities: })
-    ).distinct
+    by_categories(categories).or(by_entities(entities))
   }
 
   # @additional_config ........................................................

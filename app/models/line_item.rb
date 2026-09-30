@@ -24,6 +24,7 @@ class LineItem < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation :sync_entity_transaction_price
+  after_commit :update_associations_total, on: %i[create update destroy]
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -86,6 +87,19 @@ class LineItem < ApplicationRecord
 
   def entity=(ent)
     self.entity_id = ent&.id
+  end
+
+  def update_associations_total
+    return if destroyed?
+
+    categories.each do |cat|
+      cat.update_cash_transactions_count_and_total
+      cat.update_card_transactions_count_and_total
+    end
+    entities.each do |ent|
+      ent.update_cash_transactions_count_and_total
+      ent.update_card_transactions_count_and_total
+    end
   end
 
   # @protected_instance_methods ...............................................

@@ -2112,7 +2112,7 @@ RSpec.describe "CardTransactions", type: :request do
       }
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(I18n.t("transactions.composite.badge", count: 2))
+      expect(response.body).to include(I18n.t("transactions.composite.breakdown_title"))
       expect(response.body).to include("Cable")
       expect(response.body).to include("Adapter")
     end

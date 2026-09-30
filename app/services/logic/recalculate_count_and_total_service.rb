@@ -39,15 +39,21 @@ module Logic
     def persisted_categories_for(transaction)
       return transaction.categories unless transaction.persisted?
 
-      category_ids = CategoryTransaction.where(transactable: transaction).select(:category_id)
-      Category.where(id: category_ids)
+      category_ids = CategoryTransaction.where(transactable: transaction).pluck(:category_id)
+      if transaction.respond_to?(:line_items) && transaction.line_items.any?
+        category_ids += CategoryTransaction.where(transactable: transaction.line_items).pluck(:category_id)
+      end
+      Category.where(id: category_ids.uniq)
     end
 
     def persisted_entities_for(transaction)
       return transaction.entities unless transaction.persisted?
 
-      entity_ids = EntityTransaction.where(transactable: transaction).select(:entity_id)
-      Entity.where(id: entity_ids)
+      entity_ids = EntityTransaction.where(transactable: transaction).pluck(:entity_id)
+      if transaction.respond_to?(:line_items) && transaction.line_items.any?
+        entity_ids += EntityTransaction.where(transactable: transaction.line_items).pluck(:entity_id)
+      end
+      Entity.where(id: entity_ids.uniq)
     end
   end
 end

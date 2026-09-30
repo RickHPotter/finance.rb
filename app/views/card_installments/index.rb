@@ -59,8 +59,8 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                         data: { turbo_frame: "_top", turbo_prefetch: false }
               end
 
+              render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment) if card_transaction.composite?
               render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
-              render Views::Transactions::CompositeBadge.new(transaction: card_transaction) if card_transaction.composite?
 
               span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
                 pretty_installments(card_installment.number, card_installment.card_installments_count)
@@ -183,8 +183,8 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                       data: { turbo_frame: "_top", turbo_prefetch: false }
             end
 
+            render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment) if card_transaction.composite?
             render_description_link(card_transaction, class: "flex-5 truncate text-md underline underline-offset-[3px]")
-            render Views::Transactions::CompositeBadge.new(transaction: card_transaction) if card_transaction.composite?
 
             span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
               pretty_installments(card_installment.number, card_installment.card_installments_count)

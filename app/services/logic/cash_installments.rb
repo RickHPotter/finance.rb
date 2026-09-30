@@ -3,23 +3,9 @@
 module Logic
   class CashInstallments
     def self.find_by_ref_month_year(financial_scope, month, year, raw_conditions)
-      search_term_condition = Search::NormalizedText.condition_for(raw_conditions[:search_term], "cash_transactions.description")
-      paid_filters = IndexState::CashTransactions.resolve_paid_filters(
-        paid_state: raw_conditions[:paid_state],
-        paid: raw_conditions[:paid],
-        pending: raw_conditions[:pending]
-      )
-      paid = paid_filters[:paid] if paid_filters[:paid] != paid_filters[:pending]
-
-      conditions = {
-        price: raw_conditions[:installments_price],
-        number: raw_conditions[:installments_number],
-        date: raw_conditions[:date],
-        cash_transaction: { **raw_conditions.slice(:cash_installments_count, :id, :price, :subscription_id, :user_bank_account_id).compact_blank,
-                            **raw_conditions[:associations] }.compact_blank
-      }.compact_blank
-
-      conditions.merge!(paid:) if paid.in?([ true, false ])
+      category_ids = raw_conditions.dig(:associations, :categories, :id).presence
+      entity_ids = raw_conditions.dig(:associations, :entities, :id).presence
+      conditions = build_conditions(raw_conditions)
 
       fetch_cash_installments(
         financial_scope,
@@ -27,7 +13,9 @@ module Logic
         year,
         {
           conditions:,
-          search_term_condition:,
+          search_term: raw_conditions[:search_term],
+          category_ids:,
+          entity_ids:,
           ids: raw_conditions[:cash_installment_ids],
           attach_to_subscription_id: raw_conditions[:attach_to_subscription_id],
           exchange_bound_type: raw_conditions[:exchange_bound_type],
@@ -46,19 +34,9 @@ module Logic
     end
 
     def self.fetch_cash_installments(financial_scope, month, year, options)
-      relation = cash_installments_relation(financial_scope)
-                 .left_joins(cash_transaction: %i[categories entities])
-                 .where(year:, month:)
-                 .includes(cash_transaction: [
-                             { categories: :parent_category },
-                             :entities,
-                             { category_transactions: { category: :parent_category } },
-                             { entity_transactions: :entity },
-                             { line_items: [ { categories: :parent_category }, :entities ] }
-                           ])
-                 .preload(cash_transaction: :reference_transactable)
-                 .where(options[:conditions])
-                 .where(options[:search_term_condition])
+      relation = base_fetch_relation(financial_scope, month, year, options[:conditions])
+      relation = apply_composite_search(relation, financial_scope, options[:search_term])
+      relation = apply_allocation_filters(relation, financial_scope, options[:category_ids], options[:entity_ids])
 
       if options[:attach_to_subscription_id].present?
         relation = relation.where(cash_transaction_id: financial_scope.cash_transactions.subscription_candidates.select(:id))
@@ -68,6 +46,71 @@ module Logic
       relation = apply_exchange_bound_type_filter(relation, options[:exchange_bound_type])
       relation = relation.distinct
       apply_sort(relation, sort: options[:sort], direction: options[:direction])
+    end
+
+    def self.base_fetch_relation(financial_scope, month, year, conditions)
+      cash_installments_relation(financial_scope)
+        .left_joins(cash_transaction: %i[categories entities])
+        .where(year:, month:)
+        .includes(cash_transaction: [
+                    { categories: :parent_category },
+                    :entities,
+                    { category_transactions: { category: :parent_category } },
+                    { entity_transactions: :entity },
+                    { line_items: [ { categories: :parent_category }, :entities ] }
+                  ])
+        .preload(cash_transaction: :reference_transactable)
+        .where(conditions)
+    end
+
+    def self.apply_composite_search(relation, financial_scope, search_term)
+      return relation if search_term.blank?
+
+      matching_line_item_tx_ids = Search::NormalizedText.apply(
+        LineItem.where(transactable_type: "CashTransaction"),
+        search_term,
+        "line_items.description"
+      ).select(:transactable_id)
+
+      matching_tx_ids = Search::NormalizedText.apply(
+        financial_scope.cash_transactions,
+        search_term,
+        "cash_transactions.description"
+      ).select(:id)
+
+      all_matching_tx_ids = financial_scope.cash_transactions
+                                           .where(id: matching_tx_ids)
+                                           .or(financial_scope.cash_transactions.where(id: matching_line_item_tx_ids))
+                                           .select(:id)
+
+      relation.where(cash_transaction_id: all_matching_tx_ids)
+    end
+
+    def self.apply_allocation_filters(relation, financial_scope, category_ids, entity_ids)
+      relation = relation.where(cash_transaction_id: financial_scope.cash_transactions.matching_category_ids(category_ids)) if category_ids.present?
+      relation = relation.where(cash_transaction_id: financial_scope.cash_transactions.matching_entity_ids(entity_ids)) if entity_ids.present?
+      relation
+    end
+
+    def self.build_conditions(raw_conditions)
+      paid_filters = IndexState::CashTransactions.resolve_paid_filters(
+        paid_state: raw_conditions[:paid_state],
+        paid: raw_conditions[:paid],
+        pending: raw_conditions[:pending]
+      )
+      paid = paid_filters[:paid] if paid_filters[:paid] != paid_filters[:pending]
+      associations_conditions = raw_conditions[:associations]&.except(:categories, :entities) || {}
+
+      conditions = {
+        price: raw_conditions[:installments_price],
+        number: raw_conditions[:installments_number],
+        date: raw_conditions[:date],
+        cash_transaction: { **raw_conditions.slice(:cash_installments_count, :id, :price, :subscription_id, :user_bank_account_id).compact_blank,
+                            **associations_conditions }.compact_blank
+      }.compact_blank
+
+      conditions.merge!(paid:) if paid.in?([ true, false ])
+      conditions
     end
 
     def self.apply_exchange_bound_type_filter(relation, exchange_bound_type)
