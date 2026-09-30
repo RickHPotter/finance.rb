@@ -53,7 +53,7 @@ class Views::CashTransactions::FormControls < Views::Base
           options: categories.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
           selected_value: nil,
           placeholder: model_attribute(cash_transaction, :category_id),
-          disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return?,
+          disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return? || cash_transaction.generated_piggy_bank_return?,
           input_data: {
             action: "change->reactive-form#insertCategory"
           }
@@ -66,7 +66,7 @@ class Views::CashTransactions::FormControls < Views::Base
           options: entities.map { |label, value| [ label, value, {} ] },
           selected_value: nil,
           placeholder: model_attribute(cash_transaction, :entity_id),
-          disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return?,
+          disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return? || cash_transaction.generated_piggy_bank_return?,
           input_data: {
             action: "change->reactive-form#insertEntity"
           }
@@ -82,6 +82,7 @@ class Views::CashTransactions::FormControls < Views::Base
         field: :date,
         value: cash_transaction.date,
         id: :cash_transaction_date,
+        disabled: cash_transaction.generated_piggy_bank_return? && !cash_transaction.piggy_bank_return_open?,
         hidden_data: {
           reactive_form_target: :dateInput
         },
@@ -103,7 +104,7 @@ class Views::CashTransactions::FormControls < Views::Base
         class: "w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
         tabindex: -1,
         title: action_message(:toggle_sign),
-        disabled: cash_transaction.card_payment?,
+        disabled: cash_transaction.card_payment? || cash_transaction.generated_piggy_bank_return?,
         data: { action: "click->price-mask#toggleSign click->composite-transaction#recalculate", target: ".sign-based" }
       ) { sign }
 
@@ -115,7 +116,7 @@ class Views::CashTransactions::FormControls < Views::Base
           id: :transaction_price,
           class: "sign-based font-graduate dark:font-mono",
           autocomplete: :off,
-          disabled: cash_transaction.card_payment?,
+          disabled: cash_transaction.card_payment? || cash_transaction.generated_piggy_bank_return?,
           data: { price_mask_target: :input,
                   controller: "input-select",
                   composite_transaction_target: :parentPrice,
@@ -130,7 +131,7 @@ class Views::CashTransactions::FormControls < Views::Base
         class: calculate_button_class,
         tabindex: -1,
         title: action_message(:calculate_installments_price),
-        disabled: cash_transaction.card_payment?,
+        disabled: cash_transaction.card_payment? || cash_transaction.generated_piggy_bank_return?,
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
@@ -142,7 +143,7 @@ class Views::CashTransactions::FormControls < Views::Base
           min: 1, max: 72,
           value: [ visible_cash_installments_count, 1 ].max,
           class: "font-graduate dark:font-mono",
-          disabled: cash_transaction.card_payment?,
+          disabled: cash_transaction.card_payment? || cash_transaction.generated_piggy_bank_return?,
           data: { controller: "input-select",
                   reactive_form_target: :installmentsCountInput,
                   action: "click->input-select#select input->reactive-form#updateInstallmentsPrices" }

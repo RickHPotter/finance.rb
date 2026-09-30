@@ -441,6 +441,8 @@ export default class extends Controller {
     const attached = isPresent(returnDate)
     dateControls.classList.toggle("opacity-60", attached)
     dateControls.querySelectorAll("input:not([type='hidden']), button").forEach((control) => { control.disabled = attached })
+    const linkedHint = section.querySelector("[data-piggy-bank-linked-return-hint]")
+    if (linkedHint) linkedHint.classList.toggle("hidden", !attached)
     if (!attached) return
 
     const hiddenInput = dateControls.querySelector("input[type='hidden']")

@@ -263,6 +263,18 @@ module Views
                 value: piggy_bank.return_date,
                 id: return_date_id
               )
+              if piggy_bank.return_cash_transaction.present? && !piggy_bank.return_cash_transaction.piggy_bank_return_links.one?
+                p(class: "mt-1 text-[0.65rem] leading-tight text-slate-500 dark:text-slate-400", data: { piggy_bank_linked_return_hint: true }) do
+                  plain "#{I18n.t('piggy_banks.date_managed_by_return')}: "
+                  a(
+                    href: edit_cash_transaction_path(piggy_bank.return_cash_transaction),
+                    class: "font-semibold underline hover:text-slate-800 dark:hover:text-slate-200",
+                    data: { turbo_frame: "_top" }
+                  ) do
+                    piggy_bank.return_cash_transaction.description
+                  end
+                end
+              end
             end
 
             div do
@@ -308,7 +320,7 @@ module Views
       end
 
       def piggy_bank_attachment_mode(_piggy_bank_form, piggy_bank:)
-        selected_mode = piggy_bank.return_cash_transaction_id.present? ? "attach" : "create"
+        selected_mode = piggy_bank_attachment_mode_value(piggy_bank)
 
         div(class: "grid grid-cols-2 gap-2", role: "group", aria: { label: I18n.t("piggy_banks.return_mode") }) do
           %w[create attach].each do |mode|
@@ -326,6 +338,14 @@ module Views
             end
           end
         end
+      end
+
+      def piggy_bank_attachment_mode_value(piggy_bank)
+        return "create" if piggy_bank.return_cash_transaction_id.blank?
+        return "create" if piggy_bank.return_cash_transaction&.reference_transactable_id == transactable.id &&
+                           piggy_bank.return_cash_transaction&.piggy_bank_return_links&.one?
+
+        "attach"
       end
 
       def piggy_bank_return_options(piggy_bank)

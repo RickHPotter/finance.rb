@@ -2576,6 +2576,89 @@ RSpec.describe "CashTransactions", type: :request do
       expect(piggy_bank.iof_status).to eq(:not_recorded)
     end
 
+    it "updates a Piggy Bank return date directly and synchronizes unpaid remainder and linked piggy banks" do
+      first_source = create_piggy_bank_source(description: "First reserve", price: 5_000)
+      grouped_return = first_source.piggy_bank.return_cash_transaction
+      second_source = create_piggy_bank_source(description: "Second reserve", return_transaction: grouped_return, price: 2_000)
+
+      paid_date = 1.month.ago.change(sec: 0)
+      paid_installment = grouped_return.cash_installments.first
+      paid_installment.update!(date: paid_date, month: paid_date.month, year: paid_date.year, price: 1_500, starting_price: 1_500, paid: true)
+      Logic::Manipulation::CashInstallment.new(paid_installment).split_installment(grouped_return.date, 5_500)
+
+      category_transaction = grouped_return.category_transactions.first
+      entity_transaction = grouped_return.entity_transactions.first
+      new_date = 6.months.from_now.change(sec: 0)
+
+      put cash_transaction_path(grouped_return), params: {
+        cash_transaction: {
+          description: grouped_return.description,
+          price: grouped_return.price,
+          date: new_date.strftime("%Y-%m-%dT%H:%M"),
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          cash_installments_attributes: grouped_return.reload.cash_installments.map do |inst|
+            { id: inst.id, number: inst.number, date: inst.date.strftime("%Y-%m-%dT%H:%M"), price: inst.price, paid: inst.paid }
+          end,
+          category_transactions_attributes: [ { id: category_transaction.id, category_id: category_transaction.category_id } ],
+          entity_transactions_attributes: [
+            {
+              id: entity_transaction.id,
+              entity_id: entity_transaction.entity_id,
+              price: entity_transaction.price,
+              price_to_be_returned: entity_transaction.price_to_be_returned,
+              loan_return_percentage: entity_transaction.loan_return_percentage,
+              exchanges_attributes: []
+            }
+          ]
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      expect(grouped_return.reload.date.strftime("%Y-%m-%dT%H:%M")).to eq(new_date.strftime("%Y-%m-%dT%H:%M"))
+      expect(first_source.piggy_bank.reload.return_date.strftime("%Y-%m-%dT%H:%M")).to eq(new_date.strftime("%Y-%m-%dT%H:%M"))
+      expect(second_source.piggy_bank.reload.return_date.strftime("%Y-%m-%dT%H:%M")).to eq(new_date.strftime("%Y-%m-%dT%H:%M"))
+      expect(grouped_return.cash_installments.find_by!(paid: false).date.strftime("%Y-%m-%dT%H:%M")).to eq(new_date.strftime("%Y-%m-%dT%H:%M"))
+      expect(grouped_return.cash_installments.find_by!(paid: true).date).to eq(paid_date)
+    end
+
+    it "rejects updating the return date directly when all return installments are paid" do
+      source = create_piggy_bank_source(description: "Closed reserve", price: 5_000)
+      return_transaction = source.piggy_bank.return_cash_transaction
+      return_transaction.cash_installments.update_all(paid: true)
+
+      category_transaction = return_transaction.category_transactions.first
+      entity_transaction = return_transaction.entity_transactions.first
+      new_date = 6.months.from_now.change(sec: 0)
+
+      put cash_transaction_path(return_transaction), params: {
+        cash_transaction: {
+          description: return_transaction.description,
+          price: return_transaction.price,
+          date: new_date.strftime("%Y-%m-%dT%H:%M"),
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          cash_installments_attributes: return_transaction.cash_installments.map do |inst|
+            { id: inst.id, number: inst.number, date: inst.date.strftime("%Y-%m-%dT%H:%M"), price: inst.price, paid: inst.paid }
+          end,
+          category_transactions_attributes: [ { id: category_transaction.id, category_id: category_transaction.category_id } ],
+          entity_transactions_attributes: [
+            {
+              id: entity_transaction.id,
+              entity_id: entity_transaction.entity_id,
+              price: entity_transaction.price,
+              price_to_be_returned: entity_transaction.price_to_be_returned,
+              loan_return_percentage: entity_transaction.loan_return_percentage,
+              exchanges_attributes: []
+            }
+          ]
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.piggy_bank_paid_history_locked"))
+    end
+
     it "shows generic and detailed failure notifications when update validation fails" do
       cash_transaction.use_base(@existing_cash_transaction, cash_transaction_options: { description: "" })
 

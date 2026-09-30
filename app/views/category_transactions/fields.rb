@@ -29,7 +29,8 @@ module Views
               ) do
                 span(class: "categories_category_name text-nowrap") { category_transaction&.category&.hierarchical_name }
 
-                unless transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
+                unless transactable.is_a?(CashTransaction) &&
+                       (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return? || transactable.generated_piggy_bank_return?)
                   button(
                     type: :button,
                     class: "ms-2 inline-flex items-center rounded-xs bg-transparent p-1 text-sm text-current " \

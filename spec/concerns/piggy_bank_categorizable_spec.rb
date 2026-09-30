@@ -43,4 +43,57 @@ RSpec.describe PiggyBankCategorizable do
     expect(transaction).not_to be_valid
     expect(transaction.errors.of_kind?(:base, :piggy_bank_cash_only)).to be(true)
   end
+
+  it "rejects manually creating a new cash transaction with Piggy Bank Return category" do
+    transaction = build(:cash_transaction, user:, context: user.main_context)
+    transaction.category_transactions = [ category_join("PIGGY BANK RETURN") ]
+
+    expect(transaction).not_to be_valid
+    expect(transaction.errors.of_kind?(:base, :piggy_bank_return_system_managed)).to be(true)
+  end
+
+  it "allows updating an existing generated Piggy Bank return without projection write bypass" do
+    account = create(:user_bank_account, :random, user:)
+    entity = create(:entity, :random, user:)
+    source = create(
+      :cash_transaction,
+      user:,
+      context: user.main_context,
+      user_bank_account: account,
+      description: "Emergency reserve",
+      price: -5_000,
+      cash_installments: [ build(:cash_installment, number: 1, price: -5_000, date: Time.zone.now) ],
+      category_transactions: [ category_join("PIGGY BANK") ],
+      entity_transactions: [ EntityTransaction.new(entity:, price: 0, price_to_be_returned: 0, is_payer: false) ],
+      piggy_bank: PiggyBank.new(return_price: 5_000, return_date: 3.months.from_now)
+    )
+
+    generated_return = CashTransaction.find(source.piggy_bank.return_cash_transaction_id)
+    generated_return.date = 4.months.from_now
+
+    expect(generated_return).to be_valid
+  end
+
+  it "rejects removing the Piggy Bank Return category from an existing generated return" do
+    account = create(:user_bank_account, :random, user:)
+    entity = create(:entity, :random, user:)
+    source = create(
+      :cash_transaction,
+      user:,
+      context: user.main_context,
+      user_bank_account: account,
+      description: "Emergency reserve",
+      price: -5_000,
+      cash_installments: [ build(:cash_installment, number: 1, price: -5_000, date: Time.zone.now) ],
+      category_transactions: [ category_join("PIGGY BANK") ],
+      entity_transactions: [ EntityTransaction.new(entity:, price: 0, price_to_be_returned: 0, is_payer: false) ],
+      piggy_bank: PiggyBank.new(return_price: 5_000, return_date: 3.months.from_now)
+    )
+
+    generated_return = CashTransaction.find(source.piggy_bank.return_cash_transaction_id)
+    generated_return.category_transactions.to_a.first.mark_for_destruction
+
+    expect(generated_return).not_to be_valid
+    expect(generated_return.errors.of_kind?(:base, :piggy_bank_return_system_managed)).to be(true)
+  end
 end

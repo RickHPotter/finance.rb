@@ -55,6 +55,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   validate :friend_notification_intent_matches_exchange_category
   validate :friend_notification_intent_present_for_exchange_category
   validate :validate_piggy_bank_source_contract
+  validate :validate_piggy_bank_return_contract, on: :update
   validate :prevent_paid_piggy_bank_rewrite, on: :update
   validate :validate_composite_line_items_count
   validate :validate_line_items_price_sum
@@ -68,7 +69,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   before_destroy :prevent_linked_borrow_return_destruction, prepend: true
   before_destroy :prevent_piggy_bank_destruction, prepend: true
   after_initialize :build_default_cash_installments
-  after_save :sync_subscription_installment, :sync_piggy_bank_projection, :set_min_date
+  after_save :sync_subscription_installment, :sync_piggy_bank_projection, :sync_piggy_bank_return_projections, :set_min_date
   after_commit :update_cash_balance, :update_associations_total, unless: :skip_post_commit_financial_recalculation
 
   # @scopes ...................................................................
@@ -186,7 +187,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def can_be_updated?
-    return false if generated_piggy_bank_return?
+    return false if generated_piggy_bank_return? && !piggy_bank_return_open?
 
     !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "INVESTMENT" ])
   end
@@ -241,6 +242,12 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     return_paid = !cash_installments.where(paid: false).exists?
 
     !sources_paid || !return_paid
+  end
+
+  def piggy_bank_return_open?
+    return false unless generated_piggy_bank_return?
+
+    cash_installments.any? { |installment| !installment.paid? }
   end
 
   def borrow_return?
@@ -501,10 +508,26 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     entity_transactions.reject(&:marked_for_destruction?).select { |entity_transaction| entity_transaction.entity_id.present? || entity_transaction.entity.present? }
   end
 
+  def validate_piggy_bank_return_contract
+    return unless generated_piggy_bank_return?
+    return if piggy_bank_projection_write?
+
+    errors.add(:base, :piggy_bank_paid_history_locked) if will_save_change_to_date? && !piggy_bank_return_open?
+
+    return unless will_save_change_to_price?
+
+    expected_price = piggy_bank_return_links.sum(:return_price) + piggy_bank_investments.sum(:price)
+    errors.add(:price, :invalid) if price != expected_price
+  end
+
   def prevent_paid_piggy_bank_rewrite
     return if piggy_bank.blank? || !piggy_bank.paid_history?
 
-    projection_changed = piggy_bank.marked_for_destruction? || (piggy_bank.changed_attribute_names_to_save - [ "return_price" ]).present?
+    allowed_projection_attributes = [ "return_price" ]
+    allowed_projection_attributes << "return_date" if piggy_bank.return_open?
+
+    projection_changed = piggy_bank.marked_for_destruction? ||
+                         (piggy_bank.changed_attribute_names_to_save - allowed_projection_attributes).present?
     source_changed = will_save_change_to_price? || will_save_change_to_user_bank_account_id? || piggy_bank_allocation_changed?
     errors.add(:base, :piggy_bank_paid_history_locked) if projection_changed || source_changed
   end
@@ -521,6 +544,19 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def sync_piggy_bank_projection
     piggy_bank&.sync_return_projection! if piggy_bank&.persisted?
+  end
+
+  def sync_piggy_bank_return_projections
+    return unless generated_piggy_bank_return? && saved_change_to_date?
+
+    Audit::Operation.with_mutation_source(:piggy_bank_sync) do
+      cash_installments.where(paid: false).find_each do |installment|
+        installment.update!(date:, month: date.month, year: date.year)
+      end
+      piggy_bank_return_links.find_each do |link|
+        link.update!(return_date: date)
+      end
+    end
   end
 
   def prevent_piggy_bank_destruction
