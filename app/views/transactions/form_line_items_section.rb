@@ -26,11 +26,10 @@ class Views::Transactions::FormLineItemsSection < Views::Base
   private
 
   def toggle_row
-    div(class: "flex items-center justify-between rounded-lg border border-slate-700/50 bg-slate-900/30 px-3 py-2") do
+    div(class: "flex items-center justify-between border-t border-b border-gray-300 px-1 py-2 dark:border-slate-700/50") do
       div(class: "flex items-center gap-2") do
-        span(class: "text-slate-400 shrink-0") { cached_icon(:category) }
-        span(class: "text-sm font-semibold text-slate-200") { I18n.t("transactions.composite.split_purchase") }
-        span(class: "text-xs text-slate-500") { "— #{I18n.t('transactions.composite.split_purchase_hint')}" }
+        span(class: "text-gray-400 dark:text-slate-500 shrink-0") { cached_icon(:category) }
+        span(class: "text-sm text-gray-500 dark:text-slate-400") { I18n.t("transactions.composite.split_purchase") }
       end
       Switch(
         name: "#{form.object_name}[split_purchase]",
@@ -45,24 +44,26 @@ class Views::Transactions::FormLineItemsSection < Views::Base
 
   def expanded_section
     div(
-      class: "mt-1 #{'hidden' unless transaction.composite?}",
+      class: "mt-2 #{'hidden' unless transaction.composite?}",
       data: { composite_transaction_target: "container" }
     ) do
-      div(class: "rounded-lg border border-slate-700/50 bg-slate-900/20") do
+      div(class: "overflow-hidden rounded-lg border border-gray-300 bg-white dark:border-slate-700/60 dark:bg-slate-900/30") do
         summary_strip
 
-        div(class: "divide-y divide-slate-700/40", data: { composite_transaction_target: "itemsList" }) do
+        div(class: "divide-y divide-gray-200 dark:divide-slate-700/40",
+            data: { composite_transaction_target: "itemsList" }) do
           render_existing_rows
         end
 
         render_template
 
-        div(class: "px-3 py-2 border-t border-slate-700/40") do
+        div(class: "border-t border-gray-200 px-3 py-2 dark:border-slate-700/40") do
           Button(
             type: :button,
             variant: :ghost,
             size: :sm,
-            class: "gap-1.5 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 px-2",
+            class: "gap-1.5 text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100 px-2 " \
+                   "dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60",
             data: { action: "click->composite-transaction#addRow" }
           ) do
             cached_icon(:plus)
@@ -74,16 +75,16 @@ class Views::Transactions::FormLineItemsSection < Views::Base
   end
 
   def summary_strip
-    div(class: "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-700/40 bg-slate-800/30 px-3 py-1.5 text-xs rounded-t-lg") do
+    div(class: "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-gray-200 bg-gray-50 px-3 py-1.5 text-xs dark:border-slate-700/40 dark:bg-slate-800/30") do
       div(class: "flex items-center gap-1.5") do
-        span(class: "text-slate-500") { I18n.t("transactions.composite.parent_total") }
-        span(class: "font-semibold text-slate-200 font-graduate dark:font-mono",
+        span(class: "text-gray-500 dark:text-slate-500") { I18n.t("transactions.composite.parent_total") }
+        span(class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
              data: { composite_transaction_target: "parentTotal" }) { "R$ 0,00" }
       end
-      div(class: "text-slate-600") { "|" }
+      div(class: "text-gray-300 dark:text-slate-600") { "|" }
       div(class: "flex items-center gap-1.5") do
-        span(class: "text-slate-500") { I18n.t("transactions.composite.allocated_sum") }
-        span(class: "font-semibold text-slate-200 font-graduate dark:font-mono",
+        span(class: "text-gray-500 dark:text-slate-500") { I18n.t("transactions.composite.allocated_sum") }
+        span(class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
              data: { composite_transaction_target: "allocatedSum" }) { "R$ 0,00" }
       end
       div(class: "ml-auto") do
@@ -184,7 +185,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         type: :button,
         variant: :ghost,
         size: :icon,
-        class: "shrink-0 h-8 w-8 text-slate-500 hover:text-red-400 hover:bg-red-500/10",
+        class: "shrink-0 h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:text-slate-500 dark:hover:text-red-400 dark:hover:bg-red-500/10",
         data: { action: "click->composite-transaction#removeRow" }
       ) do
         cached_icon(:destroy)
