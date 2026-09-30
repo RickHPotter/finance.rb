@@ -48,22 +48,33 @@ module Reports
     end
 
     def aggregate_payload(rows)
-      income_rows = rows.select { |row| row.amount_cents.positive? }
-      outcome_rows = rows.select { |row| row.amount_cents.negative? }
+      income_rows = rows.select { |row| row_amount(row).positive? }
+      outcome_rows = rows.select { |row| row_amount(row).negative? }
 
       {
         income: metric_payload(income_rows),
         outcome: metric_payload(outcome_rows),
-        net_cents: rows.sum(&:amount_cents)
+        net_cents: rows.sum { |row| row_amount(row) }
       }
     end
 
     def metric_payload(rows)
       {
-        amount_cents: rows.sum { |row| row.amount_cents.abs },
+        amount_cents: rows.sum { |row| row_amount(row).abs },
         source_count: rows.size,
-        sources: Drilldowns.new(rows:, return_to: source_dashboard_path).call
+        sources: Drilldowns.new(rows:, return_to: source_dashboard_path, amount_fn: method(:row_amount)).call
       }
+    end
+
+    def row_amount(row)
+      transaction = row.transaction
+      return row.amount_cents unless transaction.composite?
+
+      matching_items = matching_line_items_for(transaction)
+      return 0 if matching_items.empty? || transaction.price.to_i.zero?
+
+      matching_total = matching_items.sum(&:price)
+      ((row.amount_cents.to_d * matching_total) / transaction.price).round
     end
 
     def bucket_payloads(rows)
@@ -89,7 +100,7 @@ module Reports
     end
 
     def bundle_for(transaction)
-      records = allocations_for(transaction, counterpart_dimension).sort_by { |record| [ record.name, record.id ] }
+      records = counterpart_allocations_for(transaction).sort_by { |record| [ record.name, record.id ] }
       return unassigned_bundle if records.empty?
 
       bundle = {
@@ -99,6 +110,23 @@ module Reports
       return bundle unless counterpart_dimension == :category
 
       bundle.merge(CategoryColours::Presentation.bundle(records).chart_payload)
+    end
+
+    def counterpart_allocations_for(transaction)
+      if transaction.composite?
+        matching_items = matching_line_items_for(transaction)
+        matching_items.flat_map { |li| counterpart_dimension == :category ? li.categories : li.entities }.uniq(&:id)
+      else
+        allocations_for(transaction, counterpart_dimension)
+      end
+    end
+
+    def matching_line_items_for(transaction)
+      if dimension == :category
+        transaction.line_items.select { |item| item.categories.any? { |c| c.id == anchor.id } }
+      else
+        transaction.line_items.select { |item| item.entities.any? { |e| e.id == anchor.id } }
+      end
     end
 
     def unassigned_bundle
@@ -112,7 +140,11 @@ module Reports
     end
 
     def allocations_for(transaction, allocation_dimension)
-      allocation_dimension == :category ? transaction.categories : transaction.entities
+      if transaction.composite?
+        transaction.line_items.flat_map { |li| allocation_dimension == :category ? li.categories : li.entities }.uniq(&:id)
+      else
+        allocation_dimension == :category ? transaction.categories : transaction.entities
+      end
     end
 
     def counterpart_dimension

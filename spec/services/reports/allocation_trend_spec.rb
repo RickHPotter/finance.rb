@@ -64,6 +64,49 @@ RSpec.describe Reports::AllocationTrend do
       expect(installment_ids(path, "cash_transaction", "cash_installment_ids")).to eq([ included.cash_installments.sole.id.to_s ])
       expect(result.dig(:summary, :income, :amount_cents)).to eq(0)
     end
+
+    it "includes composite transactions proportionally with line item counterpart bundles" do
+      other_category = create(:category, user:, category_name: "LEISURE")
+      other_entity = create(:entity, user:, entity_name: "CARLOS")
+      composite_tx = create(
+        :cash_transaction,
+        user:,
+        context:,
+        user_bank_account: account,
+        date: Date.new(2026, 7, 15),
+        month: 7,
+        year: 2026,
+        price: -30_000,
+        paid: false,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: -15_000, date: Date.new(2026, 7, 15), month: 7, year: 2026, paid: false),
+          build(:cash_installment, number: 2, price: -15_000, date: Date.new(2026, 8, 15), month: 8, year: 2026, paid: false)
+        ],
+        line_items: [
+          LineItem.new(description: "Food item", price: -20_000,
+                       category_transactions: [ CategoryTransaction.new(category:) ],
+                       entity_transactions: [ EntityTransaction.new(entity:, price: 0, price_to_be_returned: 0, is_payer: false) ]),
+          LineItem.new(description: "Leisure item", price: -10_000,
+                       category_transactions: [ CategoryTransaction.new(category: other_category) ],
+                       entity_transactions: [ EntityTransaction.new(entity: other_entity, price: 0, price_to_be_returned: 0, is_payer: false) ])
+        ]
+      )
+
+      trend = described_class.new(context:, category:, query_state:).call
+
+      expect(trend.dig(:summary, :outcome, :amount_cents)).to eq(20_000)
+      expect(trend.dig(:summary, :outcome, :source_count)).to eq(2)
+      expect(trend[:buckets].find { |b| b[:key] == "2026-07" }[:outcome][:amount_cents]).to eq(10_000)
+      expect(trend[:buckets].find { |b| b[:key] == "2026-08" }[:outcome][:amount_cents]).to eq(10_000)
+
+      expect(trend[:breakdowns]).to contain_exactly(
+        include(key: "entities:#{entity.id}", label: "ANA", outcome: include(amount_cents: 20_000))
+      )
+
+      cash_sources = trend.dig(:summary, :outcome, :sources, :cash)
+      expect(installment_ids(cash_sources.dig(:chunks, 0, :path), "cash_transaction", "cash_installment_ids"))
+        .to match_array(composite_tx.cash_installments.map { |i| i.id.to_s })
+    end
   end
 
   describe Reports::EntityTrend do

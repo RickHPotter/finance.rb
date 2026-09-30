@@ -35,7 +35,6 @@ class Views::Transactions::CompositeBadge < Views::Base
         header_section
         table_header
         table_body
-        footer_section
       end
     end
   end
@@ -43,10 +42,8 @@ class Views::Transactions::CompositeBadge < Views::Base
   private
 
   def trigger_button_classes
-    "inline-flex items-center justify-center size-6 rounded p-0.5 " \
-      "text-purple-600 hover:bg-purple-100 hover:text-purple-800 " \
-      "dark:text-purple-400 dark:hover:bg-purple-950/50 dark:hover:text-purple-300 " \
-      "transition-colors cursor-pointer shrink-0 [&_svg]:size-4"
+    "inline-flex items-center justify-center text-inherit hover:opacity-75 " \
+      "transition-opacity cursor-pointer shrink-0 [&_svg]:size-4 [&_svg]:stroke-[2.5]"
   end
 
   def popover_content_classes
@@ -122,27 +119,6 @@ class Views::Transactions::CompositeBadge < Views::Base
         title: item_price_title(item)
       ) do
         money(item_display_price(item))
-      end
-    end
-  end
-
-  def footer_section
-    div(class: "flex items-center justify-between bg-slate-50 px-3 py-2 border-t border-slate-200 text-xs font-bold " \
-               "dark:bg-slate-800/50 dark:border-slate-700/60") do
-      if multi_installment?
-        div(class: "flex items-center gap-1.5") do
-          span(class: "text-slate-500 dark:text-slate-400 font-normal") do
-            "#{I18n.t('transactions.composite.installment', default: 'Parcela')}:"
-          end
-          span(class: "font-mono text-slate-800 dark:text-slate-100") { money(installment.price) }
-        end
-        div(class: "flex items-center gap-1.5") do
-          span(class: "text-slate-500 dark:text-slate-400 font-normal") { I18n.t("transactions.composite.parent_total") }
-          span(class: "font-mono text-slate-800 dark:text-slate-100") { money(transaction.price) }
-        end
-      else
-        span(class: "text-slate-500 dark:text-slate-400 font-normal") { I18n.t("transactions.composite.parent_total") }
-        span(class: "font-mono text-slate-800 dark:text-slate-100") { money(transaction.price) }
       end
     end
   end

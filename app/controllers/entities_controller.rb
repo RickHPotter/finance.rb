@@ -155,7 +155,7 @@ class EntitiesController < ApplicationController
   end
 
   def destroyable_entity?
-    !@entity.built_in? && @entity.card_transactions.empty? && @entity.cash_transactions.empty?
+    !@entity.built_in? && @entity.card_transactions.empty? && @entity.cash_transactions.empty? && @entity.line_items.empty?
   end
 
   def entity_destroy_failure_notification

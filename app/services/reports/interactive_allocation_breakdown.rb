@@ -32,6 +32,11 @@ module Reports
     private
 
     def append_row(entries, row)
+      if row.transaction.composite?
+        append_composite_row(entries, row)
+        return
+      end
+
       categories = row.transaction.categories.uniq(&:id).sort_by { |category| [ category.name, category.id ] }
       entities = row.transaction.entities.uniq(&:id).sort_by { |entity| [ entity.name, entity.id ] }
 
@@ -42,7 +47,24 @@ module Reports
       end
     end
 
-    def append_category_row(entries, row, categories, entities)
+    def append_composite_row(entries, row)
+      tx = row.transaction
+      ratio = tx.price.to_i.zero? ? 0 : (row.amount_cents.to_d / tx.price)
+
+      tx.line_items.each do |item|
+        item_amount = (item.price * ratio).round
+        categories = item.categories.uniq(&:id).sort_by { |category| [ category.name, category.id ] }
+        entities = item.entities.uniq(&:id).sort_by { |entity| [ entity.name, entity.id ] }
+
+        if primary_dimension == :category
+          append_category_row(entries, row, categories, entities, amount: item_amount)
+        else
+          append_entity_row(entries, row, categories, entities, amount: item_amount)
+        end
+      end
+    end
+
+    def append_category_row(entries, row, categories, entities, amount: row.amount_cents)
       base_categories = categories.reject { |category| base_category_excluded?(category) }
       return if base_categories.empty? || entities.empty?
 
@@ -51,11 +73,11 @@ module Reports
         extra_categories = categories.reject { |category| category.id == base_category.id || group_category_excluded?(category) }
         group = extra_categories.empty? ? exact_group(entry, base_category) : combination_group(entry, base_category, extra_categories)
         secondary = ensure_secondary_entry(group, entities, :entity)
-        append_amount(secondary, row)
+        append_amount(secondary, row, amount)
       end
     end
 
-    def append_entity_row(entries, row, categories, entities)
+    def append_entity_row(entries, row, categories, entities, amount: row.amount_cents)
       visible_categories = categories.reject { |category| group_category_excluded?(category) }
       return if visible_categories.empty? || entities.empty?
 
@@ -64,7 +86,7 @@ module Reports
         extra_entities = entities.reject { |entity| entity.id == base_entity.id }
         group = extra_entities.empty? ? exact_group(entry, base_entity) : combination_group(entry, base_entity, extra_entities)
         secondary = ensure_secondary_entry(group, visible_categories, :category)
-        append_amount(secondary, row)
+        append_amount(secondary, row, amount)
       end
     end
 
@@ -117,9 +139,9 @@ module Reports
       ActionController::Base.helpers.asset_path("avatars/#{entity.avatar_name}")
     end
 
-    def append_amount(secondary, row)
-      secondary[:total_cents] += row.amount_cents
-      secondary[:points][point_key(row)] += row.amount_cents
+    def append_amount(secondary, row, amount = row.amount_cents)
+      secondary[:total_cents] += amount
+      secondary[:points][point_key(row)] += amount
     end
 
     def point_key(row)

@@ -122,6 +122,40 @@ RSpec.describe "Entities", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("R$ -40.00", "R$ -60.00")
     end
+
+    it "includes composite transaction line items in entity count and total amount" do
+      entity = create(:entity, user:, entity_name: "ALICE")
+      other_entity = create(:entity, user:, entity_name: "BOB")
+      composite_tx = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        date: Date.new(2026, 7, 15),
+        price: -30_000
+      )
+      category = user.categories.first || create(:category, user:)
+      LineItem.create!(
+        transactable: composite_tx,
+        description: "Cinema ticket",
+        price: -10_000,
+        category_transactions: [ CategoryTransaction.new(category:) ],
+        entity_transactions: [ EntityTransaction.new(entity:, price: 0, price_to_be_returned: 0, is_payer: false) ]
+      )
+      LineItem.create!(
+        transactable: composite_tx,
+        description: "Popcorn",
+        price: -20_000,
+        category_transactions: [ CategoryTransaction.new(category:) ],
+        entity_transactions: [ EntityTransaction.new(entity: other_entity, price: 0, price_to_be_returned: 0, is_payer: false) ]
+      )
+
+      get entity_path(entity)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("R$ -100.00")
+      expect(response.body).not_to include("R$ -300.00")
+    end
   end
 
   describe "[ #new ]" do
