@@ -111,7 +111,9 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       @card_transaction.category_transactions.each(&:mark_for_destruction)
       @card_transaction.entity_transactions.each(&:mark_for_destruction)
     end
-    @card_transaction.assign_attributes(assignable_card_transaction_params.merge(imported: false))
+    submitted_receipts = Array(assignable_card_transaction_params[:receipts]).compact_blank
+    @card_transaction.receipts.attach(submitted_receipts) if submitted_receipts.present?
+    @card_transaction.assign_attributes(assignable_card_transaction_params.except(:receipts).merge(imported: false))
     @card_transaction.historical_correction_confirmation = card_transaction_params[:historical_correction_confirmation]
     @card_transaction.build_month_year if @card_transaction.user_card_id
     prune_exchange_entity_transactions_without_exchanges!
@@ -577,6 +579,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     params.require(:card_transaction).permit(
       %i[id description comment date month year price paid user_id user_card_id category_id entity_id duplicate subscription_id historical_correction_confirmation],
       id: [], subscription_id: [], card_installment_ids: [], category_id: [], entity_id: [],
+      receipts: [],
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],
       line_items_attributes: %i[id description price comment category_id entity_id _destroy],

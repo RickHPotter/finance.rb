@@ -86,7 +86,9 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @shared_return_counterpart_notification_required = shared_return_counterpart_notification_required?
     @cash_transaction.edit_phase = true if submitted_cash_installment_attributes.present?
     synchronize_submitted_category_transactions!
-    @cash_transaction.assign_attributes(assignable_cash_transaction_params.merge(imported: false))
+    submitted_receipts = Array(assignable_cash_transaction_params[:receipts]).compact_blank
+    @cash_transaction.receipts.attach(submitted_receipts) if submitted_receipts.present?
+    @cash_transaction.assign_attributes(assignable_cash_transaction_params.except(:receipts).merge(imported: false))
     apply_submitted_exchange_paid_states!
     @cash_transaction.historical_correction_confirmation = cash_transaction_params[:historical_correction_confirmation]
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
@@ -996,6 +998,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         friend_notification_intent source_message_id historical_correction_confirmation
       ],
       id: [], subscription_id: [], user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
+      receipts: [],
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       line_items_attributes: %i[id description price comment category_id entity_id _destroy],
