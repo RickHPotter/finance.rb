@@ -172,6 +172,12 @@ RSpec.describe LineItem do
     end
   end
 
+  describe "attachments" do
+    it "has many attached receipts" do
+      expect(described_class.reflect_on_attachment(:receipts)).not_to be_nil
+    end
+  end
+
   describe "delegations" do
     it "delegates user and context to transactable" do
       line_item = described_class.new(transactable: cash_transaction)

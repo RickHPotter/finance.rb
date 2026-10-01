@@ -45,12 +45,17 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
            inverse_of: :piggy_bank_return_cash_transaction,
            dependent: :restrict_with_error
   has_many :line_items, as: :transactable, dependent: :destroy, inverse_of: :transactable
+  has_many_attached :receipts
   accepts_nested_attributes_for :piggy_bank, allow_destroy: true
   accepts_nested_attributes_for :line_items, allow_destroy: true
 
   # @validations ..............................................................
   validates :context, presence: true
   validates :description, :cash_installments_count, presence: true
+  validates :receipts,
+            content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
+            size: { less_than_or_equal_to: 10.megabytes },
+            limit: { max: 5 }
   validates :friend_notification_intent, inclusion: { in: FRIEND_NOTIFICATION_INTENTS }, allow_nil: true
   validate :friend_notification_intent_matches_exchange_category
   validate :friend_notification_intent_present_for_exchange_category

@@ -20,6 +20,7 @@ gem "stimulus-rails"
 gem "tailwindcss-rails"
 gem "turbo-rails"
 
+gem "active_storage_validations"
 gem "image_processing"
 gem "ruby-vips", require: false
 

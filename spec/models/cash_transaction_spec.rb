@@ -46,6 +46,38 @@ RSpec.describe CashTransaction, type: :model do
         expect(association.options[:optional]).to be(false)
       end
     end
+
+    context "( attachments )" do
+      it "has many attached receipts" do
+        expect(described_class.reflect_on_attachment(:receipts)).not_to be_nil
+      end
+
+      it "is valid with allowed content types" do
+        subject.receipts.attach(io: StringIO.new("pdf data"), filename: "receipt.pdf", content_type: "application/pdf")
+        expect(subject).to be_valid
+      end
+
+      it "is invalid with disallowed content types" do
+        subject.receipts.attach(io: StringIO.new("binary"), filename: "script.exe", content_type: "application/x-msdownload")
+        expect(subject).not_to be_valid
+        expect(subject.errors[:receipts]).to be_present
+      end
+
+      it "is invalid when file size exceeds 10 MB" do
+        large_io = StringIO.new("a" * 11.megabytes)
+        subject.receipts.attach(io: large_io, filename: "large.pdf", content_type: "application/pdf")
+        expect(subject).not_to be_valid
+        expect(subject.errors[:receipts]).to be_present
+      end
+
+      it "is invalid when more than 5 receipts are attached" do
+        6.times do |i|
+          subject.receipts.attach(io: StringIO.new("data"), filename: "receipt_#{i}.pdf", content_type: "application/pdf")
+        end
+        expect(subject).not_to be_valid
+        expect(subject.errors[:receipts]).to be_present
+      end
+    end
   end
 
   describe "[ business logic ]" do

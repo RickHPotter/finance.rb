@@ -179,6 +179,38 @@ RSpec.describe CardTransaction, type: :model do
       end
     end
 
+    context "( attachments )" do
+      it "has many attached receipts" do
+        expect(described_class.reflect_on_attachment(:receipts)).not_to be_nil
+      end
+
+      it "is valid with allowed content types" do
+        card_transaction.receipts.attach(io: StringIO.new("image data"), filename: "receipt.jpg", content_type: "image/jpeg")
+        expect(card_transaction).to be_valid
+      end
+
+      it "is invalid with disallowed content types" do
+        card_transaction.receipts.attach(io: StringIO.new("binary"), filename: "script.exe", content_type: "application/x-msdownload")
+        expect(card_transaction).not_to be_valid
+        expect(card_transaction.errors[:receipts]).to be_present
+      end
+
+      it "is invalid when file size exceeds 10 MB" do
+        large_io = StringIO.new("a" * 11.megabytes)
+        card_transaction.receipts.attach(io: large_io, filename: "large.pdf", content_type: "application/pdf")
+        expect(card_transaction).not_to be_valid
+        expect(card_transaction.errors[:receipts]).to be_present
+      end
+
+      it "is invalid when more than 5 receipts are attached" do
+        6.times do |i|
+          card_transaction.receipts.attach(io: StringIO.new("data"), filename: "receipt_#{i}.pdf", content_type: "application/pdf")
+        end
+        expect(card_transaction).not_to be_valid
+        expect(card_transaction.errors[:receipts]).to be_present
+      end
+    end
+
     describe "composite transactions" do
       let(:user) { user_card.user }
       let(:context) { user.main_context }

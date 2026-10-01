@@ -14,6 +14,7 @@ class LineItem < ApplicationRecord
 
   # @relationships ............................................................
   belongs_to :transactable, polymorphic: true, touch: true
+  has_many_attached :receipts
 
   # @validations ..............................................................
   validates :description, presence: true

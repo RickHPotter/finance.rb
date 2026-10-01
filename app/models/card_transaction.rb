@@ -30,11 +30,16 @@ class CardTransaction < ApplicationRecord
   belongs_to :user_card, counter_cache: true
   belongs_to :reference_transactable, polymorphic: true, optional: true
   has_many :line_items, as: :transactable, dependent: :destroy, inverse_of: :transactable
+  has_many_attached :receipts
   accepts_nested_attributes_for :line_items, allow_destroy: true
 
   # @validations ..............................................................
   validates :context, presence: true
   validates :description, :card_installments_count, presence: true
+  validates :receipts,
+            content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
+            size: { less_than_or_equal_to: 10.megabytes },
+            limit: { max: 5 }
   validate :validate_composite_line_items_count
   validate :validate_line_items_price_sum
 
