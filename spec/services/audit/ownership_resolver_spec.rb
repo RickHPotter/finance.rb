@@ -38,8 +38,17 @@ RSpec.describe Audit::OwnershipResolver do
     expect_ownership(CardInstallment.new(card_transaction:))
   end
 
+  it "inherits line item ownership from its transaction" do
+    expect_ownership(LineItem.new(transactable: cash_transaction))
+    expect_ownership(LineItem.new(transactable: card_transaction))
+  end
+
   it "inherits allocation and exchange ownership through their transactable" do
     expect_ownership(CategoryTransaction.new(transactable: cash_transaction))
+
+    line_item = LineItem.new(transactable: cash_transaction)
+    expect_ownership(CategoryTransaction.new(transactable: line_item))
+    expect_ownership(EntityTransaction.new(transactable: line_item))
 
     entity_transaction = EntityTransaction.new(transactable: card_transaction)
     expect_ownership(entity_transaction)

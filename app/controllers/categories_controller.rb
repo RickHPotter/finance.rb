@@ -155,7 +155,12 @@ class CategoriesController < ApplicationController
   end
 
   def destroyable_category?
-    !@category.built_in? && @category.subcategories.empty? && @category.card_transactions.empty? && @category.cash_transactions.empty? && @category.investments.empty?
+    !@category.built_in? &&
+      @category.subcategories.empty? &&
+      @category.card_transactions.empty? &&
+      @category.cash_transactions.empty? &&
+      @category.investments.empty? &&
+      @category.line_items.empty?
   end
 
   def category_destroy_failure_notification

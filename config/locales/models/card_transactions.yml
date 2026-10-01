@@ -22,6 +22,9 @@ en:
               mixed_exchange_and_piggy_bank_categories: "Exchange and Piggy Bank categories cannot be combined."
               mixed_piggy_bank_categories: "Piggy Bank and Piggy Bank Return cannot be combined."
               piggy_bank_cash_only: "Piggy Bank categories are available only for cash transactions."
+              composite_requires_at_least_two_items: "A split purchase must have at least two line items."
+            price:
+              line_items_sum_mismatch: "does not match line items total (difference: %{difference})"
     attributes:
       card_transaction:
         self: Card Transaction
@@ -91,6 +94,9 @@ pt-BR:
               mixed_exchange_and_piggy_bank_categories: "Categorias de troca e cofrinho não podem ser combinadas."
               mixed_piggy_bank_categories: "Cofrinho e Retorno do Cofrinho não podem ser combinados."
               piggy_bank_cash_only: "Categorias de cofrinho estão disponíveis apenas para movimentações."
+              composite_requires_at_least_two_items: "Uma compra dividida deve ter pelo menos dois itens."
+            price:
+              line_items_sum_mismatch: "não corresponde ao total dos itens (diferença: %{difference})"
     attributes:
       card_transaction:
         self: Transação

@@ -24,6 +24,7 @@ class EntityTransaction < ApplicationRecord
   # @callbacks ................................................................
   before_validation :set_status, on: :create
   before_save :set_is_payer
+  after_save :update_count_and_total
   after_destroy :update_count_and_total
 
   # @scopes ...................................................................
@@ -65,8 +66,14 @@ class EntityTransaction < ApplicationRecord
   end
 
   def update_count_and_total
-    entity.update_card_transactions_count_and_total
-    entity.update_cash_transactions_count_and_total
+    entity&.update_card_transactions_count_and_total
+    entity&.update_cash_transactions_count_and_total
+
+    return unless saved_change_to_entity_id? && entity_id_before_last_save.present?
+
+    prev_entity = Entity.find_by(id: entity_id_before_last_save)
+    prev_entity&.update_card_transactions_count_and_total
+    prev_entity&.update_cash_transactions_count_and_total
   end
 
   # @private_instance_methods .................................................

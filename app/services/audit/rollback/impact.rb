@@ -68,6 +68,7 @@ class Audit::Rollback::Impact
     when "CardTransaction" then card_transaction_ids << row.item_id
     when "CashInstallment" then cash_transaction_ids << state["cash_transaction_id"] if state["cash_transaction_id"]
     when "CardInstallment" then card_transaction_ids << state["card_transaction_id"] if state["card_transaction_id"]
+    when "LineItem" then capture_line_item(state)
     when "CategoryTransaction" then capture_category_allocation(state)
     when "EntityTransaction" then capture_entity_allocation(state)
     when "Budget" then budget_ids << row.item_id
@@ -77,11 +78,33 @@ class Audit::Rollback::Impact
     end
   end
 
+  def capture_line_item(state)
+    case state["transactable_type"]
+    when "CashTransaction" then cash_transaction_ids << state["transactable_id"]
+    when "CardTransaction" then card_transaction_ids << state["transactable_id"]
+    end
+  end
+
   def capture_category_allocation(state)
     capture_transactable(state)
     case state["transactable_type"]
     when "CashTransaction" then cash_category_ids << state["category_id"]
     when "CardTransaction" then card_category_ids << state["category_id"]
+    when "LineItem" then capture_line_item_category(state)
+    end
+  end
+
+  def capture_line_item_category(state)
+    line_item = LineItem.unscoped.find_by(id: state["transactable_id"])
+    return unless line_item
+
+    case line_item.transactable_type
+    when "CashTransaction"
+      cash_transaction_ids << line_item.transactable_id
+      cash_category_ids << state["category_id"]
+    when "CardTransaction"
+      card_transaction_ids << line_item.transactable_id
+      card_category_ids << state["category_id"]
     end
   end
 
@@ -90,6 +113,21 @@ class Audit::Rollback::Impact
     case state["transactable_type"]
     when "CashTransaction" then cash_entity_ids << state["entity_id"]
     when "CardTransaction" then card_entity_ids << state["entity_id"]
+    when "LineItem" then capture_line_item_entity(state)
+    end
+  end
+
+  def capture_line_item_entity(state)
+    line_item = LineItem.unscoped.find_by(id: state["transactable_id"])
+    return unless line_item
+
+    case line_item.transactable_type
+    when "CashTransaction"
+      cash_transaction_ids << line_item.transactable_id
+      cash_entity_ids << state["entity_id"]
+    when "CardTransaction"
+      card_transaction_ids << line_item.transactable_id
+      card_entity_ids << state["entity_id"]
     end
   end
 

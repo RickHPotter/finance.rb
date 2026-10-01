@@ -21,6 +21,7 @@ class Category < ApplicationRecord
   has_many :card_transactions, through: :category_transactions, source: :transactable, source_type: "CardTransaction"
   has_many :cash_transactions, through: :category_transactions, source: :transactable, source_type: "CashTransaction"
   has_many :investments, through: :category_transactions, source: :transactable, source_type: "Investment"
+  has_many :line_items, through: :category_transactions, source: :transactable, source_type: "LineItem"
 
   # @validations ..............................................................
   validates :category_name, presence: true, uniqueness: { scope: %i[user_id parent_category_id] }
@@ -90,11 +91,23 @@ class Category < ApplicationRecord
   end
 
   def update_card_transactions_count_and_total
-    update_columns(card_transactions_count: card_transactions.count, card_transactions_total: card_transactions.sum(:price))
+    direct_count = card_transactions.count
+    direct_total = card_transactions.sum(:price)
+    composite_lines = line_items.where(transactable_type: "CardTransaction")
+    composite_count = composite_lines.select(:transactable_id).distinct.count
+    composite_total = composite_lines.sum(:price)
+
+    update_columns(card_transactions_count: direct_count + composite_count, card_transactions_total: direct_total + composite_total)
   end
 
   def update_cash_transactions_count_and_total
-    update_columns(cash_transactions_count: cash_transactions.count, cash_transactions_total: cash_transactions.sum(:price))
+    direct_count = cash_transactions.count
+    direct_total = cash_transactions.sum(:price)
+    composite_lines = line_items.where(transactable_type: "CashTransaction")
+    composite_count = composite_lines.select(:transactable_id).distinct.count
+    composite_total = composite_lines.sum(:price)
+
+    update_columns(cash_transactions_count: direct_count + composite_count, cash_transactions_total: direct_total + composite_total)
   end
 
   def parent?

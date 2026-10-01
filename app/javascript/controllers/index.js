@@ -16,26 +16,26 @@ application.register("autofocus", AutofocusController)
 import AutosaveController from "./autosave_controller"
 application.register("autosave", AutosaveController)
 
+import BabyNameSortController from "./baby_name_sort_controller"
+application.register("baby-name-sort", BabyNameSortController)
+
+import BabyNameSwipeController from "./baby_name_swipe_controller"
+application.register("baby-name-swipe", BabyNameSwipeController)
+
 import BalancesMobileController from "./balances_mobile_controller"
 application.register("balances-mobile", BalancesMobileController)
 
 import BalancesMonthlyAnalysisController from "./balances_monthly_analysis_controller"
 application.register("balances-monthly-analysis", BalancesMonthlyAnalysisController)
 
-import BabyNameSwipeController from "./baby_name_swipe_controller"
-application.register("baby-name-swipe", BabyNameSwipeController)
-
-import BabyNameSortController from "./baby_name_sort_controller"
-application.register("baby-name-sort", BabyNameSortController)
-
 import BlinkingPlaceholderController from "./blinking_placeholder_controller"
 application.register("blinking-placeholder", BlinkingPlaceholderController)
 
-import BudgetValueHelperController from "./budget_value_helper_controller"
-application.register("budget-value-helper", BudgetValueHelperController)
-
 import BudgetPerformanceController from "./budget_performance_controller"
 application.register("budget-performance", BudgetPerformanceController)
+
+import BudgetValueHelperController from "./budget_value_helper_controller"
+application.register("budget-value-helper", BudgetValueHelperController)
 
 import CalculatorController from "./calculator_controller"
 application.register("calculator", CalculatorController)
@@ -48,6 +48,9 @@ application.register("chat", ChatController)
 
 import ColourPickerController from "./colour_picker_controller"
 application.register("colour-picker", ColourPickerController)
+
+import CompositeTransactionController from "./composite_transaction_controller"
+application.register("composite-transaction", CompositeTransactionController)
 
 import ConfirmController from "./confirm_controller"
 application.register("confirm", ConfirmController)
@@ -100,6 +103,9 @@ application.register("installment-lock", InstallmentLockController)
 import InstallmentsDisplayController from "./installments_display_controller"
 application.register("installments-display", InstallmentsDisplayController)
 
+import InteractiveBreakdownDashboardController from "./interactive_breakdown_dashboard_controller"
+application.register("interactive-breakdown-dashboard", InteractiveBreakdownDashboardController)
+
 import LazyTabsController from "./lazy_tabs_controller"
 application.register("lazy-tabs", LazyTabsController)
 
@@ -126,9 +132,6 @@ application.register("partial-pay-multiple", PartialPayMultipleController)
 
 import PieBreakdownChartController from "./pie_breakdown_chart_controller"
 application.register("pie-breakdown-chart", PieBreakdownChartController)
-
-import InteractiveBreakdownDashboardController from "./interactive_breakdown_dashboard_controller"
-application.register("interactive-breakdown-dashboard", InteractiveBreakdownDashboardController)
 
 import PriceMaskController from "./price_mask_controller"
 application.register("price-mask", PriceMaskController)

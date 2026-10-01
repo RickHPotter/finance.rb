@@ -3,14 +3,15 @@
 module Params
   class CardTransactions
     attr_accessor :description, :date, :month, :year, :price, :paid, :user_id, :user_card_id, :subscription_id, :card_installments, :category_transactions,
-                  :entity_transactions
+                  :entity_transactions, :line_items
 
-    def initialize(card_transaction: {}, card_installments: {}, category_transactions: {}, entity_transactions: {})
+    def initialize(card_transaction: {}, card_installments: {}, category_transactions: {}, entity_transactions: {}, line_items: nil)
       assign_card_transaction(card_transaction)
 
       @card_installments = card_installments
       @entity_transactions = entity_transactions
       @category_transactions = category_transactions
+      @line_items = line_items
     end
 
     def params
@@ -27,9 +28,14 @@ module Params
           subscription_id:,
           card_installments_attributes:,
           category_transactions_attributes:,
-          entity_transactions_attributes:
-        }
+          entity_transactions_attributes:,
+          line_items_attributes:
+        }.compact
       }
+    end
+
+    def line_items_attributes
+      line_items
     end
 
     # no base => card_installments = { count: 2 }

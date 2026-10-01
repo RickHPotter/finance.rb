@@ -6,6 +6,7 @@ class Audit::VersionMetadata
     "CardTransaction" => %w[user_card_id subscription_id advance_cash_transaction_id reference_transactable_type reference_transactable_id],
     "CashInstallment" => %w[cash_transaction_id],
     "CardInstallment" => %w[card_transaction_id cash_transaction_id],
+    "LineItem" => %w[transactable_type transactable_id],
     "CategoryTransaction" => %w[transactable_type transactable_id category_id],
     "EntityTransaction" => %w[transactable_type transactable_id entity_id],
     "Category" => [],

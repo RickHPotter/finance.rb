@@ -192,6 +192,76 @@ RSpec.describe PiggyBank, type: :model do
     expect(piggy_bank.errors.of_kind?(:base, :paid_history_locked)).to be(true)
   end
 
+  it "allows return date change on a Piggy Bank return with partial payment" do
+    source = build_source
+    source.save!
+    piggy_bank = source.piggy_bank
+    return_transaction = CashTransaction.find(piggy_bank.return_cash_transaction_id)
+    original_installment = return_transaction.cash_installments.first
+    paid_date = 1.month.ago.change(sec: 0)
+    new_date = 5.months.from_now.change(sec: 0)
+
+    original_installment.update!(date: paid_date, month: paid_date.month, year: paid_date.year, price: 1_000, starting_price: 1_000, paid: true)
+    Logic::Manipulation::CashInstallment.new(original_installment).split_installment(return_transaction.date, 4_000)
+    return_transaction.reload
+
+    expect(return_transaction.update(date: new_date)).to be(true)
+    expect(piggy_bank.reload.return_date).to eq(new_date)
+    unpaid_installment = return_transaction.reload.cash_installments.find_by!(paid: false)
+    expect(unpaid_installment.date).to eq(new_date)
+    paid_installment = return_transaction.cash_installments.find_by!(paid: true)
+    expect(paid_installment.date).to eq(paid_date)
+  end
+
+  it "allows return date change on a standalone Piggy Bank source with partial payment" do
+    source = build_source
+    source.save!
+    piggy_bank = source.piggy_bank
+    return_transaction = CashTransaction.find(piggy_bank.return_cash_transaction_id)
+    original_installment = return_transaction.cash_installments.first
+    paid_date = 1.month.ago.change(sec: 0)
+    new_date = 5.months.from_now.change(sec: 0)
+
+    original_installment.update!(date: paid_date, month: paid_date.month, year: paid_date.year, price: 1_000, starting_price: 1_000, paid: true)
+    Logic::Manipulation::CashInstallment.new(original_installment).split_installment(return_transaction.date, 4_000)
+
+    expect(piggy_bank.update(return_date: new_date)).to be(true)
+    expect(return_transaction.reload.date).to eq(new_date)
+    expect(return_transaction.cash_installments.find_by!(paid: false).date).to eq(new_date)
+    expect(return_transaction.cash_installments.find_by!(paid: true).date).to eq(paid_date)
+  end
+
+  it "synchronizes date changes on a grouped return to all linked piggy banks and unpaid remainder" do
+    first_source = build_source(price: -5_000, return_price: 5_000)
+    first_source.save!
+    grouped_return = CashTransaction.find(first_source.piggy_bank.return_cash_transaction_id)
+    second_source = build_attached_source(grouped_return, price: -2_000, return_price: 2_000)
+    second_source.save!
+
+    paid_date = 1.month.ago.change(sec: 0)
+    new_date = 6.months.from_now.change(sec: 0)
+    grouped_return.reload
+    original_installment = grouped_return.cash_installments.first
+    original_installment.update!(date: paid_date, month: paid_date.month, year: paid_date.year, price: 1_500, starting_price: 1_500, paid: true)
+    Logic::Manipulation::CashInstallment.new(original_installment).split_installment(grouped_return.date, 5_500)
+
+    expect(grouped_return.update(date: new_date)).to be(true)
+    expect(first_source.piggy_bank.reload.return_date).to eq(new_date)
+    expect(second_source.piggy_bank.reload.return_date).to eq(new_date)
+    expect(grouped_return.reload.cash_installments.find_by!(paid: false).date).to eq(new_date)
+    expect(grouped_return.cash_installments.find_by!(paid: true).date).to eq(paid_date)
+  end
+
+  it "blocks date change on a generated return when all installments are paid" do
+    source = build_source
+    source.save!
+    return_transaction = CashTransaction.find(source.piggy_bank.return_cash_transaction_id)
+    return_transaction.cash_installments.update_all(paid: true)
+
+    expect(return_transaction.update(date: 1.month.from_now)).to be(false)
+    expect(return_transaction.errors.of_kind?(:base, :piggy_bank_paid_history_locked)).to be(true)
+  end
+
   it "preserves a partial return split when its source is saved later" do
     source = build_source
     source.save!

@@ -49,7 +49,11 @@ class Views::CardTransactions::FormControls < Views::Base
   end
 
   def category_and_entity_fields
-    div(class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0") do
+    composite = card_transaction.composite?
+    div(
+      class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0 #{'pointer-events-none opacity-50' if composite}",
+      data: { composite_transaction_target: "headerAllocations" }
+    ) do
       div(id: "card_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
         render Views::Shared::SingleSelectCombobox.new(
           name: :category_transaction,
@@ -57,6 +61,7 @@ class Views::CardTransactions::FormControls < Views::Base
           selected_value: nil,
           placeholder: model_attribute(card_transaction, :category_id),
           autofocus: autofocus_target == :category_transaction,
+          disabled: composite,
           input_data: {
             action: "change->reactive-form#insertCategory"
           }
@@ -70,6 +75,7 @@ class Views::CardTransactions::FormControls < Views::Base
           selected_value: nil,
           placeholder: model_attribute(card_transaction, :entity_id),
           autofocus: autofocus_target == :entity_transaction,
+          disabled: composite,
           input_data: {
             action: "change->reactive-form#insertEntity"
           }
@@ -115,7 +121,7 @@ class Views::CardTransactions::FormControls < Views::Base
         class: "w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
         tabindex: -1,
         title: action_message(:toggle_sign),
-        data: { action: "click->price-mask#toggleSign", target: ".sign-based" }
+        data: { action: "click->price-mask#toggleSign click->composite-transaction#recalculate", target: ".sign-based" }
       ) { sign }
 
       div(class: "w-7/12 lg:w-7/12") do
@@ -129,10 +135,12 @@ class Views::CardTransactions::FormControls < Views::Base
           data: {
             controller: "input-select",
             price_mask_target: :input,
+            composite_transaction_target: :parentPrice,
             reactive_form_target: :priceInput,
             action: [
               "click->input-select#select",
               "input->price-mask#applyMask",
+              "input->composite-transaction#recalculate",
               "input->reactive-form#updateInstallmentsPrices",
               "input->reactive-form#updateExchangeWhenDuplicating"
             ].join(" "),

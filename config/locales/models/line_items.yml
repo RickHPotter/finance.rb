@@ -1,0 +1,79 @@
+en:
+  activerecord:
+    models:
+      line_item:
+        one: Line Item
+        other: Line Items
+    attributes:
+      line_item:
+        description: Description
+        price: Price
+        comment: Comment
+        category_id: Category
+        entity_id: Entity
+    errors:
+      models:
+        line_item:
+          attributes:
+            category_id:
+              must_be_leaf_category: "must be a subcategory or standalone category, not a parent category"
+            price:
+              must_be_positive_to_match_transaction: "must be positive to match transaction price"
+              must_be_negative_to_match_transaction: "must be negative to match transaction price"
+  transactions:
+    composite:
+      split_purchase: "Split purchase"
+      split_purchase_hint: "Break down purchase across multiple categories and entities"
+      add_item: "Add item"
+      no_entity: "No entity"
+      parent_total: "Total:"
+      allocated_sum: "Allocated:"
+      balanced: "Balanced"
+      remaining: "Remaining:"
+      over_allocated: "Over by:"
+      min_items_needed: "Min 2 items needed"
+      badge: "Split [%{count}]"
+      breakdown: "Line Items"
+      breakdown_title: "Line Items Breakdown"
+      percentage: "% of Total"
+      no_items: "No line items recorded."
+
+pt-BR:
+  activerecord:
+    models:
+      line_item:
+        one: Item
+        other: Itens
+    attributes:
+      line_item:
+        description: Descrição
+        price: Valor
+        comment: Comentário
+        category_id: Categoria
+        entity_id: Pessoa/Entidade
+    errors:
+      models:
+        line_item:
+          attributes:
+            category_id:
+              must_be_leaf_category: "deve ser uma subcategoria ou categoria avulsa, não uma categoria pai"
+            price:
+              must_be_positive_to_match_transaction: "deve ser positivo para coincidir com o valor da transação"
+              must_be_negative_to_match_transaction: "deve ser negativo para coincidir com o valor da transação"
+  transactions:
+    composite:
+      split_purchase: "Dividir compra"
+      split_purchase_hint: "Divida a compra entre múltiplas categorias e pessoas"
+      add_item: "Adicionar item"
+      no_entity: "Nenhuma pessoa"
+      parent_total: "Total:"
+      allocated_sum: "Alocado:"
+      balanced: "Balanceado"
+      remaining: "Restante:"
+      over_allocated: "Excedente:"
+      min_items_needed: "Mínimo 2 itens necessários"
+      badge: "Divisão [%{count}]"
+      breakdown: "Itens da Compra"
+      breakdown_title: "Detalhamento de Itens"
+      percentage: "% do Total"
+      no_items: "Nenhum item registrado."

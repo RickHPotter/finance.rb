@@ -5,11 +5,12 @@ module Reports
     INDEX_STATE_VALUE_COUNT = 1
     CHUNK_SIZE = Navigation::State::MAX_VALUES - INDEX_STATE_VALUE_COUNT
 
-    attr_reader :rows, :return_to
+    attr_reader :rows, :return_to, :amount_fn
 
-    def initialize(rows:, return_to:)
+    def initialize(rows:, return_to:, amount_fn: nil)
       @rows = rows
       @return_to = return_to
+      @amount_fn = amount_fn || lambda(&:amount_cents)
     end
 
     def call
@@ -33,7 +34,7 @@ module Reports
       ordered_rows = type_rows.sort_by(&:installment_id)
       {
         count: ordered_rows.size,
-        amount_cents: ordered_rows.sum { |row| row.amount_cents.abs },
+        amount_cents: ordered_rows.sum { |row| amount_fn.call(row).abs },
         chunks: ordered_rows.each_slice(CHUNK_SIZE).map { |chunk| serialize_chunk(chunk, type) }
       }
     end
@@ -41,7 +42,7 @@ module Reports
     def serialize_chunk(chunk, type)
       {
         count: chunk.size,
-        amount_cents: chunk.sum { |row| row.amount_cents.abs },
+        amount_cents: chunk.sum { |row| amount_fn.call(row).abs },
         path: index_path(type, chunk.map(&:installment_id))
       }
     end

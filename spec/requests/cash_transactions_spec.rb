@@ -93,6 +93,40 @@ RSpec.describe "CashTransactions", type: :request do
       expect(price_input["name"]).to eq("cash_transaction[cash_installments_attributes][0][price]")
     end
 
+    it "renders the split purchase toggle and line items template" do
+      get new_cash_transaction_path
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+
+      split_toggle = document.at_css('input[type="checkbox"][name="cash_transaction[split_purchase]"]')
+      expect(split_toggle).to be_present
+      expect(split_toggle["data-composite-transaction-target"]).to eq("splitToggle")
+
+      template = document.at_css('template[data-composite-transaction-target="template"]')
+      expect(template).to be_present
+      expect(template.inner_html).to include("cash_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
+    end
+
+    it "renders line items for a composite transaction on edit" do
+      cat1 = create(:category, :random, user:)
+      cat2 = create(:category, :random, user:)
+      composite = create(:cash_transaction, user:, price: 3_000, user_bank_account:)
+      create(:line_item, transactable: composite, description: "Item A", price: 1_000, category_id: cat1.id)
+      create(:line_item, transactable: composite, description: "Item B", price: 2_000, category_id: cat2.id)
+
+      get edit_cash_transaction_path(composite)
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+
+      split_toggle = document.at_css('input[type="checkbox"][name="cash_transaction[split_purchase]"]')
+      expect(split_toggle.key?("checked")).to be(true)
+
+      item_descriptions = document.css('input[name*="[description]"]').map { |i| i["value"] }
+      expect(item_descriptions).to include("Item A", "Item B")
+    end
+
     it "marks a Piggy Bank entity when its return differs from the source transaction" do
       source = create_piggy_bank_source(description: "Discounted reserve", price: 800, return_price: 500)
 
@@ -568,6 +602,23 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include("border-orange-500")
       expect(response.body).to include("cashInstallmentModal_#{transaction.cash_installments.second.id}")
       expect(response.body).to include(user_bank_account.user_bank_account_name)
+    end
+
+    it "renders the line items breakdown section and aggregated categories for a composite transaction" do
+      cat1 = create(:category, :random, user:)
+      cat2 = create(:category, :random, user:)
+      composite = create(:cash_transaction, user:, price: 5_000, user_bank_account:)
+      create(:line_item, transactable: composite, description: "Office Supplies", price: 2_000, category_id: cat1.id)
+      create(:line_item, transactable: composite, description: "Snacks", price: 3_000, category_id: cat2.id)
+
+      get cash_transaction_path(composite)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("transactions.composite.breakdown"))
+      expect(response.body).to include("Office Supplies")
+      expect(response.body).to include("Snacks")
+      expect(response.body).to include(cat1.name)
+      expect(response.body).to include(cat2.name)
     end
 
     it "does not render broken reference links to transactions outside the current context" do
@@ -2259,6 +2310,103 @@ RSpec.describe "CashTransactions", type: :request do
         cash_transaction_path(id: receiver_transaction, message_id: destroy_message.id)
       )
     end
+
+    context "when creating a composite transaction" do
+      let(:grocery_category) { create(:category, user:, category_name: "GROCERIES") }
+      let(:supply_category) { create(:category, user:, category_name: "SUPPLIES") }
+
+      it "creates the transaction with line items and persists line item categories" do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Composite market trip",
+            price: 10_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_bank_account_id: user_bank_account.id,
+            line_items_attributes: [
+              { description: "Groceries", price: 6_000, category_id: grocery_category.id },
+              { description: "Supplies", price: 4_000, category_id: supply_category.id }
+            ]
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:see_other)
+        created_transaction = CashTransaction.last
+        expect(created_transaction.description).to eq("Composite market trip")
+        expect(created_transaction).to be_composite
+        expect(created_transaction.line_items.count).to eq(2)
+        expect(created_transaction.line_items.pluck(:description)).to contain_exactly("Groceries", "Supplies")
+        expect(created_transaction.line_items.pluck(:price)).to contain_exactly(6_000, 4_000)
+        expect(created_transaction.line_items.map(&:category_id)).to contain_exactly(grocery_category.id, supply_category.id)
+      end
+
+      it "leaves parent category and entity allocations empty" do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Composite trip without parent allocations",
+            price: 10_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_bank_account_id: user_bank_account.id,
+            category_transactions_attributes: [ { category_id: grocery_category.id } ],
+            entity_transactions_attributes: [ { entity_id: entity.id, price: 0, price_to_be_returned: 0 } ],
+            line_items_attributes: [
+              { description: "Groceries", price: 6_000, category_id: grocery_category.id },
+              { description: "Supplies", price: 4_000, category_id: supply_category.id }
+            ]
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:see_other)
+        created_transaction = CashTransaction.last
+        expect(created_transaction.category_transactions.count).to eq(0)
+        expect(created_transaction.entity_transactions.count).to eq(0)
+        expect(created_transaction.line_items.count).to eq(2)
+      end
+
+      it "fails when line item prices do not sum to parent price" do
+        expect do
+          post cash_transactions_path, params: {
+            cash_transaction: {
+              description: "Mismatched sum",
+              price: 10_000,
+              date: Time.zone.today,
+              month: Time.zone.today.month,
+              year: Time.zone.today.year,
+              user_bank_account_id: user_bank_account.id,
+              line_items_attributes: [
+                { description: "Groceries", price: 5_000, category_id: grocery_category.id },
+                { description: "Supplies", price: 4_000, category_id: supply_category.id }
+              ]
+            }
+          }, headers: turbo_stream_headers
+        end.not_to change(CashTransaction, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it "fails when only one line item is provided" do
+        expect do
+          post cash_transactions_path, params: {
+            cash_transaction: {
+              description: "Single item composite",
+              price: 10_000,
+              date: Time.zone.today,
+              month: Time.zone.today.month,
+              year: Time.zone.today.year,
+              user_bank_account_id: user_bank_account.id,
+              line_items_attributes: [
+                { description: "Single item", price: 10_000, category_id: grocery_category.id }
+              ]
+            }
+          }, headers: turbo_stream_headers
+        end.not_to change(CashTransaction, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+    end
   end
 
   describe "[ #update ]" do
@@ -2426,6 +2574,89 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:see_other)
       expect(piggy_bank.reload.iof_exempt_on).to be_nil
       expect(piggy_bank.iof_status).to eq(:not_recorded)
+    end
+
+    it "updates a Piggy Bank return date directly and synchronizes unpaid remainder and linked piggy banks" do
+      first_source = create_piggy_bank_source(description: "First reserve", price: 5_000)
+      grouped_return = first_source.piggy_bank.return_cash_transaction
+      second_source = create_piggy_bank_source(description: "Second reserve", return_transaction: grouped_return, price: 2_000)
+
+      paid_date = 1.month.ago.change(sec: 0)
+      paid_installment = grouped_return.cash_installments.first
+      paid_installment.update!(date: paid_date, month: paid_date.month, year: paid_date.year, price: 1_500, starting_price: 1_500, paid: true)
+      Logic::Manipulation::CashInstallment.new(paid_installment).split_installment(grouped_return.date, 5_500)
+
+      category_transaction = grouped_return.category_transactions.first
+      entity_transaction = grouped_return.entity_transactions.first
+      new_date = 6.months.from_now.change(sec: 0)
+
+      put cash_transaction_path(grouped_return), params: {
+        cash_transaction: {
+          description: grouped_return.description,
+          price: grouped_return.price,
+          date: new_date.strftime("%Y-%m-%dT%H:%M"),
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          cash_installments_attributes: grouped_return.reload.cash_installments.map do |inst|
+            { id: inst.id, number: inst.number, date: inst.date.strftime("%Y-%m-%dT%H:%M"), price: inst.price, paid: inst.paid }
+          end,
+          category_transactions_attributes: [ { id: category_transaction.id, category_id: category_transaction.category_id } ],
+          entity_transactions_attributes: [
+            {
+              id: entity_transaction.id,
+              entity_id: entity_transaction.entity_id,
+              price: entity_transaction.price,
+              price_to_be_returned: entity_transaction.price_to_be_returned,
+              loan_return_percentage: entity_transaction.loan_return_percentage,
+              exchanges_attributes: []
+            }
+          ]
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      expect(grouped_return.reload.date.strftime("%Y-%m-%dT%H:%M")).to eq(new_date.strftime("%Y-%m-%dT%H:%M"))
+      expect(first_source.piggy_bank.reload.return_date.strftime("%Y-%m-%dT%H:%M")).to eq(new_date.strftime("%Y-%m-%dT%H:%M"))
+      expect(second_source.piggy_bank.reload.return_date.strftime("%Y-%m-%dT%H:%M")).to eq(new_date.strftime("%Y-%m-%dT%H:%M"))
+      expect(grouped_return.cash_installments.find_by!(paid: false).date.strftime("%Y-%m-%dT%H:%M")).to eq(new_date.strftime("%Y-%m-%dT%H:%M"))
+      expect(grouped_return.cash_installments.find_by!(paid: true).date).to eq(paid_date)
+    end
+
+    it "rejects updating the return date directly when all return installments are paid" do
+      source = create_piggy_bank_source(description: "Closed reserve", price: 5_000)
+      return_transaction = source.piggy_bank.return_cash_transaction
+      return_transaction.cash_installments.update_all(paid: true)
+
+      category_transaction = return_transaction.category_transactions.first
+      entity_transaction = return_transaction.entity_transactions.first
+      new_date = 6.months.from_now.change(sec: 0)
+
+      put cash_transaction_path(return_transaction), params: {
+        cash_transaction: {
+          description: return_transaction.description,
+          price: return_transaction.price,
+          date: new_date.strftime("%Y-%m-%dT%H:%M"),
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          cash_installments_attributes: return_transaction.cash_installments.map do |inst|
+            { id: inst.id, number: inst.number, date: inst.date.strftime("%Y-%m-%dT%H:%M"), price: inst.price, paid: inst.paid }
+          end,
+          category_transactions_attributes: [ { id: category_transaction.id, category_id: category_transaction.category_id } ],
+          entity_transactions_attributes: [
+            {
+              id: entity_transaction.id,
+              entity_id: entity_transaction.entity_id,
+              price: entity_transaction.price,
+              price_to_be_returned: entity_transaction.price_to_be_returned,
+              loan_return_percentage: entity_transaction.loan_return_percentage,
+              exchanges_attributes: []
+            }
+          ]
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.piggy_bank_paid_history_locked"))
     end
 
     it "shows generic and detailed failure notifications when update validation fails" do
@@ -5217,6 +5448,50 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include("Derived Bound Card")
       expect(response.body).not_to include("Main Bound Card")
     end
+
+    context "with a composite transaction" do
+      let(:grocery_category) { create(:category, user:, category_name: "GROCERIES_UPDATE") }
+      let(:supply_category) { create(:category, user:, category_name: "SUPPLIES_UPDATE") }
+      let(:pharmacy_category) { create(:category, user:, category_name: "PHARMACY_UPDATE") }
+
+      it "updates existing line items, adds new line items, and destroys removed line items" do
+        existing_composite = create(
+          :cash_transaction,
+          user:,
+          context: user.main_context,
+          user_bank_account:,
+          description: "Original composite",
+          price: 10_000,
+          date: Time.zone.today,
+          month: Time.zone.today.month,
+          year: Time.zone.today.year
+        )
+        item1 = existing_composite.line_items.create!(description: "Item 1", price: 6_000, category_id: grocery_category.id)
+        item2 = existing_composite.line_items.create!(description: "Item 2", price: 4_000, category_id: supply_category.id)
+
+        patch cash_transaction_path(existing_composite), params: {
+          cash_transaction: {
+            description: "Updated composite",
+            price: 12_000,
+            line_items_attributes: {
+              "0" => { id: item1.id, description: "Updated Item 1", price: 7_000, category_id: grocery_category.id },
+              "1" => { id: item2.id, _destroy: "1" },
+              "2" => { description: "New Item 3", price: 5_000, category_id: pharmacy_category.id }
+            }
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:see_other)
+        existing_composite.reload
+        expect(existing_composite.description).to eq("Updated composite")
+        expect(existing_composite.price).to eq(12_000)
+        expect(existing_composite.line_items.count).to eq(2)
+        expect(existing_composite.line_items.pluck(:description)).to contain_exactly("Updated Item 1", "New Item 3")
+        expect(existing_composite.line_items.pluck(:price)).to contain_exactly(7_000, 5_000)
+        expect(existing_composite.line_items.map(&:category_id)).to contain_exactly(grocery_category.id, pharmacy_category.id)
+        expect(LineItem.exists?(item2.id)).to be(false)
+      end
+    end
   end
 
   describe "[ #destroy ]" do
@@ -5491,6 +5766,67 @@ RSpec.describe "CashTransactions", type: :request do
 
       follow_redirect! if response.redirect?
       expect(response).to have_http_status(:success)
+    end
+
+    it "renders the composite badge and line items popover content for composite transactions" do
+      cat1 = create(:category, :random, user:)
+      cat2 = create(:category, :random, user:)
+      composite = create(
+        :cash_transaction,
+        user:,
+        description: "Composite Lunch",
+        price: 3_000,
+        user_bank_account:,
+        date: Time.zone.today,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, price: 3_000, paid: false)
+        ]
+      )
+      create(:line_item, transactable: composite, description: "Burger", price: 1_800, category_id: cat1.id)
+      create(:line_item, transactable: composite, description: "Fries", price: 1_200, category_id: cat2.id)
+
+      month_year = Time.zone.today.strftime("%Y%m")
+      get month_year_cash_transactions_path, params: {
+        month_year:,
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("transactions.composite.breakdown_title"))
+      expect(response.body).to include("Burger")
+      expect(response.body).to include("Fries")
+    end
+
+    it "finds composite transactions when searching by category_id or line item description" do
+      cat = create(:category, :random, user:)
+      composite = create(
+        :cash_transaction,
+        user:,
+        description: "Bulk Supermarket",
+        price: 5_000,
+        user_bank_account:,
+        date: Time.zone.today,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, price: 5_000, paid: false)
+        ]
+      )
+      create(:line_item, transactable: composite, description: "Fancy Cheese", price: 5_000, category_id: cat.id)
+
+      month_year = Time.zone.today.strftime("%Y%m")
+
+      get month_year_cash_transactions_path, params: {
+        month_year:,
+        cash_transaction: { category_id: cat.id }
+      }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Bulk Supermarket")
+
+      get month_year_cash_transactions_path, params: {
+        month_year:,
+        search_term: "Cheese"
+      }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Bulk Supermarket")
     end
 
     it "renders row actions in the menu while keeping description links pointed at edit" do

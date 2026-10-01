@@ -2,7 +2,7 @@
 
 ## Status
 
-Planning — 2026-09-21. Not yet started.
+Approved planning contract as of 2026-09-28.
 
 ---
 
@@ -11,8 +11,8 @@ Planning — 2026-09-21. Not yet started.
 Allow a user to record **one real-world purchase** (e.g., an Amazon order, a
 supermarket trip, or a home supply run) that spans multiple categories and/or
 entities, distributing the total across named **line items**. Each line item knows
-its own category, entity, price, and optional description. The parent transaction
-stays the payment record; the line items are the semantic breakdown.
+its own category, optional entity, price, and description. The parent transaction
+stays the payment record; the line items provide the semantic breakdown.
 
 ---
 
@@ -20,7 +20,7 @@ stays the payment record; the line items are the semantic breakdown.
 
 Current pain point: buying groceries for yourself, a leisure item for your spouse, and
 a home asset (all from the same basket / order / payment) requires three separate
-transactions. The subscription-reference model already groups related transactions
+transactions. The subscription-reference model groups related transactions
 under an intent; this ticket adds **within-transaction breakdown** via line items.
 
 ---
@@ -29,9 +29,10 @@ under an intent; this ticket adds **within-transaction breakdown** via line item
 
 - Multi-payment splitting (that is an exchange / advance payment concern already solved)
 - Budget allocation per line item (deferred — budget model is separate)
-- Bulk card installment splitting across line items
-- Cross-context line items
+- Bulk card installment splitting across line items (installments track payment timing, breakdown lives on the parent)
+- Cross-context line items (all line items inherit parent's context)
 - Recurring line item templates
+- CSV import of composite transactions (deferred)
 
 ---
 
@@ -39,9 +40,9 @@ under an intent; this ticket adds **within-transaction breakdown** via line item
 
 | Term | Meaning |
 |---|---|
-| **Composite transaction** | A `CashTransaction` or `CardTransaction` that has at least one `LineItem` |
-| **Line item** | A named sub-entry with its own price, category, and optional entity |
-| **Parent transaction** | The composite record that carries the payment instrument, date, and total price |
+| **Composite transaction** | A `CashTransaction` or `CardTransaction` that has two or more `LineItem` records |
+| **Line item** | A named sub-entry (`LineItem`) with its own price, leaf category, and optional entity |
+| **Parent transaction** | The composite record (`CashTransaction` or `CardTransaction`) that carries the payment instrument, date, and total price |
 | **Simple transaction** | An existing transaction without line items (unchanged behaviour) |
 
 ---
@@ -52,35 +53,39 @@ under an intent; this ticket adds **within-transaction breakdown** via line item
 
 ```sql
 CREATE TABLE line_items (
-  id              bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  id                bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   transactable_type varchar NOT NULL,   -- 'CashTransaction' | 'CardTransaction'
   transactable_id   bigint NOT NULL,
   description       varchar NOT NULL,
   price             integer NOT NULL DEFAULT 0,
   comment           text,
-  created_at        timestamp NOT NULL,
-  updated_at        timestamp NOT NULL
+  created_at        timestamp(6) without time zone NOT NULL,
+  updated_at        timestamp(6) without time zone NOT NULL
 );
 
 CREATE INDEX index_line_items_on_transactable ON line_items(transactable_type, transactable_id);
 ```
 
-Line items carry their own category and entity through existing join tables
-(`category_transactions` / `entity_transactions`) using the same polymorphic
-`transactable` pattern already used by `CardTransaction` and `CashTransaction`.
-
-### `category_transactions` and `entity_transactions`
+### Allocation Join Tables: `category_transactions` and `entity_transactions`
 
 No schema change needed. The polymorphic `transactable_type` / `transactable_id` pair
-will accept `"LineItem"` as a new source type.
+accepts `"LineItem"` as a source type.
 
-### Relationship to parent transaction
+Line items include `CategoryTransactable`, `EntityTransactable`, and `FinancialAuditable`.
+To keep forms and services clean, `LineItem` exposes virtual accessors for `category_id`
+and `entity_id` that transparently manage the underlying join records (`category_transactions`
+and `entity_transactions`).
 
-- `CashTransaction` / `CardTransaction`: `has_many :line_items, as: :transactable`
-- When line items are present, `category_transactions` and `entity_transactions` on
-  the **parent** are considered deprecated for that composite record. The parent's
-  category/entity fields are cleared or set to a built-in "COMPOSITE" sentinel.
-- Parent `price` = sum of `line_items.price` (validated / auto-computed).
+### Relationship to Parent Transaction
+
+- `CashTransaction` / `CardTransaction`: `has_many :line_items, as: :transactable, dependent: :destroy`
+- `accepts_nested_attributes_for :line_items, allow_destroy: true`
+- **Parent Allocations Cleared in Composite Mode**: When line items are present (`composite?`),
+  the parent transaction's direct `category_transactions` and `entity_transactions` are
+  cleared completely. All semantic category and entity allocations live exclusively on the
+  line items. This prevents duplicate counting in financial reports, category rollup metrics,
+  and audit recalculations.
+- Parent `price` = sum of `line_items.price` (enforced by validation).
 
 ---
 
@@ -88,84 +93,66 @@ will accept `"LineItem"` as a new source type.
 
 | Invariant | Enforcement |
 |---|---|
-| Parent price must equal sum of line item prices | Model validation on parent |
-| At least two line items if composite mode is activated | Model validation |
-| A simple transaction (no line items) is unaffected | Existing paths unchanged |
-| Category on each line item must be a leaf (not a parent) | Validation via NARUTO-01 |
-| Line items belong to the same context as the parent | Implicit (transactable context) |
+| Parent price must equal sum of line item prices | Model validation on parent (`validate_line_items_price_sum`) |
+| At least two line items if composite mode is active | Model validation on parent (`validate_composite_line_items_count`) |
+| Line item prices must match parent transaction price sign | Model validation on `LineItem` (`validate_price_sign_matches_parent`) |
+| Line item price cannot be zero | Model validation on `LineItem` (`numericality: { other_than: 0 }`) |
+| Line item description presence | Model validation on `LineItem` (`validates :description, presence: true`) |
+| Category on each line item must be a leaf (not a parent) | Model validation on `LineItem` (`validate_leaf_category`) |
+| Category presence on line item | Model validation on `LineItem` (`validates :category_id, presence: true`) |
+| A simple transaction (no line items) is unaffected | Existing validation and persistence paths unchanged |
+| Line items belong to the same context as the parent | Inferred through `transactable` ownership |
 
 ---
 
 ## UI Direction
 
-### Entry form
+### Entry Form
 
-The transaction create / edit form gains a **"Split purchase"** toggle. When activated:
-- The single-category / single-entity fields are replaced by a dynamic line-item
-  list builder.
-- Each line item row: description, price (currency masked), category selector,
-  optional entity selector.
-- A running total shows how much of the parent price has been allocated vs. remaining.
-- Validation highlights the difference if the sum does not match the parent total.
+The transaction create / edit form gains a **"Split purchase"** toggle button. When activated:
+- The single-category / single-entity fields in the header controls are hidden.
+- A dynamic line-item builder is displayed.
+- Each line item row contains:
+  - Description input
+  - Price input (currency-masked)
+  - Category combobox (limited to leaf categories)
+  - Optional entity combobox
+  - Remove line item button
+- A running summary bar shows:
+  - Total transaction price
+  - Allocated sum of line items
+  - Remaining unallocated amount (highlighted in red if non-zero, green when balanced)
+- "Add line item" button to append rows dynamically.
 
-### Display / show
+### Display / Show
 
-- Composite transactions display a collapsible line-item breakdown beneath the
-  transaction header row.
-- Category and entity badges on the parent row show a stacked multi-badge or a
-  "N categories" summary badge.
-
-### Review / monthly analysis
-
-- Line items contribute their own category / entity to reporting. The parent
-  transaction price is **not** double-counted; only line items roll up into category
-  totals when the transaction is composite.
-- Audit trail: line item create / update / destroy events are tracked via
-  `FinancialAuditable` on `LineItem`.
+- Composite transactions display a collapsible line-item breakdown beneath the transaction header row in show and index views.
+- Category badges on the parent row render a compound summary badge (e.g. `Split [N categories]` or multiple category pills).
+- Entity badges aggregate distinct entities involved across line items.
 
 ---
 
-## Rollback
+## Rollback & Financial Auditing
 
-A rollback adapter `Audit::Rollback::Adapters::LineItem` is required. It should:
-- Remove created line items on rollback of a composite transaction creation.
-- Re-apply line item state on rollback of an edit that altered line items.
-- Cascade rollback to `category_transactions` and `entity_transactions` on the line items.
+### Audit Trail
+- `LineItem` includes `FinancialAuditable`.
+- Creating, updating, or destroying line items generates `AuditVersion` records under the current `AuditOperation`.
+- `Audit::OwnershipResolver` handles `"LineItem"` by delegating to its `transactable` (`CashTransaction` or `CardTransaction`).
 
----
-
-## Implementation Slices
-
-### Slice 1 — Data model and LineItem model
-- Migration: `line_items` table.
-- `LineItem` model with `CategoryTransactable`, `EntityTransactable`, `FinancialAuditable`.
-- Associations on `CashTransaction` / `CardTransaction`.
-- Model validations: price sum, minimum count, leaf category.
-- Rollback adapter stub.
-
-### Slice 2 — Controller and form
-- Update `CashTransactionsController` / `CardTransactionsController` to accept
-  `line_items_attributes`.
-- Stimulus controller for dynamic line-item list (add/remove rows, running total).
-- Server-side rendering of line item list in Phlex.
-
-### Slice 3 — Display and reporting
-- Transaction show / index: collapsible line item breakdown.
-- Monthly analysis: route category / entity totals through line items when composite.
-
-### Slice 4 — Specs and rollback
-- Model specs: validation, price sum, cascade.
-- Request specs: create composite cash and card transactions.
-- Service specs: rollback adapter.
+### Rollback Adapter: `Audit::Rollback::Adapters::LineItem`
+- Registers in `Audit::Rollback::Registry`.
+- Parent identity is `[ transactable_type, transactable_id ]`.
+- Rollback dependencies point to the parent transaction (`CashTransaction` or `CardTransaction`).
+- Recreating on rollback creates the `LineItem` record and cascades to recreate its associated `category_transactions` and `entity_transactions`.
+- Destroying on rollback removes the `LineItem` and cascades to dependent allocations.
+- Recalculations: `%w[category_transaction_totals cash_balance]`.
 
 ---
 
-## Open Questions
+## Resolved Architectural Decisions
 
-1. **Card installments and line items** — when a composite card transaction is split
-   into installments, do the installments also know about line items? Proposal: **No**,
-   installments carry only price/date; the breakdown lives on the parent transaction.
-2. **Importing** — does the CSV importer need to handle line items? Proposal: **Deferred**
-   to a later import enhancement.
-3. **Subscription attachment** — can a composite transaction be linked to a subscription?
-   Proposal: **Yes**, the `subscription_id` FK already lives on the parent transaction.
+1. **Card installments and line items**: Installments carry only price and payment date; the line item breakdown lives strictly on the parent `CardTransaction`.
+2. **Subscription attachment**: The `subscription_id` foreign key lives on the parent transaction; composite transactions may link to subscriptions as usual.
+3. **Parent allocations**: Cleared completely when composite mode is active so allocations reside exclusively on line items without double-counting.
+4. **Line item sign matching**: Line item prices must share the sign of the parent transaction (both negative for expense card transactions, or matching sign for cash transactions).
+5. **Direct virtual accessors**: `LineItem#category_id` and `LineItem#entity_id` provide clean accessors that coordinate with underlying polymorphic join tables.

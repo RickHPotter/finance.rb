@@ -128,6 +128,8 @@ Coverage:
 References:
 
 - [product and data contract](docs/sprints/5-naruto/naruto-02/01-product-and-data-contract.md)
+- [implementation slices](docs/sprints/5-naruto/naruto-02/02-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/5-naruto/naruto-02/03-decisions-and-test-matrix.md)
 
 Explicitly out of scope:
 

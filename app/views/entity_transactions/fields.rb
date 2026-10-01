@@ -26,7 +26,8 @@ module Views
             }) do
           div(class: "my-1 flex") do
             span(class: "flex items-center text-sm font-medium text-black dark:text-slate-100") do
-              if transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
+              if transactable.is_a?(CashTransaction) &&
+                 (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return? || transactable.generated_piggy_bank_return?)
                 div(class: entity_chip_class) do
                   div(class: "flex items-center gap-2 flex-1") do
                     content

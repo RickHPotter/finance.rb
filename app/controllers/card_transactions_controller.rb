@@ -71,7 +71,9 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def edit
-    @card_transaction = current_context.card_transactions.find(params[:id])
+    @card_transaction = current_context.card_transactions
+                                       .includes(line_items: %i[category_transactions entity_transactions])
+                                       .find(params[:id])
     set_return_to
 
     render_top_level Views::CardTransactions::Edit.new(current_user:, card_transaction: @card_transaction, return_to: @return_to)
@@ -105,6 +107,10 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def update
     capture_shared_return_counterpart_destroy_notifications!
     @card_transaction.edit_phase = true if card_transaction_params[:card_installments_attributes].present?
+    if composite_line_items_submitted?(card_transaction_params)
+      @card_transaction.category_transactions.each(&:mark_for_destruction)
+      @card_transaction.entity_transactions.each(&:mark_for_destruction)
+    end
     @card_transaction.assign_attributes(assignable_card_transaction_params.merge(imported: false))
     @card_transaction.historical_correction_confirmation = card_transaction_params[:historical_correction_confirmation]
     @card_transaction.build_month_year if @card_transaction.user_card_id
@@ -573,6 +579,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       id: [], subscription_id: [], card_installment_ids: [], category_id: [], entity_id: [],
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],
+      line_items_attributes: %i[id description price comment category_id entity_id _destroy],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
         { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
@@ -581,7 +588,9 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def assignable_card_transaction_params
-    deduplicated_card_transaction_params(card_transaction_params.to_h.with_indifferent_access)
+    params = deduplicated_card_transaction_params(card_transaction_params.to_h.with_indifferent_access)
+    params = clear_composite_parent_allocations(params) if composite_line_items_submitted?(params)
+    params
   end
 
   def normalize_failed_card_transaction_save!
@@ -590,7 +599,12 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def propagate_nested_history_errors!
-    [ *@card_transaction.card_installments, *@card_transaction.entity_transactions, *@card_transaction.entity_transactions.flat_map(&:exchanges) ].each do |record|
+    [
+      *@card_transaction.card_installments,
+      *@card_transaction.entity_transactions,
+      *@card_transaction.entity_transactions.flat_map(&:exchanges),
+      *@card_transaction.line_items
+    ].each do |record|
       Array(record.errors.details[:base]).each do |detail|
         @card_transaction.errors.add(:base, detail[:error])
       end
@@ -602,6 +616,23 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       category_transactions_attributes: deduplicate_nested_attributes(attributes[:category_transactions_attributes], key: :category_id),
       entity_transactions_attributes: deduplicate_nested_attributes(attributes[:entity_transactions_attributes], key: :entity_id)
     )
+  end
+
+  def clear_composite_parent_allocations(attributes)
+    attributes.except(
+      :category_id,
+      :entity_id,
+      :category_transactions_attributes,
+      :entity_transactions_attributes
+    )
+  end
+
+  def composite_line_items_submitted?(attributes)
+    return false unless attributes.key?(:line_items_attributes)
+
+    normalized_nested_attributes(attributes[:line_items_attributes]).any? do |entry|
+      !ActiveModel::Type::Boolean.new.cast(entry[:_destroy])
+    end
   end
 
   def deduplicate_nested_attributes(attributes, key:)

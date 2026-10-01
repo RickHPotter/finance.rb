@@ -21,7 +21,7 @@ module Reports
       return [] if cash_relation.nil?
 
       rows_for(
-        query_state.apply(cash_relation).includes(cash_transaction: %i[categories entities]),
+        query_state.apply(cash_relation).includes(cash_transaction: [ :categories, :entities, { line_items: %i[categories entities] } ]),
         transaction_method: :cash_transaction
       )
     end
@@ -30,7 +30,7 @@ module Reports
       return [] if card_relation.nil?
 
       rows_for(
-        query_state.apply(card_relation).includes(card_transaction: %i[categories entities]),
+        query_state.apply(card_relation).includes(card_transaction: [ :categories, :entities, { line_items: %i[categories entities] } ]),
         transaction_method: :card_transaction
       )
     end

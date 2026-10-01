@@ -61,9 +61,9 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
         dashboard_stat("Type", category.built_in? ? "Built In" : "Custom")
         dashboard_stat(model_attribute(Category, :created_at), localized_date(category.created_at))
         dashboard_stat(pluralise_model(CashTransaction, 2), scoped_cash_transactions.count)
-        dashboard_stat(model_attribute(CashTransaction, :total_amount), money(scoped_cash_transactions.sum(:price)), emphasis: true)
+        dashboard_stat(model_attribute(CashTransaction, :total_amount), money(scoped_cash_total), emphasis: true)
         dashboard_stat(pluralise_model(CardTransaction, 2), scoped_card_transactions.count)
-        dashboard_stat(model_attribute(CardTransaction, :total_amount), money(scoped_card_transactions.sum(:price)), emphasis: true)
+        dashboard_stat(model_attribute(CardTransaction, :total_amount), money(scoped_card_total), emphasis: true)
       end
     end
   end
@@ -239,21 +239,52 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
   end
 
   def scoped_cash_transactions
-    allocation_ids = CategoryTransaction.where(category_id: category.id, transactable_type: "CashTransaction").select(:transactable_id)
-    @scoped_cash_transactions ||= current_context.cash_transactions.where(id: allocation_ids)
+    @scoped_cash_transactions ||= current_context.cash_transactions.matching_category_ids(category_ids)
   end
 
   def scoped_card_transactions
-    allocation_ids = CategoryTransaction.where(category_id: category.id, transactable_type: "CardTransaction").select(:transactable_id)
-    @scoped_card_transactions ||= current_context.card_transactions.where(id: allocation_ids)
+    @scoped_card_transactions ||= current_context.card_transactions.matching_category_ids(category_ids)
+  end
+
+  def category_ids
+    @category_ids ||= category.subtree_ids
+  end
+
+  def scoped_cash_total
+    @scoped_cash_total ||= begin
+      composite_tx_ids = LineItem.where(transactable_type: "CashTransaction").select(:transactable_id)
+      direct_total = current_context.cash_transactions
+                                    .where.not(id: composite_tx_ids)
+                                    .where(id: CategoryTransaction.where(transactable_type: "CashTransaction", category_id: category_ids).select(:transactable_id))
+                                    .sum(:price)
+      line_item_ids = CategoryTransaction.where(transactable_type: "LineItem", category_id: category_ids).select(:transactable_id)
+      composite_total = LineItem.where(transactable_type: "CashTransaction", transactable_id: current_context.cash_transactions.select(:id),
+                                       id: line_item_ids).sum(:price)
+      direct_total + composite_total
+    end
+  end
+
+  def scoped_card_total
+    @scoped_card_total ||= begin
+      composite_tx_ids = LineItem.where(transactable_type: "CardTransaction").select(:transactable_id)
+      direct_total = current_context.card_transactions
+                                    .where.not(id: composite_tx_ids)
+                                    .where(id: CategoryTransaction.where(transactable_type: "CardTransaction", category_id: category_ids).select(:transactable_id))
+                                    .sum(:price)
+      line_item_ids = CategoryTransaction.where(transactable_type: "LineItem", category_id: category_ids).select(:transactable_id)
+      composite_total = LineItem.where(transactable_type: "CardTransaction", transactable_id: current_context.card_transactions.select(:id),
+                                       id: line_item_ids).sum(:price)
+      direct_total + composite_total
+    end
   end
 
   def scoped_cash_transactions_for_payload
-    @scoped_cash_transactions_for_payload ||= scoped_cash_transactions.includes(:user_bank_account, entity_transactions: :entity).to_a
+    @scoped_cash_transactions_for_payload ||= scoped_cash_transactions.includes(:user_bank_account, entity_transactions: :entity,
+                                                                                                    line_items: %i[categories entities]).to_a
   end
 
   def scoped_card_transactions_for_payload
-    @scoped_card_transactions_for_payload ||= scoped_card_transactions.includes(:user_card, entity_transactions: :entity).to_a
+    @scoped_card_transactions_for_payload ||= scoped_card_transactions.includes(:user_card, entity_transactions: :entity, line_items: %i[categories entities]).to_a
   end
 
   def counterpart_pie_payload
@@ -279,9 +310,21 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
 
   def append_entity_counterparts(entries, filter_options, transaction, source)
     filter_options[source[:id]] = source
-    transaction.entity_transactions.filter_map(&:entity).uniq(&:id).each do |entity_record|
-      entry = entries[entity_record.id] ||= { id: entity_record.id.to_s, name: entity_record.name, totalsBySource: Hash.new(0) }
-      entry[:totalsBySource][source[:id]] += absolute_price(transaction.price)
+    if transaction.composite?
+      category_subtree_set = category_ids.to_set
+      transaction.line_items.each do |item|
+        next unless item.categories.any? { |c| category_subtree_set.include?(c.id) }
+
+        item.entities.uniq(&:id).each do |entity_record|
+          entry = entries[entity_record.id] ||= { id: entity_record.id.to_s, name: entity_record.name, totalsBySource: Hash.new(0) }
+          entry[:totalsBySource][source[:id]] += absolute_price(item.price)
+        end
+      end
+    else
+      transaction.entity_transactions.filter_map(&:entity).uniq(&:id).each do |entity_record|
+        entry = entries[entity_record.id] ||= { id: entity_record.id.to_s, name: entity_record.name, totalsBySource: Hash.new(0) }
+        entry[:totalsBySource][source[:id]] += absolute_price(transaction.price)
+      end
     end
   end
 
@@ -303,7 +346,12 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
           name: source.present? ? source.user_bank_account_name : "Unassigned",
           total: 0
         }
-        entry[:total] += absolute_price(transaction.price)
+        price_to_add = if transaction.composite?
+                         transaction_composite_category_total(transaction)
+                       else
+                         absolute_price(transaction.price)
+                       end
+        entry[:total] += price_to_add
       end
 
       { kind: "user_bank_accounts", entries: serialize_pie_entries(entries.values) }
@@ -322,11 +370,24 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
           name: source.present? ? source.user_card_name : "Unassigned",
           total: 0
         }
-        entry[:total] += absolute_price(transaction.price)
+        price_to_add = if transaction.composite?
+                         transaction_composite_category_total(transaction)
+                       else
+                         absolute_price(transaction.price)
+                       end
+        entry[:total] += price_to_add
       end
 
       { kind: "user_cards", entries: serialize_pie_entries(entries.values) }
     end
+  end
+
+  def transaction_composite_category_total(transaction)
+    category_subtree_set = category_ids.to_set
+    matching_items = transaction.line_items.select do |item|
+      item.categories.any? { |c| category_subtree_set.include?(c.id) }
+    end
+    matching_items.sum { |item| absolute_price(item.price) }
   end
 
   def serialize_pie_entries(entries)
@@ -357,7 +418,7 @@ class Views::Categories::Show < Views::Base # rubocop:disable Metrics/ClassLengt
   end
 
   def category_destroyable?
-    !category.built_in? && category.card_transactions.empty? && category.cash_transactions.empty? && category.investments.empty?
+    !category.built_in? && category.card_transactions.empty? && category.cash_transactions.empty? && category.investments.empty? && category.line_items.empty?
   end
 
   def localized_date(value)

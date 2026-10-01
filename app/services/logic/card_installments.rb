@@ -21,7 +21,14 @@ module Logic
       )
 
       joins      = { card_transaction: %i[categories entities] }
-      inclusions = { card_transaction: [ { categories: :parent_category }, { category_transactions: { category: :parent_category } }, :entities ] }
+      inclusions = {
+        card_transaction: [
+          { categories: :parent_category },
+          { category_transactions: { category: :parent_category } },
+          :entities,
+          { line_items: [ { categories: :parent_category }, :entities ] }
+        ]
+      }
       inclusions[:card_transaction] << :user_card if card_transaction_params[:user_card_id].blank?
 
       card_installment_ids = card_transaction_params.delete(:card_installment_ids)
@@ -35,12 +42,12 @@ module Logic
                                 .where("installments.year = ? AND installments.month = ?", year, month)
       relation = relation.where(id: card_installment_ids) if card_installment_ids.present?
 
-      relation = Search::NormalizedText.apply(relation, search_term, "card_transactions.description")
+      relation = apply_search_term_filter(relation, financial_scope, search_term)
 
       relation = relation.where(card_transaction_id: financial_scope.card_transactions.subscription_candidates.select(:id)) if attach_to_subscription_id.present?
 
-      relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
-      relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
+      relation = relation.where(card_transaction_id: financial_scope.card_transactions.matching_category_ids(category_ids)) if category_ids.present?
+      relation = relation.where(card_transaction_id: financial_scope.card_transactions.matching_entity_ids(entity_ids)) if entity_ids.present?
       relation = apply_exchange_bound_type_filter(relation, search_params[:exchange_bound_type])
 
       relation = apply_sort(relation, sort:, direction:)
@@ -145,12 +152,13 @@ module Logic
       relation = financial_scope.card_installments
                                 .left_joins({ card_transaction: %i[categories entities] })
                                 .where(conditions)
-      relation = Search::NormalizedText.apply(relation, search_term, "card_transactions.description")
+
+      relation = apply_search_term_filter(relation, financial_scope, search_term)
 
       relation = relation.where(card_transaction_id: financial_scope.card_transactions.subscription_candidates.select(:id)) if attach_to_subscription_id.present?
 
-      relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
-      relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
+      relation = relation.where(card_transaction_id: financial_scope.card_transactions.matching_category_ids(category_ids)) if category_ids.present?
+      relation = relation.where(card_transaction_id: financial_scope.card_transactions.matching_entity_ids(entity_ids)) if entity_ids.present?
       relation = apply_exchange_bound_type_filter(relation, search_params[:exchange_bound_type])
 
       relation = relation.distinct.select("installments.id, installments.month, installments.year")
@@ -179,6 +187,29 @@ module Logic
       else
         relation.order(Arel.sql("installments.date #{direction}, installments.id #{direction}"))
       end
+    end
+
+    def self.apply_search_term_filter(relation, financial_scope, search_term)
+      return relation if search_term.blank?
+
+      matching_line_item_tx_ids = Search::NormalizedText.apply(
+        LineItem.where(transactable_type: "CardTransaction"),
+        search_term,
+        "line_items.description"
+      ).select(:transactable_id)
+
+      matching_tx_ids = Search::NormalizedText.apply(
+        financial_scope.card_transactions,
+        search_term,
+        "card_transactions.description"
+      ).select(:id)
+
+      all_matching_tx_ids = financial_scope.card_transactions
+                                           .where(id: matching_tx_ids)
+                                           .or(financial_scope.card_transactions.where(id: matching_line_item_tx_ids))
+                                           .select(:id)
+
+      relation.where(card_transaction_id: all_matching_tx_ids)
     end
   end
 end

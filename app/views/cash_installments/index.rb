@@ -80,7 +80,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
-              render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
+              if cash_transaction.composite?
+                div(class: "flex-1 flex items-center min-w-0 gap-1.5") do
+                  render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment)
+                  render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
+                end
+              else
+                render_description_link(cash_transaction, class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]")
+              end
 
               span(class: "shrink p-1 rounded-sm bg-white text-black border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
                 pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
@@ -161,7 +168,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         end
 
         div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
-          render_description_link(cash_transaction, class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]")
+          if cash_transaction.composite?
+            div(class: "flex-1 flex items-center justify-center min-w-0 gap-1.5") do
+              render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment)
+              render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
+            end
+          else
+            render_description_link(cash_transaction, class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]")
+          end
 
           span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
             pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
@@ -371,7 +385,12 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def categories_for(cash_transaction)
-    CategoryColours::Ordering.from_allocations(cash_transaction.category_transactions)
+    if cash_transaction.composite?
+      distinct_categories = cash_transaction.line_items.flat_map(&:categories).uniq
+      distinct_categories.sort_by { |c| c.hierarchical_name.downcase }
+    else
+      CategoryColours::Ordering.from_allocations(cash_transaction.category_transactions)
+    end
   end
 
   def row_presentation(categories)
@@ -389,7 +408,11 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def entities_for(cash_transaction, sort_key)
-    cash_transaction.entity_transactions.includes(:entity).sort_by(&sort_key)
+    if cash_transaction.composite?
+      cash_transaction.line_items.flat_map(&:entity_transactions).sort_by(&sort_key)
+    else
+      cash_transaction.entity_transactions.includes(:entity).sort_by(&sort_key)
+    end
   end
 
   def cash_entity_popover_items(cash_transaction, avatar_name, sort_key)

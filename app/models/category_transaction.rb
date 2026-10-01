@@ -15,6 +15,7 @@ class CategoryTransaction < ApplicationRecord
   validates :category_id, uniqueness: { scope: %i[transactable_type transactable_id] }
 
   # @callbacks ................................................................
+  after_save :update_count_and_total
   after_destroy :update_count_and_total
 
   # @scopes ...................................................................
@@ -26,8 +27,14 @@ class CategoryTransaction < ApplicationRecord
   protected
 
   def update_count_and_total
-    category.update_card_transactions_count_and_total
-    category.update_cash_transactions_count_and_total
+    category&.update_card_transactions_count_and_total
+    category&.update_cash_transactions_count_and_total
+
+    return unless saved_change_to_category_id? && category_id_before_last_save.present?
+
+    prev_category = Category.find_by(id: category_id_before_last_save)
+    prev_category&.update_card_transactions_count_and_total
+    prev_category&.update_cash_transactions_count_and_total
   end
 
   # @private_instance_methods .................................................

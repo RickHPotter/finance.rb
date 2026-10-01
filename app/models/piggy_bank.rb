@@ -63,6 +63,10 @@ class PiggyBank < ApplicationRecord
     return_cash_transaction&.piggy_bank_group_open? || false
   end
 
+  def return_open?
+    return_cash_transaction&.piggy_bank_return_open? || false
+  end
+
   def iof_exempt_on=(value)
     @iof_exempt_on_explicitly_assigned = true
     super
@@ -313,10 +317,8 @@ class PiggyBank < ApplicationRecord
   end
 
   def prevent_paid_history_projection_change
-    return unless paid_history?
-    return unless will_save_change_to_return_date? || will_save_change_to_iof_exempt_on?
-
-    errors.add(:base, :paid_history_locked)
+    errors.add(:base, :paid_history_locked) if paid_history? && will_save_change_to_iof_exempt_on?
+    errors.add(:base, :paid_history_locked) if paid_history? && !return_open? && will_save_change_to_return_date?
   end
 
   def assign_default_iof_exempt_on

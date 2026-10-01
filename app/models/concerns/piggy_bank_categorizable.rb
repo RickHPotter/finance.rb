@@ -39,8 +39,11 @@ module PiggyBankCategorizable
   def validate_model_piggy_bank_categories(names)
     if is_a?(CardTransaction) && names.intersect?(PIGGY_BANK_CATEGORY_NAMES)
       errors.add(:base, :piggy_bank_cash_only)
-    elsif is_a?(CashTransaction) && names.include?("PIGGY BANK RETURN") && !piggy_bank_projection_write?
-      errors.add(:base, :piggy_bank_return_system_managed)
+    elsif is_a?(CashTransaction) && !piggy_bank_projection_write?
+      unauthorized_return_creation = names.include?("PIGGY BANK RETURN") && (!persisted? || !generated_piggy_bank_return?)
+      unauthorized_category_removal = persisted? && generated_piggy_bank_return? && !names.include?("PIGGY BANK RETURN")
+
+      errors.add(:base, :piggy_bank_return_system_managed) if unauthorized_return_creation || unauthorized_category_removal
     end
   end
 

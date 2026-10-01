@@ -24,6 +24,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
         div(class: "mt-6 space-y-4") do
           summary_grid
+          render Views::Transactions::ShowLineItemsSection.new(transaction: cash_transaction) if cash_transaction.composite?
           installments_section
           piggy_bank_return_section if cash_transaction.generated_piggy_bank_return?
           card_bound_projection_exchanges_section
@@ -769,11 +770,19 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def categories
-    @categories ||= cash_transaction.categories.order(:category_name).to_a
+    @categories ||= if cash_transaction.composite?
+                      cash_transaction.line_items.flat_map(&:categories).uniq.sort_by { |c| c.name.downcase }
+                    else
+                      cash_transaction.categories.order(:category_name).to_a
+                    end
   end
 
   def entities
-    @entities ||= cash_transaction.entities.order(:entity_name).to_a
+    @entities ||= if cash_transaction.composite?
+                    cash_transaction.line_items.flat_map(&:entities).uniq.sort_by { |e| e.name.downcase }
+                  else
+                    cash_transaction.entities.order(:entity_name).to_a
+                  end
   end
 
   def reference_descendants

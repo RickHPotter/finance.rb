@@ -50,20 +50,25 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         render_row_checkbox(card_installment, card_transaction, mobile: true)
 
         div(class: "p-4") do
-          div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
-            div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
-              if user_card_id.nil?
-                link_to card_transaction.user_card.user_card_name,
-                        card_transactions_path(user_card_id: card_transaction.user_card_id),
-                        class: "px-2 py-1 flex items-center justify-center rounded-sm bg-blue-800 border border-slate-200 text-slate-200",
-                        data: { turbo_frame: "_top", turbo_prefetch: false }
-              end
+          div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
+            if user_card_id.nil?
+              link_to card_transaction.user_card.user_card_name,
+                      card_transactions_path(user_card_id: card_transaction.user_card_id),
+                      class: "px-2 py-1 flex items-center justify-center rounded-sm bg-blue-800 border border-slate-200 text-slate-200 shrink-0",
+                      data: { turbo_frame: "_top", turbo_prefetch: false }
+            end
 
+            if card_transaction.composite?
+              div(class: "flex-1 flex items-center min-w-0 gap-1.5") do
+                render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment)
+                render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
+              end
+            else
               render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
+            end
 
-              span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
-                pretty_installments(card_installment.number, card_installment.card_installments_count)
-              end
+            span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
+              pretty_installments(card_installment.number, card_installment.card_installments_count)
             end
           end
 
@@ -168,9 +173,9 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         )
 
         render_row_checkbox(card_installment, card_transaction, wrapper_class: "col-span-5 flex items-center gap-1 relative px-2") do
-          div(class: "flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
+          div(class: "flex-1 flex items-center justify-between gap-2 min-w-0 mx-2") do
             date, time = I18n.l(card_installment.date, format: :shorter).split(",")
-            div(class: "grid grid-cols-1") do
+            div(class: "grid grid-cols-1 shrink-0") do
               span(class: "rounded-xs text-xs mr-auto") { date }
               span(class: "rounded-xs text-xs mr-auto") { time }
             end
@@ -178,11 +183,18 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             if user_card_id.nil?
               link_to card_transaction.user_card.user_card_name,
                       card_transactions_path(user_card_id: card_transaction.user_card_id),
-                      class: "px-2 py-1 ml-2 flex-1 items-center justify-center rounded-sm bg-blue-800 border border-slate-200 text-slate-200",
+                      class: "px-2 py-1 ml-2 flex items-center justify-center rounded-sm bg-blue-800 border border-slate-200 text-slate-200 shrink-0",
                       data: { turbo_frame: "_top", turbo_prefetch: false }
             end
 
-            render_description_link(card_transaction, class: "flex-5 truncate text-md underline underline-offset-[3px]")
+            if card_transaction.composite?
+              div(class: "flex-1 flex items-center justify-center min-w-0 gap-1.5 ml-2") do
+                render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment)
+                render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
+              end
+            else
+              render_description_link(card_transaction, class: "flex-5 truncate text-md underline underline-offset-[3px]")
+            end
 
             span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
               pretty_installments(card_installment.number, card_installment.card_installments_count)
@@ -316,8 +328,14 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def entities_for(card_transaction)
-    card_transaction.entity_transactions.includes(:entity).sort_by do |entity_transaction|
-      [ entity_transaction.entity&.entity_name.to_s, entity_transaction.id.to_i ]
+    if card_transaction.composite?
+      card_transaction.line_items.flat_map(&:entity_transactions).sort_by do |entity_transaction|
+        [ entity_transaction.entity&.entity_name.to_s, entity_transaction.id.to_i ]
+      end
+    else
+      card_transaction.entity_transactions.includes(:entity).sort_by do |entity_transaction|
+        [ entity_transaction.entity&.entity_name.to_s, entity_transaction.id.to_i ]
+      end
     end
   end
 
@@ -366,7 +384,12 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def categories_for(card_transaction)
-    CategoryColours::Ordering.from_allocations(card_transaction.category_transactions)
+    if card_transaction.composite?
+      distinct_categories = card_transaction.line_items.flat_map(&:categories).uniq
+      distinct_categories.sort_by { |c| c.hierarchical_name.downcase }
+    else
+      CategoryColours::Ordering.from_allocations(card_transaction.category_transactions)
+    end
   end
 
   def row_presentation(card_transaction)

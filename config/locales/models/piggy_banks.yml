@@ -7,6 +7,7 @@ en:
       one: 1 contribution
       other: "%{count} contributions"
     linked_return: Linked Piggy Bank Return
+    date_managed_by_return: Return date is managed by
     no_investments: No investments are linked to this return yet.
     return_mode: Return destination
     return_price_mismatch: This return differs from the transaction amount.
@@ -78,6 +79,7 @@ pt-BR:
       one: 1 aporte
       other: "%{count} aportes"
     linked_return: Retorno do Cofrinho Vinculado
+    date_managed_by_return: Data de retorno gerenciada por
     no_investments: Nenhum investimento está vinculado a este retorno ainda.
     return_mode: Destino do retorno
     return_price_mismatch: Este retorno difere do valor da movimentação.
