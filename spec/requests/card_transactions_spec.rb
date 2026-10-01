@@ -1612,6 +1612,19 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response).to redirect_to(card_transactions_path(user_card_id: user_card_one.id))
     end
 
+    it "attaches receipts submitted in update params" do
+      receipt_file = Rack::Test::UploadedFile.new(StringIO.new("invoice data"), "application/pdf", original_filename: "invoice.pdf")
+      card_transaction.use_base(@existing_card_transaction)
+      update_params = card_transaction.params.deep_dup
+      update_params[:card_transaction][:receipts] = [ receipt_file ]
+
+      put card_transaction_path(@existing_card_transaction), params: update_params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:redirect).or have_http_status(:success)
+      expect(@existing_card_transaction.reload.receipts).to be_attached
+      expect(@existing_card_transaction.receipts.first.filename.to_s).to eq("invoice.pdf")
+    end
+
     it "updates the record to have a non_paying entity" do
       card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: false })
       put(card_transaction_path(@existing_card_transaction), params: card_transaction.params, headers: turbo_stream_headers)
@@ -2777,6 +2790,27 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include("Pen")
       expect(response.body).to include(cat1.name)
       expect(response.body).to include(cat2.name)
+    end
+
+    it "renders the attachments section with attached files and download links" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Card transaction with receipt"
+      )
+      transaction.receipts.attach(
+        io: StringIO.new("sample receipt content"),
+        filename: "card_receipt.pdf",
+        content_type: "application/pdf"
+      )
+
+      get card_transaction_path(transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("card_receipt.pdf")
+      expect(response.body).to include(I18n.t("attachments.download"))
     end
   end
 

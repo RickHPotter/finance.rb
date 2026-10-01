@@ -604,6 +604,27 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(user_bank_account.user_bank_account_name)
     end
 
+    it "renders the attachments section with attached files and download links" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Transaction with receipt"
+      )
+      transaction.receipts.attach(
+        io: StringIO.new("sample receipt content"),
+        filename: "my_receipt.pdf",
+        content_type: "application/pdf"
+      )
+
+      get cash_transaction_path(transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("my_receipt.pdf")
+      expect(response.body).to include(I18n.t("attachments.download"))
+    end
+
     it "renders the line items breakdown section and aggregated categories for a composite transaction" do
       cat1 = create(:category, :random, user:)
       cat2 = create(:category, :random, user:)
@@ -2416,6 +2437,19 @@ RSpec.describe "CashTransactions", type: :request do
       cash_transaction.year = cash_transaction.date.year
       post cash_transactions_path, params: cash_transaction.params, headers: turbo_stream_headers
       @existing_cash_transaction = CashTransaction.last
+    end
+
+    it "attaches receipts submitted in update params" do
+      receipt_file = Rack::Test::UploadedFile.new(StringIO.new("invoice data"), "application/pdf", original_filename: "invoice.pdf")
+      cash_transaction.use_base(@existing_cash_transaction)
+      update_params = cash_transaction.params.deep_dup
+      update_params[:cash_transaction][:receipts] = [ receipt_file ]
+
+      put cash_transaction_path(@existing_cash_transaction), params: update_params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other).or have_http_status(:redirect)
+      expect(@existing_cash_transaction.reload.receipts).to be_attached
+      expect(@existing_cash_transaction.receipts.first.filename.to_s).to eq("invoice.pdf")
     end
 
     it "updates the record and its installment price" do
