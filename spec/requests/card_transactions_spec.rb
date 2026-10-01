@@ -2130,6 +2130,37 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include("Adapter")
     end
 
+    it "renders the paperclip badge on rows with attached receipts" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Card row with receipt",
+        price: -3_000,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -3_000, date: Date.new(2026, 4, 10), month: 4, year: 2026)
+        ]
+      )
+      transaction.receipts.attach(
+        io: StringIO.new("card receipt image"),
+        filename: "receipt.jpg",
+        content_type: "image/jpeg"
+      )
+      transaction.save!
+
+      get month_year_card_transactions_path, params: {
+        month_year: "202604",
+        card_transaction: { card_installment_ids: transaction.card_installments.ids, user_card_id: user_card_one.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("attachments.title"))
+    end
+
     it "renders single and multiple category allocations through either display mode" do
       dark_category = create(:category, user:, category_name: "LEISURE", colour: "#4b5563")
       light_category = create(:category, user:, category_name: "ASSINATURA", colour: "#fde68a")

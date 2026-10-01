@@ -5895,7 +5895,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       document = Nokogiri::HTML.fragment(response.body)
       description_link = document.at_css("#edit_cash_transaction_#{transaction.id}")
-      description_column = description_link.parent
+      description_column = description_link.ancestors.find { |node| node["class"]&.include?("col-span-4") } || description_link.parent
       action_button = document.at_css("#cash_installment_actions_#{installment.id}")
       pay_action = document.at_css("button[data-modal-toggle='cashInstallmentModal_#{installment.id}']")
 
@@ -5904,6 +5904,36 @@ RSpec.describe "CashTransactions", type: :request do
       expect(description_column.text).not_to include(I18n.t("actions.analyse"))
       expect(action_button).to be_present
       expect(pay_action.text).to include(CashInstallment.human_attribute_name(:pay))
+    end
+
+    it "renders the paperclip badge on rows with attached receipts" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Cash row with receipt",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, paid: false)
+        ]
+      )
+      transaction.receipts.attach(
+        io: StringIO.new("receipt pdf data"),
+        filename: "receipt.pdf",
+        content_type: "application/pdf"
+      )
+      transaction.save!
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("attachments.title"))
     end
 
     it "uses the normal row surface and renders two incompatible categories as readable pills" do

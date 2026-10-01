@@ -58,17 +58,14 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                       data: { turbo_frame: "_top", turbo_prefetch: false }
             end
 
-            if card_transaction.composite?
+            if card_transaction.composite? || card_transaction.receipts.attached?
               div(class: "flex-1 flex items-center min-w-0 gap-1.5") do
-                render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment)
+                render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment) if card_transaction.composite?
                 render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
                 receipts_badge(card_transaction) if card_transaction.receipts.attached?
               end
             else
-              div(class: "flex-1 flex items-center min-w-0 gap-1.5") do
-                render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
-                receipts_badge(card_transaction) if card_transaction.receipts.attached?
-              end
+              render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
             end
 
             span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
@@ -191,17 +188,14 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                       data: { turbo_frame: "_top", turbo_prefetch: false }
             end
 
-            if card_transaction.composite?
+            if card_transaction.composite? || card_transaction.receipts.attached?
               div(class: "flex-1 flex items-center justify-center min-w-0 gap-1.5 ml-2") do
-                render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment)
+                render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment) if card_transaction.composite?
                 render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
                 receipts_badge(card_transaction) if card_transaction.receipts.attached?
               end
             else
-              div(class: "flex-5 flex items-center min-w-0 gap-1.5 ml-2") do
-                render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
-                receipts_badge(card_transaction) if card_transaction.receipts.attached?
-              end
+              render_description_link(card_transaction, class: "flex-5 truncate text-md underline underline-offset-[3px]")
             end
 
             span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do

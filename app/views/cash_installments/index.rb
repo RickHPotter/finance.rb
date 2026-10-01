@@ -80,17 +80,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
-              if cash_transaction.composite?
+              if cash_transaction.composite? || cash_transaction.receipts.attached?
                 div(class: "flex-1 flex items-center min-w-0 gap-1.5") do
-                  render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment)
+                  render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment) if cash_transaction.composite?
                   render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
                   receipts_badge(cash_transaction) if cash_transaction.receipts.attached?
                 end
               else
-                div(class: "flex-1 flex items-center min-w-0 gap-1.5") do
-                  render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
-                  receipts_badge(cash_transaction) if cash_transaction.receipts.attached?
-                end
+                render_description_link(cash_transaction, class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]")
               end
 
               span(class: "shrink p-1 rounded-sm bg-white text-black border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
@@ -172,17 +169,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         end
 
         div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
-          if cash_transaction.composite?
+          if cash_transaction.composite? || cash_transaction.receipts.attached?
             div(class: "flex-1 flex items-center justify-center min-w-0 gap-1.5") do
-              render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment)
+              render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment) if cash_transaction.composite?
               render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
               receipts_badge(cash_transaction) if cash_transaction.receipts.attached?
             end
           else
-            div(class: "flex-1 flex items-center justify-center min-w-0 gap-1.5") do
-              render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
-              receipts_badge(cash_transaction) if cash_transaction.receipts.attached?
-            end
+            render_description_link(cash_transaction, class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]")
           end
 
           span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
