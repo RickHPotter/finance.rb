@@ -42,6 +42,7 @@ en:
         description_placeholder: Cash Transaction Name
         comment: Comment
         comment_placeholder: Any comment about?
+        receipts: Receipts
         date: Date
         cash_transaction_date: Cash Transaction Date
         cash_installment_date: Cash Installment Date
@@ -123,6 +124,7 @@ pt-BR:
         description_placeholder: Nome da Movimentação
         comment: Comentário
         comment_placeholder: Algum comentário?
+        receipts: Anexos
         date: Data
         cash_transaction_date: Data da Movimentação
         cash_installment_date: Data da Parcela

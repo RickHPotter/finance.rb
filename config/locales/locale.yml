@@ -1,4 +1,18 @@
 en:
+  attachments:
+    title: "Attachments"
+    hint: "PDF, JPEG, PNG, HEIC, XML, ZIP — max 10 MB each, up to 5 files."
+    drop_files: "Drop files here or click to browse"
+    uploading: "Uploading..."
+    remove: "Remove"
+    download: "Download"
+    no_attachments: "No attachments"
+    delete: "Delete"
+    delete_confirm: "Are you sure you want to delete this attachment?"
+    deleted: "Attachment was deleted."
+    too_large: "File is larger than 10 MB."
+    invalid_type: "File type is not supported."
+    max_count: "Maximum of 5 attachments allowed."
   confirmation:
     sure: "Are you sure?"
     yes: "Yes"
@@ -128,6 +142,7 @@ en:
       installments: "Installments"
       allocations: "Allocations"
       links: "Links and references"
+      attachments: "Attachments"
     status:
       partial: "Partial"
     cash_transactions:
@@ -414,6 +429,20 @@ en:
       remove_block: "Remove Block"
 
 pt-BR:
+  attachments:
+    title: "Anexos"
+    hint: "PDF, JPEG, PNG, HEIC, XML, ZIP — máximo de 10 MB por arquivo, até 5 arquivos."
+    drop_files: "Arraste os arquivos aqui ou clique para selecionar"
+    uploading: "Enviando..."
+    remove: "Remover"
+    download: "Baixar"
+    no_attachments: "Nenhum anexo"
+    delete: "Excluir"
+    delete_confirm: "Tem certeza que deseja excluir este anexo?"
+    deleted: "Anexo excluído com sucesso."
+    too_large: "O arquivo é maior que 10 MB."
+    invalid_type: "Tipo de arquivo não suportado."
+    max_count: "Máximo de 5 anexos permitidos."
   confirmation:
     sure: "Tem certeza?"
     yes: "Sim"
@@ -543,6 +572,7 @@ pt-BR:
       installments: "Parcelas"
       allocations: "Alocações"
       links: "Vínculos e referências"
+      attachments: "Anexos"
     status:
       partial: "Parcial"
     cash_transactions:

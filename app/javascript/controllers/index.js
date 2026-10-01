@@ -10,6 +10,9 @@ application.register("allocation-mutation", AllocationMutationController)
 import AllocationTrendController from "./allocation_trend_controller"
 application.register("allocation-trend", AllocationTrendController)
 
+import AttachmentUploadController from "./attachment_upload_controller"
+application.register("attachment-upload", AttachmentUploadController)
+
 import AutofocusController from "./autofocus_controller"
 application.register("autofocus", AutofocusController)
 

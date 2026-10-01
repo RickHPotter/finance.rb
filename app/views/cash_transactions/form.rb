@@ -87,6 +87,8 @@ class Views::CashTransactions::Form < Views::Base
           render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
         end
 
+        TransactionReceiptsUpload(transaction: cash_transaction, form:)
+
         render Views::Transactions::FormActions.new(
           transaction: cash_transaction,
           destroy_href: cash_transaction.persisted? ? cash_transaction_path(cash_transaction, return_to:) : nil,

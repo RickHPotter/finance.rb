@@ -95,6 +95,9 @@ class Views::CardTransactions::Form < Views::Base
           render Views::Transactions::FormCategoriesSection.new(form:, transaction: card_transaction)
           render Views::Transactions::FormEntitiesSection.new(form:, transaction: card_transaction)
         end
+
+        TransactionReceiptsUpload(transaction: card_transaction, form:)
+
         render Views::Transactions::FormActions.new(
           transaction: card_transaction,
           destroy_href: card_transaction.persisted? ? card_transaction_path(card_transaction, return_to:) : nil,

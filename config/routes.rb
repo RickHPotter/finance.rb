@@ -142,6 +142,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :attachments, only: %i[destroy], param: :blob_signed_id
+
   resources :budgets do
     resource :performance, only: :show, controller: "reports/budget_performances", defaults: { format: :json }
 
