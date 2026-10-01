@@ -4,7 +4,7 @@ on:
     branches: ["**"]
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
@@ -28,7 +28,7 @@ jobs:
 
   test:
     # if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16
@@ -74,7 +74,7 @@ jobs:
 
       - name: Preserve RSpec timing and coverage artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: rspec-performance-and-coverage
           path: |
