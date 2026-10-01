@@ -84,9 +84,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 div(class: "flex-1 flex items-center min-w-0 gap-1.5") do
                   render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment)
                   render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
+                  receipts_badge(cash_transaction) if cash_transaction.receipts.attached?
                 end
               else
-                render_description_link(cash_transaction, class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]")
+                div(class: "flex-1 flex items-center min-w-0 gap-1.5") do
+                  render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
+                  receipts_badge(cash_transaction) if cash_transaction.receipts.attached?
+                end
               end
 
               span(class: "shrink p-1 rounded-sm bg-white text-black border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
@@ -172,9 +176,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             div(class: "flex-1 flex items-center justify-center min-w-0 gap-1.5") do
               render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment)
               render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
+              receipts_badge(cash_transaction) if cash_transaction.receipts.attached?
             end
           else
-            render_description_link(cash_transaction, class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]")
+            div(class: "flex-1 flex items-center justify-center min-w-0 gap-1.5") do
+              render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
+              receipts_badge(cash_transaction) if cash_transaction.receipts.attached?
+            end
           end
 
           span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
@@ -488,6 +496,15 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       end
 
       yield if block_given?
+    end
+  end
+
+  def receipts_badge(_transaction)
+    span(
+      class: "inline-flex items-center text-slate-400 hover:text-slate-600 dark:text-slate-500 shrink-0",
+      title: I18n.t("attachments.title")
+    ) do
+      cached_icon(:paperclip)
     end
   end
 end

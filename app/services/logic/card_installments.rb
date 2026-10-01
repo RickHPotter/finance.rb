@@ -26,7 +26,8 @@ module Logic
           { categories: :parent_category },
           { category_transactions: { category: :parent_category } },
           :entities,
-          { line_items: [ { categories: :parent_category }, :entities ] }
+          { line_items: [ { categories: :parent_category }, :entities ] },
+          :receipts_attachments
         ]
       }
       inclusions[:card_transaction] << :user_card if card_transaction_params[:user_card_id].blank?
