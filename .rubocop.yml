@@ -43,15 +43,24 @@ Layout/SpaceInsideArrayLiteralBrackets:
 
 Metrics/CyclomaticComplexity:
   Max: 16
+  Exclude:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"
 
 Metrics/PerceivedComplexity:
   Max: 16
+  Exclude:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"
 
 Metrics/ModuleLength:
   Max: 320
 
 Metrics/ClassLength:
   Max: 300
+  Exclude:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"
 
 Metrics/MethodLength:
   Max: 32

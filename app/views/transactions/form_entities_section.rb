@@ -1,17 +1,22 @@
 # frozen_string_literal: true
 
 class Views::Transactions::FormEntitiesSection < Views::Base
-  attr_reader :form, :transaction
+  include ComponentsHelper
+  include TranslateHelper
 
-  def initialize(form:, transaction:)
+  attr_reader :form, :transaction, :entities, :combobox_disabled
+
+  def initialize(form:, transaction:, entities: nil, combobox_disabled: false)
     @form = form
     @transaction = transaction
+    @entities = entities
+    @combobox_disabled = combobox_disabled
   end
 
   def view_template
     div(
       id: "entities_nested",
-      class: "border-y py-2 md:border-l md:pl-2 dark:border-slate-700/50",
+      class: "border-y py-2 md:border-l md:pl-3 dark:border-slate-700/50",
       data: {
         controller: "nested-form form-collection-carousel",
         nested_form_wrapper_selector_value: ".nested-form-wrapper"
@@ -23,7 +28,7 @@ class Views::Transactions::FormEntitiesSection < Views::Base
         end
       end
 
-      div(class: "grid min-h-[3.5rem] grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-stretch gap-2") do
+      div(class: "grid min-h-[3rem] grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-stretch gap-1.5") do
         Button(
           type: :button,
           variant: :outline,
@@ -34,8 +39,8 @@ class Views::Transactions::FormEntitiesSection < Views::Base
           }
         ) { "←" }
 
-        div(class: "min-h-[3.5rem] overflow-hidden", data: { form_collection_carousel_target: "viewport" }) do
-          div(class: "flex min-h-[3.5rem] -ml-2 items-center", data: { nested_form_target: "target", nested_form_insert: "beforeend" }) do
+        div(class: "min-h-[3rem] overflow-hidden", data: { form_collection_carousel_target: "viewport" }) do
+          div(class: "flex min-h-[3rem] -ml-2 items-center", data: { nested_form_target: "target", nested_form_insert: "beforeend" }) do
             form.fields_for :entity_transactions, entity_transactions_association, include_id: false do |entity_transaction_fields|
               render_item(entity_transaction_fields)
             end
@@ -53,6 +58,21 @@ class Views::Transactions::FormEntitiesSection < Views::Base
         ) { "→" }
       end
 
+      if entities
+        div(id: "cash_transaction_entity_combobox", class: "combobox-shell mt-1.5 user-icon", data: { reactive_form_target: :entityCombobox }) do
+          render Views::Shared::SingleSelectCombobox.new(
+            name: :entity_transaction,
+            options: entities.map { |label, value| [ label, value, {} ] },
+            selected_value: nil,
+            placeholder: model_attribute(transaction, :entity_id),
+            disabled: combobox_disabled,
+            input_data: {
+              action: "change->reactive-form#insertEntity"
+            }
+          )
+        end
+      end
+
       button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
     end
   end
@@ -60,7 +80,7 @@ class Views::Transactions::FormEntitiesSection < Views::Base
   private
 
   def carousel_button_class
-    "h-full min-h-12 w-full border border-slate-300 bg-white px-0 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-950 " \
+    "h-full min-h-10 w-full border border-slate-300 bg-white px-0 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-950 " \
       "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700/70 dark:hover:text-slate-100"
   end
 

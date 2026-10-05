@@ -15,33 +15,23 @@ module Components
       @form = form
     end
 
-    def view_template
-      div(
-        class: "flex items-stretch border-y py-2 md:border-l md:pl-2 dark:border-slate-700/50",
-        data: {
-          controller: "attachment-upload",
-          attachment_upload_model_name_value: model_param_key,
-          attachment_upload_direct_upload_url_value: direct_upload_url,
-          attachment_upload_existing_count_value: existing_receipts.size,
-          attachment_upload_max_files_value: 5,
-          attachment_upload_max_file_size_value: 10.megabytes.to_i,
-          attachment_upload_too_large_message_value: I18n.t("attachments.too_large"),
-          attachment_upload_invalid_type_message_value: I18n.t("attachments.invalid_type"),
-          attachment_upload_max_count_message_value: I18n.t("attachments.max_count"),
-          attachment_upload_uploading_message_value: I18n.t("attachments.uploading")
-        }
-      ) do
-        attachment_button
-        attachment_modal
-        hidden_inputs_container
-      end
-    end
-
-    private
-
+    # Public so the form can read it for the modal_id to pass to FormControls
     def modal_id
       @modal_id ||= "#{model_param_key}_attachments_modal_#{transaction.id || 'new'}"
     end
+
+    def view_template
+      # The attachment-upload controller root lives on the form element (added in form.rb).
+      # This component only renders the modal shell, hidden inputs, and pending upload list.
+      attachment_modal
+      hidden_inputs_container
+    end
+
+    def existing_count
+      existing_receipts.size
+    end
+
+    private
 
     def direct_upload_url
       Rails.application.routes.url_helpers.rails_direct_uploads_path
@@ -53,32 +43,6 @@ module Components
 
     def existing_receipts
       @existing_receipts ||= transaction.persisted? ? transaction.receipts.to_a : []
-    end
-
-    def attachment_button
-      button(
-        type: :button,
-        id: "#{model_param_key}_attachments_button",
-        class: "flex h-full min-h-[3.5rem] w-full md:w-auto items-center justify-center gap-2 rounded-lg border border-slate-300 " \
-               "bg-white px-3 sm:px-4 py-2 font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-50 " \
-               "dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800 cursor-pointer",
-        title: I18n.t("attachments.title"),
-        data: {
-          modal_target: modal_id,
-          modal_toggle: modal_id,
-          action: "dragover->attachment-upload#dragOver dragleave->attachment-upload#dragLeave drop->attachment-upload#drop"
-        }
-      ) do
-        span(class: "text-slate-500 dark:text-slate-400 shrink-0") { cached_icon(:paperclip) }
-        span(class: "text-xs font-semibold whitespace-nowrap") { I18n.t("attachments.title") }
-        span(
-          class: "flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-100 px-1 font-mono text-xs font-bold text-slate-700 " \
-                 "border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200",
-          data: { attachment_upload_target: "counter" }
-        ) do
-          plain existing_receipts.size.to_s
-        end
-      end
     end
 
     def attachment_modal

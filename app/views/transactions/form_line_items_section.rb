@@ -17,58 +17,38 @@ class Views::Transactions::FormLineItemsSection < Views::Base
   end
 
   def view_template
-    div(class: "mb-3") do
-      toggle_row
+    div(class: "mb-0") do
       expanded_section
     end
   end
 
   private
 
-  def toggle_row
-    div(class: "flex items-center justify-between border-t border-b border-gray-300 px-1 py-2 dark:border-slate-700/50") do
-      div(class: "flex items-center gap-2") do
-        span(class: "text-gray-400 dark:text-slate-500 shrink-0") { cached_icon(:category) }
-        span(class: "text-sm text-gray-500 dark:text-slate-400") { I18n.t("transactions.composite.split_purchase") }
-      end
-      Switch(
-        name: "#{form.object_name}[split_purchase]",
-        checked: transaction.composite?,
-        data: {
-          composite_transaction_target: "splitToggle",
-          action: "change->composite-transaction#toggleSplit"
-        }
-      )
-    end
-  end
-
   def expanded_section
     div(
-      class: "mt-2 #{'hidden' unless transaction.composite?}",
+      class: "overflow-hidden rounded-lg border border-gray-300 bg-white dark:border-slate-700/60 dark:bg-slate-900/30",
       data: { composite_transaction_target: "container" }
     ) do
-      div(class: "overflow-hidden rounded-lg border border-gray-300 bg-white dark:border-slate-700/60 dark:bg-slate-900/30") do
-        summary_strip
+      summary_strip
 
-        div(class: "divide-y divide-gray-200 dark:divide-slate-700/40",
-            data: { composite_transaction_target: "itemsList" }) do
-          render_existing_rows
-        end
+      div(class: "divide-y divide-gray-200 dark:divide-slate-700/40",
+          data: { composite_transaction_target: "itemsList" }) do
+        render_existing_rows
+      end
 
-        render_template
+      render_template
 
-        div(class: "border-t border-gray-200 px-3 py-2 dark:border-slate-700/40") do
-          Button(
-            type: :button,
-            variant: :ghost,
-            size: :sm,
-            class: "gap-1.5 text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100 px-2 " \
-                   "dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60",
-            data: { action: "click->composite-transaction#addRow" }
-          ) do
-            cached_icon(:plus)
-            span { I18n.t("transactions.composite.add_item") }
-          end
+      div(class: "border-t border-gray-200 px-3 py-2 dark:border-slate-700/40") do
+        Button(
+          type: :button,
+          variant: :ghost,
+          size: :sm,
+          class: "gap-1.5 text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100 px-2 " \
+                 "dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60",
+          data: { action: "click->composite-transaction#addRow" }
+        ) do
+          cached_icon(:plus)
+          span { I18n.t("transactions.composite.add_item") }
         end
       end
     end

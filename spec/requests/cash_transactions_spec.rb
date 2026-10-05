@@ -99,9 +99,15 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:success)
       document = Nokogiri::HTML.fragment(response.body)
 
-      split_toggle = document.at_css('input[type="checkbox"][name="cash_transaction[split_purchase]"]')
-      expect(split_toggle).to be_present
-      expect(split_toggle["data-composite-transaction-target"]).to eq("splitToggle")
+      # Split purchase is now tab-driven; hidden input carries the value
+      split_input = document.at_css('input[type="hidden"][name="cash_transaction[split_purchase]"]')
+      expect(split_input).to be_present
+
+      # Tab triggers present
+      single_tab = document.css('[data-ruby-ui--tabs-target="trigger"]').find { |el| el.text.strip.include?("Simples") || el.text.strip.include?("Single") }
+      split_tab  = document.css('[data-ruby-ui--tabs-target="trigger"]').find { |el| el.text.strip.include?("Dividida") || el.text.strip.include?("Split") }
+      expect(single_tab).to be_present
+      expect(split_tab).to be_present
 
       template = document.at_css('template[data-composite-transaction-target="template"]')
       expect(template).to be_present
@@ -120,8 +126,10 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:success)
       document = Nokogiri::HTML.fragment(response.body)
 
-      split_toggle = document.at_css('input[type="checkbox"][name="cash_transaction[split_purchase]"]')
-      expect(split_toggle.key?("checked")).to be(true)
+      # When composite, hidden split_purchase input has value "1"
+      split_input = document.at_css('input[type="hidden"][name="cash_transaction[split_purchase]"]')
+      expect(split_input).to be_present
+      expect(split_input["value"]).to eq("1")
 
       item_descriptions = document.css('input[name*="[description]"]').map { |i| i["value"] }
       expect(item_descriptions).to include("Item A", "Item B")

@@ -46,14 +46,29 @@ export default class extends Controller {
       this.clearAllRows()
     }
 
+    this.syncSplitHiddenInput(isSplit)
+    this.recalculate()
+  }
+
+  tabChanged(event) {
+    const isSplit = event.currentTarget.dataset.value === "split"
+    this.applySplitVisibility(isSplit)
+
+    if (isSplit) {
+      if (this.activeRows.length < 2) {
+        while (this.activeRows.length < 2) {
+          this.addRow()
+        }
+      }
+    } else {
+      this.clearAllRows()
+    }
+
+    this.syncSplitHiddenInput(isSplit)
     this.recalculate()
   }
 
   applySplitVisibility(isSplit) {
-    if (this.hasContainerTarget) {
-      this.containerTarget.classList.toggle("hidden", !isSplit)
-    }
-
     if (this.hasHeaderAllocationsTarget) {
       this.headerAllocationsTarget.classList.toggle("pointer-events-none", isSplit)
       this.headerAllocationsTarget.classList.toggle("opacity-50", isSplit)
@@ -69,6 +84,11 @@ export default class extends Controller {
         el.disabled = isSplit
       })
     }
+  }
+
+  syncSplitHiddenInput(isSplit) {
+    const input = this.element.querySelector("input[name*='[split_purchase]']")
+    if (input) input.value = isSplit ? "1" : "0"
   }
 
   clearAllRows() {

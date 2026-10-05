@@ -5,23 +5,22 @@ class Views::CashTransactions::FormControls < Views::Base
   include ComponentsHelper
   include TranslateHelper
 
-  attr_reader :form, :cash_transaction, :user_bank_accounts, :categories, :entities
+  attr_reader :form, :cash_transaction, :user_bank_accounts, :attachment_modal_id
 
-  def initialize(form:, cash_transaction:, user_bank_accounts:, categories:, entities:)
+  def initialize(form:, cash_transaction:, user_bank_accounts:, categories: nil, entities: nil, attachment_modal_id: nil) # rubocop:disable Lint/UnusedMethodArgument
     @form = form
     @cash_transaction = cash_transaction
     @user_bank_accounts = user_bank_accounts
-    @categories = categories
-    @entities = entities
+    @attachment_modal_id = attachment_modal_id
   end
 
   def view_template
     div(class: "lg:flex lg:gap-2 w-full mb-3") do
       user_bank_account_field
-      category_and_entity_fields
       exchange_intent_field
       date_field
       price_and_installments_controls
+      attachments_button if attachment_modal_id
     end
   end
 
@@ -41,42 +40,8 @@ class Views::CashTransactions::FormControls < Views::Base
     end
   end
 
-  def category_and_entity_fields
-    composite = cash_transaction.composite?
-    div(
-      class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0 #{'pointer-events-none opacity-50' if composite}",
-      data: { composite_transaction_target: "headerAllocations" }
-    ) do
-      div(id: "cash_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
-        render Views::Shared::SingleSelectCombobox.new(
-          name: :category_transaction,
-          options: categories.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
-          selected_value: nil,
-          placeholder: model_attribute(cash_transaction, :category_id),
-          disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return? || cash_transaction.generated_piggy_bank_return?,
-          input_data: {
-            action: "change->reactive-form#insertCategory"
-          }
-        )
-      end
-
-      div(id: "cash_transaction_entity_combobox", class: "combobox-shell w-1/2 user-icon", data: { reactive_form_target: :entityCombobox }) do
-        render Views::Shared::SingleSelectCombobox.new(
-          name: :entity_transaction,
-          options: entities.map { |label, value| [ label, value, {} ] },
-          selected_value: nil,
-          placeholder: model_attribute(cash_transaction, :entity_id),
-          disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return? || cash_transaction.generated_piggy_bank_return?,
-          input_data: {
-            action: "change->reactive-form#insertEntity"
-          }
-        )
-      end
-    end
-  end
-
   def date_field
-    div(class: "w-full lg:w-[20%] lg:flex-none mb-3 lg:mb-0") do
+    div(class: "w-full lg:w-[28%] lg:flex-none mb-3 lg:mb-0") do
       render Views::Shared::DatetimeInput.new(
         form:,
         field: :date,
@@ -98,7 +63,7 @@ class Views::CashTransactions::FormControls < Views::Base
     sign_bg_colour = positive ? "bg-green-300 dark:bg-green-400 dark:text-slate-950" : "bg-red-300 dark:bg-red-400 dark:text-slate-950"
     sign = positive ? "+" : "-"
 
-    div(class: "flex w-full lg:w-[24%] lg:flex-none gap-1 mb-3 lg:mb-0") do
+    div(class: "flex w-full lg:flex-1 lg:flex-none gap-1 mb-3 lg:mb-0") do
       Button(
         size: :lg,
         class: "w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
@@ -108,7 +73,7 @@ class Views::CashTransactions::FormControls < Views::Base
         data: { action: "click->price-mask#toggleSign click->composite-transaction#recalculate", target: ".sign-based" }
       ) { sign }
 
-      div(class: "w-7/12 lg:w-7/12") do
+      div(class: "w-7/12") do
         TextField \
           form, :price,
           inputmode: :numeric,
@@ -135,7 +100,7 @@ class Views::CashTransactions::FormControls < Views::Base
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
-      div(class: "w-3/12 lg:w-4/12") do
+      div(class: "w-3/12") do
         TextFieldTag \
           :cash_installments_count,
           type: :number,
@@ -147,6 +112,30 @@ class Views::CashTransactions::FormControls < Views::Base
           data: { controller: "input-select",
                   reactive_form_target: :installmentsCountInput,
                   action: "click->input-select#select input->reactive-form#updateInstallmentsPrices" }
+      end
+    end
+  end
+
+  def attachments_button
+    div(class: "mb-3 lg:mb-0 flex items-stretch") do
+      button(
+        type: :button,
+        class: "flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium " \
+               "text-slate-700 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-50 " \
+               "dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800 cursor-pointer",
+        title: I18n.t("attachments.title"),
+        data: {
+          modal_target: attachment_modal_id,
+          modal_toggle: attachment_modal_id,
+          action: "dragover->attachment-upload#dragOver dragleave->attachment-upload#dragLeave drop->attachment-upload#drop"
+        }
+      ) do
+        span(class: "text-slate-500 dark:text-slate-400 shrink-0") { cached_icon(:paperclip) }
+        span(
+          class: "flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-100 px-1 font-mono text-xs font-bold text-slate-700 " \
+                 "border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200",
+          data: { attachment_upload_target: "counter" }
+        ) { "0" }
       end
     end
   end

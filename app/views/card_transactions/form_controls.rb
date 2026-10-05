@@ -7,16 +7,15 @@ class Views::CardTransactions::FormControls < Views::Base
   include ComponentsHelper
   include TranslateHelper
 
-  attr_reader :form, :card_transaction, :user_cards, :categories, :entities, :autofocus_target, :user_card_date
+  attr_reader :form, :card_transaction, :user_cards, :autofocus_target, :user_card_date, :attachment_modal_id
 
-  def initialize(form:, card_transaction:, user_cards:, categories:, entities:, autofocus_target:, user_card_date:)
+  def initialize(form:, card_transaction:, user_cards:, autofocus_target:, user_card_date:, categories: nil, entities: nil, attachment_modal_id: nil) # rubocop:disable Lint/UnusedMethodArgument
     @form = form
     @card_transaction = card_transaction
     @user_cards = user_cards
-    @categories = categories
-    @entities = entities
     @autofocus_target = autofocus_target
     @user_card_date = user_card_date
+    @attachment_modal_id = attachment_modal_id
   end
 
   def view_template
@@ -24,9 +23,9 @@ class Views::CardTransactions::FormControls < Views::Base
 
     div(class: "lg:flex lg:gap-2 w-full mb-3") do
       user_card_field
-      category_and_entity_fields
       date_field
       price_and_installments_controls
+      attachments_button if attachment_modal_id
     end
   end
 
@@ -48,44 +47,8 @@ class Views::CardTransactions::FormControls < Views::Base
     end
   end
 
-  def category_and_entity_fields
-    composite = card_transaction.composite?
-    div(
-      class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0 #{'pointer-events-none opacity-50' if composite}",
-      data: { composite_transaction_target: "headerAllocations" }
-    ) do
-      div(id: "card_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
-        render Views::Shared::SingleSelectCombobox.new(
-          name: :category_transaction,
-          options: categories.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
-          selected_value: nil,
-          placeholder: model_attribute(card_transaction, :category_id),
-          autofocus: autofocus_target == :category_transaction,
-          disabled: composite,
-          input_data: {
-            action: "change->reactive-form#insertCategory"
-          }
-        )
-      end
-
-      div(id: "card_transaction_entity_combobox", class: "combobox-shell w-1/2 user-icon", data: { reactive_form_target: :entityCombobox }) do
-        render Views::Shared::SingleSelectCombobox.new(
-          name: :entity_transaction,
-          options: entities.map { |label, value| [ label, value, {} ] },
-          selected_value: nil,
-          placeholder: model_attribute(card_transaction, :entity_id),
-          autofocus: autofocus_target == :entity_transaction,
-          disabled: composite,
-          input_data: {
-            action: "change->reactive-form#insertEntity"
-          }
-        )
-      end
-    end
-  end
-
   def date_field
-    div(class: "w-full lg:w-[20%] lg:flex-none mb-3 lg:mb-0") do
+    div(class: "w-full lg:w-[28%] lg:flex-none mb-3 lg:mb-0") do
       render Views::Shared::DatetimeInput.new(
         form:,
         field: :date,
@@ -115,7 +78,7 @@ class Views::CardTransactions::FormControls < Views::Base
     sign_bg_colour = positive ? "bg-green-300 dark:bg-green-400 dark:text-slate-950" : "bg-red-300 dark:bg-red-400 dark:text-slate-950"
     sign = positive ? "+" : "-"
 
-    div(class: "flex w-full lg:w-[24%] lg:flex-none gap-1 mb-3 lg:mb-0") do
+    div(class: "flex w-full lg:flex-1 lg:flex-none gap-1 mb-3 lg:mb-0") do
       Button(
         size: :lg,
         class: "w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
@@ -124,7 +87,7 @@ class Views::CardTransactions::FormControls < Views::Base
         data: { action: "click->price-mask#toggleSign click->composite-transaction#recalculate", target: ".sign-based" }
       ) { sign }
 
-      div(class: "w-7/12 lg:w-7/12") do
+      div(class: "w-7/12") do
         TextField \
           form, :price,
           inputmode: :numeric,
@@ -156,7 +119,7 @@ class Views::CardTransactions::FormControls < Views::Base
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
-      div(class: "w-3/12 lg:w-4/12") do
+      div(class: "w-3/12") do
         TextFieldTag \
           :card_installments_count,
           type: :number,
@@ -169,6 +132,30 @@ class Views::CardTransactions::FormControls < Views::Base
             reactive_form_target: :installmentsCountInput,
             action: "click->input-select#select input->reactive-form#updateInstallmentsPrices input->reactive-form#updateExchangeWhenDuplicating"
           }
+      end
+    end
+  end
+
+  def attachments_button
+    div(class: "mb-3 lg:mb-0 flex items-stretch") do
+      button(
+        type: :button,
+        class: "flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium " \
+               "text-slate-700 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-50 " \
+               "dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800 cursor-pointer",
+        title: I18n.t("attachments.title"),
+        data: {
+          modal_target: attachment_modal_id,
+          modal_toggle: attachment_modal_id,
+          action: "dragover->attachment-upload#dragOver dragleave->attachment-upload#dragLeave drop->attachment-upload#drop"
+        }
+      ) do
+        span(class: "text-slate-500 dark:text-slate-400 shrink-0") { cached_icon(:paperclip) }
+        span(
+          class: "flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-100 px-1 font-mono text-xs font-bold text-slate-700 " \
+                 "border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200",
+          data: { attachment_upload_target: "counter" }
+        ) { "0" }
       end
     end
   end

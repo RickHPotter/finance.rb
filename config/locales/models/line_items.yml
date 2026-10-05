@@ -22,7 +22,8 @@ en:
               must_be_negative_to_match_transaction: "must be negative to match transaction price"
   transactions:
     composite:
-      split_purchase: "Split purchase"
+      single_purchase: "Single Purchase"
+      split_purchase: "Split Purchase"
       split_purchase_hint: "Break down purchase across multiple categories and entities"
       add_item: "Add item"
       no_entity: "No entity"
@@ -62,7 +63,8 @@ pt-BR:
               must_be_negative_to_match_transaction: "deve ser negativo para coincidir com o valor da transação"
   transactions:
     composite:
-      split_purchase: "Dividir compra"
+      single_purchase: "Compra Simples"
+      split_purchase: "Compra Dividida"
       split_purchase_hint: "Divida a compra entre múltiplas categorias e pessoas"
       add_item: "Adicionar item"
       no_entity: "Nenhuma pessoa"
