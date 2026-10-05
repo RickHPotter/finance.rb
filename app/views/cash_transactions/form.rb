@@ -78,16 +78,18 @@ class Views::CashTransactions::Form < Views::Base
           categories: @leaf_categories,
           entities: @entities
         )
-        render Views::CashTransactions::FormInstallmentsSection.new(form:, cash_transaction:)
-        div(
-          class: "mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-0 #{'pointer-events-none opacity-50' if cash_transaction.composite?}",
-          data: { composite_transaction_target: "allocationsContainer" }
-        ) do
-          render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
-          render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
-        end
+        div(class: "mb-3 flex flex-col md:flex-row items-stretch gap-2 md:gap-0") do
+          div(
+            class: "flex-1 grid grid-cols-1 md:grid-cols-2 items-stretch #{'pointer-events-none opacity-50' if cash_transaction.composite?}",
+            data: { composite_transaction_target: "allocationsContainer" }
+          ) do
+            render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
+            render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
+          end
 
-        TransactionReceiptsUpload(transaction: cash_transaction, form:)
+          TransactionReceiptsUpload(transaction: cash_transaction, form:)
+        end
+        render Views::CashTransactions::FormInstallmentsSection.new(form:, cash_transaction:)
 
         render Views::Transactions::FormActions.new(
           transaction: cash_transaction,

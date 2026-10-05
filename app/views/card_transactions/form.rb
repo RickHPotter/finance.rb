@@ -87,16 +87,18 @@ class Views::CardTransactions::Form < Views::Base
           categories: @leaf_categories,
           entities: @entities
         )
-        render Views::CardTransactions::FormInstallmentsSection.new(form:, card_transaction:)
-        div(
-          class: "mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-0 #{'pointer-events-none opacity-50' if card_transaction.composite?}",
-          data: { composite_transaction_target: "allocationsContainer" }
-        ) do
-          render Views::Transactions::FormCategoriesSection.new(form:, transaction: card_transaction)
-          render Views::Transactions::FormEntitiesSection.new(form:, transaction: card_transaction)
-        end
+        div(class: "mb-3 flex flex-col md:flex-row items-stretch gap-2 md:gap-0") do
+          div(
+            class: "flex-1 grid grid-cols-1 md:grid-cols-2 items-stretch #{'pointer-events-none opacity-50' if card_transaction.composite?}",
+            data: { composite_transaction_target: "allocationsContainer" }
+          ) do
+            render Views::Transactions::FormCategoriesSection.new(form:, transaction: card_transaction)
+            render Views::Transactions::FormEntitiesSection.new(form:, transaction: card_transaction)
+          end
 
-        TransactionReceiptsUpload(transaction: card_transaction, form:)
+          TransactionReceiptsUpload(transaction: card_transaction, form:)
+        end
+        render Views::CardTransactions::FormInstallmentsSection.new(form:, card_transaction:)
 
         render Views::Transactions::FormActions.new(
           transaction: card_transaction,

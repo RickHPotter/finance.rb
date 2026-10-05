@@ -28,17 +28,23 @@ export default class extends Controller {
 
   dragOver(event) {
     event.preventDefault()
-    this.dropzoneTarget.classList.add("border-blue-500", "bg-blue-50/10")
+    if (this.hasDropzoneTarget) {
+      this.dropzoneTarget.classList.add("border-blue-500", "bg-blue-50/10")
+    }
   }
 
   dragLeave(event) {
     event.preventDefault()
-    this.dropzoneTarget.classList.remove("border-blue-500", "bg-blue-50/10")
+    if (this.hasDropzoneTarget) {
+      this.dropzoneTarget.classList.remove("border-blue-500", "bg-blue-50/10")
+    }
   }
 
   drop(event) {
     event.preventDefault()
-    this.dropzoneTarget.classList.remove("border-blue-500", "bg-blue-50/10")
+    if (this.hasDropzoneTarget) {
+      this.dropzoneTarget.classList.remove("border-blue-500", "bg-blue-50/10")
+    }
     if (event.dataTransfer?.files?.length) {
       this.processFiles(Array.from(event.dataTransfer.files))
     }
@@ -213,9 +219,21 @@ export default class extends Controller {
   }
 
   updateCounter() {
-    if (!this.hasCounterTarget) return
     const total = this.existingCountValue + this.pendingUploads.size
-    this.counterTarget.textContent = `${total} / ${this.maxFilesValue}`
+    this.counterTargets.forEach(target => {
+      if (target.dataset.format === "fraction") {
+        target.textContent = `${total} / ${this.maxFilesValue}`
+      } else {
+        target.textContent = total.toString()
+      }
+    })
+  }
+
+  decrementExisting() {
+    if (this.existingCountValue > 0) {
+      this.existingCountValue--
+      this.updateCounter()
+    }
   }
 
   formatBytes(bytes) {
