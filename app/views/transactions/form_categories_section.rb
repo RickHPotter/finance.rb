@@ -4,13 +4,11 @@ class Views::Transactions::FormCategoriesSection < Views::Base
   include ComponentsHelper
   include TranslateHelper
 
-  attr_reader :form, :transaction, :categories, :combobox_disabled
+  attr_reader :form, :transaction
 
-  def initialize(form:, transaction:, categories: nil, combobox_disabled: false)
+  def initialize(form:, transaction:)
     @form = form
     @transaction = transaction
-    @categories = categories
-    @combobox_disabled = combobox_disabled
   end
 
   def view_template
@@ -25,22 +23,6 @@ class Views::Transactions::FormCategoriesSection < Views::Base
       template(data_nested_form_target: "template") do
         form.fields_for :category_transactions, CategoryTransaction.new, child_index: "NEW_RECORD" do |category_transaction_fields|
           render_item(category_transaction_fields)
-        end
-      end
-
-      if categories
-        div(id: "#{transaction.model_name.param_key}_category_combobox", class: "combobox-shell mb-2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
-          render Views::Shared::SingleSelectCombobox.new(
-            name: :category_transaction,
-            options: categories.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
-            selected_value: nil,
-            placeholder: model_attribute(transaction, :category_id),
-            disabled: combobox_disabled,
-            size: :sm,
-            input_data: {
-              action: "change->reactive-form#insertCategory"
-            }
-          )
         end
       end
 

@@ -7,15 +7,17 @@ class Views::CardTransactions::FormControls < Views::Base
   include ComponentsHelper
   include TranslateHelper
 
-  attr_reader :form, :card_transaction, :user_cards, :autofocus_target, :user_card_date, :attachment_modal_id, :existing_count
+  attr_reader :form, :card_transaction, :user_cards, :categories, :entities, :autofocus_target, :user_card_date, :attachment_modal_id, :existing_count
 
   def initialize(
-    form:, card_transaction:, user_cards:, autofocus_target:, user_card_date:,
-    attachment_modal_id: nil, existing_count: 0
+    form:, card_transaction:, user_cards:, categories:, entities:,
+    autofocus_target:, user_card_date:, attachment_modal_id: nil, existing_count: 0
   )
     @form = form
     @card_transaction = card_transaction
     @user_cards = user_cards
+    @categories = categories
+    @entities = entities
     @autofocus_target = autofocus_target
     @user_card_date = user_card_date
     @attachment_modal_id = attachment_modal_id
@@ -27,6 +29,7 @@ class Views::CardTransactions::FormControls < Views::Base
 
     div(class: "flex flex-col lg:flex-row lg:items-center lg:gap-2 w-full mb-3") do
       user_card_field
+      category_and_entity_fields
       date_field
       price_and_installments_controls
       attachments_button if attachment_modal_id
@@ -36,7 +39,7 @@ class Views::CardTransactions::FormControls < Views::Base
   private
 
   def user_card_field
-    div(id: "card_transaction_user_card_combobox", class: "combobox-shell w-full lg:w-[18%] lg:flex-none mb-3 lg:mb-0 wallet-icon",
+    div(id: "card_transaction_user_card_combobox", class: "combobox-shell w-full lg:w-[15%] lg:flex-none mb-3 lg:mb-0 wallet-icon",
         data: { reactive_form_target: :userCardCombobox }) do
       render Views::Shared::SingleSelectCombobox.new(
         name: "card_transaction[user_card_id]",
@@ -51,8 +54,46 @@ class Views::CardTransactions::FormControls < Views::Base
     end
   end
 
+  def category_and_entity_fields
+    composite = card_transaction.composite?
+    div(
+      class: "flex w-full lg:w-[22%] lg:flex-none gap-1 mb-3 lg:mb-0 min-w-0 #{'pointer-events-none opacity-50' if composite}",
+      data: { composite_transaction_target: "headerAllocations" }
+    ) do
+      div(id: "card_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
+        render Views::Shared::SingleSelectCombobox.new(
+          name: :category_transaction,
+          options: categories.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
+          selected_value: nil,
+          placeholder: model_attribute(card_transaction, :category_id),
+          autofocus: autofocus_target == :category_transaction,
+          disabled: composite,
+          size: :sm,
+          input_data: {
+            action: "change->reactive-form#insertCategory"
+          }
+        )
+      end
+
+      div(id: "card_transaction_entity_combobox", class: "combobox-shell w-1/2 user-icon", data: { reactive_form_target: :entityCombobox }) do
+        render Views::Shared::SingleSelectCombobox.new(
+          name: :entity_transaction,
+          options: entities.map { |label, value| [ label, value, {} ] },
+          selected_value: nil,
+          placeholder: model_attribute(card_transaction, :entity_id),
+          autofocus: autofocus_target == :entity_transaction,
+          disabled: composite,
+          size: :sm,
+          input_data: {
+            action: "change->reactive-form#insertEntity"
+          }
+        )
+      end
+    end
+  end
+
   def date_field
-    div(class: "w-full lg:w-[26%] lg:flex-none mb-3 lg:mb-0") do
+    div(class: "w-full lg:w-[20%] lg:flex-none mb-3 lg:mb-0") do
       render Views::Shared::DatetimeInput.new(
         form:,
         field: :date,
@@ -123,7 +164,7 @@ class Views::CardTransactions::FormControls < Views::Base
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
-      div(class: "w-20 lg:w-24 shrink-0") do
+      div(class: "w-16 lg:w-20 shrink-0") do
         TextFieldTag \
           :card_installments_count,
           type: :number,

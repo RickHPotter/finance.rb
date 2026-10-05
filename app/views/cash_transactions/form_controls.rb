@@ -5,12 +5,14 @@ class Views::CashTransactions::FormControls < Views::Base
   include ComponentsHelper
   include TranslateHelper
 
-  attr_reader :form, :cash_transaction, :user_bank_accounts, :attachment_modal_id, :existing_count
+  attr_reader :form, :cash_transaction, :user_bank_accounts, :categories, :entities, :attachment_modal_id, :existing_count
 
-  def initialize(form:, cash_transaction:, user_bank_accounts:, attachment_modal_id: nil, existing_count: 0)
+  def initialize(form:, cash_transaction:, user_bank_accounts:, categories:, entities:, attachment_modal_id: nil, existing_count: 0)
     @form = form
     @cash_transaction = cash_transaction
     @user_bank_accounts = user_bank_accounts
+    @categories = categories
+    @entities = entities
     @attachment_modal_id = attachment_modal_id
     @existing_count = existing_count
   end
@@ -18,6 +20,7 @@ class Views::CashTransactions::FormControls < Views::Base
   def view_template
     div(class: "flex flex-col lg:flex-row lg:items-center lg:gap-2 w-full mb-3") do
       user_bank_account_field
+      category_and_entity_fields
       exchange_intent_field
       date_field
       price_and_installments_controls
@@ -28,7 +31,7 @@ class Views::CashTransactions::FormControls < Views::Base
   private
 
   def user_bank_account_field
-    div(id: "cash_transaction_user_bank_account_combobox", class: "combobox-shell w-full lg:w-[18%] lg:flex-none mb-3 lg:mb-0 wallet-icon") do
+    div(id: "cash_transaction_user_bank_account_combobox", class: "combobox-shell w-full lg:w-[15%] lg:flex-none mb-3 lg:mb-0 wallet-icon") do
       render Views::Shared::SingleSelectCombobox.new(
         name: "cash_transaction[user_bank_account_id]",
         options: user_bank_accounts.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
@@ -41,8 +44,44 @@ class Views::CashTransactions::FormControls < Views::Base
     end
   end
 
+  def category_and_entity_fields
+    composite = cash_transaction.composite?
+    div(
+      class: "flex w-full lg:w-[22%] lg:flex-none gap-1 mb-3 lg:mb-0 min-w-0 #{'pointer-events-none opacity-50' if composite}",
+      data: { composite_transaction_target: "headerAllocations" }
+    ) do
+      div(id: "cash_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
+        render Views::Shared::SingleSelectCombobox.new(
+          name: :category_transaction,
+          options: categories.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
+          selected_value: nil,
+          placeholder: model_attribute(cash_transaction, :category_id),
+          disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return? || cash_transaction.generated_piggy_bank_return?,
+          size: :sm,
+          input_data: {
+            action: "change->reactive-form#insertCategory"
+          }
+        )
+      end
+
+      div(id: "cash_transaction_entity_combobox", class: "combobox-shell w-1/2 user-icon", data: { reactive_form_target: :entityCombobox }) do
+        render Views::Shared::SingleSelectCombobox.new(
+          name: :entity_transaction,
+          options: entities.map { |label, value| [ label, value, {} ] },
+          selected_value: nil,
+          placeholder: model_attribute(cash_transaction, :entity_id),
+          disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return? || cash_transaction.generated_piggy_bank_return?,
+          size: :sm,
+          input_data: {
+            action: "change->reactive-form#insertEntity"
+          }
+        )
+      end
+    end
+  end
+
   def date_field
-    div(class: "w-full lg:w-[26%] lg:flex-none mb-3 lg:mb-0") do
+    div(class: "w-full lg:w-[20%] lg:flex-none mb-3 lg:mb-0") do
       render Views::Shared::DatetimeInput.new(
         form:,
         field: :date,
@@ -101,7 +140,7 @@ class Views::CashTransactions::FormControls < Views::Base
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
-      div(class: "w-20 lg:w-24 shrink-0") do
+      div(class: "w-16 lg:w-20 shrink-0") do
         TextFieldTag \
           :cash_installments_count,
           type: :number,

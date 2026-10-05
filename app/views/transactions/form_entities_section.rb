@@ -4,13 +4,11 @@ class Views::Transactions::FormEntitiesSection < Views::Base
   include ComponentsHelper
   include TranslateHelper
 
-  attr_reader :form, :transaction, :entities, :combobox_disabled
+  attr_reader :form, :transaction
 
-  def initialize(form:, transaction:, entities: nil, combobox_disabled: false)
+  def initialize(form:, transaction:)
     @form = form
     @transaction = transaction
-    @entities = entities
-    @combobox_disabled = combobox_disabled
   end
 
   def view_template
@@ -25,22 +23,6 @@ class Views::Transactions::FormEntitiesSection < Views::Base
       template(data_nested_form_target: "template") do
         form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields|
           render_item(entity_transaction_fields)
-        end
-      end
-
-      if entities
-        div(id: "#{transaction.model_name.param_key}_entity_combobox", class: "combobox-shell mb-2 user-icon", data: { reactive_form_target: :entityCombobox }) do
-          render Views::Shared::SingleSelectCombobox.new(
-            name: :entity_transaction,
-            options: entities.map { |label, value| [ label, value, {} ] },
-            selected_value: nil,
-            placeholder: model_attribute(transaction, :entity_id),
-            disabled: combobox_disabled,
-            size: :sm,
-            input_data: {
-              action: "change->reactive-form#insertEntity"
-            }
-          )
         end
       end
 

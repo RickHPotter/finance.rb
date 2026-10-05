@@ -83,6 +83,8 @@ class Views::CashTransactions::Form < Views::Base
           form:,
           cash_transaction:,
           user_bank_accounts: @user_bank_accounts,
+          categories: @categories,
+          entities: @entities,
           attachment_modal_id: receipts_upload.modal_id,
           existing_count: receipts_upload.existing_count
         )
@@ -95,12 +97,14 @@ class Views::CashTransactions::Form < Views::Base
           TabsList(class: "w-full justify-start rounded-none border-b border-slate-200 bg-transparent p-0 dark:border-slate-700/50 h-auto") do
             TabsTrigger(
               value: "single",
+              tabindex: -1,
               class: "rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-slate-600 data-[state=active]:border-slate-800 " \
                      "data-[state=active]:text-slate-900 dark:text-slate-400 dark:data-[state=active]:border-slate-200 dark:data-[state=active]:text-slate-100",
               data: { action: "click->composite-transaction#tabChanged" }
             ) { I18n.t("transactions.composite.single_purchase") }
             TabsTrigger(
               value: "split",
+              tabindex: -1,
               class: "rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-slate-600 data-[state=active]:border-slate-800 " \
                      "data-[state=active]:text-slate-900 dark:text-slate-400 dark:data-[state=active]:border-slate-200 dark:data-[state=active]:text-slate-100",
               data: { action: "click->composite-transaction#tabChanged" }
@@ -113,18 +117,8 @@ class Views::CashTransactions::Form < Views::Base
               class: "grid grid-cols-1 md:grid-cols-2 items-start pt-2 #{'pointer-events-none opacity-50' if composite}",
               data: { composite_transaction_target: "allocationsContainer" }
             ) do
-              render Views::Transactions::FormCategoriesSection.new(
-                form:,
-                transaction: cash_transaction,
-                categories: @categories,
-                combobox_disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return? || cash_transaction.generated_piggy_bank_return?
-              )
-              render Views::Transactions::FormEntitiesSection.new(
-                form:,
-                transaction: cash_transaction,
-                entities: @entities,
-                combobox_disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return? || cash_transaction.generated_piggy_bank_return?
-              )
+              render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
+              render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
             end
           end
 
