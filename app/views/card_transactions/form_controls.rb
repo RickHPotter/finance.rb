@@ -27,7 +27,7 @@ class Views::CardTransactions::FormControls < Views::Base
   def view_template
     hidden_field_tag :user_card_reference_date, user_card_date, disabled: true, type: "datetime-local", id: :cash_transaction_date
 
-    div(class: "flex flex-col lg:flex-row lg:items-center lg:gap-2 w-full mb-3") do
+    div(class: "lg:flex lg:gap-2 w-full mb-3") do
       user_card_field
       category_and_entity_fields
       date_field
@@ -39,7 +39,7 @@ class Views::CardTransactions::FormControls < Views::Base
   private
 
   def user_card_field
-    div(id: "card_transaction_user_card_combobox", class: "combobox-shell w-full lg:w-[15%] lg:flex-none mb-3 lg:mb-0 wallet-icon",
+    div(id: "card_transaction_user_card_combobox", class: "combobox-shell w-full lg:w-[16%] lg:flex-none mb-3 wallet-icon",
         data: { reactive_form_target: :userCardCombobox }) do
       render Views::Shared::SingleSelectCombobox.new(
         name: "card_transaction[user_card_id]",
@@ -57,7 +57,7 @@ class Views::CardTransactions::FormControls < Views::Base
   def category_and_entity_fields
     composite = card_transaction.composite?
     div(
-      class: "flex w-full lg:w-[22%] lg:flex-none gap-1 mb-3 lg:mb-0 min-w-0 #{'pointer-events-none opacity-50' if composite}",
+      class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0 #{'pointer-events-none opacity-50' if composite}",
       data: { composite_transaction_target: "headerAllocations" }
     ) do
       div(id: "card_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
@@ -68,7 +68,6 @@ class Views::CardTransactions::FormControls < Views::Base
           placeholder: model_attribute(card_transaction, :category_id),
           autofocus: autofocus_target == :category_transaction,
           disabled: composite,
-          size: :sm,
           input_data: {
             action: "change->reactive-form#insertCategory"
           }
@@ -83,7 +82,6 @@ class Views::CardTransactions::FormControls < Views::Base
           placeholder: model_attribute(card_transaction, :entity_id),
           autofocus: autofocus_target == :entity_transaction,
           disabled: composite,
-          size: :sm,
           input_data: {
             action: "change->reactive-form#insertEntity"
           }
@@ -123,16 +121,16 @@ class Views::CardTransactions::FormControls < Views::Base
     sign_bg_colour = positive ? "bg-green-300 dark:bg-green-400 dark:text-slate-950" : "bg-red-300 dark:bg-red-400 dark:text-slate-950"
     sign = positive ? "+" : "-"
 
-    div(class: "flex w-full lg:flex-1 min-w-0 gap-1 mb-3 lg:mb-0 items-center") do
+    div(class: "flex w-full lg:w-[24%] lg:flex-none gap-1 mb-3 lg:mb-0") do
       Button(
         size: :lg,
-        class: "w-8 shrink-0 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
+        class: "w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
         tabindex: -1,
         title: action_message(:toggle_sign),
         data: { action: "click->price-mask#toggleSign click->composite-transaction#recalculate", target: ".sign-based" }
       ) { sign }
 
-      div(class: "flex-1 min-w-0") do
+      div(class: "w-7/12 lg:w-7/12") do
         TextField \
           form, :price,
           inputmode: :numeric,
@@ -164,7 +162,7 @@ class Views::CardTransactions::FormControls < Views::Base
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
-      div(class: "w-16 lg:w-20 shrink-0") do
+      div(class: "w-3/12 lg:w-4/12") do
         TextFieldTag \
           :card_installments_count,
           type: :number,
@@ -182,7 +180,7 @@ class Views::CardTransactions::FormControls < Views::Base
   end
 
   def attachments_button
-    div(class: "w-full lg:w-auto mb-3 lg:mb-0 flex items-stretch shrink-0") do
+    div(class: "mb-3 lg:mb-0 flex items-stretch") do
       button(
         type: :button,
         class: "flex h-10 w-full lg:w-auto items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium " \
@@ -206,7 +204,7 @@ class Views::CardTransactions::FormControls < Views::Base
   end
 
   def calculate_button_class
-    "w-9 shrink-0 flex items-center justify-center border border-black bg-white text-slate-950 dark:border-slate-600 dark:bg-transparent dark:text-slate-400 " \
-      "dark:hover:bg-slate-800 dark:hover:text-slate-100 font-graduate dark:font-mono text-base"
+    "w-1/12 border border-black bg-white text-slate-950 dark:border-slate-600 dark:bg-transparent dark:text-slate-400 " \
+      "dark:hover:bg-slate-800 dark:hover:text-slate-100"
   end
 end

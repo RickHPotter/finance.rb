@@ -18,7 +18,7 @@ class Views::CashTransactions::FormControls < Views::Base
   end
 
   def view_template
-    div(class: "flex flex-col lg:flex-row lg:items-center lg:gap-2 w-full mb-3") do
+    div(class: "lg:flex lg:gap-2 w-full mb-3") do
       user_bank_account_field
       category_and_entity_fields
       exchange_intent_field
@@ -31,7 +31,7 @@ class Views::CashTransactions::FormControls < Views::Base
   private
 
   def user_bank_account_field
-    div(id: "cash_transaction_user_bank_account_combobox", class: "combobox-shell w-full lg:w-[15%] lg:flex-none mb-3 lg:mb-0 wallet-icon") do
+    div(id: "cash_transaction_user_bank_account_combobox", class: "combobox-shell w-full lg:w-[16%] lg:flex-none mb-3 wallet-icon") do
       render Views::Shared::SingleSelectCombobox.new(
         name: "cash_transaction[user_bank_account_id]",
         options: user_bank_accounts.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
@@ -47,7 +47,7 @@ class Views::CashTransactions::FormControls < Views::Base
   def category_and_entity_fields
     composite = cash_transaction.composite?
     div(
-      class: "flex w-full lg:w-[22%] lg:flex-none gap-1 mb-3 lg:mb-0 min-w-0 #{'pointer-events-none opacity-50' if composite}",
+      class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0 #{'pointer-events-none opacity-50' if composite}",
       data: { composite_transaction_target: "headerAllocations" }
     ) do
       div(id: "cash_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
@@ -57,7 +57,6 @@ class Views::CashTransactions::FormControls < Views::Base
           selected_value: nil,
           placeholder: model_attribute(cash_transaction, :category_id),
           disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return? || cash_transaction.generated_piggy_bank_return?,
-          size: :sm,
           input_data: {
             action: "change->reactive-form#insertCategory"
           }
@@ -71,7 +70,6 @@ class Views::CashTransactions::FormControls < Views::Base
           selected_value: nil,
           placeholder: model_attribute(cash_transaction, :entity_id),
           disabled: composite || cash_transaction.card_payment? || cash_transaction.exchange_return? || cash_transaction.generated_piggy_bank_return?,
-          size: :sm,
           input_data: {
             action: "change->reactive-form#insertEntity"
           }
@@ -103,17 +101,17 @@ class Views::CashTransactions::FormControls < Views::Base
     sign_bg_colour = positive ? "bg-green-300 dark:bg-green-400 dark:text-slate-950" : "bg-red-300 dark:bg-red-400 dark:text-slate-950"
     sign = positive ? "+" : "-"
 
-    div(class: "flex w-full lg:flex-1 min-w-0 gap-1 mb-3 lg:mb-0 items-center") do
+    div(class: "flex w-full lg:w-[24%] lg:flex-none gap-1 mb-3 lg:mb-0") do
       Button(
         size: :lg,
-        class: "w-8 shrink-0 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
+        class: "w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
         tabindex: -1,
         title: action_message(:toggle_sign),
         disabled: cash_transaction.card_payment? || cash_transaction.generated_piggy_bank_return?,
         data: { action: "click->price-mask#toggleSign click->composite-transaction#recalculate", target: ".sign-based" }
       ) { sign }
 
-      div(class: "flex-1 min-w-0") do
+      div(class: "w-7/12 lg:w-7/12") do
         TextField \
           form, :price,
           inputmode: :numeric,
@@ -140,7 +138,7 @@ class Views::CashTransactions::FormControls < Views::Base
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
-      div(class: "w-16 lg:w-20 shrink-0") do
+      div(class: "w-3/12 lg:w-4/12") do
         TextFieldTag \
           :cash_installments_count,
           type: :number,
@@ -157,7 +155,7 @@ class Views::CashTransactions::FormControls < Views::Base
   end
 
   def attachments_button
-    div(class: "w-full lg:w-auto mb-3 lg:mb-0 flex items-stretch shrink-0") do
+    div(class: "mb-3 lg:mb-0 flex items-stretch") do
       button(
         type: :button,
         class: "flex h-10 w-full lg:w-auto items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium " \
@@ -206,8 +204,8 @@ class Views::CashTransactions::FormControls < Views::Base
   end
 
   def calculate_button_class
-    "w-9 shrink-0 flex items-center justify-center border border-black bg-white text-slate-950 dark:border-slate-600 dark:bg-transparent dark:text-slate-400 " \
-      "dark:hover:bg-slate-800 dark:hover:text-slate-100 font-graduate dark:font-mono text-base"
+    "w-1/12 border border-black bg-white text-slate-950 dark:border-slate-600 dark:bg-transparent dark:text-slate-400 " \
+      "dark:hover:bg-slate-800 dark:hover:text-slate-100"
   end
 
   def visible_cash_installments_count
