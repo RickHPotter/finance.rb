@@ -112,13 +112,24 @@ class Views::CashTransactions::Form < Views::Base
           end
 
           # Single Purchase tab: Categories (A1) + Entities (A2)
-          TabsContent(value: "single", class: "mt-0") do
+          TabsContent(value: "single", class: "mt-0 pt-2") do
             div(
-              class: "grid grid-cols-1 md:grid-cols-2 items-start pt-2 #{'pointer-events-none opacity-50' if composite}",
+              class: "overflow-hidden rounded-lg border border-gray-300 bg-white dark:border-slate-700/60 dark:bg-slate-900/30 " \
+                     "#{'pointer-events-none opacity-50' if composite}",
               data: { composite_transaction_target: "allocationsContainer" }
             ) do
-              render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
-              render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
+              div(
+                class: "grid grid-cols-2 border-b border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-500 " \
+                       "dark:border-slate-700/40 dark:bg-slate-800/30 dark:text-slate-400"
+              ) do
+                div { pluralise_model(Category, 2) }
+                div(class: "border-l border-gray-200 pl-3 dark:border-slate-700/40") { pluralise_model(Entity, 2) }
+              end
+
+              div(class: "grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-slate-700/50") do
+                render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
+                render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
+              end
             end
           end
 

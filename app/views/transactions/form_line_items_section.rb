@@ -55,6 +55,8 @@ class Views::Transactions::FormLineItemsSection < Views::Base
       end
       div(class: "text-gray-300 dark:text-slate-600") { "|" }
       div(class: "flex items-center gap-1.5") do
+        span(class: "text-gray-500 dark:text-slate-500",
+             data: { composite_transaction_target: "differenceLabel" }) { I18n.t("transactions.composite.remaining") }
         span(
           class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
           data: {
@@ -64,7 +66,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
             remaining_text: I18n.t("transactions.composite.remaining"),
             over_allocated_text: I18n.t("transactions.composite.over_allocated")
           }
-        ) { I18n.t("transactions.composite.balanced") }
+        ) { "R$ 0,00" }
       end
       div(class: "ml-auto") do
         Button(

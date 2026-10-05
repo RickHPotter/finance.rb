@@ -19,7 +19,8 @@ export default class extends Controller {
     "itemPrice",
     "parentTotal",
     "allocatedSum",
-    "differenceBadge"
+    "differenceBadge",
+    "differenceLabel"
   ]
 
   connect() {
@@ -211,6 +212,7 @@ export default class extends Controller {
 
   updateDifferenceBadge(diff, parentCents, activeRowCount) {
     const badge = this.differenceBadgeTarget
+    const label = this.hasDifferenceLabelTarget ? this.differenceLabelTarget : null
     const balancedText = badge.dataset.balancedText || "Balanced"
     const minItemsText = badge.dataset.minItemsText || "Min 2 items needed"
     const remainingText = badge.dataset.remainingText || "Remaining:"
@@ -219,13 +221,29 @@ export default class extends Controller {
     badge.className = "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono"
 
     if (diff === 0 && activeRowCount >= 2 && parentCents !== 0) {
+      if (label) {
+        label.textContent = ""
+        label.classList.add("hidden")
+      }
       badge.textContent = balancedText
     } else if (diff === 0 && activeRowCount < 2) {
+      if (label) {
+        label.textContent = ""
+        label.classList.add("hidden")
+      }
       badge.textContent = minItemsText
     } else if ((parentCents >= 0 && diff > 0) || (parentCents < 0 && diff < 0)) {
-      badge.textContent = `${remainingText} ${this.formatCurrency(Math.abs(diff))}`
+      if (label) {
+        label.textContent = remainingText
+        label.classList.remove("hidden")
+      }
+      badge.textContent = this.formatCurrency(Math.abs(diff))
     } else {
-      badge.textContent = `${overAllocatedText} ${this.formatCurrency(Math.abs(diff))}`
+      if (label) {
+        label.textContent = overAllocatedText
+        label.classList.remove("hidden")
+      }
+      badge.textContent = this.formatCurrency(Math.abs(diff))
     }
   }
 }
