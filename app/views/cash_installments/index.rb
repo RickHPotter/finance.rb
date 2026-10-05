@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CashInstallments::Index < Views::Base
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
 

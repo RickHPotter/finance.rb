@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::Investments::Show < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::Investments::Show < Views::Base
   include Phlex::Rails::Helpers::LinkTo
 
   include TranslateHelper

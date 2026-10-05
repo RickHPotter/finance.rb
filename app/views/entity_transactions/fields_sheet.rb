@@ -2,7 +2,7 @@
 
 module Views
   module EntityTransactions
-    class FieldsSheet < Components::Base # rubocop:disable Metrics/ClassLength
+    class FieldsSheet < Components::Base
       include Phlex::Rails::Helpers::RadioButtonTag
 
       include ComponentsHelper

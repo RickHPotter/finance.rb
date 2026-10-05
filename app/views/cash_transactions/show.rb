@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CashTransactions::Show < Views::Base
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ButtonTo
   include Phlex::Rails::Helpers::ImageTag

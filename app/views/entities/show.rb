@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::Entities::Show < Views::Base
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
