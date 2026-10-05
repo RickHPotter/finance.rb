@@ -91,7 +91,8 @@ class Views::CardTransactions::Form < Views::Base
           user_cards: @user_cards,
           autofocus_target:,
           user_card_date:,
-          attachment_modal_id: receipts_upload.modal_id
+          attachment_modal_id: receipts_upload.modal_id,
+          existing_count: receipts_upload.existing_count
         )
 
         # Tabbed section: Single Purchase | Split Purchase

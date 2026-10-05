@@ -216,20 +216,16 @@ export default class extends Controller {
     const remainingText = badge.dataset.remainingText || "Remaining:"
     const overAllocatedText = badge.dataset.overAllocatedText || "Over by:"
 
-    badge.className = "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+    badge.className = "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono"
 
     if (diff === 0 && activeRowCount >= 2 && parentCents !== 0) {
       badge.textContent = balancedText
-      badge.classList.add("bg-emerald-500/20", "text-emerald-400", "border", "border-emerald-500/30")
     } else if (diff === 0 && activeRowCount < 2) {
       badge.textContent = minItemsText
-      badge.classList.add("bg-amber-500/20", "text-amber-400", "border", "border-amber-500/30")
     } else if ((parentCents >= 0 && diff > 0) || (parentCents < 0 && diff < 0)) {
       badge.textContent = `${remainingText} ${this.formatCurrency(Math.abs(diff))}`
-      badge.classList.add("bg-rose-500/20", "text-rose-400", "border", "border-rose-500/30")
     } else {
       badge.textContent = `${overAllocatedText} ${this.formatCurrency(Math.abs(diff))}`
-      badge.classList.add("bg-amber-500/20", "text-amber-400", "border", "border-amber-500/30")
     }
   }
 }

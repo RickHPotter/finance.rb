@@ -3,13 +3,15 @@
 class Views::Shared::SingleSelectCombobox < Views::Base
   include TranslateHelper
 
-  attr_reader :autofocus, :blank_label, :combobox_data, :disabled, :include_blank, :input_data, :name, :options, :placeholder, :selected_value, :term, :trigger_data
+  attr_reader :autofocus, :blank_label, :combobox_data, :disabled, :include_blank, :input_data, :name, :options, :placeholder, :selected_value, :size, :term,
+              :trigger_data
 
   def initialize(name:, options:, selected_value:, placeholder:, **attrs)
     @name = name
     @options = options
     @selected_value = selected_value
     @placeholder = placeholder
+    @size = attrs.fetch(:size, :default)
     @autofocus = attrs.fetch(:autofocus, false)
     @disabled = attrs.fetch(:disabled, false)
     @include_blank = attrs.fetch(:include_blank, false)
@@ -97,10 +99,17 @@ class Views::Shared::SingleSelectCombobox < Views::Base
   end
 
   def combobox_trigger_class
-    "flex h-10 w-full items-center justify-between overflow-hidden whitespace-nowrap rounded-md border border-slate-300 bg-white px-4 py-2 " \
-      "text-sm text-slate-900 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-ring " \
-      "disabled:pointer-events-none disabled:opacity-50 " \
-      "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700/70 dark:focus-visible:ring-sky-500/60 dark:disabled:opacity-40"
+    if size == :sm
+      "flex h-8 w-full items-center justify-between overflow-hidden whitespace-nowrap rounded-md border border-slate-300 bg-white px-3 py-1 " \
+        "text-xs text-slate-900 shadow-xs transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-ring " \
+        "disabled:pointer-events-none disabled:opacity-50 " \
+        "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700/70 dark:focus-visible:ring-sky-500/60 dark:disabled:opacity-40"
+    else
+      "flex h-10 w-full items-center justify-between overflow-hidden whitespace-nowrap rounded-md border border-slate-300 bg-white px-4 py-2 " \
+        "text-sm text-slate-900 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-ring " \
+        "disabled:pointer-events-none disabled:opacity-50 " \
+        "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700/70 dark:focus-visible:ring-sky-500/60 dark:disabled:opacity-40"
+    end
   end
 
   def combobox_search_input_class

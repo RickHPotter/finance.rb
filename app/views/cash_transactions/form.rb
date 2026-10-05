@@ -83,7 +83,8 @@ class Views::CashTransactions::Form < Views::Base
           form:,
           cash_transaction:,
           user_bank_accounts: @user_bank_accounts,
-          attachment_modal_id: receipts_upload.modal_id
+          attachment_modal_id: receipts_upload.modal_id,
+          existing_count: receipts_upload.existing_count
         )
 
         # Tabbed section: Single Purchase | Split Purchase

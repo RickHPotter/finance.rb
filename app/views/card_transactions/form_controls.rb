@@ -7,21 +7,25 @@ class Views::CardTransactions::FormControls < Views::Base
   include ComponentsHelper
   include TranslateHelper
 
-  attr_reader :form, :card_transaction, :user_cards, :autofocus_target, :user_card_date, :attachment_modal_id
+  attr_reader :form, :card_transaction, :user_cards, :autofocus_target, :user_card_date, :attachment_modal_id, :existing_count
 
-  def initialize(form:, card_transaction:, user_cards:, autofocus_target:, user_card_date:, categories: nil, entities: nil, attachment_modal_id: nil) # rubocop:disable Lint/UnusedMethodArgument
+  def initialize(
+    form:, card_transaction:, user_cards:, autofocus_target:, user_card_date:,
+    attachment_modal_id: nil, existing_count: 0
+  )
     @form = form
     @card_transaction = card_transaction
     @user_cards = user_cards
     @autofocus_target = autofocus_target
     @user_card_date = user_card_date
     @attachment_modal_id = attachment_modal_id
+    @existing_count = existing_count
   end
 
   def view_template
     hidden_field_tag :user_card_reference_date, user_card_date, disabled: true, type: "datetime-local", id: :cash_transaction_date
 
-    div(class: "lg:flex lg:gap-2 w-full mb-3") do
+    div(class: "flex flex-col lg:flex-row lg:items-center lg:gap-2 w-full mb-3") do
       user_card_field
       date_field
       price_and_installments_controls
@@ -32,7 +36,7 @@ class Views::CardTransactions::FormControls < Views::Base
   private
 
   def user_card_field
-    div(id: "card_transaction_user_card_combobox", class: "combobox-shell w-full lg:w-[16%] lg:flex-none mb-3 wallet-icon",
+    div(id: "card_transaction_user_card_combobox", class: "combobox-shell w-full lg:w-[18%] lg:flex-none mb-3 lg:mb-0 wallet-icon",
         data: { reactive_form_target: :userCardCombobox }) do
       render Views::Shared::SingleSelectCombobox.new(
         name: "card_transaction[user_card_id]",
@@ -48,7 +52,7 @@ class Views::CardTransactions::FormControls < Views::Base
   end
 
   def date_field
-    div(class: "w-full lg:w-[28%] lg:flex-none mb-3 lg:mb-0") do
+    div(class: "w-full lg:w-[26%] lg:flex-none mb-3 lg:mb-0") do
       render Views::Shared::DatetimeInput.new(
         form:,
         field: :date,
@@ -78,16 +82,16 @@ class Views::CardTransactions::FormControls < Views::Base
     sign_bg_colour = positive ? "bg-green-300 dark:bg-green-400 dark:text-slate-950" : "bg-red-300 dark:bg-red-400 dark:text-slate-950"
     sign = positive ? "+" : "-"
 
-    div(class: "flex w-full lg:flex-1 lg:flex-none gap-1 mb-3 lg:mb-0") do
+    div(class: "flex w-full lg:flex-1 min-w-0 gap-1 mb-3 lg:mb-0 items-center") do
       Button(
         size: :lg,
-        class: "w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
+        class: "w-8 shrink-0 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
         tabindex: -1,
         title: action_message(:toggle_sign),
         data: { action: "click->price-mask#toggleSign click->composite-transaction#recalculate", target: ".sign-based" }
       ) { sign }
 
-      div(class: "w-7/12") do
+      div(class: "flex-1 min-w-0") do
         TextField \
           form, :price,
           inputmode: :numeric,
@@ -119,7 +123,7 @@ class Views::CardTransactions::FormControls < Views::Base
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
-      div(class: "w-3/12") do
+      div(class: "w-20 lg:w-24 shrink-0") do
         TextFieldTag \
           :card_installments_count,
           type: :number,
@@ -137,10 +141,10 @@ class Views::CardTransactions::FormControls < Views::Base
   end
 
   def attachments_button
-    div(class: "mb-3 lg:mb-0 flex items-stretch") do
+    div(class: "w-full lg:w-auto mb-3 lg:mb-0 flex items-stretch shrink-0") do
       button(
         type: :button,
-        class: "flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium " \
+        class: "flex h-10 w-full lg:w-auto items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium " \
                "text-slate-700 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-50 " \
                "dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800 cursor-pointer",
         title: I18n.t("attachments.title"),
@@ -155,13 +159,13 @@ class Views::CardTransactions::FormControls < Views::Base
           class: "flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-100 px-1 font-mono text-xs font-bold text-slate-700 " \
                  "border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200",
           data: { attachment_upload_target: "counter" }
-        ) { "0" }
+        ) { existing_count.to_s }
       end
     end
   end
 
   def calculate_button_class
-    "w-1/12 border border-black bg-white text-slate-950 dark:border-slate-600 dark:bg-transparent dark:text-slate-400 " \
-      "dark:hover:bg-slate-800 dark:hover:text-slate-100"
+    "w-9 shrink-0 flex items-center justify-center border border-black bg-white text-slate-950 dark:border-slate-600 dark:bg-transparent dark:text-slate-400 " \
+      "dark:hover:bg-slate-800 dark:hover:text-slate-100 font-graduate dark:font-mono text-base"
   end
 end

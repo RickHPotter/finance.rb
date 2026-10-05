@@ -37,20 +37,6 @@ class Views::Transactions::FormLineItemsSection < Views::Base
       end
 
       render_template
-
-      div(class: "border-t border-gray-200 px-3 py-2 dark:border-slate-700/40") do
-        Button(
-          type: :button,
-          variant: :ghost,
-          size: :sm,
-          class: "gap-1.5 text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100 px-2 " \
-                 "dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60",
-          data: { action: "click->composite-transaction#addRow" }
-        ) do
-          cached_icon(:plus)
-          span { I18n.t("transactions.composite.add_item") }
-        end
-      end
     end
   end
 
@@ -67,9 +53,10 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         span(class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
              data: { composite_transaction_target: "allocatedSum" }) { "R$ 0,00" }
       end
-      div(class: "ml-auto") do
+      div(class: "text-gray-300 dark:text-slate-600") { "|" }
+      div(class: "flex items-center gap-1.5") do
         span(
-          class: "inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-semibold",
+          class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
           data: {
             composite_transaction_target: "differenceBadge",
             balanced_text: I18n.t("transactions.composite.balanced"),
@@ -78,6 +65,19 @@ class Views::Transactions::FormLineItemsSection < Views::Base
             over_allocated_text: I18n.t("transactions.composite.over_allocated")
           }
         ) { I18n.t("transactions.composite.balanced") }
+      end
+      div(class: "ml-auto") do
+        Button(
+          type: :button,
+          variant: :ghost,
+          size: :sm,
+          class: "gap-1 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 px-2 py-1 h-auto " \
+                 "dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800 cursor-pointer",
+          data: { action: "click->composite-transaction#addRow" }
+        ) do
+          cached_icon(:plus)
+          span { I18n.t("transactions.composite.add_item") }
+        end
       end
     end
   end
@@ -154,9 +154,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
             name: "#{form.object_name}[line_items_attributes][#{index}][entity_id]",
             options: entities.map { |label, value| [ label, value, {} ] },
             selected_value: item.entity_id,
-            placeholder: I18n.t("activerecord.attributes.line_item.entity_id"),
-            include_blank: true,
-            blank_label: I18n.t("transactions.composite.no_entity")
+            placeholder: I18n.t("activerecord.attributes.line_item.entity_id")
           )
         end
       end

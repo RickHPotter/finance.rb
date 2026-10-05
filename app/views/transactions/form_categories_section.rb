@@ -28,6 +28,22 @@ class Views::Transactions::FormCategoriesSection < Views::Base
         end
       end
 
+      if categories
+        div(id: "#{transaction.model_name.param_key}_category_combobox", class: "combobox-shell mb-2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
+          render Views::Shared::SingleSelectCombobox.new(
+            name: :category_transaction,
+            options: categories.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
+            selected_value: nil,
+            placeholder: model_attribute(transaction, :category_id),
+            disabled: combobox_disabled,
+            size: :sm,
+            input_data: {
+              action: "change->reactive-form#insertCategory"
+            }
+          )
+        end
+      end
+
       div(class: "grid min-h-[3rem] grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-stretch gap-1.5") do
         Button(
           type: :button,
@@ -56,21 +72,6 @@ class Views::Transactions::FormCategoriesSection < Views::Base
             action: "click->form-collection-carousel#scrollNext"
           }
         ) { "→" }
-      end
-
-      if categories
-        div(id: "cash_transaction_category_combobox", class: "combobox-shell mt-1.5 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
-          render Views::Shared::SingleSelectCombobox.new(
-            name: :category_transaction,
-            options: categories.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
-            selected_value: nil,
-            placeholder: model_attribute(transaction, :category_id),
-            disabled: combobox_disabled,
-            input_data: {
-              action: "change->reactive-form#insertCategory"
-            }
-          )
-        end
       end
 
       button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addCategory, action: "nested-form#add" })

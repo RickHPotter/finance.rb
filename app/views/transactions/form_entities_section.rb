@@ -28,6 +28,22 @@ class Views::Transactions::FormEntitiesSection < Views::Base
         end
       end
 
+      if entities
+        div(id: "#{transaction.model_name.param_key}_entity_combobox", class: "combobox-shell mb-2 user-icon", data: { reactive_form_target: :entityCombobox }) do
+          render Views::Shared::SingleSelectCombobox.new(
+            name: :entity_transaction,
+            options: entities.map { |label, value| [ label, value, {} ] },
+            selected_value: nil,
+            placeholder: model_attribute(transaction, :entity_id),
+            disabled: combobox_disabled,
+            size: :sm,
+            input_data: {
+              action: "change->reactive-form#insertEntity"
+            }
+          )
+        end
+      end
+
       div(class: "grid min-h-[3rem] grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-stretch gap-1.5") do
         Button(
           type: :button,
@@ -56,21 +72,6 @@ class Views::Transactions::FormEntitiesSection < Views::Base
             action: "click->form-collection-carousel#scrollNext"
           }
         ) { "→" }
-      end
-
-      if entities
-        div(id: "cash_transaction_entity_combobox", class: "combobox-shell mt-1.5 user-icon", data: { reactive_form_target: :entityCombobox }) do
-          render Views::Shared::SingleSelectCombobox.new(
-            name: :entity_transaction,
-            options: entities.map { |label, value| [ label, value, {} ] },
-            selected_value: nil,
-            placeholder: model_attribute(transaction, :entity_id),
-            disabled: combobox_disabled,
-            input_data: {
-              action: "change->reactive-form#insertEntity"
-            }
-          )
-        end
       end
 
       button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
