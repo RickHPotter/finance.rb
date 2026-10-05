@@ -182,7 +182,7 @@ class Views::CashTransactions::Form < Views::Base
           end
         end
 
-        form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
+        form.submit "Update", class: "sr-only opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
       end
     end
   end

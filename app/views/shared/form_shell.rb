@@ -11,7 +11,7 @@ class Views::Shared::FormShell < Views::Base
 
   def view_template(&)
     div(
-      class: "relative rounded-lg border border-transparent bg-white p-4 text-black shadow-md dark:border-slate-800 dark:bg-slate-900 " \
+      class: "relative rounded-lg border border-transparent bg-white p-4 pb-3 text-black shadow-md dark:border-slate-800 dark:bg-slate-900 " \
              "dark:text-slate-100 dark:shadow-2xl dark:ring-1 dark:ring-slate-700",
       data: {
         controller: "form-loading",
