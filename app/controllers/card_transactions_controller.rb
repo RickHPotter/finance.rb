@@ -639,7 +639,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     return false unless attributes.key?(:line_items_attributes)
 
     normalized_nested_attributes(attributes[:line_items_attributes]).any? do |entry|
-      !ActiveModel::Type::Boolean.new.cast(entry[:_destroy])
+      !ActiveModel::Type::Boolean.new.cast(entry[:_destroy]) &&
+        (entry[:id].present? || %i[description price category_id entity_id].any? { |attribute| entry[attribute].present? })
     end
   end
 

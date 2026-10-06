@@ -86,10 +86,19 @@ class Views::Transactions::FormLineItemsSection < Views::Base
 
   def render_existing_rows
     items = transaction.line_items.to_a
+    return render_initial_row if items.empty?
+
     items.each_with_index do |item, idx|
       form.fields_for :line_items, item, child_index: idx do |item_form|
         render_row(item_form, item, idx)
       end
+    end
+  end
+
+  def render_initial_row
+    item = LineItem.new
+    form.fields_for :line_items, item, child_index: 0 do |item_form|
+      render_row(item_form, item, 0)
     end
   end
 

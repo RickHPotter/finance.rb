@@ -162,6 +162,19 @@ RSpec.describe "Attachments", type: :request do
       expect(response).not_to have_http_status(:success)
     end
 
+    it "creates a direct-upload blob for a PDF below the 10 MiB limit" do
+      sign_in user
+
+      expect do
+        post rails_direct_uploads_path,
+             params: upload_params.deep_merge(blob: { byte_size: 6_500_000 }),
+             as: :json
+      end.to change(ActiveStorage::Blob, :count).by(1)
+
+      expect(response).to have_http_status(:success)
+      expect(JSON.parse(response.body).dig("direct_upload", "url")).to be_present
+    end
+
     it "rejects a file larger than 10 MiB before creating a blob" do
       sign_in user
 

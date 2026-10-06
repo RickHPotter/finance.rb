@@ -79,6 +79,10 @@ RSpec.describe "CashTransactions", type: :request do
       datetime_wrapper = active_installment_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
       installment_wrapper = active_installment_date.ancestors.find { |node| node["data-installment-lock-target"] == "installment" }
       price_input = installment_wrapper.at_css("[data-installment-lock-target~='price']")
+      installments_count = document.at_css("#cash_installments_count")
+      attachments_button = document.at_css("[data-modal-toggle='cash_transaction_attachments_modal_new']")
+      calculate_button = document.at_css('button[title="Calculate Installments Price"]')
+      transaction_price = document.at_css("#transaction_price")
 
       expect(installment_dates.map { |input| input["id"] }).to contain_exactly("installment_date_NEW_RECORD", "installment_date_0")
       expect(active_installment_date["type"]).to eq("hidden")
@@ -91,6 +95,10 @@ RSpec.describe "CashTransactions", type: :request do
       expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present
       expect(price_input["readonly"]).to be_nil
       expect(price_input["name"]).to eq("cash_transaction[cash_installments_attributes][0][price]")
+      expect(installments_count["class"].split).to include("h-10")
+      expect(attachments_button["class"].split).to include("h-10")
+      expect(calculate_button["class"].split).to include("h-10", "rounded-l-none", "rounded-r-md")
+      expect(transaction_price["class"].split).to include("h-10", "rounded-r-none")
     end
 
     it "renders the split purchase toggle and line items template" do
@@ -112,6 +120,7 @@ RSpec.describe "CashTransactions", type: :request do
       template = document.at_css('template[data-composite-transaction-target="template"]')
       expect(template).to be_present
       expect(template.inner_html).to include("cash_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
+      expect(document.css('input[name="cash_transaction[line_items_attributes][0][description]"]').size).to eq(1)
     end
 
     it "renders line items for a composite transaction on edit" do
@@ -5980,9 +5989,10 @@ RSpec.describe "CashTransactions", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(row["class"]).to include("text-slate-900", "dark:text-slate-100")
+      expect(row["class"]).not_to include("animate-pulse")
       expect(row["data-category-multiple"]).to eq("true")
-      expect(row["style"]).to be_blank
-      expect(row_background["class"]).to include("bg-white", "dark:bg-slate-900")
+      expect(row["style"]).to include("background-color: transparent !important")
+      expect(row_background["class"]).to include("bg-white", "dark:bg-slate-900", "animate-pulse")
       expect(category_pills.map(&:text)).to eq(category_names)
       expect(category_pills).to all(satisfy { |pill| pill["data-category-colour"] == "true" })
       expect(category_pills.find { |pill| pill.text == "LEISURE" }["style"]).to include("background-color: #4b5563", "color: #ffffff")
@@ -5997,10 +6007,13 @@ RSpec.describe "CashTransactions", type: :request do
 
       mobile_document = Nokogiri::HTML.fragment(response.body)
       mobile_row = mobile_document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
+      mobile_background = mobile_row.at_css("[data-row-background]")
       mobile_pills = mobile_row.css("[data-datatable-target='category'] span").select { |pill| category_names.include?(pill.text) }
 
       expect(mobile_row["class"]).to include("bg-white", "dark:bg-slate-900")
-      expect(mobile_row["style"]).to be_blank
+      expect(mobile_row["class"]).not_to include("animate-pulse")
+      expect(mobile_row["style"]).to include("background-color: transparent !important")
+      expect(mobile_background["class"]).to include("bg-white", "dark:bg-slate-900", "animate-pulse")
       expect(mobile_pills.map(&:text)).to eq(category_names)
       expect(mobile_row.text).not_to include("+1")
 

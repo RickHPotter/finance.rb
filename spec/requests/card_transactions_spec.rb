@@ -84,6 +84,10 @@ RSpec.describe "CardTransactions", type: :request do
       document = Nokogiri::HTML.fragment(response.body)
       transaction_date = document.at_css("#card_transaction_date")
       transaction_datetime_wrapper = transaction_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+      installments_count = document.at_css("#card_installments_count")
+      attachments_button = document.at_css("[data-modal-toggle='card_transaction_attachments_modal_new']")
+      calculate_button = document.at_css('button[title="Calculate Installments Price"]')
+      transaction_price = document.at_css("#transaction_price")
       installment_dates = document.css("input.installment_date")
       active_installment_date = installment_dates.find { |input| input["name"].exclude?("NEW_RECORD") }
       datetime_wrapper = active_installment_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
@@ -101,6 +105,10 @@ RSpec.describe "CardTransactions", type: :request do
       expect(datetime_wrapper["data-datetime-input-readonly-value"]).to be_nil
       expect(datetime_wrapper.at_css("#installment_date_0_date_input")).to be_present
       expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present
+      expect(installments_count["class"].split).to include("h-10")
+      expect(attachments_button["class"].split).to include("h-10")
+      expect(calculate_button["class"].split).to include("h-10", "rounded-l-none", "rounded-r-md")
+      expect(transaction_price["class"].split).to include("h-10", "rounded-r-none")
     end
 
     it "renders the split purchase toggle and line items template" do
@@ -124,6 +132,7 @@ RSpec.describe "CardTransactions", type: :request do
       template = document.at_css('template[data-composite-transaction-target="template"]')
       expect(template).to be_present
       expect(template.inner_html).to include("card_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
+      expect(document.css('input[name="card_transaction[line_items_attributes][0][description]"]').size).to eq(1)
     end
 
     it "renders line items for a composite card transaction on edit" do

@@ -3,10 +3,11 @@
 class Views::Shared::FormShell < Views::Base
   attr_reader :badge_text, :badge_class, :skeleton_view
 
-  def initialize(badge_text: nil, badge_class: nil, skeleton_view: Views::Shared::FormSubmissionSkeleton)
+  def initialize(badge_text: nil, badge_class: nil, skeleton_view: Views::Shared::FormSubmissionSkeleton, skeleton_options: {})
     @badge_text = badge_text
     @badge_class = badge_class
     @skeleton_view = skeleton_view
+    @skeleton_options = skeleton_options
   end
 
   def view_template(&)
@@ -31,7 +32,7 @@ class Views::Shared::FormShell < Views::Base
         data: { form_loading_target: "skeleton" },
         aria: { hidden: true }
       ) do
-        render skeleton_view.new
+        render skeleton_view.new(**@skeleton_options)
       end
     end
   end

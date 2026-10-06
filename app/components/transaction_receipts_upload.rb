@@ -58,16 +58,16 @@ module Components
           dropzone
           existing_attachments_list if existing_receipts.any?
           pending_attachments_list
-          modal_footer
         end
       end
     end
 
     def modal_header_info
-      div(class: "flex items-center justify-between text-xs text-slate-500 dark:text-slate-400") do
-        span { I18n.t("attachments.hint") }
+      div(class: "flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400") do
+        span(class: "min-w-0") { I18n.t("attachments.hint") }
         span(
-          class: "rounded-full bg-slate-100 px-2 py-0.5 font-mono font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+          class: "shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 font-mono font-semibold tabular-nums " \
+                 "text-slate-600 dark:bg-slate-800 dark:text-slate-400",
           data: { attachment_upload_target: "counter", format: "fraction" }
         ) do
           plain "#{existing_receipts.size} / 5"
@@ -156,19 +156,6 @@ module Components
 
     def pending_attachments_list
       div(class: "mt-3 space-y-2", data: { attachment_upload_target: "list" })
-    end
-
-    def modal_footer
-      div(class: "flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800") do
-        Button(
-          type: :button,
-          variant: :primary,
-          size: :sm,
-          data: { modal_hide: modal_id }
-        ) do
-          plain I18n.t("navigation.close", default: "Close")
-        end
-      end
     end
 
     def hidden_inputs_container

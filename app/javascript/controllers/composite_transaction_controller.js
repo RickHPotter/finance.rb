@@ -38,11 +38,7 @@ export default class extends Controller {
     this.applySplitVisibility(isSplit)
 
     if (isSplit) {
-      if (this.activeRows.length < 2) {
-        while (this.activeRows.length < 2) {
-          this.addRow()
-        }
-      }
+      if (this.activeRows.length === 0) this.addRow()
     } else {
       this.clearAllRows()
     }
@@ -56,11 +52,7 @@ export default class extends Controller {
     this.applySplitVisibility(isSplit)
 
     if (isSplit) {
-      if (this.activeRows.length < 2) {
-        while (this.activeRows.length < 2) {
-          this.addRow()
-        }
-      }
+      if (this.activeRows.length === 0) this.addRow()
     } else {
       this.clearAllRows()
     }

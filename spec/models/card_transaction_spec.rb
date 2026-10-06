@@ -222,6 +222,14 @@ RSpec.describe CardTransaction, type: :model do
         expect(transaction).not_to be_composite
       end
 
+      it "ignores the blank starter line item from the split purchase form" do
+        transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
+        transaction.assign_attributes(line_items_attributes: [ { description: "", price: "", category_id: "", entity_id: "", _destroy: "0" } ])
+
+        expect(transaction.line_items).to be_empty
+        expect(transaction).not_to be_composite
+      end
+
       it "is composite when having line items with matching negative prices" do
         transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
         transaction.line_items.build(description: "Item 1", price: -60_00, category: food_category)

@@ -31,7 +31,7 @@ class CardTransaction < ApplicationRecord
   belongs_to :reference_transactable, polymorphic: true, optional: true
   has_many :line_items, as: :transactable, dependent: :destroy, inverse_of: :transactable
   has_many_attached :receipts
-  accepts_nested_attributes_for :line_items, allow_destroy: true
+  accepts_nested_attributes_for :line_items, allow_destroy: true, reject_if: :all_blank
 
   # @validations ..............................................................
   validates :context, presence: true

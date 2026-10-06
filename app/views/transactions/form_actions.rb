@@ -16,7 +16,7 @@ class Views::Transactions::FormActions < Views::Base
   end
 
   def view_template(&)
-    div(class: "flex w-full flex-col gap-3") do
+    div(class: "flex w-full flex-col gap-3 pb-6") do
       render_top_control
 
       div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do

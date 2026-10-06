@@ -27,7 +27,7 @@ class Views::CardTransactions::FormControls < Views::Base
   def view_template
     hidden_field_tag :user_card_reference_date, user_card_date, disabled: true, type: "datetime-local", id: :cash_transaction_date
 
-    div(class: "lg:flex lg:gap-2 w-full mb-3") do
+    div(class: "lg:flex lg:gap-2 w-full mb-2") do
       user_card_field
       category_and_entity_fields
       date_field
@@ -121,10 +121,10 @@ class Views::CardTransactions::FormControls < Views::Base
     sign_bg_colour = positive ? "bg-green-300 dark:bg-green-400 dark:text-slate-950" : "bg-red-300 dark:bg-red-400 dark:text-slate-950"
     sign = positive ? "+" : "-"
 
-    div(class: "flex w-full lg:w-[24%] lg:flex-none gap-1 mb-3 lg:mb-0") do
+    div(class: "flex w-full lg:w-[24%] lg:flex-none gap-0 mb-3 lg:mb-0") do
       Button(
         size: :lg,
-        class: "w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
+        class: "h-10 w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
         tabindex: -1,
         title: action_message(:toggle_sign),
         data: { action: "click->price-mask#toggleSign click->composite-transaction#recalculate", target: ".sign-based" }
@@ -136,7 +136,7 @@ class Views::CardTransactions::FormControls < Views::Base
           inputmode: :numeric,
           svg: :money,
           id: :transaction_price,
-          class: "sign-based font-graduate dark:font-mono",
+          class: "sign-based h-10 rounded-r-none py-2 font-graduate dark:font-mono",
           autocomplete: :off,
           data: {
             controller: "input-select",
@@ -162,14 +162,14 @@ class Views::CardTransactions::FormControls < Views::Base
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
-      div(class: "w-3/12 lg:w-4/12") do
+      div(class: "w-3/12 pl-1 lg:w-4/12") do
         TextFieldTag \
           :card_installments_count,
           type: :number,
           svg: :number,
           min: 1, max: 72,
           value: [ card_transaction.card_installments.size, card_transaction.card_installments_count, 1 ].max,
-          class: "font-graduate dark:font-mono",
+          class: "h-10 py-2 font-graduate dark:font-mono",
           data: {
             controller: "input-select",
             reactive_form_target: :installmentsCountInput,
@@ -181,11 +181,12 @@ class Views::CardTransactions::FormControls < Views::Base
 
   def attachments_button
     div(class: "mb-3 lg:mb-0 flex items-stretch") do
-      button(
+      Button(
         type: :button,
-        class: "flex h-10 w-full lg:w-auto items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium " \
-               "text-slate-700 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-50 " \
-               "dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800 cursor-pointer",
+        size: :lg,
+        class: "h-10 w-full lg:w-auto gap-2 rounded-md border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm " \
+               "transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 " \
+               "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:bg-slate-700/70",
         title: I18n.t("attachments.title"),
         data: {
           modal_target: attachment_modal_id,
@@ -204,7 +205,7 @@ class Views::CardTransactions::FormControls < Views::Base
   end
 
   def calculate_button_class
-    "w-1/12 border border-black bg-white text-slate-950 dark:border-slate-600 dark:bg-transparent dark:text-slate-400 " \
+    "h-10 w-1/12 rounded-l-none rounded-r-md border border-black px-0 py-0 bg-white text-slate-950 dark:border-slate-600 dark:bg-transparent dark:text-slate-400 " \
       "dark:hover:bg-slate-800 dark:hover:text-slate-100"
   end
 end
