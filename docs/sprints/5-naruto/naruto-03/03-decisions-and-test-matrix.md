@@ -17,21 +17,22 @@
    compensation.
 6. Production currently selects local Disk storage. Persistence across deploys is
    unverified in this repository and is a V2 release gate.
-7. Authenticated receipt downloads, direct-upload authorization, and an
-   attachment-specific delete identifier are V2 requirements.
+7. V2 implements authenticated receipt downloads, direct-upload authorization, and
+   an attachment-specific delete identifier. Signed avatars remain available to
+   authenticated users; anonymous Active Storage delivery is disabled.
 
 ## Current tests and gaps
 
 | Concern | Existing evidence | Required V2 verification |
 |---|---|---|
-| Cash/card model validation | `spec/models/cash_transaction_spec.rb`, `spec/models/card_transaction_spec.rb` cover allowed, disallowed, oversized, and sixth attachments. | Boundary at exactly 10 MiB, if not covered. |
-| LineItem model validation | Prior spec only checked attachment reflection. | Allowed, disallowed, oversized, and sixth attachments; no UI dependency. |
+| Cash/card model validation | `spec/models/cash_transaction_spec.rb`, `spec/models/card_transaction_spec.rb` cover allowed, disallowed, oversized, and sixth attachments. | Keep the 10 MiB edge covered. |
+| LineItem model validation | `spec/models/line_item_spec.rb` covers allowed, disallowed, oversized, sixth attachment, and exactly 10 MiB. | None for the agreed model contract. |
 | Cash/card form upload | Request specs submit files on update. | Create flow, failed form, interrupted upload, and cleanup of unattached blobs. |
 | Badge and show list | Request specs inspect both transaction index/show pages. | Assert query count stays bounded as rows increase. |
-| Delete ownership and audit | `spec/requests/attachments_spec.rb` covers owner deletion, non-owner 403, and a cash audit annotation. | Shared blob attached to two records, cross-context access, audit failure, exactly one audit annotation, and rollback behavior. |
-| Download | Show-page specs check that a link is rendered. | Owner gets file; anonymous, other user, and wrong context cannot download it. |
-| Direct upload | Stimulus controller and form wiring exist. | Anonymous upload is rejected; MIME and byte size are checked before blob creation; oversized or unsupported files do not reach storage. |
-| Storage durability | Service configuration names local Disk. | Deployed mount or durable service is verified, including a redeploy and backup/restore exercise. |
+| Delete ownership and audit | `spec/requests/attachments_spec.rb` covers owner delete, cross-user denial, and cash audit annotation; deletion is scoped to attachment ID. | Shared blob, cross-context, audit failure, exactly one annotation, and rollback behavior. |
+| Download | `spec/requests/attachments_spec.rb` covers owner stream and cross-user denial; receipt blob route is authenticated. | Anonymous and wrong-context cases; avatar access regression check. |
+| Direct upload | `spec/requests/attachments_spec.rb` covers anonymous and oversized rejection; authenticated controller validates allowlisted MIME and byte size before blob creation. | Unsupported-type request; cross-actor signed blob attach; inspect stored bytes/content type. |
+| Storage durability | Production and homolog now have separate named volumes at `/rails/storage`; the storage directories were empty at inspection. | Deploy with the mount, verify persistence across replacement, and exercise backup/restore. |
 
 ## Release gate
 

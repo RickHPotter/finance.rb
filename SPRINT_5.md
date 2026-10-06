@@ -161,8 +161,9 @@ Locked V1 direction:
 - rolling back a transaction does not remove its attachments
 - a paperclip icon badge appears on transaction index rows that have attachments
 - expanded transaction detail shows a file list with download links and a delete action
-- V2 must authorize downloads and direct uploads, identify deletions by attachment,
-  and verify durable production storage before these paths are considered complete
+- V2 now authorizes receipt downloads and direct uploads and identifies deletions by
+  attachment; deployed storage persistence, backup/restore, and remaining security
+  failure cases are release gates before the feature is considered complete
 
 Future fiscal document extraction (separate from attachment-hardening V2):
 

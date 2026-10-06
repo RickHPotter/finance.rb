@@ -2,6 +2,7 @@
 
 class CardTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
+  include ReceiptUploadAuthorization
 
   before_action :set_card_transaction, only: %i[show edit update destroy]
   before_action :set_card_tabs, except: :index
@@ -259,6 +260,10 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   private
+
+  def receipt_upload_param_key
+    :card_transaction
+  end
 
   def seed_transaction_associations
     @card_transaction.category_transactions.build(category_id: card_transaction_params[:category_id]) if card_transaction_params[:category_id]

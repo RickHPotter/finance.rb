@@ -1,6 +1,18 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
+  scope ActiveStorage.routes_prefix do
+    get "/blobs/:signed_id/*filename", to: "stored_files#show", as: :rails_service_blob
+    get "/disk/:encoded_key/*filename" => "active_storage/disk#show", as: :rails_disk_service
+    put "/disk/:encoded_token" => "active_storage/disk#update", as: :update_rails_disk_service
+    post "/direct_uploads", to: "direct_uploads#create", as: :rails_direct_uploads
+  end
+
+  direct :rails_blob do |model, options|
+    blob = model.respond_to?(:blob) ? model.blob : model
+    route_for(:rails_service_blob, blob.signed_id, blob.filename, options)
+  end
+
   get "up" => "rails/health#show", as: :rails_health_check
 
   root "home#index"
@@ -142,7 +154,9 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :attachments, only: %i[destroy], param: :blob_signed_id
+  resources :attachments, only: :destroy do
+    get :download, on: :member
+  end
 
   resources :budgets do
     resource :performance, only: :show, controller: "reports/budget_performances", defaults: { format: :json }

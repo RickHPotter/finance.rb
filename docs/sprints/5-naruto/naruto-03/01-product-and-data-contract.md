@@ -46,19 +46,16 @@ document extraction remains a separate, deferred feature; it is not part of hard
 The schema already contains the Active Storage tables. `development` and `production`
 select the `:local` Disk service, whose configured root is `storage/`; `test` selects
 `:test` under `tmp/storage/`. This describes configuration, **not** proof of durable
-production storage. The repository's Kamal deployment has no active storage volume
-declaration. Its commented example points to `/app/storage`, while the Dockerfile
-sets the application root to `/rails`, so enabling that example verbatim would not
-mount the configured `storage/` directory. V2 must establish and verify a persistent
-mount or another durable service before treating production receipts as durable.
+production storage. Kamal now declares separate production and homolog volumes at
+`/rails/storage`, the configured Active Storage root. Those mounts have not yet been
+validated across a deployment or backup/restore; do not treat production receipts as
+durable until those checks pass.
 
-The current UI uses Active Storage's signed blob URLs for downloads. Those URLs are
-public to anyone who possesses them and do not pass through the application's
-transaction ownership check. The current delete endpoint checks ownership, but looks
-up an attachment by blob signed ID; a blob can be attached to more than one record.
-V2 must give download and delete actions an attachment-specific, authenticated route
-and address the public direct-upload endpoint. These are outstanding security and
-identity requirements, not completed V1 guarantees.
+Receipt downloads and deletes now use authenticated app routes and attachment IDs;
+the default public Active Storage routes are disabled. Authenticated blob delivery
+retains avatar display. Direct uploads require authentication, enforce the declared
+MIME and 10 MiB limits, and bind their signed IDs to the uploader. Content sniffing
+and several adversarial failure cases remain V2 release checks.
 
 ## Deferred fiscal extraction
 
@@ -76,7 +73,7 @@ also outside NARUTO-03.
 | The example used `size: { max: 10.megabytes }`; the installed gem requires a comparison key. | Use `size: { less_than_or_equal_to: 10.megabytes }`. `limit: { max: 5 }` remains valid. |
 | An appended draft said no model had attachments and production should use object storage, while the resolved section said attachments and local disk already existed. | The appended draft is removed. The current models and configured services are recorded above; durable production storage remains a V2 requirement. |
 | The old draft reopened audit, rollback, and fiscal-extraction timing questions after they were marked resolved. | Attachment deletion is annotated without file rollback; fiscal extraction stays deferred. V2 is reserved for attachment hardening. |
-| The plan described a future audit version from a touch. | The current controller creates an `AuditVersion` explicitly after purging. V2 verifies that failure paths cannot leave an unaudited deletion. |
+| The plan described a future audit version from a touch. | Deletion now writes an explicit audit annotation in the same DB transaction as detaching; Active Storage purges after commit. V2 still needs failure-path and duplicate-audit checks. |
 
 See [implementation status](02-implementation-slices.md) and
 [decisions and test matrix](03-decisions-and-test-matrix.md).

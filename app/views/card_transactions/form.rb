@@ -54,7 +54,7 @@ class Views::CardTransactions::Form < Views::Base
           controller: "reactive-form price-mask composite-transaction attachment-upload",
           composite_transaction_composite_value: card_transaction.composite?,
           reactive_form_preserve_installment_prices_value: card_transaction.persisted?,
-          action: "submit->price-mask#removeMasks",
+          action: "submit->price-mask#removeMasks submit->attachment-upload#beforeSubmit",
           operation_type: card_transaction.operation_type,
           attachment_upload_model_name_value: card_transaction.model_name.param_key,
           attachment_upload_direct_upload_url_value: rails_direct_uploads_path,
@@ -64,7 +64,8 @@ class Views::CardTransactions::Form < Views::Base
           attachment_upload_too_large_message_value: I18n.t("attachments.too_large"),
           attachment_upload_invalid_type_message_value: I18n.t("attachments.invalid_type"),
           attachment_upload_max_count_message_value: I18n.t("attachments.max_count"),
-          attachment_upload_uploading_message_value: I18n.t("attachments.uploading")
+          attachment_upload_uploading_message_value: I18n.t("attachments.uploading"),
+          attachment_upload_wait_for_uploads_message_value: I18n.t("attachments.wait_for_uploads")
         }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id

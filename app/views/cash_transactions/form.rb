@@ -39,7 +39,7 @@ class Views::CashTransactions::Form < Views::Base
                   composite_transaction_composite_value: cash_transaction.composite?,
                   reactive_form_type_value: "CashTransaction",
                   reactive_form_preserve_installment_prices_value: cash_transaction.persisted?,
-                  action: "submit->price-mask#removeMasks",
+                  action: "submit->price-mask#removeMasks submit->attachment-upload#beforeSubmit",
                   attachment_upload_model_name_value: cash_transaction.model_name.param_key,
                   attachment_upload_direct_upload_url_value: rails_direct_uploads_path,
                   attachment_upload_existing_count_value: receipts_upload.existing_count,
@@ -48,7 +48,8 @@ class Views::CashTransactions::Form < Views::Base
                   attachment_upload_too_large_message_value: I18n.t("attachments.too_large"),
                   attachment_upload_invalid_type_message_value: I18n.t("attachments.invalid_type"),
                   attachment_upload_max_count_message_value: I18n.t("attachments.max_count"),
-                  attachment_upload_uploading_message_value: I18n.t("attachments.uploading")
+                  attachment_upload_uploading_message_value: I18n.t("attachments.uploading"),
+                  attachment_upload_wait_for_uploads_message_value: I18n.t("attachments.wait_for_uploads")
                 } do |form|
         form.hidden_field :user_id, value: current_user.id
         form.hidden_field :context_id, value: cash_transaction.context_id || current_context.id

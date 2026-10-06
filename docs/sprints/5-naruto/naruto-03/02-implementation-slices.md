@@ -33,9 +33,13 @@ built from the transaction's `model_name.param_key`. Locale keys are in
 `config/locales/locale.yml`. The Stimulus controller is registered in
 `app/javascript/controllers/index.js`.
 
-Touchpoints: both transaction controllers and `app/views/{cash,card}_transactions/form.rb`.
-V2 must guard direct-upload creation on the server, verify the file before storage,
-handle unused uploaded blobs, and cover interrupted and failed submissions.
+V2 now routes direct-upload creation through an authenticated controller, enforces
+the MIME allowlist and 10 MiB limit before blob creation, stamps the uploader ID in
+trusted metadata, and checks that metadata when a signed blob is submitted to a cash
+or card transaction. The form blocks submission while a direct upload is in flight.
+An age-based job purges unattached blobs after 24 hours. Actual content sniffing and
+browser-level failure-path coverage remain release gaps; the client-declared MIME
+type is not proof of file contents.
 
 ## Slice 3 — Index and show surfaces
 
@@ -52,23 +56,27 @@ not add `render Components::X.new(...)` examples to implementation instructions.
 
 ## Slice 4 — Delete and audit
 
-`resources :attachments, only: %i[destroy], param: :blob_signed_id` currently
-provides `DELETE /attachments/:blob_signed_id` and `attachment_path(signed_id)`.
-`AttachmentsController` verifies the record owner, purges the attachment, and then
-creates an `AuditVersion` with `attachments_deleted` metadata. It responds with a
-Turbo Stream row removal or an HTML redirect.
+`DELETE /attachments/:id` and `GET /attachments/:id/download` now identify one
+`ActiveStorage::Attachment`. The controller accepts only `receipts` on cash/card
+transactions and authorizes the parent against the current user and context. Unknown
+and unauthorized attachments return 404. Deletion detaches one association, writes
+its `attachments_deleted` audit annotation in the same database transaction, then
+relies on Active Storage's post-commit purge job; a blob still attached elsewhere is
+not deleted. The Turbo response removes only that attachment's row.
 
-This route uses a blob signed ID and `find_by(blob_id:)`; it does not uniquely identify
-an attachment. The audit write also follows the purge. Both paths require V2 repair.
-The final V2 route should identify the attachment, resolve its parent through an
-allowed transaction host, and authorize against the current user and context.
+The default public Active Storage routes are disabled. Blob delivery now goes through
+an authenticated controller that checks receipt ownership/context (and preserves
+authenticated avatar delivery). Direct-upload disk-service routes remain for the
+upload protocol. Operational reconciliation for a post-commit storage purge failure
+and audit-failure request coverage are still pending.
 
 ## Slice 5 — Verification and release gate
 
 Existing tests cover cash/card model limits, transaction update uploads, badges,
-show-page links, and owner/non-owner deletion. There is no dedicated download
-authorization test, shared-blob deletion test, LineItem limit test in the prior V1
-matrix, browser upload failure test, or confirmed deployment storage check.
+show-page links, LineItem limits, authorized receipt download, owner/non-owner
+deletion, and oversized/anonymous direct-upload rejection. Shared-blob deletion,
+wrong-context coverage, browser upload failure paths, audit failure, and confirmed
+deployment storage checks are still pending.
 
 The [decisions and test matrix](03-decisions-and-test-matrix.md) separates current
 coverage from pending checks. Once V2 code is complete, run focused specs and

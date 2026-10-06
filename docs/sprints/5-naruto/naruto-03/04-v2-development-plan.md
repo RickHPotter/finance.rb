@@ -6,11 +6,12 @@ V2 finishes the attachment feature's security and operational contract. It does 
 include NF-e, QR-code, or OCR extraction. The V1 [contract](01-product-and-data-contract.md)
 and [implementation status](02-implementation-slices.md) describe the current tree.
 
-V1 has three attachment hosts with a 10 MiB per-file, five-file model contract; only
-cash and card transactions have UI. The remaining risks are permanent public blob
-links, a public direct-upload creation route, a delete route that identifies a blob
-instead of an attachment, a production Disk service without a repository-declared
-persistent mount, and incomplete coverage of failure paths.
+The three attachment hosts have the 10 MiB per-file, five-file model contract; only
+cash and card transactions have UI. V2 code now routes receipt delivery and upload
+through authenticated controllers, identifies deletions by attachment, and declares
+separate persistent Disk volumes for production and homolog. Remaining code and
+operational verification gates are tracked in the
+[decision matrix](03-decisions-and-test-matrix.md).
 
 ## Slice 1 — Define receipt identity and authorization
 
@@ -24,9 +25,9 @@ persistent mount, and incomplete coverage of failure paths.
    missing records, and mismatched contexts without revealing file metadata.
 3. Replace receipt links in `Components::TransactionReceiptsUpload` and
    `Components::TransactionReceiptsList` with these routes. Preserve HTML and Turbo
-   behavior for deletion. Keep the existing public Active Storage routes available
-   only as needed for other features, such as avatars; do not assume that removing
-   receipt links disables Rails' default blob URLs.
+   behavior for deletion. The implementation disables default Active Storage routes
+   and supplies authenticated blob delivery for receipts and authenticated avatar
+   delivery; validate other attachment consumers before release.
 4. Define the privacy boundary explicitly: if a signed blob URL issued by the old
    UI remains valid, authenticated links alone do not revoke it. Choose and verify
    a route/configuration approach that prevents new and previously issued receipt

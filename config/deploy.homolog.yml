@@ -3,6 +3,9 @@
 proxy:
   host: homolog.30fev.com
 
+volumes:
+  - "financerb_homolog_storage:/rails/storage"
+
 env:
   clear:
     RAILS_ENV: homolog

@@ -1,26 +1,26 @@
 # frozen_string_literal: true
 
 class AttachmentsController < ApplicationController
-  def destroy
-    blob = ActiveStorage::Blob.find_signed(params[:blob_signed_id])
-    return head :not_found unless blob
+  include ActiveStorage::Streaming
 
-    attachment = ActiveStorage::Attachment.find_by(blob_id: blob.id)
+  def destroy
+    attachment = receipt_attachment
     return head :not_found unless attachment
 
     parent = attachment.record
-    record_user = parent.respond_to?(:user) ? parent.user : nil
-    return head :forbidden unless record_user == current_user
+    return head :not_found unless authorized_parent?(parent)
 
-    blob_key = blob.key
-    attachment.purge
+    blob_key = attachment.blob.key
 
-    record_audit_version_for(parent, blob_key) if parent.respond_to?(:versions)
+    ActiveRecord::Base.transaction do
+      attachment.destroy!
+      record_audit_version_for(parent, blob_key)
+    end
 
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: [
-          turbo_stream.remove("attachment_row_#{params[:blob_signed_id]}"),
+          turbo_stream.remove("attachment_row_#{attachment.id}"),
           turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: I18n.t("attachments.deleted") })
         ]
       end
@@ -30,7 +30,31 @@ class AttachmentsController < ApplicationController
     end
   end
 
+  def download
+    attachment = receipt_attachment
+    return head :not_found unless attachment
+
+    parent = attachment.record
+    return head :not_found unless authorized_parent?(parent)
+
+    expires_now
+    response.headers["Cache-Control"] = "private, no-store"
+    if request.headers["Range"].present?
+      send_blob_byte_range_data(attachment.blob, request.headers["Range"], disposition: :attachment)
+    else
+      send_blob_stream(attachment.blob, disposition: :attachment)
+    end
+  end
+
   private
+
+  def receipt_attachment
+    ActiveStorage::Attachment.find_by(id: params[:id], name: "receipts", record_type: %w[CashTransaction CardTransaction])
+  end
+
+  def authorized_parent?(parent)
+    parent.user_id == current_user.id && parent.context_id == current_context.id
+  end
 
   def record_audit_version_for(parent, blob_key)
     operation = Audit::Operation.ensure_persisted!

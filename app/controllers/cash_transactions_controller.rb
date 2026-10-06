@@ -2,6 +2,7 @@
 
 class CashTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
+  include ReceiptUploadAuthorization
 
   before_action :set_cash_transaction, only: %i[show edit update destroy fix_exchange_projection]
   before_action :ensure_submitted_context_matches_current_context!, only: %i[create update]
@@ -906,6 +907,10 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   private
+
+  def receipt_upload_param_key
+    :cash_transaction
+  end
 
   def render_top_level(view)
     respond_to do |format|

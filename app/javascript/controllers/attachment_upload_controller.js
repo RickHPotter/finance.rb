@@ -12,18 +12,44 @@ export default class extends Controller {
     tooLargeMessage: { type: String, default: "File is larger than 10 MB." },
     invalidTypeMessage: { type: String, default: "File type is not supported." },
     maxCountMessage: { type: String, default: "Maximum of 5 attachments allowed." },
-    uploadingMessage: { type: String, default: "Uploading..." }
+    uploadingMessage: { type: String, default: "Uploading..." },
+    waitForUploadsMessage: { type: String, default: "Please wait for uploads to finish." }
   }
 
   connect() {
     this.pendingUploads = new Map()
+    this.observeRemovedAttachments()
     this.updateCounter()
+  }
+
+  disconnect() {
+    this.attachmentObserver?.disconnect()
+  }
+
+  observeRemovedAttachments() {
+    this.attachmentObserver = new MutationObserver((mutations) => {
+      mutations.flatMap(mutation => Array.from(mutation.removedNodes)).forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE && node.id?.startsWith("attachment_row_") && this.existingCountValue > 0) {
+          this.existingCountValue--
+          this.updateCounter()
+        }
+      })
+    })
+    this.attachmentObserver.observe(this.element, { childList: true, subtree: true })
   }
 
   handleFiles(event) {
     const files = Array.from(event.target.files)
     this.processFiles(files)
     this.inputTarget.value = ""
+  }
+
+  beforeSubmit(event) {
+    const uploading = Array.from(this.pendingUploads.values()).some(item => item.state === "uploading")
+    if (uploading) {
+      event.preventDefault()
+      alert(this.waitForUploadsMessageValue)
+    }
   }
 
   dragOver(event) {
@@ -99,7 +125,7 @@ export default class extends Controller {
       }
     })
 
-    this.pendingUploads.set(id, { file, upload, element: itemEl, hiddenInput: null })
+    this.pendingUploads.set(id, { file, upload, element: itemEl, hiddenInput: null, state: "uploading" })
     this.updateCounter()
 
     upload.create((error, blob) => {
@@ -167,6 +193,7 @@ export default class extends Controller {
   finishUpload(id, blob) {
     const item = this.pendingUploads.get(id)
     if (!item) return
+    item.state = "uploaded"
 
     const hiddenInput = document.createElement("input")
     hiddenInput.type = "hidden"
@@ -192,6 +219,7 @@ export default class extends Controller {
   showError(id, error) {
     const item = this.pendingUploads.get(id)
     if (!item) return
+    item.state = "failed"
 
     const status = item.element.querySelector(".status-text")
     if (status) {
@@ -227,13 +255,6 @@ export default class extends Controller {
         target.textContent = total.toString()
       }
     })
-  }
-
-  decrementExisting() {
-    if (this.existingCountValue > 0) {
-      this.existingCountValue--
-      this.updateCounter()
-    }
   }
 
   formatBytes(bytes) {

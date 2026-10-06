@@ -42,7 +42,7 @@ module Components
     end
 
     def existing_receipts
-      @existing_receipts ||= transaction.persisted? ? transaction.receipts.to_a : []
+      @existing_receipts ||= transaction.persisted? ? transaction.receipts.attachments.includes(:blob).to_a : []
     end
 
     def attachment_modal
@@ -114,9 +114,10 @@ module Components
 
     def existing_attachments_list
       div(class: "mt-3 space-y-2", id: "existing_attachments") do
-        existing_receipts.each do |receipt|
+        existing_receipts.each do |attachment|
+          receipt = attachment.blob
           div(
-            id: "attachment_row_#{receipt.signed_id}",
+            id: "attachment_row_#{attachment.id}",
             class: "flex items-center justify-between rounded-lg border border-slate-200 bg-white/40 p-2 text-xs text-slate-700 " \
                    "dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-300 gap-2"
           ) do
@@ -128,7 +129,7 @@ module Components
 
             div(class: "flex items-center gap-2 shrink-0") do
               a(
-                href: Rails.application.routes.url_helpers.rails_blob_path(receipt, disposition: "attachment", only_path: true),
+                href: Rails.application.routes.url_helpers.download_attachment_path(attachment, only_path: true),
                 class: "text-blue-600 hover:text-blue-700 dark:text-blue-400 p-1 hover:underline",
                 download: true,
                 title: I18n.t("attachments.download")
@@ -137,12 +138,11 @@ module Components
               end
 
               a(
-                href: Rails.application.routes.url_helpers.attachment_path(receipt.signed_id),
+                href: Rails.application.routes.url_helpers.attachment_path(attachment),
                 class: "text-rose-500 hover:text-rose-700 p-1 cursor-pointer",
                 data: {
                   turbo_method: :delete,
-                  turbo_confirm: I18n.t("attachments.delete_confirm"),
-                  action: "click->attachment-upload#decrementExisting"
+                  turbo_confirm: I18n.t("attachments.delete_confirm")
                 },
                 title: I18n.t("attachments.delete")
               ) do
