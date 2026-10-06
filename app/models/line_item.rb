@@ -19,6 +19,10 @@ class LineItem < ApplicationRecord
   # @validations ..............................................................
   validates :description, presence: true
   validates :price, presence: true, numericality: { other_than: 0 }
+  validates :receipts,
+            content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
+            size: { less_than_or_equal_to: 10.megabytes },
+            limit: { max: 5 }
   validate :validate_category_presence
   validate :validate_leaf_category
   validate :validate_price_sign_matches_parent

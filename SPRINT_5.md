@@ -143,31 +143,34 @@ Goal: allow any `CashTransaction`, `CardTransaction`, or `LineItem` to carry one
 more file attachments so transactions have documentary evidence (receipts, NF-e XML,
 PDF orçamentos, maintenance invoices, insurance documents, etc.).
 
-`ActiveStorage` is already configured in the application; `active_storage_attachments`
-and `active_storage_blobs` already exist in the schema. This feature adds model
-declarations, validators, and a upload/display UI on top of the existing infrastructure.
+`ActiveStorage` is configured and its tables already exist. V1 adds model declarations,
+validators, and cash/card upload and display UI. Attachment security and durable
+production storage require the NARUTO-03 hardening V2 plan below.
 
 Locked V1 direction:
 
 - `has_many_attached :receipts` on `CashTransaction`, `CardTransaction`, and `LineItem`
 - accepted content types: PDF, JPEG, PNG, HEIC, XML, ZIP
-- maximum 10 MB per file, 5 files per record; enforced by model-level validators
+- maximum 10 MiB per file of any accepted type (including every picture), five files
+  per record; enforced by model-level validators on all three hosts
 - direct upload to ActiveStorage from the browser; no full-page reload
-- Turbo-streamed upload progress indicator
+- per-file upload progress rendered by Stimulus in the browser
 - attachment delete is audited in the parent transaction's `AuditVersion` metadata
   rather than as a standalone rollback-capable operation; attachments are documentary
   evidence, not financial mutations
 - rolling back a transaction does not remove its attachments
 - a paperclip icon badge appears on transaction index rows that have attachments
 - expanded transaction detail shows a file list with download links and a delete action
+- V2 must authorize downloads and direct uploads, identify deletions by attachment,
+  and verify durable production storage before these paths are considered complete
 
-Layer 2 — fiscal document extraction (deferred to NARUTO-03 V2):
+Future fiscal document extraction (separate from attachment-hardening V2):
 
 - parse a Brazilian NF-e XML with `Nokogiri` to extract issuer name, item descriptions,
   and prices and pre-fill a composite transaction form (NARUTO-02)
 - follow a cupom fiscal QR-code URL (SEFAZ state endpoint) to extract the same data
 - external API calls run through Solid Queue background jobs
-- Layer 2 requires NARUTO-02 for the line-item pre-fill step
+- extraction requires NARUTO-02 for the line-item pre-fill step
 
 Coverage:
 
@@ -179,12 +182,13 @@ References:
 - [product and data contract](docs/sprints/5-naruto/naruto-03/01-product-and-data-contract.md)
 - [implementation slices](docs/sprints/5-naruto/naruto-03/02-implementation-slices.md)
 - [decisions and test matrix](docs/sprints/5-naruto/naruto-03/03-decisions-and-test-matrix.md)
+- [V2 development plan for pending attachment fixes](docs/sprints/5-naruto/naruto-03/04-v2-development-plan.md)
 
 Explicitly out of scope:
 
 - OCR of unstructured receipt images
 - bank statement PDF parsing
-- NF-e XML / cupom fiscal QR-code extraction (Layer 2, deferred)
+- NF-e XML / cupom fiscal QR-code extraction (separate deferred feature)
 
 ### NARUTO-04: Extend subscriptions with salary support and bulk operations
 
@@ -370,7 +374,7 @@ Batch 3: Independent Enhancements (can start any time, no blockers)
 ├── NARUTO-03: Transaction Attachments
 │   ├── has_many_attached :receipts on CashTransaction, CardTransaction, LineItem
 │   ├── File validators: content type + byte size
-│   ├── Upload UI: Stimulus attachment-upload-controller, direct upload, Turbo progress
+│   ├── Upload UI: Stimulus attachment-upload-controller, direct upload, browser progress
 │   ├── Display: attachment list, paperclip badge on index rows, delete action
 │   └── Specs: model + request
 └── NARUTO-04: Subscription Enhancements

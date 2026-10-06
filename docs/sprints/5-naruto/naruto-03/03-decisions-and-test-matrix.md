@@ -1,105 +1,41 @@
-# NARUTO-03 Transaction Attachments: Decisions and Test Matrix
+# NARUTO-03 — Decisions and verification matrix
 
-## Resolved Product Decisions
+## Product decisions
 
-### D1. What records can carry attachments in this sprint?
+1. Cash and card transactions have upload, list, badge, and delete UI. `LineItem`
+   has the attachment association and the same model limits, with no V1 upload UI.
+2. Allowed MIME types are PDF, JPEG, PNG, HEIC, XML, and ZIP as enumerated in the
+   [contract](01-product-and-data-contract.md). The limit is **10 MiB per attached
+   file of any allowed type**, and five attached files per host record.
+3. `active_storage_validations` enforces these rules on all three models.
+   Its size comparison is `less_than_or_equal_to: 10.megabytes`; its attachment-count
+   syntax is `limit: { max: 5 }`.
+4. Browser progress is rendered by Stimulus during Active Storage direct upload.
+   Turbo streams update the page after deletion; they do not report upload progress.
+5. Attachment files are documentary evidence. Financial rollback does not alter them.
+   Deletion must leave an audit annotation, while the annotation has no financial
+   compensation.
+6. Production currently selects local Disk storage. Persistence across deploys is
+   unverified in this repository and is a V2 release gate.
+7. Authenticated receipt downloads, direct-upload authorization, and an
+   attachment-specific delete identifier are V2 requirements.
 
-**Decision**: `CashTransaction` and `CardTransaction` are the full-featured attachment hosts
-(upload UI, index badge, show list). `LineItem` receives `has_many_attached :receipts` at the model
-level only — no upload UI is exposed for line items in this sprint. Attachments belong to the
-transaction as a whole; the line-item attachment surface is reserved for Layer 2 (NF-e pre-fill).
+## Current tests and gaps
 
-### D2. How are file type, size, and count limits enforced?
-
-**Decision**: Add the `active_storage_validations` gem. It provides a single `validates :receipts`
-call with `content_type:`, `size:`, and `limit:` keys, eliminating the need for custom validator
-classes. This is consistent with the intent of the naruto-03 spec: "enforced by model-level
-validators (via the `active_storage_validations` gem or custom validator)."
-
-Accepted MIME types: `application/pdf`, `image/jpeg`, `image/png`, `image/heic`,
-`application/xml`, `text/xml`, `application/zip`. Max 10 MB per file, max 5 files per record.
-
-### D3. What storage backend is used?
-
-**Decision**: Keep the existing `:local` disk configuration in all environments. Production is
-confirmed to be running `:local` (not a cloud backend). The existing `has_one_attached :avatar` on
-`UserProfile` confirms the infrastructure is healthy and functional. Cloud backend migration is a
-separate infrastructure concern and is out of scope for this sprint.
-
-### D4. How is receipt deletion routed?
-
-**Decision**: A shared `AttachmentsController` at `DELETE /attachments/:blob_signed_id`. This is
-preferred over nested `DELETE /cash_transactions/:id/receipts/:blob_signed_id` because:
-- Reusable for `CashTransaction`, `CardTransaction`, and future `LineItem` without duplicating
-  auth and purge logic.
-- The controller resolves the parent record via `ActiveStorage::Attachment#record` (polymorphic),
-  checks ownership, purges the blob, and logs the deletion in the parent's audit metadata.
-- A single Turbo Stream response removes the attachment row from whichever show page initiated
-  the request.
-
-### D5. How is the UI structured?
-
-**Decision**: Shared Phlex components in `app/components/` rather than private methods inside
-each view. Two components:
-- `TransactionReceiptsUploadComponent` — used in forms (Stimulus-backed, direct upload).
-- `TransactionReceiptsListComponent` — used in show pages (download + delete).
-
-Both cash and card transactions receive the full treatment: upload section in create/edit forms,
-paperclip badge on index rows, and attachment list section on show pages.
-
-### D6. How is attachment auditing handled?
-
-**Decision**: No standalone `AuditVersion` for attach events (ActiveStorage creates its own join
-record). On delete, the `AttachmentsController` touches the parent transaction and appends
-`{ attachments_deleted: [blob_key] }` to the parent's next `AuditVersion` metadata. Rolling back
-a transaction does not remove its attachments — attachments are documentary evidence, not financial
-mutations, so the rollback adapter skips blobs entirely.
-
----
-
-## Test Matrix
-
-### 1. Model Tests (`spec/models/`)
-
-| File | Scenario | Expected Outcome |
+| Concern | Existing evidence | Required V2 verification |
 |---|---|---|
-| `cash_transaction_spec.rb` | Attach a valid PDF (< 10 MB) | Passes validation |
-| `cash_transaction_spec.rb` | Attach a disallowed type (e.g. `.exe`) | Fails with content-type error |
-| `cash_transaction_spec.rb` | Attach a file > 10 MB | Fails with size error |
-| `cash_transaction_spec.rb` | Attach 6 files at once | Fails with count error |
-| `card_transaction_spec.rb` | Attach a valid JPEG (< 10 MB) | Passes validation |
-| `card_transaction_spec.rb` | Attach a disallowed type | Fails with content-type error |
-| `card_transaction_spec.rb` | Attach a file > 10 MB | Fails with size error |
-| `card_transaction_spec.rb` | Attach 6 files at once | Fails with count error |
-| `line_item_spec.rb` | `LineItem.reflect_on_attachment(:receipts)` | Returns attachment reflection (not nil) |
+| Cash/card model validation | `spec/models/cash_transaction_spec.rb`, `spec/models/card_transaction_spec.rb` cover allowed, disallowed, oversized, and sixth attachments. | Boundary at exactly 10 MiB, if not covered. |
+| LineItem model validation | Prior spec only checked attachment reflection. | Allowed, disallowed, oversized, and sixth attachments; no UI dependency. |
+| Cash/card form upload | Request specs submit files on update. | Create flow, failed form, interrupted upload, and cleanup of unattached blobs. |
+| Badge and show list | Request specs inspect both transaction index/show pages. | Assert query count stays bounded as rows increase. |
+| Delete ownership and audit | `spec/requests/attachments_spec.rb` covers owner deletion, non-owner 403, and a cash audit annotation. | Shared blob attached to two records, cross-context access, audit failure, exactly one audit annotation, and rollback behavior. |
+| Download | Show-page specs check that a link is rendered. | Owner gets file; anonymous, other user, and wrong context cannot download it. |
+| Direct upload | Stimulus controller and form wiring exist. | Anonymous upload is rejected; MIME and byte size are checked before blob creation; oversized or unsupported files do not reach storage. |
+| Storage durability | Service configuration names local Disk. | Deployed mount or durable service is verified, including a redeploy and backup/restore exercise. |
 
-### 2. Request Tests (`spec/requests/`)
+## Release gate
 
-| File | Endpoint & Action | Scenario | Expected Outcome |
-|---|---|---|---|
-| `cash_transactions_spec.rb` | `PATCH /cash_transactions/:id` | Submit form with valid receipt file | File attached; `receipts.attached?` → true |
-| `cash_transactions_spec.rb` | `GET /rails/active_storage/blobs/…` | Download attached receipt | 200 with correct `content-disposition: attachment` |
-| `cash_transactions_spec.rb` | `DELETE /attachments/:blob_signed_id` | Owner deletes own receipt | Blob purged; `receipts.attached?` → false; Turbo Stream response |
-| `cash_transactions_spec.rb` | `DELETE /attachments/:blob_signed_id` | Non-owner attempts delete | 403 Forbidden |
-| `card_transactions_spec.rb` | `PATCH /card_transactions/:id` | Submit form with valid receipt file | File attached; `receipts.attached?` → true |
-| `card_transactions_spec.rb` | `DELETE /attachments/:blob_signed_id` | Owner deletes own receipt | Blob purged; Turbo Stream response |
-| `card_transactions_spec.rb` | `DELETE /attachments/:blob_signed_id` | Non-owner attempts delete | 403 Forbidden |
-
----
-
-## Acceptance Sign-Off Checklist
-
-- [ ] `active_storage_validations` gem added and bundled.
-- [ ] `CashTransaction`, `CardTransaction`, and `LineItem` all declare `has_many_attached :receipts`.
-- [ ] `CashTransaction` and `CardTransaction` validators reject wrong MIME, oversized files, and > 5 files.
-- [ ] `receipts: []` permitted in both controllers' strong params.
-- [ ] `attachment-upload-controller.js` Stimulus controller handles DirectUpload with per-file progress.
-- [ ] `TransactionReceiptsUploadComponent` renders in cash and card create/edit forms.
-- [ ] Paperclip badge appears on index rows for transactions with attachments (no N+1).
-- [ ] `AttachmentsController` at `DELETE /attachments/:blob_signed_id` purges blob and guards ownership.
-- [ ] `TransactionReceiptsListComponent` renders on cash and card show pages with download + delete.
-- [ ] Deleting a receipt appends `{ attachments_deleted: [blob_key] }` to parent transaction audit metadata.
-- [ ] Rolling back a transaction does not purge its attachments.
-- [ ] All model and request specs pass.
-- [ ] `bin/rubocop -A` clean.
-- [ ] `bin/ci` green.
+V1 model limits are complete only when all three models and their focused specs
+pass. V2 is complete only when the security and storage checks above pass, the
+attachment route is unambiguous, and `bin/ci` is green. Do not mark those V2
+items complete based on model or request specs alone.

@@ -1,428 +1,82 @@
-# NARUTO-03 — Transaction Attachments & Fiscal Document Integration: Product and Data Contract
+# NARUTO-03 — Transaction attachments: product and data contract
 
-## Status
+## Status and scope
 
-Approved planning contract as of 2026-10-01.
+V1 is implemented in the current tree. This contract records the intended behavior and
+the remaining gaps as reviewed on 2026-10-06. The [V2 development plan](04-v2-development-plan.md)
+covers security, durable storage, deletion identity, and missing verification. Fiscal
+document extraction remains a separate, deferred feature; it is not part of hardening V2.
 
----
+## V1 contract
 
-## Design Decisions (Resolved)
+- `CashTransaction`, `CardTransaction`, and `LineItem` each declare
+  `has_many_attached :receipts`. Cash and card transactions have upload and display UI.
+  Line items have a model-level attachment association only; their upload UI is deferred.
+- The accepted types are PDF (`application/pdf`), JPEG (`image/jpeg`), PNG (`image/png`),
+  HEIC (`image/heic`), XML (`application/xml` or `text/xml`), and ZIP
+  (`application/zip`).
+- **Every attachment, including every picture, PDF, XML, and ZIP, is limited to 10 MiB.**
+  Every host record is limited to five receipts. Both limits and the content-type
+  allowlist are model validations on all three hosts. Client-side checks are feedback,
+  not the authoritative limit.
+- The installed `active_storage_validations` gem uses this DSL for file size:
 
-### D1. What records can carry attachments?
+  ```ruby
+  validates :receipts,
+            content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
+            size: { less_than_or_equal_to: 10.megabytes },
+            limit: { max: 5 }
+  ```
 
-`CashTransaction` and `CardTransaction` are the primary attachment hosts. `LineItem` also receives
-`has_many_attached :receipts` at the model level (for future Layer 2 NF-e pre-fill integration),
-but **no upload UI is exposed for line items in this sprint**. Attachments are always associated with
-the full transaction, not with individual line items.
+- Cash and card forms upload files with Active Storage `DirectUpload` and Stimulus.
+  Progress bars update in the browser while each file uploads. A completed upload adds
+  its signed blob ID to a hidden form field. The transaction is attached when the form
+  saves; selecting or uploading a file alone does not save the transaction.
+- The attachment picker and existing-file list live in
+  `Components::TransactionReceiptsUpload`, presented in a modal from each transaction
+  form. `Components::TransactionReceiptsList` renders filenames, downloads, and delete
+  controls on each show page. Paperclip badges live in the cash/card installment rows.
+- Attaching a file is not a financial mutation. Deleting one creates an audit annotation
+  containing its blob key. Rolling back a financial transaction does not restore or
+  remove receipt files. The deletion audit annotation itself has no financial
+  compensation.
 
-### D2. How are file type and size limits enforced?
+## Storage and security boundary
 
-The `active_storage_validations` gem is added to the Gemfile. It provides a clean DSL:
+The schema already contains the Active Storage tables. `development` and `production`
+select the `:local` Disk service, whose configured root is `storage/`; `test` selects
+`:test` under `tmp/storage/`. This describes configuration, **not** proof of durable
+production storage. The repository's Kamal deployment has no active storage volume
+declaration. Its commented example points to `/app/storage`, while the Dockerfile
+sets the application root to `/rails`, so enabling that example verbatim would not
+mount the configured `storage/` directory. V2 must establish and verify a persistent
+mount or another durable service before treating production receipts as durable.
 
-```ruby
-validates :receipts,
-  content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
-  size: { max: 10.megabytes },
-  limit: { max: 5 }
-```
+The current UI uses Active Storage's signed blob URLs for downloads. Those URLs are
+public to anyone who possesses them and do not pass through the application's
+transaction ownership check. The current delete endpoint checks ownership, but looks
+up an attachment by blob signed ID; a blob can be attached to more than one record.
+V2 must give download and delete actions an attachment-specific, authenticated route
+and address the public direct-upload endpoint. These are outstanding security and
+identity requirements, not completed V1 guarantees.
 
-No custom validator classes are written.
+## Deferred fiscal extraction
 
-### D3. What storage backend is used?
+Parsing NF-e XML or a cupom fiscal QR URL to suggest an entity, line items, and a
+transaction total is deferred. It depends on composite transactions from NARUTO-02.
+The future design must assess what issuer, recipient, and URL data can leave the
+application before using a third-party service. OCR and bank statement parsing are
+also outside NARUTO-03.
 
-All environments use the existing ActiveStorage configuration:
+## Reconciled contradictions
 
-| Environment | Service | Root |
-|---|---|---|
-| `development` | `:local` (Disk) | `storage/` |
-| `test` | `:test` (Disk) | `tmp/storage/` |
-| `production` | `:local` (Disk) | `storage/` |
-
-Production is confirmed as `:local` disk storage. Cloud backend (S3/GCS) is explicitly out of scope
-for this sprint and will be addressed separately when deployment infrastructure requires it.
-The existing `has_one_attached :avatar` on `UserProfile` confirms the infrastructure is functional.
-
-### D4. How is receipt deletion handled?
-
-A shared `AttachmentsController` handles deletion:
-
-```
-DELETE /attachments/:blob_signed_id
-```
-
-The controller locates the `ActiveStorage::Attachment` by the signed blob ID, verifies the parent
-record belongs to the current user, purges the blob, and appends the deleted blob key to the parent
-transaction's next `AuditVersion` metadata (`{ attachments_deleted: [blob_key] }`). This approach
-is reusable across `CashTransaction`, `CardTransaction`, and (in future) `LineItem` without
-duplicating logic in each controller.
-
-### D5. How is the UI structured?
-
-Shared Phlex components in `app/components/` are used for both the upload section (used in forms)
-and the attachment list section (used in show pages). Both `CashTransaction` and `CardTransaction`
-receive full treatment: upload in forms, paperclip badge on index rows, and attachment list on
-show pages.
-
----
-
-## Goal
-
-Allow any `CashTransaction` or `CardTransaction` to carry one or more file **attachments**
-(NF-e XML, PDF orçamento, cupom fiscal image, receipt photo, etc.). `LineItem` gets the model
-declaration as a foundation for future Layer 2 work. A second layer adds **optical / API
-extraction** of item data from a Brazilian NF-e XML or QR-code URL, turning a scanned receipt
-into a pre-filled line-item list — deferred to NARUTO-03 V2.
-
----
-
-## Two Layers
-
-### Layer 1 — Plain attachments (V1, required for this sprint)
-
-Store one or more files against a transaction using `ActiveStorage`, which is already configured
-in the application (`active_storage_attachments` and `active_storage_blobs` tables already exist
-in the schema). No external API required.
-
-**Supported attachment scenarios**:
-- An orçamento PDF for a car maintenance card transaction.
-- A receipt photo for a cash transaction.
-- The NF-e XML file or a PDF invoice downloaded from the portal do contribuinte.
-
-### Layer 2 — Fiscal document extraction (V2, exploratory — deferred to NARUTO-03 v2)
-
-Parse a Brazilian NF-e XML or follow the QR-code printed on a cupom fiscal (SEFAZ API) and extract:
-- Issuer name → Entity suggestion
-- Item descriptions → line item descriptions (NARUTO-02)
-- Item prices → line item prices
-- Total value → parent transaction price pre-fill
-
-This layer depends on NARUTO-02 being available. Deferred.
-
----
-
-## Non-Goals
-
-- OCR of non-structured receipt images (Layer 2 scope, deferred)
-- Bank statement PDF parsing
-- Attachment versioning or document management workflow
-- Storing attachments for non-transaction records (investments, piggy banks) in this ticket
-- Upload UI on `LineItem` level (model-only declaration, UI deferred to Layer 2)
-- Cloud storage backend (stays `:local`; infrastructure change is a separate concern)
-
----
-
-## Current State (confirmed 2026-10-01)
-
-| Item | Status |
+| Previous statements | Resolution |
 |---|---|
-| `active_storage_attachments` + `active_storage_blobs` tables | ✅ in schema |
-| `ActiveStorage` configured (`:local` dev/prod, `:test` test) | ✅ |
-| `has_one_attached :avatar` on `UserProfile` | ✅ existing pattern to follow |
-| `active_storage_validations` gem | ❌ not yet in Gemfile — will be added in Slice 1 |
-| `LineItem` model (`app/models/line_item.rb`) | ✅ exists (NARUTO-02 already merged) |
-| Upload-related Stimulus controller | ❌ none yet — will be created in Slice 3 |
-| `AttachmentsController` | ❌ none yet — will be created in Slice 5 |
-
----
-
-## Proposed Data Model Change (Layer 1)
-
-No new tables. Use `ActiveStorage` polymorphic attach:
-
-```ruby
-# On CashTransaction and CardTransaction — full upload UI this sprint
-has_many_attached :receipts
-
-# On LineItem (NARUTO-02) — model declaration only; upload UI deferred to Layer 2
-has_many_attached :receipts
-```
-
-### Storage service
-
-| Environment | Configured Service |
-|---|---|
-| `development` | `:local` (Disk, `storage/`) |
-| `test` | `:test` (Disk, `tmp/storage/`) |
-| `production` | `:local` (Disk, `storage/`) |
-
-### Accepted content types
-
-| Type | MIME | Notes |
-|---|---|---|
-| PDF | `application/pdf` | NF-e, orçamento, invoice |
-| JPEG / PNG / HEIC | `image/jpeg`, `image/png`, `image/heic` | Receipt photos |
-| XML | `application/xml` / `text/xml` | NF-e XML |
-| ZIP | `application/zip` | Batch of NF-e XMLs |
-
-### File size limit
-
-Maximum **10 MB per file**, **5 files per record**. Enforced via `active_storage_validations` gem.
-
----
-
-## UI Direction
-
-### Upload (transaction create / edit form)
-
-- An "Attachments" section below the main form fields — rendered via a shared Phlex component
-  (`app/components/`).
-- File picker (multiple files, direct upload enabled).
-- Inline preview: `<img>` thumbnail for images; generic icon for PDF / XML.
-- Direct upload to ActiveStorage via `@rails/activestorage` `DirectUpload` API (Stimulus controller:
-  `attachment-upload-controller`).
-- Per-file progress bar while upload is in flight.
-- Remove button on each pending file (removes signed blob ID from hidden field).
-
-### Display (transaction index row)
-
-- A paperclip icon badge on transaction rows that have attachments (`.receipts.attached?`).
-
-### Display (transaction show page)
-
-- Attachment list section (shared Phlex component) showing filenames, download links, and
-  a per-file delete button.
-- Delete calls `DELETE /attachments/:blob_signed_id` on the shared `AttachmentsController`.
-
-### Audit
-
-- Attaching a file is captured by ActiveStorage's own record creation (no custom audit version
-  needed for attach).
-- Deleting a file appends `{ attachments_deleted: [blob_key] }` to the parent transaction's
-  next `AuditVersion` metadata via a `touch` + version write triggered by the delete action.
-- Rolling back a transaction does **not** remove its attachments; attachments are documentary
-  evidence, not financial mutations.
-
----
-
-## Layer 2 — NF-e / Cupom Fiscal Extraction (Exploratory, Deferred)
-
-### Brazilian NF-e XML extraction
-
-1. User uploads an NF-e XML file.
-2. Server parses with `Nokogiri`.
-3. Extracted fields:
-   - `<emit><xNome>` → suggested entity name
-   - `<det><prod><xProd>` + `<vProd>` → line items
-   - `<total><ICMSTot><vNF>` → total value
-4. Returns a JSON payload for the form to pre-fill line items (NARUTO-02).
-
-### Cupom fiscal QR code
-
-1. User scans or pastes the QR-code URL (printed at the bottom of a cupom fiscal).
-2. Server fetches the SEFAZ state endpoint (varies per state, e.g. SP: `nfe.fazenda.sp.gov.br`).
-3. Parses the returned HTML or XML for item data.
-4. Same pre-fill flow as NF-e.
-
-### External API notes
-
-- SEFAZ endpoints are public but require valid certificate chains and rate-limit aggressively.
-  Use an intermediary service (e.g., `nfe.io`, `focusnfe`) or the direct state endpoint depending
-  on budget/complexity.
-- External API calls must be wrapped in a background job (Solid Queue already in use).
-- No PII should be forwarded to third-party APIs; only the QR-code URL or NF-e XML content
-  (which is already a public fiscal document).
-
----
-
-## Implementation Slices (Layer 1)
-
-See [02-implementation-slices.md](02-implementation-slices.md) for detailed steps, primary
-touchpoints, and acceptance criteria for each slice.
-
-Summary:
-
-| Slice | Description |
-|---|---|
-| 1 | `has_many_attached :receipts` + `active_storage_validations` gem on all three models |
-| 2 | Permit `receipts: []` params in `CashTransactionsController` and `CardTransactionsController` |
-| 3 | `attachment-upload-controller.js` (Stimulus, DirectUpload) + shared upload-section Phlex component |
-| 4 | Paperclip icon badge on cash + card transaction index rows |
-| 5 | `AttachmentsController` (`DELETE /attachments/:blob_signed_id`) + shared attachment-list Phlex component in show pages |
-| 6 | Model specs + request specs |
-
----
-
-## Open Questions
-
-All product-level questions were resolved during planning on 2026-10-01. See
-[03-decisions-and-test-matrix.md](03-decisions-and-test-matrix.md) for the full decision log.
-
-
----
-
-## Goal
-
-Allow any transaction (cash or card) and any line item (NARUTO-02) to carry one or
-more file **attachments** (NF-e XML, PDF orçamento, cupom fiscal image, receipt photo,
-etc.). A second layer adds **optical / API extraction** of item data from a Brazilian
-NF-e XML or QR-code URL, turning a scanned receipt into a pre-filled line-item list.
-
----
-
-## Two Layers
-
-### Layer 1 — Plain attachments (V1, required for this sprint)
-
-Store one or more files against a transaction or line item using
-`ActiveStorage`, which is already configured in the application
-(`active_storage_attachments` and `active_storage_blobs` tables already exist in the
-schema). No external API required.
-
-**Supported attachment scenarios**:
-- An orçamento PDF for a car maintenance card transaction.
-- A receipt photo for a cash transaction.
-- The NF-e XML file or a PDF invoice downloaded from the portal do contribuinte.
-
-### Layer 2 — Fiscal document extraction (V2, exploratory — deferred to NARUTO-03 v2)
-
-Parse a Brazilian NF-e XML or follow the QR-code printed on a cupom fiscal (SEFAZ
-API) and extract:
-- Issuer name → Entity suggestion
-- Item descriptions → line item descriptions (NARUTO-02)
-- Item prices → line item prices
-- Total value → parent transaction price pre-fill
-
-This layer depends on NARUTO-02 being available. Deferred.
-
----
-
-## Non-Goals
-
-- OCR of non-structured receipt images (Layer 2 scope, deferred)
-- Bank statement PDF parsing
-- Attachment versioning or document management workflow
-- Storing attachments for non-transaction records (investments, piggy banks) in this ticket
-
----
-
-## Current State
-
-`ActiveStorage` is configured. No model currently calls `has_one_attached` or
-`has_many_attached`. The infrastructure (tables, service configuration) already exists.
-
----
-
-## Proposed Data Model Change (Layer 1)
-
-No new tables. Use `ActiveStorage` polymorphic attach:
-
-```ruby
-# On CashTransaction and CardTransaction
-has_many_attached :receipts
-
-# On LineItem (NARUTO-02)
-has_many_attached :receipts
-```
-
-### Storage service
-
-Confirm and document which ActiveStorage service (`:local`, `:amazon`, `:gcs`) is
-used in each environment. Production should use an object storage backend.
-
-### Accepted content types
-
-| Type | MIME | Notes |
-|---|---|---|
-| PDF | `application/pdf` | NF-e, orçamento, invoice |
-| JPEG / PNG / HEIC | `image/*` | Receipt photos |
-| XML | `application/xml` / `text/xml` | NF-e XML |
-| ZIP | `application/zip` | Batch of NF-e XMLs |
-
-### File size limit
-
-Maximum **10 MB per file**, **5 files per record**. Enforced with ActiveStorage
-validations (via the `active_storage_validations` gem or custom validator).
-
----
-
-## UI Direction
-
-### Upload (transaction create / edit form)
-
-- A "Attachments" section below the main form fields.
-- File picker (drag-and-drop on desktop, native picker on mobile).
-- Inline preview thumbnail for images; generic icon for PDF / XML.
-- Direct upload to ActiveStorage via JavaScript (no full-page reload).
-- Turbo-streamed progress indicator.
-
-### Display (transaction show / index row)
-
-- A paperclip icon badge on transaction rows that have attachments.
-- Expanded detail shows a list of attachment filenames with download links and
-  a delete button (audited, triggers a version event).
-
-### Audit
-
-- Attaching a file = `create` event on the `ActiveStorageAttachment` record.
-  Because ActiveStorage attachments are not PaperTrail-tracked by default, track
-  attachment actions via a thin `TransactionAttachment` join model or log the
-  blob key in the parent transaction's audit metadata.
-- Deleting a file = `destroy` event.
-
----
-
-## Layer 2 — NF-e / Cupom Fiscal Extraction (Exploratory, Deferred)
-
-### Brazilian NF-e XML extraction
-
-1. User uploads an NF-e XML file.
-2. Server parses with `Nokogiri`.
-3. Extracted fields:
-   - `<emit><xNome>` → suggested entity name
-   - `<det><prod><xProd>` + `<vProd>` → line items
-   - `<total><ICMSTot><vNF>` → total value
-4. Returns a JSON payload for the form to pre-fill line items (NARUTO-02).
-
-### Cupom fiscal QR code
-
-1. User scans or pastes the QR-code URL (printed at the bottom of a cupom fiscal).
-2. Server fetches the SEFAZ state endpoint (varies per state, e.g. SP: `nfe.fazenda.sp.gov.br`).
-3. Parses the returned HTML or XML for item data.
-4. Same pre-fill flow as NF-e.
-
-### External API notes
-
-- SEFAZ endpoints are public but require valid certificate chains and rate-limit
-  aggressively. Use an intermediary service (e.g., `nfe.io`, `focusnfe`) or the
-  direct state endpoint depending on budget/complexity.
-- External API calls must be wrapped in a background job (Solid Queue already in use).
-- No PII should be forwarded to third-party APIs; only the QR-code URL or NF-e XML
-  content (which is already a public fiscal document).
-
----
-
-## Implementation Slices (Layer 1)
-
-### Slice 1 — ActiveStorage setup validation & model attachment
-- Confirm storage service configuration across environments.
-- Add `has_many_attached :receipts` to `CashTransaction`, `CardTransaction`, `LineItem`.
-- Add file size and type validators.
-- Add `content_type_allowlist` and `byte_size_limit` validations.
-
-### Slice 2 — Upload UI and direct upload
-- Phlex component for the attachment upload section (drag-and-drop, file list,
-  inline preview, Turbo-streamed progress).
-- Stimulus controller: `attachment-upload-controller`.
-
-### Slice 3 — Display and delete
-- Attachment list on transaction show.
-- Delete action (audited via metadata in parent transaction version).
-- Paperclip badge on index rows.
-
-### Slice 4 — Specs
-- Model specs: validation, content type rejection, size rejection.
-- Request specs: upload, download, delete.
-
----
-
-## Open Questions
-
-1. **Layer 2 timing** — should Layer 2 be scoped into this sprint or treated as a
-   separate NARUTO-03-v2 ticket? Proposal: **separate ticket**, keep this sprint's
-   scope to Layer 1 only.
-2. **Audit granularity** — should each attachment get its own `AuditVersion` record,
-   or is it sufficient to note it in the parent transaction's metadata?
-   Proposal: **parent metadata annotation** for simplicity; full versioning deferred.
-3. **Rollback** — can a user roll back a transaction and have attachments removed?
-   Proposal: **attachments are not rolled back** (they are evidence, not financial
-   mutations). The rollback adapter for `CashTransaction`/`CardTransaction` skips blobs.
+| The sprint required 10 MB and five files per record; a detailed slice exempted `LineItem`. | All three models enforce the same rules, even without LineItem UI. |
+| The example used `size: { max: 10.megabytes }`; the installed gem requires a comparison key. | Use `size: { less_than_or_equal_to: 10.megabytes }`. `limit: { max: 5 }` remains valid. |
+| An appended draft said no model had attachments and production should use object storage, while the resolved section said attachments and local disk already existed. | The appended draft is removed. The current models and configured services are recorded above; durable production storage remains a V2 requirement. |
+| The old draft reopened audit, rollback, and fiscal-extraction timing questions after they were marked resolved. | Attachment deletion is annotated without file rollback; fiscal extraction stays deferred. V2 is reserved for attachment hardening. |
+| The plan described a future audit version from a touch. | The current controller creates an `AuditVersion` explicitly after purging. V2 verifies that failure paths cannot leave an unaudited deletion. |
+
+See [implementation status](02-implementation-slices.md) and
+[decisions and test matrix](03-decisions-and-test-matrix.md).

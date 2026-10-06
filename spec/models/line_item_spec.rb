@@ -173,8 +173,46 @@ RSpec.describe LineItem do
   end
 
   describe "attachments" do
+    let(:line_item) do
+      described_class.new(
+        transactable: cash_transaction,
+        description: "Organic Apples",
+        price: 50_00,
+        category: leaf_category
+      )
+    end
+
     it "has many attached receipts" do
       expect(described_class.reflect_on_attachment(:receipts)).not_to be_nil
+    end
+
+    it "accepts an allowed attachment at exactly 10 MiB" do
+      line_item.receipts.attach(io: StringIO.new("a" * 10.megabytes), filename: "receipt.pdf", content_type: "application/pdf")
+
+      expect(line_item).to be_valid
+    end
+
+    it "rejects an unsupported content type" do
+      line_item.receipts.attach(io: StringIO.new("binary"), filename: "script.exe", content_type: "application/x-msdownload")
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:receipts]).to be_present
+    end
+
+    it "rejects a file larger than 10 MiB" do
+      line_item.receipts.attach(io: StringIO.new("a" * (10.megabytes + 1)), filename: "large.pdf", content_type: "application/pdf")
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:receipts]).to be_present
+    end
+
+    it "rejects a sixth attachment" do
+      6.times do |index|
+        line_item.receipts.attach(io: StringIO.new("data"), filename: "receipt_#{index}.pdf", content_type: "application/pdf")
+      end
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:receipts]).to be_present
     end
   end
 
