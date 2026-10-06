@@ -26,7 +26,7 @@ class Views::Transactions::FormCategoriesSection < Views::Base
         end
       end
 
-      div(class: "grid min-h-[3rem] grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-stretch gap-1.5") do
+      div(class: "grid min-h-[3.5rem] grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-stretch gap-2") do
         Button(
           type: :button,
           variant: :outline,
@@ -37,8 +37,8 @@ class Views::Transactions::FormCategoriesSection < Views::Base
           }
         ) { "←" }
 
-        div(class: "min-h-[3rem] overflow-hidden", data: { form_collection_carousel_target: "viewport" }) do
-          div(class: "flex min-h-[3rem] -ml-2 items-center", data: { nested_form_target: "target", nested_form_insert: "beforeend" }) do
+        div(class: "min-h-[3.5rem] overflow-hidden", data: { form_collection_carousel_target: "viewport" }) do
+          div(class: "flex min-h-[3.5rem] -ml-2 items-center", data: { nested_form_target: "target", nested_form_insert: "beforeend" }) do
             form.fields_for :category_transactions, category_transactions_association, include_id: false do |category_transaction_fields|
               render_item(category_transaction_fields)
             end
@@ -63,7 +63,7 @@ class Views::Transactions::FormCategoriesSection < Views::Base
   private
 
   def carousel_button_class
-    "h-full min-h-10 w-full border border-slate-300 bg-white px-0 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-950 " \
+    "h-full min-h-12 w-full border border-slate-300 bg-white px-0 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-950 " \
       "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700/70 dark:hover:text-slate-100"
   end
 
