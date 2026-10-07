@@ -164,31 +164,38 @@ class Views::Transactions::FormLineItemsSection < Views::Base
           )
         end
 
-        div(class: "combobox-shell w-full md:w-3/12 user-icon") do
-          render Views::Shared::SingleSelectCombobox.new(
-            name: "#{form.object_name}[line_items_attributes][#{index}][entity_transactions_attributes][0][entity_id]",
-            options: entities.map { |label, value| [ label, value, {} ] },
-            selected_value: item.entity_id,
-            placeholder: I18n.t("activerecord.attributes.line_item.entity_id"),
-            input_data: { action: "change->composite-entity-modal#entityChanged" },
-            trigger_data: { composite_entity_modal_target: "entityPicker" }
-          )
-        end
-      end
+        div(class: "flex w-full min-w-0 md:w-3/12") do
+          div(class: "combobox-shell user-icon min-w-0 flex-1") do
+            render Views::Shared::SingleSelectCombobox.new(
+              name: "#{form.object_name}[line_items_attributes][#{index}][entity_transactions_attributes][0][entity_id]",
+              options: entities.map { |label, value| [ label, value, {} ] },
+              selected_value: item.entity_id,
+              placeholder: I18n.t("activerecord.attributes.line_item.entity_id"),
+              input_data: { action: "change->composite-entity-modal#entityChanged" },
+              trigger_class: "rounded-r-none",
+              trigger_data: { composite_entity_modal_target: "entityPicker" }
+            )
+          end
 
-      SheetTrigger(
-        data: {
-          composite_entity_modal_target: "trigger",
-          line_item_key: index.to_s,
-          action: "click->composite-entity-modal#open"
-        }
-      ) do
-        button(
-          type: :button,
-          disabled: item.entity_id.blank?,
-          class: "shrink-0 h-8 rounded-md border border-slate-300 px-2 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40 " \
-                 "dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-        ) { I18n.t("transactions.composite.entity_modal_trigger") }
+          SheetTrigger(
+            class: "shrink-0",
+            data: {
+              composite_entity_modal_target: "trigger",
+              line_item_key: index.to_s,
+              action: "click->composite-entity-modal#open"
+            }
+          ) do
+            button(
+              type: :button,
+              disabled: item.entity_id.blank?,
+              class: "flex h-10 items-center gap-1 whitespace-nowrap rounded-l-none rounded-r-md border border-l-0 border-slate-300 px-2 " \
+                     "text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            ) do
+              cached_icon(:user_group)
+              span { I18n.t("transactions.composite.entity_modal_trigger") }
+            end
+          end
+        end
       end
 
       Button(

@@ -81,19 +81,19 @@ export default class extends Controller {
 
     if (shouldBeDisabled !== this.exchangesCountInputTarget.disabled) {
       this.exchangesCountInputTarget.disabled = shouldBeDisabled
-      this.exchangesCountEqualsButtonTarget.disabled = shouldBeDisabled
-
-      this.exchangesCountInputTarget.value = document.querySelector("[data-reactive-form-target='installmentsCountInput']").value
-      await this._updateExchangesPrices()
+      if (this.hasExchangesCountEqualsButtonTarget) this.exchangesCountEqualsButtonTarget.disabled = shouldBeDisabled
 
       if (shouldBeDisabled) {
         this.exchangesCountInputTarget.value = 0
         this.activeExchangeWrappers().forEach((wrapper) => this.deactivateExchangeWrapper(wrapper))
         this.exchangesCountInputTarget.classList.add("opacity-50")
       } else {
+        this.exchangesCountInputTarget.value = document.querySelector("[data-reactive-form-target='installmentsCountInput']").value
         this.exchangesCountInputTarget.classList.remove("opacity-50")
       }
     }
+
+    if (!shouldBeDisabled) await this._updateExchangesPrices()
 
     this.checkForExchangeCategory()
   }
@@ -426,6 +426,19 @@ export default class extends Controller {
       const prevMonthTarget = this.element.querySelector("[data-entity-transaction-target='button']")
       this.updateExchangeDate(prevMonthTarget, 0)
     }
+  }
+
+  async automaticLineItemRepayment() {
+    this.exchangesCountInputTarget.value = document.querySelector("[data-reactive-form-target='installmentsCountInput']").value
+    if (this.hasLoanReturnPercentageInputTarget) {
+      this.loanReturnPercentageInputTarget.value = "100"
+      await this.applyLoanReturnPercentage()
+    } else {
+      await this._updateExchangesPrices()
+    }
+
+    this.updatePayer()
+    this.checkForExchangeCategory()
   }
 
   copyTransactionInstallmentsCount() {

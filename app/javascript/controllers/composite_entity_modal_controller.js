@@ -27,7 +27,11 @@ export default class extends Controller {
 
       group.dataset.entityId = lineItemEntity
       group.classList.toggle("hidden", !shouldShow)
-      if (shouldShow) group.querySelector("input[name*='[_destroy]']").value = "false"
+      if (shouldShow) {
+        group.querySelector("input[name*='[_destroy]']").value = "false"
+        const amount = group.querySelector("[data-composite-entity-modal-target~='itemPrice']")
+        if (amount) amount.textContent = this.formatCurrency(this.lineItemPrice(lineItemKey))
+      }
     })
 
     const title = this.element.querySelector("[data-composite-entity-modal-target~='title']")
@@ -64,7 +68,14 @@ export default class extends Controller {
 
     const key = this.rowKey(row)
     const group = this.groups().find(element => element.dataset.lineItemKey === key)
-    if (group) group.dataset.lineItemPrice = this.lineItemPrice(key).toString()
+    if (group) {
+      const lineItemPrice = this.lineItemPrice(key)
+      group.dataset.lineItemPrice = lineItemPrice.toString()
+      group.dataset.transactionTotalCents = (-lineItemPrice).toString()
+
+      const amount = group.querySelector("[data-composite-entity-modal-target~='itemPrice']")
+      if (amount) amount.textContent = this.formatCurrency(lineItemPrice)
+    }
     if (this.activeEntityId) this.refreshAggregate(this.activeEntityId)
   }
 
@@ -74,7 +85,11 @@ export default class extends Controller {
     )
     const cents = visibleGroups.reduce((total, group) => total + this.lineItemPrice(group.dataset.lineItemKey), 0)
     const aggregate = this.element.querySelector("[data-composite-entity-modal-target~='aggregate']")
-    if (aggregate) aggregate.textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100)
+    if (aggregate) aggregate.textContent = this.formatCurrency(cents)
+  }
+
+  formatCurrency(cents) {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100)
   }
 
   rowFor(key) {

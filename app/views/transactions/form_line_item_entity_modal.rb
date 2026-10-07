@@ -84,13 +84,13 @@ class Views::Transactions::FormLineItemEntityModal < Views::Base
             p(class: "font-medium text-slate-900 dark:text-slate-100") do
               item.description.presence || I18n.t("activerecord.models.line_item.one")
             end
-            p(class: "text-xs text-slate-500 dark:text-slate-400") do
+            p(class: "text-xs text-slate-500 dark:text-slate-400", data: { composite_entity_modal_target: "itemPrice" }) do
               ActiveSupport::NumberHelper.number_to_currency(item.price.to_i / 100.0, unit: "R$ ")
             end
           end
         end
 
-        div(class: "grid grid-cols-1 gap-3 md:grid-cols-3") do
+        div(class: "grid grid-cols-1 gap-3 md:grid-cols-4") do
           div do
             label(for: "line_item_return_#{index}", class: label_class) { model_attribute(EntityTransaction, :price_to_be_returned) }
             entity_form.text_field(
@@ -139,15 +139,14 @@ class Views::Transactions::FormLineItemEntityModal < Views::Base
                 action: "input->entity-transaction#updateExchangesPrices"
               }
             )
+          end
 
+          div(class: "flex items-end") do
             Button(
               type: :button,
-              class: "mt-2 rounded border border-slate-300 px-2 py-1 text-xs dark:border-slate-700",
-              data: {
-                entity_transaction_target: :exchangesCountEqualsButton,
-                action: "entity-transaction#copyTransactionInstallmentsCount"
-              }
-            ) { I18n.t("transactions.composite.match_installments") }
+              class: "h-10 w-full rounded-md border border-slate-300 px-3 text-sm dark:border-slate-700",
+              data: { action: "click->entity-transaction#automaticLineItemRepayment" }
+            ) { I18n.t("transactions.composite.automatic") }
           end
         end
 

@@ -4,7 +4,7 @@ class Views::Shared::SingleSelectCombobox < Views::Base
   include TranslateHelper
 
   attr_reader :autofocus, :blank_label, :combobox_data, :disabled, :include_blank, :input_data, :name, :options, :placeholder, :selected_value, :size, :term,
-              :trigger_data
+              :trigger_class, :trigger_data
 
   def initialize(name:, options:, selected_value:, placeholder:, **attrs)
     @name = name
@@ -19,6 +19,7 @@ class Views::Shared::SingleSelectCombobox < Views::Base
     @term = attrs.fetch(:term, "items")
     @combobox_data = attrs.fetch(:combobox_data, {})
     @input_data = attrs.fetch(:input_data, {})
+    @trigger_class = attrs.fetch(:trigger_class, nil)
     @trigger_data = attrs.fetch(:trigger_data, {})
   end
 
@@ -28,7 +29,7 @@ class Views::Shared::SingleSelectCombobox < Views::Base
         placeholder:,
         autofocus:,
         disabled:,
-        class: combobox_trigger_class,
+        class: [ combobox_trigger_class, trigger_class ].compact.join(" "),
         data: trigger_data
       )
 

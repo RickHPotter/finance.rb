@@ -157,7 +157,19 @@ RSpec.describe "CashTransactions", type: :request do
         "click->ruby-ui--sheet#open",
         "click->composite-entity-modal#open"
       )
-      expect(modal.css("[data-composite-entity-modal-target~='groups'] > [data-composite-entity-modal-target~='group']").size).to eq(2)
+      details_button = visible_rows.first.at_css("[data-composite-entity-modal-target~='trigger'] button")
+      expect(details_button.text).to include(I18n.t("transactions.composite.entity_modal_trigger"))
+      expect(details_button.at_css("svg")).to be_present
+
+      groups = modal.css("[data-composite-entity-modal-target~='groups'] > [data-composite-entity-modal-target~='group']")
+      expect(groups.size).to eq(2)
+      expect(groups.map { |group| group.at_css("[data-composite-entity-modal-target~='itemPrice']").text }).to eq(
+        [
+          ActiveSupport::NumberHelper.number_to_currency(10, unit: "R$ "),
+          ActiveSupport::NumberHelper.number_to_currency(20, unit: "R$ ")
+        ]
+      )
+      expect(modal.css("button").map(&:text)).to include(I18n.t("transactions.composite.automatic"))
     end
 
     it "marks a Piggy Bank entity when its return differs from the source transaction" do
