@@ -160,7 +160,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def split_purchase_supported?
     return false if card_payment? || card_advance? || investment? || piggy_bank_source? || generated_piggy_bank_return?
-    return false if borrow_return? && reference_transactable.present?
+    return false if exchange_return?
 
     true
   end

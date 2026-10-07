@@ -124,6 +124,12 @@ The transaction create / edit form gains a **"Split purchase"** toggle button. W
   - Remaining unallocated amount (highlighted in red if non-zero, green when balanced)
 - "Add line item" button to append rows dynamically.
 
+Split purchase is available for ordinary purchases and exchange requests, including
+`BORROW RETURN` transactions, where one transaction can allocate amounts to multiple
+entities (including the current user). It is unavailable for generated `EXCHANGE RETURN`
+transactions and other system-managed transaction types such as card payments, card
+advances, investments, and piggy-bank projections.
+
 ### Display / Show
 
 - Composite transactions display a collapsible line-item breakdown beneath the transaction header row in show and index views.

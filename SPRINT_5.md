@@ -107,6 +107,9 @@ Locked V1 direction:
 - parent transaction price must equal the sum of line item prices; validated on save
 - at least two line items are required to activate composite mode; the form presents a
   "Split purchase" toggle
+- split purchase is available for exchange requests and `BORROW RETURN` transactions,
+  which may allocate across multiple entities; it is unavailable for `EXCHANGE RETURN`
+  projections and other system-managed transaction types
 - when a transaction is composite, the parent's own category/entity join records are
   deprecated; reporting and rollback route through line items
 - line item categories must be leaf categories (NARUTO-01 required)

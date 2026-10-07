@@ -93,10 +93,27 @@ RSpec.describe CashTransaction, type: :model do
         expect(transaction).not_to be_composite
       end
 
-      it "allows split purchases for exchange returns" do
+      it "allows split purchases for exchange requests and borrow returns" do
+        exchange_request = build(:cash_transaction, user:, context:, user_bank_account:)
+        exchange_request.category_transactions.build(category: user.built_in_category("EXCHANGE"))
+
+        expect(exchange_request).to be_split_purchase_supported
+
+        borrow_return = create(:cash_transaction, user:, context:, user_bank_account:)
+        borrow_return.categories = [ user.built_in_category("BORROW RETURN") ]
+
+        expect(borrow_return).to be_split_purchase_supported
+      end
+
+      it "locks split purchases for exchange returns" do
         transaction = build(:cash_transaction, user:, context:, user_bank_account:, cash_transaction_type: "Exchange")
 
-        expect(transaction).to be_split_purchase_supported
+        expect(transaction).not_to be_split_purchase_supported
+
+        transaction = create(:cash_transaction, user:, context:, user_bank_account:)
+        transaction.categories = [ user.built_in_category("EXCHANGE RETURN") ]
+
+        expect(transaction).not_to be_split_purchase_supported
       end
 
       it "locks split purchases for system-managed cash transaction types" do

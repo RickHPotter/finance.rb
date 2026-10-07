@@ -38,6 +38,12 @@
 ### D10. How do transaction duplications behave?
 **Decision**: Duplicating a composite transaction via `CashTransaction.duplicate(id)` or `CardTransaction.duplicate(id)` clones all active line items and their respective category and entity associations.
 
+### D11. Which transaction types support split purchase?
+**Decision**: Ordinary purchases, exchange requests, and `BORROW RETURN` transactions
+support split purchase so line items can represent multiple entities, including the
+current user. `EXCHANGE RETURN` projections and other system-managed cash transaction
+types (card payments, card advances, investments, and piggy-bank projections) do not.
+
 ---
 
 ## Test Matrix
@@ -53,6 +59,7 @@
 | **Model** | `CashTransaction` | Minimum count validation | Fails if exactly 1 line item is provided in composite mode |
 | **Model** | `CashTransaction` | Price sum validation | Passes when sum matches parent; fails with difference when mismatched |
 | **Model** | `CashTransaction` | Parent allocations clearing | Direct `category_transactions` are cleared on composite save |
+| **Model** | `CashTransaction` | Split-purchase eligibility | Allows exchange requests and `BORROW RETURN`; rejects `EXCHANGE RETURN` and system-managed types |
 | **Model** | `CardTransaction` | Negative price sum validation | Passes when sum of negative line items equals negative card price |
 | **Service** | `Audit::OwnershipResolver` | Resolve ownership for `LineItem` | Inherits `owner_id` and `context_id` from parent transactable |
 | **Service** | `Audit::Rollback::Adapters::LineItem` | Dependencies and parent identity | Correctly references parent `CashTransaction` / `CardTransaction` |
