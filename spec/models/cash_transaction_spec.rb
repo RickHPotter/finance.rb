@@ -93,6 +93,25 @@ RSpec.describe CashTransaction, type: :model do
         expect(transaction).not_to be_composite
       end
 
+      it "allows split purchases for exchange returns" do
+        transaction = build(:cash_transaction, user:, context:, user_bank_account:, cash_transaction_type: "Exchange")
+
+        expect(transaction).to be_split_purchase_supported
+      end
+
+      it "locks split purchases for system-managed cash transaction types" do
+        %w[CardInstallment CardTransaction Investment PiggyBank].each do |transaction_type|
+          transaction = build(:cash_transaction, user:, context:, user_bank_account:, cash_transaction_type: transaction_type)
+
+          expect(transaction).not_to be_split_purchase_supported, transaction_type
+        end
+
+        transaction = build(:cash_transaction, user:, context:, user_bank_account:)
+        transaction.category_transactions.build(category: user.built_in_category("PIGGY BANK"))
+
+        expect(transaction).not_to be_split_purchase_supported
+      end
+
       it "ignores the blank starter line item from the split purchase form" do
         transaction = build(:cash_transaction, user:, context:, user_bank_account:, price: 100_00)
         transaction.assign_attributes(line_items_attributes: [ { description: "", price: "", category_id: "", entity_id: "", _destroy: "0" } ])

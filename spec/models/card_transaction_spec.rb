@@ -222,6 +222,13 @@ RSpec.describe CardTransaction, type: :model do
         expect(transaction).not_to be_composite
       end
 
+      it "locks split purchases for card advances" do
+        transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
+        transaction.categories << user.built_in_category("CARD ADVANCE")
+
+        expect(transaction).not_to be_split_purchase_supported
+      end
+
       it "ignores the blank starter line item from the split purchase form" do
         transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
         transaction.assign_attributes(line_items_attributes: [ { description: "", price: "", category_id: "", entity_id: "", _destroy: "0" } ])

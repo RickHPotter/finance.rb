@@ -116,19 +116,25 @@ RSpec.describe "CashTransactions", type: :request do
       split_tab  = document.css('[data-ruby-ui--tabs-target="trigger"]').find { |el| el.text.strip.include?("Dividida") || el.text.strip.include?("Split") }
       expect(single_tab).to be_present
       expect(split_tab).to be_present
+      expect(split_tab["disabled"]).to be_nil
 
       template = document.at_css('template[data-composite-transaction-target="template"]')
       expect(template).to be_present
       expect(template.inner_html).to include("cash_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
       expect(document.css('input[name="cash_transaction[line_items_attributes][0][description]"]').size).to eq(1)
+      expect(document.css('[data-composite-entity-modal-target="content"]').size).to eq(1)
+      expect(template.inner_html).to include(
+        "cash_transaction[line_items_attributes][NEW_LINE_ITEM][entity_transactions_attributes][0][entity_id]"
+      )
     end
 
     it "renders line items for a composite transaction on edit" do
       cat1 = create(:category, :random, user:)
       cat2 = create(:category, :random, user:)
+      shared_entity = create(:entity, user:)
       composite = create(:cash_transaction, user:, price: 3_000, user_bank_account:)
-      create(:line_item, transactable: composite, description: "Item A", price: 1_000, category_id: cat1.id)
-      create(:line_item, transactable: composite, description: "Item B", price: 2_000, category_id: cat2.id)
+      create(:line_item, transactable: composite, description: "Item A", price: 1_000, category_id: cat1.id, entity_id: shared_entity.id)
+      create(:line_item, transactable: composite, description: "Item B", price: 2_000, category_id: cat2.id, entity_id: shared_entity.id)
 
       get edit_cash_transaction_path(composite)
 
@@ -142,6 +148,16 @@ RSpec.describe "CashTransactions", type: :request do
 
       item_descriptions = document.css('input[name*="[description]"]').map { |i| i["value"] }
       expect(item_descriptions).to include("Item A", "Item B")
+      modal = document.at_css('[data-composite-entity-modal-target="content"]')
+      visible_rows = document.css("[data-composite-transaction-target~='row']").reject do |row|
+        row.ancestors.any? { |ancestor| ancestor.name == "template" }
+      end
+      expect(visible_rows.sum { |row| row.css("[data-composite-entity-modal-target~='trigger']").size }).to eq(2)
+      expect(visible_rows.first.at_css("[data-composite-entity-modal-target~='trigger']")["data-action"]).to include(
+        "click->ruby-ui--sheet#open",
+        "click->composite-entity-modal#open"
+      )
+      expect(modal.css("[data-composite-entity-modal-target~='groups'] > [data-composite-entity-modal-target~='group']").size).to eq(2)
     end
 
     it "marks a Piggy Bank entity when its return differs from the source transaction" do
@@ -207,8 +223,10 @@ RSpec.describe "CashTransactions", type: :request do
       get edit_cash_transaction_path(generated_transaction)
 
       document = Nokogiri::HTML.fragment(response.body)
+      split_tab = document.css('[data-ruby-ui--tabs-target="trigger"]').find { |el| el.text.strip.include?("Dividida") || el.text.strip.include?("Split") }
       price_input = document.css("[data-installment-lock-target~='price']").find { |input| input["name"].exclude?("NEW_RECORD") }
 
+      expect(split_tab["disabled"]).to eq("disabled")
       expect(price_input["readonly"]).to eq("readonly")
       expect(price_input["aria-readonly"]).to eq("true")
       expect(price_input["data-lock-permanent-readonly"]).to eq("true")
@@ -2377,6 +2395,89 @@ RSpec.describe "CashTransactions", type: :request do
         expect(created_transaction.line_items.pluck(:description)).to contain_exactly("Groceries", "Supplies")
         expect(created_transaction.line_items.pluck(:price)).to contain_exactly(6_000, 4_000)
         expect(created_transaction.line_items.map(&:category_id)).to contain_exactly(grocery_category.id, supply_category.id)
+      end
+
+      it "stores separate repayment plans for multiple line items assigned to one entity" do
+        exchange_category = user.built_in_category("EXCHANGE")
+        repayment_date = 1.month.from_now.to_date
+        recipient = create(:user, :random)
+        friendship = create(:friendship, user:, friend: recipient, state: "accepted")
+        friend_entity = create(:entity, user:, entity_name: "FRIEND", entity_user: recipient, friendship:)
+        create(:entity, user: recipient, entity_name: "ME", entity_user: user, friendship:)
+
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Composite loan request",
+            price: 10_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_bank_account_id: user_bank_account.id,
+            friend_notification_intent: "loan",
+            line_items_attributes: [
+              {
+                description: "First item",
+                price: 6_000,
+                category_id: exchange_category.id,
+                entity_transactions_attributes: {
+                  "0" => {
+                    entity_id: friend_entity.id,
+                    price_to_be_returned: -6_000,
+                    loan_return_percentage: 100,
+                    exchanges_attributes: [ {
+                      number: 1,
+                      exchange_type: "non_monetary",
+                      bound_type: "standalone",
+                      price: -6_000,
+                      date: repayment_date,
+                      month: repayment_date.month,
+                      year: repayment_date.year
+                    } ]
+                  }
+                }
+              },
+              {
+                description: "Second item",
+                price: 4_000,
+                category_id: exchange_category.id,
+                entity_transactions_attributes: {
+                  "0" => {
+                    entity_id: friend_entity.id,
+                    price_to_be_returned: -4_000,
+                    loan_return_percentage: 100,
+                    exchanges_attributes: [ {
+                      number: 1,
+                      exchange_type: "non_monetary",
+                      bound_type: "standalone",
+                      price: -4_000,
+                      date: repayment_date,
+                      month: repayment_date.month,
+                      year: repayment_date.year
+                    } ]
+                  }
+                }
+              }
+            ]
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:see_other)
+
+        created_transaction = CashTransaction.find_by!(description: "Composite loan request")
+        expect(created_transaction.entity_transactions).to be_empty
+        expect(created_transaction.line_items.flat_map(&:entity_transactions).map(&:entity_id)).to eq([ friend_entity.id, friend_entity.id ])
+        expect(created_transaction.line_items.flat_map(&:entity_transactions).sum(&:price_to_be_returned)).to eq(-10_000)
+        expect(created_transaction.line_items.flat_map(&:entity_transactions).flat_map(&:exchanges).sum(&:price)).to eq(-10_000)
+
+        notification = Message.order(:id).last
+        notification_headers = JSON.parse(notification.headers)
+        replay = notification_headers.fetch("replay")
+        expect(notification.body).to eq("notification:create")
+        expect(notification_headers.dig("event", "action")).to eq("create")
+        expect(replay).to include("type" => "CashTransaction", "intent" => "loan")
+        expect(replay.fetch("entity_transactions_attributes")).to contain_exactly(
+          a_hash_including("price" => 10_000, "price_to_be_returned" => 10_000, "exchanges_count" => 1)
+        )
       end
 
       it "leaves parent category and entity allocations empty" do

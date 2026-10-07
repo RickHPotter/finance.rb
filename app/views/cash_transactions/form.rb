@@ -106,6 +106,7 @@ class Views::CashTransactions::Form < Views::Base
             TabsTrigger(
               value: "split",
               tabindex: -1,
+              disabled: !cash_transaction.split_purchase_supported?,
               class: "rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-slate-600 data-[state=active]:border-slate-800 " \
                      "data-[state=active]:text-slate-900 dark:text-slate-400 dark:data-[state=active]:border-slate-200 dark:data-[state=active]:text-slate-100",
               data: { action: "click->composite-transaction#tabChanged" }

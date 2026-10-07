@@ -587,7 +587,13 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       receipts: [],
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],
-      line_items_attributes: %i[id description price comment category_id entity_id _destroy],
+      line_items_attributes: [
+        :id, :description, :price, :comment, :category_id, :_destroy,
+        { entity_transactions_attributes: [
+          :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
+          { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
+        ] }
+      ],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
         { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
@@ -639,8 +645,12 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     return false unless attributes.key?(:line_items_attributes)
 
     normalized_nested_attributes(attributes[:line_items_attributes]).any? do |entry|
+      line_entity_selected = normalized_nested_attributes(entry[:entity_transactions_attributes]).any? do |entity_entry|
+        entity_entry[:entity_id].present? && !ActiveModel::Type::Boolean.new.cast(entity_entry[:_destroy])
+      end
+
       !ActiveModel::Type::Boolean.new.cast(entry[:_destroy]) &&
-        (entry[:id].present? || %i[description price category_id entity_id].any? { |attribute| entry[attribute].present? })
+        (entry[:id].present? || %i[description price category_id].any? { |attribute| entry[attribute].present? } || line_entity_selected)
     end
   end
 

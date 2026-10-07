@@ -158,6 +158,13 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     active_line_items.any?
   end
 
+  def split_purchase_supported?
+    return false if card_payment? || card_advance? || investment? || piggy_bank_source? || generated_piggy_bank_return?
+    return false if borrow_return? && reference_transactable.present?
+
+    true
+  end
+
   def active_line_items
     line_items.reject(&:marked_for_destruction?)
   end
@@ -277,6 +284,15 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   def exchange_category?
     exchange_category = user&.categories&.find_by(category_name: "EXCHANGE")
     exchange_category_id = exchange_category&.id
+    return false if exchange_category_id.blank?
+
+    if composite?
+      return active_line_items.any? do |line_item|
+        line_item.category_transactions.reject(&:marked_for_destruction?).any? do |category_transaction|
+          category_transaction.category_id == exchange_category_id || category_transaction.category&.category_name == "EXCHANGE"
+        end
+      end
+    end
 
     category_transactions.reject(&:marked_for_destruction?).any? do |category_transaction|
       category_transaction.category_id == exchange_category_id || category_transaction.category&.category_name == "EXCHANGE"

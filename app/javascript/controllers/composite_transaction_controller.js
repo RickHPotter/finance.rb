@@ -105,6 +105,12 @@ export default class extends Controller {
     const content = this.templateTarget.innerHTML.replace(/NEW_LINE_ITEM/gi, timestamp)
     this.itemsListTarget.insertAdjacentHTML("beforeend", content)
 
+    const entityModalTemplate = this.element.querySelector("[data-composite-entity-modal-target~='template']")
+    const entityModalGroups = this.element.querySelector("[data-composite-entity-modal-target~='groups']")
+    if (entityModalTemplate && entityModalGroups) {
+      entityModalGroups.insertAdjacentHTML("beforeend", entityModalTemplate.innerHTML.replace(/NEW_LINE_ITEM/gi, timestamp))
+    }
+
     this.syncRowSign()
     this.recalculate()
   }

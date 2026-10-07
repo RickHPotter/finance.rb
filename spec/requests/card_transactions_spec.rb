@@ -128,10 +128,15 @@ RSpec.describe "CardTransactions", type: :request do
       split_tab  = document.css('[data-ruby-ui--tabs-target="trigger"]').find { |el| el.text.strip.include?("Dividida") || el.text.strip.include?("Split") }
       expect(single_tab).to be_present
       expect(split_tab).to be_present
+      expect(split_tab["disabled"]).to be_nil
 
       template = document.at_css('template[data-composite-transaction-target="template"]')
       expect(template).to be_present
       expect(template.inner_html).to include("card_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
+      expect(document.css('[data-composite-entity-modal-target="content"]').size).to eq(1)
+      expect(template.inner_html).to include(
+        "card_transaction[line_items_attributes][NEW_LINE_ITEM][entity_transactions_attributes][0][entity_id]"
+      )
       expect(document.css('input[name="card_transaction[line_items_attributes][0][description]"]').size).to eq(1)
     end
 

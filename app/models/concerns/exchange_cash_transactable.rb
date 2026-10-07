@@ -36,7 +36,6 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     attr_accessor :destroyed_projection_cash_transaction_id
 
     # @extends ................................................................
-    delegate :transactable, to: :entity_transaction
     delegate :user, to: :transactable
 
     # @relationships ..........................................................
@@ -58,6 +57,11 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   # @public_class_methods .....................................................
   def sync_projection_after_parent_card_change!
     save! if card_bound? && monetary?
+  end
+
+  def transactable
+    owner = entity_transaction.transactable
+    owner.is_a?(LineItem) ? owner.transactable : owner
   end
 
   # @protected_instance_methods ...............................................

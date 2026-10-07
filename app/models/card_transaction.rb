@@ -102,6 +102,10 @@ class CardTransaction < ApplicationRecord
     active_line_items.any?
   end
 
+  def split_purchase_supported?
+    !card_advance_category? && advance_cash_transaction.blank?
+  end
+
   def active_line_items
     line_items.reject(&:marked_for_destruction?)
   end

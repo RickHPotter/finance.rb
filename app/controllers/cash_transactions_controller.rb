@@ -472,7 +472,19 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def effective_category_names
-    category_ids = effective_category_ids
+    line_item_category_ids = normalized_nested_attributes(effective_cash_transaction_params[:line_items_attributes]).flat_map do |attributes|
+      next [] if ActiveModel::Type::Boolean.new.cast(attributes[:_destroy])
+
+      direct_id = attributes[:category_id]
+      nested_ids = normalized_nested_attributes(attributes[:category_transactions_attributes]).filter_map do |category_attributes|
+        next if ActiveModel::Type::Boolean.new.cast(category_attributes[:_destroy])
+
+        category_attributes[:category_id]
+      end
+
+      [ direct_id, *nested_ids ]
+    end
+    category_ids = effective_category_ids + line_item_category_ids.compact_blank.map(&:to_i)
     return @cash_transaction.categories.pluck(:category_name) if category_ids.blank? && @cash_transaction&.persisted?
 
     current_user.categories.where(id: category_ids).pluck(:category_name)
@@ -1006,7 +1018,13 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       receipts: [],
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
-      line_items_attributes: %i[id description price comment category_id entity_id _destroy],
+      line_items_attributes: [
+        :id, :description, :price, :comment, :category_id, :_destroy,
+        { entity_transactions_attributes: [
+          :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
+          { exchanges_attributes: %i[id number exchange_type bound_type price date month year paid _destroy] }
+        ] }
+      ],
       piggy_bank_attributes: %i[id return_cash_transaction_id return_date return_price iof_exempt_on _destroy],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
@@ -1158,8 +1176,12 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     return false unless attributes.key?(:line_items_attributes)
 
     normalized_nested_attributes(attributes[:line_items_attributes]).any? do |entry|
+      line_entity_selected = normalized_nested_attributes(entry[:entity_transactions_attributes]).any? do |entity_entry|
+        entity_entry[:entity_id].present? && !ActiveModel::Type::Boolean.new.cast(entity_entry[:_destroy])
+      end
+
       !ActiveModel::Type::Boolean.new.cast(entry[:_destroy]) &&
-        (entry[:id].present? || %i[description price category_id entity_id].any? { |attribute| entry[attribute].present? })
+        (entry[:id].present? || %i[description price category_id].any? { |attribute| entry[attribute].present? } || line_entity_selected)
     end
   end
 

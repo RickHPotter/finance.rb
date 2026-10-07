@@ -134,7 +134,7 @@ export default class extends Controller {
   }
 
   async updatePrice() {
-    const totalPrice = parseInt(_removeMask(document.querySelector("#transaction_price").value)) * - 1
+    const totalPrice = this.transactionTotalCents()
     const priceToBeReturned = parseInt(_removeMask(this.priceToBeReturnedInputTarget.value))
     const price = parseInt(_removeMask(this.priceInputTarget.value))
 
@@ -328,7 +328,17 @@ export default class extends Controller {
   }
 
   transactionTotalCents() {
+    const itemTotal = Number(this.element.dataset.transactionTotalCents)
+    if (Number.isFinite(itemTotal)) return itemTotal
+
     return parseInt(this._removeMask(document.querySelector("#transaction_price").value)) * - 1
+  }
+
+  updatePayer() {
+    if (!this.hasPriceToBeReturnedInputTarget || !this.hasPayerInputTarget) return
+
+    const amount = parseInt(_removeMask(this.priceToBeReturnedInputTarget.value), 10) || 0
+    this.payerInputTarget.value = amount === 0 ? "false" : "true"
   }
 
   trimTrailingZeroes(value) {
@@ -354,6 +364,12 @@ export default class extends Controller {
   }
 
   checkForExchangeCategory() {
+    const lineItemGroup = this.element.closest("[data-composite-entity-modal-target~='group']")
+    if (lineItemGroup) {
+      this.syncLineItemExchangeCategory(lineItemGroup)
+      return
+    }
+
     const reactiveFormTarget = document.querySelector("#transaction_form")
     const comboboxController = this.application.getControllerForElementAndIdentifier(reactiveFormTarget, "reactive-form")
     if (!comboboxController) return console.error("Combobox controller not found")
@@ -364,6 +380,34 @@ export default class extends Controller {
       comboboxController._insertExchangeCategory()
     } else {
       comboboxController._removeExchangeCategory()
+    }
+  }
+
+  syncLineItemExchangeCategory(group) {
+    const lineItemKey = group.dataset.lineItemKey
+    const row = Array.from(document.querySelectorAll("[data-composite-transaction-target~='row']"))
+      .find((item) => item.querySelector("input[name*='[line_items_attributes]']")?.name.match(/line_items_attributes\]\[([^\]]+)\]/)?.[1] === lineItemKey)
+    if (!row) return
+
+    const exchangeCategoryId = document.querySelector("#exchange_category_id")?.value
+    const categoryInputs = Array.from(row.querySelectorAll("input[name$='[category_id]']"))
+    const exchangeInput = categoryInputs.find((input) => input.value === exchangeCategoryId)
+    if (!exchangeInput) return
+
+    const hasExchange = this.activeExchangeWrappers().length > 0
+    const selectedInput = categoryInputs.find((input) => input.checked)
+
+    if (hasExchange && selectedInput !== exchangeInput) {
+      row.dataset.preExchangeCategoryId = selectedInput?.value || ""
+      exchangeInput.checked = true
+      exchangeInput.dispatchEvent(new Event("change", { bubbles: true }))
+    } else if (!hasExchange && row.dataset.preExchangeCategoryId && selectedInput === exchangeInput) {
+      const previousInput = categoryInputs.find((input) => input.value === row.dataset.preExchangeCategoryId)
+      if (previousInput) {
+        previousInput.checked = true
+        previousInput.dispatchEvent(new Event("change", { bubbles: true }))
+      }
+      delete row.dataset.preExchangeCategoryId
     }
   }
 

@@ -30,6 +30,8 @@ class LineItem < ApplicationRecord
   # @callbacks ................................................................
   before_validation :sync_entity_transaction_price
   after_commit :update_associations_total, on: %i[create update destroy]
+  after_commit -> { notify_parent_friends(:create) }, on: :create
+  after_commit -> { notify_parent_friends(:update) }, on: :update
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -115,6 +117,12 @@ class LineItem < ApplicationRecord
     entity_transactions.reject(&:marked_for_destruction?).each do |et|
       et.price = price.to_i
     end
+  end
+
+  def notify_parent_friends(action)
+    return unless transactable.respond_to?(:notify_friends_for_line_item_change, true)
+
+    transactable.send(:notify_friends_for_line_item_change, action)
   end
 
   def validate_category_presence

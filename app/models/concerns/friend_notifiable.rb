@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Shared functionality for models that can produce Installments.
-module FriendNotifiable
+module FriendNotifiable # rubocop:disable Metrics/ModuleLength
   extend ActiveSupport::Concern
 
   include TranslateHelper
@@ -31,7 +31,11 @@ module FriendNotifiable
 
   protected
 
-  def notify_friends(action)
+  def notify_friends_for_line_item_change(action)
+    notify_friends(action)
+  end
+
+  def notify_friends(action) # rubocop:disable Metrics/AbcSize
     return if applying_actionable_message?
 
     if (action != :create) && not_exchange?
@@ -40,10 +44,12 @@ module FriendNotifiable
       action = :destroy
     end
 
+    notification_entity_transactions = friend_notification_entity_transactions
+
     if action == :destroy
-      user.entities.where(id: entity_transactions.where(exchanges_count: 0).pluck(:entity_id).presence || original_entities).that_are_users
+      user.entities.where(id: notification_entity_transactions.select { |et| et.exchanges_count.zero? }.map(&:entity_id).presence || original_entities).that_are_users
     else
-      user.entities.where(id: entity_transactions.where(exchanges_count: 1..).pluck(:entity_id)).that_are_users
+      user.entities.where(id: notification_entity_transactions.select { |et| et.exchanges_count.positive? }.map(&:entity_id)).that_are_users
     end => friends
 
     return if friends.empty?
@@ -55,7 +61,7 @@ module FriendNotifiable
     I18n.locale = user.locale
   end
 
-  def notify_friend(friend, action)
+  def notify_friend(friend, action) # rubocop:disable Metrics/AbcSize
     friend_user = friend.entity_user
 
     friendship = user.friendship_with(friend_user)
@@ -73,10 +79,11 @@ module FriendNotifiable
     destroy_message_reference = destroy_message_reference_transactable(friend_user_reference)
     message = conversation.messages.new(user:, reference_transactable: action == :destroy ? destroy_message_reference : self)
 
-    entity_transaction = entity_transactions.find_by(entity_id: friend.id)
-    return if entity_transaction.nil? && action != :destroy
+    entity_transactions_for_friend = friend_notification_entity_transactions.select { |et| et.entity_id == friend.id }
+    return if entity_transactions_for_friend.empty? && action != :destroy
 
-    save_message(message, friend_user, entity_transaction&.exchanges&.order(:number, :date), action, destroy_reference: friend_user_reference)
+    exchanges = Exchange.where(entity_transaction_id: entity_transactions_for_friend.map(&:id)).order(:number, :date).to_a
+    save_message(message, friend_user, aggregate_notification_exchanges(exchanges), action, destroy_reference: friend_user_reference)
   end
 
   def find_or_create_conversation(user, friendship, scenario_key:)
@@ -111,7 +118,7 @@ module FriendNotifiable
 
     return if exchanges.blank?
 
-    transaction_type = exchanges.first.entity_transaction.transactable_type
+    transaction_type = model_name.name
 
     replay_payload = if action == :destroy
                        nil
@@ -163,8 +170,8 @@ module FriendNotifiable
         description:,
         date: date&.iso8601,
         reference_month_year: month_year,
-        price: exchanges.sum(:price),
-        installments_count: exchanges.count,
+        price: exchanges.sum(&:price),
+        installments_count: exchanges.size,
         installments: exchanges.map { |exchange| exchange.slice(:number, :price).merge(date: exchange.date&.iso8601) }
       }
     }
@@ -178,7 +185,7 @@ module FriendNotifiable
       { **exchange.slice(:number, :date, :month, :year), price: exchange.price * -1, paid: exchange.mirrored_paid? }
     end
 
-    price = exchanges.pluck(:price).sum
+    price = exchanges.sum { |exchange| exchange[:price] }
 
     {
       id:,
@@ -211,8 +218,8 @@ module FriendNotifiable
     cash_installments_attributes = cash_installments_for_exchanges(exchanges)
     exchanges_attributes = cash_loan_exchange_attributes(exchanges)
 
-    installments_price = cash_installments_attributes.pluck(:price).sum
-    exchanges_price = exchanges_attributes.pluck(:price).sum
+    installments_price = cash_installments_attributes.sum { |installment| installment[:price] }
+    exchanges_price = exchanges_attributes.sum { |exchange| exchange[:price] }
 
     {
       id:,
@@ -268,7 +275,7 @@ module FriendNotifiable
       exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1)
     end
 
-    installments_price = cash_installments_attributes.pluck(:price).sum
+    installments_price = cash_installments_attributes.sum { |installment| installment[:price] }
 
     {
       id:,
@@ -385,7 +392,7 @@ module FriendNotifiable
 
   # HELPER BOOLEAN METHODS
   def not_exchange?
-    category_transactions.pluck(:category_id).exclude?(exchange_category.id)
+    friend_notification_category_ids.exclude?(exchange_category.id)
   end
 
   def was_not_exchange?
@@ -393,12 +400,31 @@ module FriendNotifiable
   end
 
   def reimbursement_notification?(friend_user)
-    category_names = categories.pluck(:category_name)
+    category_names = Category.where(id: friend_notification_category_ids).pluck(:category_name)
     return true if (category_names - [ "EXCHANGE" ]).present?
 
     counterpart_entity_id = user.entities.that_are_users.where_entity_user(friend_user).first&.id
 
-    entity_transactions.where.not(entity_id: counterpart_entity_id).exists?
+    friend_notification_entity_transactions.any? { |et| et.entity_id != counterpart_entity_id }
+  end
+
+  def friend_notification_entity_transactions
+    return entity_transactions.to_a unless respond_to?(:composite?) && composite?
+
+    active_line_items.flat_map { |line_item| line_item.entity_transactions.reject(&:marked_for_destruction?) }
+  end
+
+  def friend_notification_category_ids
+    return category_transactions.pluck(:category_id) unless respond_to?(:composite?) && composite?
+
+    active_line_items.filter_map(&:category_id)
+  end
+
+  def aggregate_notification_exchanges(exchanges)
+    exchanges.group_by { |exchange| [ exchange.number, exchange.date, exchange.month, exchange.year, exchange.exchange_type, exchange.bound_type ] }
+             .values.map do |group|
+      group.first.dup.tap { |exchange| exchange.price = group.sum(&:price) }
+    end
   end
 
   def applying_actionable_message?

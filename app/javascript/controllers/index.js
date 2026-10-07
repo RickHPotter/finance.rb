@@ -53,7 +53,9 @@ import ColourPickerController from "./colour_picker_controller"
 application.register("colour-picker", ColourPickerController)
 
 import CompositeTransactionController from "./composite_transaction_controller"
+import CompositeEntityModalController from "./composite_entity_modal_controller"
 application.register("composite-transaction", CompositeTransactionController)
+application.register("composite-entity-modal", CompositeEntityModalController)
 
 import ConfirmController from "./confirm_controller"
 application.register("confirm", ConfirmController)

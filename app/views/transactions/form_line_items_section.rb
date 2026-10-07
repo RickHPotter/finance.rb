@@ -25,18 +25,22 @@ class Views::Transactions::FormLineItemsSection < Views::Base
   private
 
   def expanded_section
-    div(
-      class: "overflow-hidden rounded-lg border border-gray-300 bg-white dark:border-slate-700/60 dark:bg-slate-900/30",
-      data: { composite_transaction_target: "container" }
-    ) do
-      summary_strip
+    Sheet(data: { controller: "composite-entity-modal" }) do
+      div(
+        class: "overflow-hidden rounded-lg border border-gray-300 bg-white dark:border-slate-700/60 dark:bg-slate-900/30",
+        data: { composite_transaction_target: "container" }
+      ) do
+        summary_strip
 
-      div(class: "divide-y divide-gray-200 dark:divide-slate-700/40",
-          data: { composite_transaction_target: "itemsList" }) do
-        render_existing_rows
+        div(class: "divide-y divide-gray-200 dark:divide-slate-700/40",
+            data: { composite_transaction_target: "itemsList" }) do
+          render_existing_rows
+        end
+
+        render_template
       end
 
-      render_template
+      render Views::Transactions::FormLineItemEntityModal.new(form:, transaction:)
     end
   end
 
@@ -142,7 +146,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
             data: {
               price_mask_target: "input",
               composite_transaction_target: "itemPrice",
-              action: "input->price-mask#applyMask input->composite-transaction#recalculate",
+              action: "input->price-mask#applyMask input->composite-transaction#recalculate input->composite-entity-modal#priceChanged",
               sign: price_sign
             }
           )
@@ -155,19 +159,36 @@ class Views::Transactions::FormLineItemsSection < Views::Base
             selected_value: item.category_id,
             placeholder: I18n.t("activerecord.attributes.line_item.category_id"),
             input_data: {
-              action: "change->composite-transaction#recalculate"
+              action: "change->composite-transaction#recalculate change->reactive-form#syncExchangeIntentVisibility"
             }
           )
         end
 
         div(class: "combobox-shell w-full md:w-3/12 user-icon") do
           render Views::Shared::SingleSelectCombobox.new(
-            name: "#{form.object_name}[line_items_attributes][#{index}][entity_id]",
+            name: "#{form.object_name}[line_items_attributes][#{index}][entity_transactions_attributes][0][entity_id]",
             options: entities.map { |label, value| [ label, value, {} ] },
             selected_value: item.entity_id,
-            placeholder: I18n.t("activerecord.attributes.line_item.entity_id")
+            placeholder: I18n.t("activerecord.attributes.line_item.entity_id"),
+            input_data: { action: "change->composite-entity-modal#entityChanged" },
+            trigger_data: { composite_entity_modal_target: "entityPicker" }
           )
         end
+      end
+
+      SheetTrigger(
+        data: {
+          composite_entity_modal_target: "trigger",
+          line_item_key: index.to_s,
+          action: "click->composite-entity-modal#open"
+        }
+      ) do
+        button(
+          type: :button,
+          disabled: item.entity_id.blank?,
+          class: "shrink-0 h-8 rounded-md border border-slate-300 px-2 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40 " \
+                 "dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+        ) { I18n.t("transactions.composite.entity_modal_trigger") }
       end
 
       Button(

@@ -849,10 +849,15 @@ export default class extends Controller {
 
       return input?.value === exchangeCategoryId && destroyInput?.value !== "true" && wrapper.checkVisibility()
     })
+    const splitPurchase = this.element.querySelector("input[name$='[split_purchase]']")?.value === "1"
+    const hasLineItemExchangeCategory = splitPurchase && Array.from(
+      this.element.querySelectorAll("[data-composite-transaction-target~='row'] input[name$='[category_id]']:checked")
+    ).some((input) => input.value === exchangeCategoryId)
+    const isExchange = hasExchangeCategory || hasLineItemExchangeCategory
 
-    this.exchangeIntentWrapperTarget.classList.toggle("hidden", !hasExchangeCategory)
+    this.exchangeIntentWrapperTarget.classList.toggle("hidden", !isExchange)
 
-    if (!hasExchangeCategory) {
+    if (!isExchange) {
       this.exchangeIntentInputTarget.value = ""
     }
   }
