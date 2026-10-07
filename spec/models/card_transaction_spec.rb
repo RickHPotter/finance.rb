@@ -237,6 +237,34 @@ RSpec.describe CardTransaction, type: :model do
         expect(transaction).not_to be_composite
       end
 
+      it "ignores modal repayment fields when the starter line item is blank" do
+        transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
+        transaction.assign_attributes(
+          line_items_attributes: [
+            {
+              description: "",
+              price: "",
+              category_id: "",
+              _destroy: "0",
+              entity_transactions_attributes: {
+                "0" => { entity_id: "", price: "0", price_to_be_returned: "0", loan_return_percentage: "100", _destroy: "true" }
+              }
+            }
+          ]
+        )
+
+        expect(transaction.line_items).to be_empty
+        expect(transaction).not_to be_composite
+      end
+
+      it "validates partially filled composite line item prices without raising" do
+        transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
+        transaction.line_items.build(description: "Incomplete item", price: nil, category: food_category)
+        transaction.line_items.build(description: "Complete item", price: -100_00, category: tools_category)
+
+        expect { transaction.valid? }.not_to raise_error
+      end
+
       it "is composite when having line items with matching negative prices" do
         transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
         transaction.line_items.build(description: "Item 1", price: -60_00, category: food_category)
