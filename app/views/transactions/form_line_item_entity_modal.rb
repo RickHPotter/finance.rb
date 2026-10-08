@@ -60,7 +60,12 @@ class Views::Transactions::FormLineItemEntityModal < Views::Base
 
   def render_item_group(item_form, item, index)
     entity_transaction = item.entity_transactions.reject(&:marked_for_destruction?).first ||
-                         EntityTransaction.new(entity: item.entity, price: item.price.to_i, price_to_be_returned: 0, is_payer: false)
+                         EntityTransaction.new(entity: item.entity, price: item.price.to_i, price_to_be_returned: 0, loan_return_percentage: 0, is_payer: false)
+    return_amount = entity_transaction_return_amount(entity_transaction)
+    payer = return_amount.to_i != 0
+    active_exchanges = entity_transaction.exchanges.reject(&:marked_for_destruction?)
+    exchanges_count = entity_transaction.exchanges_count.to_i
+    exchanges_count = active_exchanges.size if exchanges_count.zero?
 
     item_form.fields_for :entity_transactions, entity_transaction, child_index: 0 do |entity_form|
       div(
@@ -75,7 +80,7 @@ class Views::Transactions::FormLineItemEntityModal < Views::Base
         }
       ) do
         entity_form.hidden_field :id if entity_transaction.persisted?
-        entity_form.hidden_field :is_payer, value: entity_transaction.is_payer, data: { entity_transaction_target: "payerInput" }
+        entity_form.hidden_field :is_payer, value: payer, data: { entity_transaction_target: "payerInput" }
         entity_form.hidden_field :price, value: item.price.to_i, data: { entity_transaction_target: "priceInput" }
         entity_form.hidden_field :_destroy, value: item.entity_id.present? ? "false" : "true"
 
@@ -96,7 +101,7 @@ class Views::Transactions::FormLineItemEntityModal < Views::Base
             entity_form.text_field(
               :price_to_be_returned,
               id: "line_item_return_#{index}",
-              value: entity_transaction.price_to_be_returned,
+              value: return_amount,
               inputmode: :numeric,
               class: input_class,
               data: {
@@ -132,7 +137,7 @@ class Views::Transactions::FormLineItemEntityModal < Views::Base
               id: "line_item_exchanges_count_#{index}",
               min: 0,
               max: 72,
-              value: entity_transaction.exchanges_count.to_i,
+              value: exchanges_count,
               class: input_class,
               data: {
                 entity_transaction_target: :exchangesCountInput,
@@ -153,6 +158,16 @@ class Views::Transactions::FormLineItemEntityModal < Views::Base
         exchange_fields(entity_form, entity_transaction, index)
       end
     end
+  end
+
+  def entity_transaction_return_amount(entity_transaction)
+    amount = entity_transaction.price_to_be_returned.to_i
+    return amount if amount.nonzero?
+
+    active_exchanges = entity_transaction.exchanges.reject(&:marked_for_destruction?)
+    return amount if active_exchanges.empty?
+
+    active_exchanges.sum { |exchange| exchange.price.to_i }
   end
 
   def exchange_fields(entity_form, entity_transaction, index)

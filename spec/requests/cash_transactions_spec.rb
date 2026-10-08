@@ -102,6 +102,7 @@ RSpec.describe "CashTransactions", type: :request do
     end
 
     it "renders the split purchase toggle and line items template" do
+      exchange_category = user.built_in_category("EXCHANGE")
       get new_cash_transaction_path
 
       expect(response).to have_http_status(:success)
@@ -122,7 +123,28 @@ RSpec.describe "CashTransactions", type: :request do
       expect(template).to be_present
       expect(template.inner_html).to include("cash_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
       expect(document.css('input[name="cash_transaction[line_items_attributes][0][description]"]').size).to eq(1)
+      expect(document.css("input[name='cash_transaction[line_items_attributes][0][category_id]'][value='#{exchange_category.id}']")).to be_present
+      expect(template.inner_html).to include("cash_transaction[line_items_attributes][NEW_LINE_ITEM][friend_notification_intent]")
+      template_row = Nokogiri::HTML.fragment(template.inner_html)
+      intent_select = template_row.at_css("select[data-line-item-exchange-intent='input']")
+      expect(intent_select["disabled"]).to be_present
+      expect(intent_select["class"]).to include("disabled:cursor-not-allowed", "disabled:bg-slate-100", "disabled:opacity-60")
+      expect(intent_select["aria-label"]).to eq(I18n.t("activerecord.attributes.cash_transaction.friend_notification_intent"))
+      expect(intent_select.at_css("option")["value"]).to eq("")
+      expect(intent_select.at_css("option").text).to eq(I18n.t("activerecord.attributes.cash_transaction.friend_notification_intent"))
+      expect(intent_select["class"]).to include("text-slate-900", "bg-white")
+      expect(intent_select.at_css("option[value='reimbursement']")["class"]).to include("text-slate-900", "bg-white")
+      template_row_control_names = template_row.css("select, input").map { |control| control["name"] }
+      expect(template_row_control_names.index(intent_select["name"])).to be < template_row_control_names.index(
+        "cash_transaction[line_items_attributes][NEW_LINE_ITEM][category_id]"
+      )
+      expect(template_row.at_css("label[for='line_item_friend_notification_intent_NEW_LINE_ITEM']")).to be_nil
+      modal = document.at_css('[data-composite-entity-modal-target="content"]')
       expect(document.css('[data-composite-entity-modal-target="content"]').size).to eq(1)
+      modal_template = modal.at_css('template[data-composite-entity-modal-target="template"]')
+      expect(modal_template.inner_html).to include("line_item_return_percentage_NEW_LINE_ITEM")
+      exchange_type = modal.at_css('input[name$="[exchange_type]"]')
+      expect(exchange_type["value"]).to eq("monetary")
       expect(template.inner_html).to include(
         "cash_transaction[line_items_attributes][NEW_LINE_ITEM][entity_transactions_attributes][0][entity_id]"
       )
@@ -170,6 +192,78 @@ RSpec.describe "CashTransactions", type: :request do
         ]
       )
       expect(modal.css("button").map(&:text)).to include(I18n.t("transactions.composite.automatic"))
+    end
+
+    it "shows the repayment amount from exchanges when a line item amount was saved as zero" do
+      composite = create(:cash_transaction, user:, price: -10_000, user_bank_account:)
+      exchange_category = user.built_in_category("EXCHANGE")
+      item = create(
+        :line_item,
+        transactable: composite,
+        description: "Shared item",
+        price: -10_000,
+        category: exchange_category,
+        friend_notification_intent: "reimbursement"
+      )
+      entity_transaction = create(
+        :entity_transaction,
+        transactable: item,
+        entity:,
+        price: -10_000,
+        price_to_be_returned: 0,
+        loan_return_percentage: 100,
+        is_payer: false
+      )
+      create(:exchange, entity_transaction:, exchange_type: "monetary", number: 1, price: 10_000)
+
+      get edit_cash_transaction_path(composite)
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+      repayment_input = document.at_css("#line_item_return_0")
+      payer_input = document.at_css("input[name$='[is_payer]']")
+      intent_select = document.at_css("select[name$='[friend_notification_intent]']")
+
+      expect(repayment_input["value"]).to eq("10000")
+      expect(payer_input["value"]).to eq("true")
+      expect(intent_select["disabled"]).to be_nil
+    end
+
+    it "shows linked transaction navigation for exchange returns sourced from a line item" do
+      exchange_category = user.built_in_category("EXCHANGE")
+      source = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, price: 10_000)
+      source_item = create(
+        :line_item,
+        transactable: source,
+        description: "Shared item",
+        price: 6_000,
+        category: exchange_category,
+        friend_notification_intent: "loan"
+      )
+      create(:line_item, transactable: source, description: "Other item", price: 4_000, category: create(:category, user:))
+      entity_transaction = source_item.entity_transactions.create!(entity:, is_payer: true, price: 6_000, price_to_be_returned: 6_000)
+      projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        cash_transaction_type: "Exchange",
+        price: 6_000,
+        category_transactions: [ CategoryTransaction.new(category: user.built_in_category("EXCHANGE RETURN")) ]
+      )
+      create(
+        :exchange,
+        entity_transaction:,
+        cash_transaction: projection,
+        exchange_type: "non_monetary",
+        price: 6_000,
+        starting_price: 6_000
+      )
+
+      get edit_cash_transaction_path(projection)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("List Cash Transactions")
     end
 
     it "marks a Piggy Bank entity when its return differs from the source transaction" do
@@ -236,9 +330,11 @@ RSpec.describe "CashTransactions", type: :request do
 
       document = Nokogiri::HTML.fragment(response.body)
       split_tab = document.css('[data-ruby-ui--tabs-target="trigger"]').find { |el| el.text.strip.include?("Dividida") || el.text.strip.include?("Split") }
+      description_input = document.at_css("#cash_transaction_description")
       price_input = document.css("[data-installment-lock-target~='price']").find { |input| input["name"].exclude?("NEW_RECORD") }
 
       expect(split_tab["disabled"]).to eq("disabled")
+      expect(description_input["class"].split).to include("text-2xl", "lg:text-3xl", "xl:text-4xl", "2xl:text-5xl")
       expect(price_input["readonly"]).to eq("readonly")
       expect(price_input["aria-readonly"]).to eq("true")
       expect(price_input["data-lock-permanent-readonly"]).to eq("true")
@@ -2425,12 +2521,12 @@ RSpec.describe "CashTransactions", type: :request do
             month: Time.zone.today.month,
             year: Time.zone.today.year,
             user_bank_account_id: user_bank_account.id,
-            friend_notification_intent: "loan",
             line_items_attributes: [
               {
                 description: "First item",
                 price: 6_000,
                 category_id: exchange_category.id,
+                friend_notification_intent: "loan",
                 entity_transactions_attributes: {
                   "0" => {
                     entity_id: friend_entity.id,
@@ -2440,6 +2536,7 @@ RSpec.describe "CashTransactions", type: :request do
                       number: 1,
                       exchange_type: "non_monetary",
                       bound_type: "standalone",
+                      paid: false,
                       price: -6_000,
                       date: repayment_date,
                       month: repayment_date.month,
@@ -2452,6 +2549,7 @@ RSpec.describe "CashTransactions", type: :request do
                 description: "Second item",
                 price: 4_000,
                 category_id: exchange_category.id,
+                friend_notification_intent: "loan",
                 entity_transactions_attributes: {
                   "0" => {
                     entity_id: friend_entity.id,
@@ -2461,6 +2559,7 @@ RSpec.describe "CashTransactions", type: :request do
                       number: 1,
                       exchange_type: "non_monetary",
                       bound_type: "standalone",
+                      paid: false,
                       price: -4_000,
                       date: repayment_date,
                       month: repayment_date.month,

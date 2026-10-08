@@ -179,8 +179,10 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
     direct_cash_transaction_reference = cash_transactions.find_by(id:) if type == "CashTransaction"
     return direct_cash_transaction_reference if direct_cash_transaction_reference.present?
 
-    exact_reference_local = cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id)
-    return exact_reference_local if exact_reference_local.present?
+    exact_reference_locals = cash_transactions.where(reference_transactable_type: type, reference_transactable_id: id)
+                                              .order(:created_at, :id)
+                                              .to_a
+    return local_reference_matching_payload(exact_reference_locals) if exact_reference_locals.present?
 
     chain_local_reference_for(cash_transactions:, type:, id:)
   end
@@ -312,10 +314,34 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
       projected_reference = projected_shared_return_from_card(reference)
       return cash_transactions.find_by(id: projected_reference.id) if projected_reference.present? && cash_transactions.where(id: projected_reference.id).exists?
 
-      return CashTransaction.first_reference_descendant_for(projected_reference, scope: cash_transactions) if projected_reference.present?
+      if projected_reference.present?
+        return local_reference_matching_payload(
+          local_reference_descendants_for(projected_reference, cash_transactions:)
+        )
+      end
     end
 
-    CashTransaction.first_reference_descendant_for(reference, scope: cash_transactions)
+    local_reference_matching_payload(local_reference_descendants_for(reference, cash_transactions:))
+  end
+
+  def local_reference_descendants_for(reference, cash_transactions:)
+    descendant_ids = CashTransaction.reference_descendants_for(reference).map(&:id)
+    cash_transactions.where(id: descendant_ids).order(:created_at, :id).to_a
+  end
+
+  def local_reference_matching_payload(candidates)
+    candidates = candidates.compact.uniq { |candidate| [ candidate.class.name, candidate.id ] }
+    return candidates.first if candidates.one?
+    return if candidates.empty?
+
+    category_ids = Array(replay_payload&.fetch("category_ids", nil)).flatten.compact.map(&:to_i)
+    return candidates.first if category_ids.empty?
+
+    matches = candidates.select do |candidate|
+      (candidate.category_transactions.map(&:category_id) & category_ids).present?
+    end
+
+    matches.one? ? matches.first : nil
   end
 
   def destroy_local_reference_for(cash_transactions)

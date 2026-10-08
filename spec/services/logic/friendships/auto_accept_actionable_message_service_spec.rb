@@ -292,8 +292,8 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
           {
             entity_id: recipient_entity.id,
             is_payer: true,
-            price: 100,
-            price_to_be_returned: 100,
+            price: -100,
+            price_to_be_returned: -100,
             exchanges_count: 1,
             exchanges_attributes: [
               {
@@ -302,7 +302,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
                 date: Time.zone.today.iso8601,
                 month: Time.zone.today.month,
                 year: Time.zone.today.year,
-                price: 100,
+                price: -100,
                 paid: false
               }
             ]
@@ -318,8 +318,131 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
 
       created_transaction = recipient_exchanges.where.not(id: existing_exchange_ids).find_by!(description: "Dinner")
       expect(created_transaction).to have_attributes(friend_notification_intent: "loan")
-      expect(created_transaction.entity_transactions.first.exchanges.first).to have_attributes(exchange_type: "monetary", price: 100)
+      expect(created_transaction.price).to eq(100)
+      expect(created_transaction.entity_transactions.first).to have_attributes(exchanges_count: 1)
+      expect(created_transaction.entity_transactions.first.exchanges.first).to have_attributes(exchange_type: "monetary", price: -100)
       expect(loan_message.reload).to be_auto_applied
+    end
+
+    it "destroys the recipient's obsolete intent mirror when composite line items merge into one intent" do
+      exchange_category = sender.built_in_category("EXCHANGE")
+      today = Time.zone.today
+      source = sender.ensure_main_context!.cash_transactions.create!(
+        user: sender,
+        context: sender.main_context,
+        user_bank_account: sender_bank,
+        description: "Split loan and reimbursement",
+        price: -300,
+        date: today,
+        month: today.month,
+        year: today.year,
+        cash_installments_attributes: [ { number: 1, price: -300, date: today, month: today.month, year: today.year } ],
+        line_items_attributes: [
+          {
+            description: "Loan item",
+            price: -100,
+            category_id: exchange_category.id,
+            friend_notification_intent: "loan",
+            entity_transactions_attributes: [ {
+              entity_id: sender_entity.id,
+              price: -100,
+              price_to_be_returned: 100,
+              exchanges_count: 1,
+              exchanges_attributes: [ { number: 1, price: 100, date: today + 1.day, month: (today + 1.day).month, year: (today + 1.day).year,
+                                        exchange_type: "monetary" } ]
+            } ]
+          },
+          {
+            description: "Reimbursement item",
+            price: -200,
+            category_id: exchange_category.id,
+            friend_notification_intent: "reimbursement",
+            entity_transactions_attributes: [ {
+              entity_id: sender_entity.id,
+              price: -200,
+              price_to_be_returned: 200,
+              exchanges_count: 1,
+              exchanges_attributes: [ { number: 1, price: 200, date: today + 1.day, month: (today + 1.day).month, year: (today + 1.day).year,
+                                        exchange_type: "monetary" } ]
+            } ]
+          }
+        ]
+      )
+      conversation = resolve_assistant_conversation(sender, recipient, scenario_key: sender.main_context.scenario_key)
+      initial_messages = conversation.messages.where(reference_transactable: source, body: "notification:create").to_a
+
+      expect(initial_messages.map { |message| message.replay_payload["intent"] }).to contain_exactly("loan", "reimbursement")
+      initial_messages.each { |message| described_class.new(message).call }
+      recipient_transactions = recipient.main_context.cash_transactions.where(reference_transactable: source)
+      obsolete_return = recipient_transactions.joins(:categories).find_by!(categories: { category_name: "BORROW RETURN" })
+
+      previous_message_ids = conversation.messages.ids
+      source.line_items.find_by!(description: "Reimbursement item").update!(friend_notification_intent: "loan")
+      update_messages = conversation.messages.where.not(id: previous_message_ids).where(superseded_by_id: nil).order(:id)
+
+      expect(update_messages.map { |message| message.action_payload.action }).to include("destroy")
+      results = update_messages.map { |message| [ message, described_class.new(message).call ] }
+      expect(results.map { |_message, result| result.status }).to all(eq(:succeeded))
+
+      expect(CashTransaction.exists?(obsolete_return.id)).to be(false)
+      loan_request = recipient_transactions.joins(:categories).find_by!(categories: { category_name: "EXCHANGE" })
+      expect(loan_request.price).to eq(300)
+    end
+
+    it "preserves the recipient mirror when all composite loan items become reimbursements" do
+      exchange_category = sender.built_in_category("EXCHANGE")
+      today = Time.zone.today
+      source = sender.ensure_main_context!.cash_transactions.create!(
+        user: sender,
+        context: sender.main_context,
+        user_bank_account: sender_bank,
+        description: "Split loan items",
+        price: -300,
+        date: today,
+        month: today.month,
+        year: today.year,
+        cash_installments_attributes: [ { number: 1, price: -300, date: today, month: today.month, year: today.year } ],
+        line_items_attributes: [ 100, 200 ].map.with_index do |price, index|
+          {
+            description: "Loan item #{index + 1}",
+            price: -price,
+            category_id: exchange_category.id,
+            friend_notification_intent: "loan",
+            entity_transactions_attributes: [ {
+              entity_id: sender_entity.id,
+              price: -price,
+              price_to_be_returned: price,
+              exchanges_count: 1,
+              exchanges_attributes: [ {
+                number: 1,
+                price: price,
+                date: today + 1.day,
+                month: (today + 1.day).month,
+                year: (today + 1.day).year,
+                exchange_type: "monetary"
+              } ]
+            } ]
+          }
+        end
+      )
+      conversation = resolve_assistant_conversation(sender, recipient, scenario_key: sender.main_context.scenario_key)
+      loan_message = conversation.messages.find_by!(reference_transactable: source, body: "notification:create")
+      described_class.new(loan_message).call
+      recipient_loan = recipient.main_context.cash_transactions.find_by!(reference_transactable: source)
+
+      previous_message_ids = conversation.messages.ids
+      source.update!(
+        line_items_attributes: source.line_items.map do |line_item|
+          { id: line_item.id, friend_notification_intent: "reimbursement" }
+        end
+      )
+      update_messages = conversation.messages.where.not(id: previous_message_ids).where(superseded_by_id: nil).order(:id)
+
+      expect(update_messages.map { |message| message.action_payload.action }).not_to include("destroy")
+      update_messages.each { |message| described_class.new(message).call }
+
+      expect(recipient_loan.reload.categories.pluck(:category_name)).to eq([ "BORROW RETURN" ])
+      expect(recipient_loan.price).to eq(-300)
     end
 
     it "creates the receiver entity allocation from a card-return replay payload" do

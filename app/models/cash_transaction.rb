@@ -56,7 +56,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
             content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
             size: { less_than_or_equal_to: 10.megabytes },
             limit: { max: 5 }
-  validates :friend_notification_intent, inclusion: { in: FRIEND_NOTIFICATION_INTENTS }, allow_nil: true
+  validates :friend_notification_intent, inclusion: { in: FRIEND_NOTIFICATION_INTENTS }, allow_blank: true
   validate :friend_notification_intent_matches_exchange_category
   validate :friend_notification_intent_present_for_exchange_category
   validate :validate_piggy_bank_source_contract
@@ -647,7 +647,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   def prevent_linked_borrow_return_destruction
     return if context_destroying?
     return if Audit::Current.mutation_source == "rollback"
-    return if applying_actionable_message? && exchange_category?
+    return if applying_actionable_message? && (exchange_category? || linked_borrow_return?)
     return unless linked_borrow_return?
 
     errors.add(:base, :destroy_linked_shared_return)
@@ -659,12 +659,14 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def friend_notification_intent_matches_exchange_category
+    return if composite?
     return unless !exchange_category? && friend_notification_intent.present?
 
     errors.add(:friend_notification_intent, :invalid)
   end
 
   def friend_notification_intent_present_for_exchange_category
+    return if composite?
     return unless exchange_category? && friend_notification_intent.blank?
 
     errors.add(:friend_notification_intent, :blank)

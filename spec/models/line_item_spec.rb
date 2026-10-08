@@ -27,6 +27,46 @@ RSpec.describe LineItem do
       expect(line_item).to be_valid
     end
 
+    it "requires an exchange type for cash line items categorized as EXCHANGE" do
+      friend_entity = create(:entity, user:, entity_user: create(:user, :random))
+      line_item = described_class.new(
+        transactable: cash_transaction,
+        description: "Shared purchase",
+        price: 50_00,
+        category: user.built_in_category("EXCHANGE")
+      )
+      line_item.entity_transactions.build(
+        entity: friend_entity,
+        is_payer: true,
+        price: 50_00,
+        price_to_be_returned: 50_00
+      )
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:friend_notification_intent]).to include("can't be blank")
+
+      line_item.friend_notification_intent = "reimbursement"
+
+      expect(line_item).to be_valid
+    end
+
+    it "does not require an exchange type for a non-friend entity" do
+      line_item = described_class.new(
+        transactable: cash_transaction,
+        description: "Shared purchase",
+        price: 50_00,
+        category: user.built_in_category("EXCHANGE")
+      )
+      line_item.entity_transactions.build(
+        entity:,
+        is_payer: true,
+        price: 50_00,
+        price_to_be_returned: 50_00
+      )
+
+      expect(line_item).to be_valid
+    end
+
     it "requires description" do
       line_item = described_class.new(
         transactable: cash_transaction,
@@ -72,6 +112,17 @@ RSpec.describe LineItem do
 
       expect(line_item).not_to be_valid
       expect(line_item.errors[:category_id]).to be_present
+    end
+
+    it "allows a blank category for a non-payer entity allocation without exchanges" do
+      line_item = described_class.new(
+        transactable: cash_transaction,
+        description: "Shared item",
+        price: 50_00
+      )
+      line_item.entity_transactions.build(entity:, is_payer: false, price: 0, price_to_be_returned: 0)
+
+      expect(line_item).to be_valid
     end
 
     it "rejects parent categories" do
@@ -231,14 +282,15 @@ end
 # Table name: line_items
 # Database name: primary
 #
-#  id                :bigint           not null, primary key
-#  comment           :text
-#  description       :string           not null
-#  price             :integer          default(0), not null
-#  transactable_type :string           not null, indexed => [transactable_id]
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  transactable_id   :bigint           not null, indexed => [transactable_type]
+#  id                         :bigint           not null, primary key
+#  comment                    :text
+#  description                :string           not null
+#  friend_notification_intent :string
+#  price                      :integer          default(0), not null
+#  transactable_type          :string           not null, indexed => [transactable_id]
+#  created_at                 :datetime         not null
+#  updated_at                 :datetime         not null
+#  transactable_id            :bigint           not null, indexed => [transactable_type]
 #
 # Indexes
 #

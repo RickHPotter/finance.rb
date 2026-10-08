@@ -83,6 +83,59 @@ RSpec.describe Message, type: :model do
       expect(message).to be_classification_compatible_with_legacy
     end
 
+    it "resolves mixed-intent updates to the matching counterpart transaction" do
+      loan_counterpart = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        reference_transactable: reference_transaction,
+        friend_notification_intent: "loan",
+        category_transactions_attributes: [ { category_id: receiver.built_in_category("EXCHANGE").id } ]
+      )
+      reimbursement_counterpart = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        reference_transactable: reference_transaction,
+        category_transactions_attributes: [ { category_id: receiver.built_in_category("BORROW RETURN").id } ]
+      )
+      loan_update = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: receiver.first_name, transaction_type: "CashTransaction", details: {} },
+          replay: {
+            id: reference_transaction.id,
+            type: "CashTransaction",
+            intent: "loan",
+            category_ids: receiver.built_in_category("EXCHANGE").id
+          }
+        }.to_json
+      )
+      reimbursement_update = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: receiver.first_name, transaction_type: "CashTransaction", details: {} },
+          replay: {
+            id: reference_transaction.id,
+            type: "CashTransaction",
+            intent: "reimbursement",
+            category_ids: receiver.built_in_category("BORROW RETURN").id
+          }
+        }.to_json
+      )
+
+      expect(loan_update.local_reference_for(context: receiver.main_context)).to eq(loan_counterpart)
+      expect(reimbursement_update.local_reference_for(context: receiver.main_context)).to eq(reimbursement_counterpart)
+    end
+
     it "renders v2 notification bodies from headers at display time" do
       message = described_class.create!(
         conversation:,

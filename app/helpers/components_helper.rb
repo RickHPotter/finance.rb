@@ -31,9 +31,10 @@ module ComponentsHelper
 
   # @return [String] tailwind class for readonly input.
   #
-  def outdoor_readonly_input_class
-    "w-full rounded-lg border border-transparent bg-transparent px-4 py-3 text-center text-ellipsis text-lg font-extrabold text-black
-    lg:text-2xl xl:text-3xl 2xl:text-4xl focus:border-transparent focus:ring-0 focus:outline-hidden sm:tracking-tight caret-transparent
+  def outdoor_readonly_input_class(same_size: false)
+    font_sizes = same_size ? "text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl" : "text-lg lg:text-2xl xl:text-3xl 2xl:text-4xl"
+    "w-full rounded-lg border border-transparent bg-transparent px-4 py-3 text-center text-ellipsis #{font_sizes} font-extrabold text-black
+    focus:border-transparent focus:ring-0 focus:outline-hidden sm:tracking-tight caret-transparent
     dark:border-transparent dark:bg-transparent dark:font-semibold dark:text-slate-300 dark:focus:border-transparent dark:focus:ring-0".squish
   end
 

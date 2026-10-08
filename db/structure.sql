@@ -1295,7 +1295,8 @@ CREATE TABLE public.line_items (
     price integer DEFAULT 0 NOT NULL,
     comment text,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    friend_notification_intent character varying
 );
 
 
@@ -4090,6 +4091,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261008120000'),
 ('20260928120000'),
 ('20260925110000'),
 ('20260919142600'),

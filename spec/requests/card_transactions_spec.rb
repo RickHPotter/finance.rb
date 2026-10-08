@@ -113,6 +113,7 @@ RSpec.describe "CardTransactions", type: :request do
 
     it "renders the split purchase toggle and line items template" do
       user_card_one
+      exchange_category = user.built_in_category("EXCHANGE")
 
       get new_card_transaction_path
 
@@ -133,11 +134,15 @@ RSpec.describe "CardTransactions", type: :request do
       template = document.at_css('template[data-composite-transaction-target="template"]')
       expect(template).to be_present
       expect(template.inner_html).to include("card_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
+      expect(template.inner_html).not_to include("friend_notification_intent")
+      template_row = Nokogiri::HTML.fragment(template.inner_html)
+      expect(template_row.at_css("select[data-line-item-exchange-intent='input']")).to be_nil
       expect(document.css('[data-composite-entity-modal-target="content"]').size).to eq(1)
       expect(template.inner_html).to include(
         "card_transaction[line_items_attributes][NEW_LINE_ITEM][entity_transactions_attributes][0][entity_id]"
       )
       expect(document.css('input[name="card_transaction[line_items_attributes][0][description]"]').size).to eq(1)
+      expect(document.css("input[name='card_transaction[line_items_attributes][0][category_id]'][value='#{exchange_category.id}']")).to be_present
     end
 
     it "renders line items for a composite card transaction on edit" do

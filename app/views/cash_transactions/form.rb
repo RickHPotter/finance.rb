@@ -76,7 +76,7 @@ class Views::CashTransactions::Form < Views::Base
         render Views::Transactions::FormIntroFields.new(
           form:,
           transaction: cash_transaction,
-          description_class: cash_transaction.card_payment? ? outdoor_readonly_input_class : outdoor_input_class,
+          description_class: cash_transaction.card_payment? ? outdoor_readonly_input_class(same_size: true) : outdoor_input_class,
           comment_disabled: cash_transaction.card_payment?,
           autofocus_target: :description
         )
@@ -161,7 +161,7 @@ class Views::CashTransactions::Form < Views::Base
           canonical_navigation: true
         ) do
           if cash_transaction.exchange_return?
-            transactables_type = cash_transaction.exchanges.joins(:entity_transaction).pluck(:transactable_type)
+            transactables_type = cash_transaction.exchanges.map { |exchange| exchange.transactable&.class&.name }
             card_transactions_sheet if transactables_type.include?("CardTransaction")
             cash_transactions_sheet if transactables_type.include?("CashTransaction")
           end

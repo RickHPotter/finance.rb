@@ -85,11 +85,15 @@ module Logic
           transaction.categories.exists?(category_name: "EXCHANGE") &&
           transaction.reference_transactable_type == "CashTransaction" &&
           transaction.reference_transactable_id.present?
+        linked_borrow_return =
+          transaction.categories.exists?(category_name: "BORROW RETURN") &&
+          transaction.reference_transactable_type == "CashTransaction" &&
+          transaction.reference_transactable_id.present?
         orphaned_borrow_return =
           transaction.categories.exists?(category_name: "BORROW RETURN") &&
           transaction.reference_transactable.blank?
 
-        linked_exchange || orphaned_borrow_return
+        linked_exchange || linked_borrow_return || orphaned_borrow_return
       end
 
       def local_reference

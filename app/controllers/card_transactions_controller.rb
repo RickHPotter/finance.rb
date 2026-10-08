@@ -73,7 +73,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def edit
     @card_transaction = current_context.card_transactions
-                                       .includes(line_items: %i[category_transactions entity_transactions])
+                                       .includes(line_items: [ :category_transactions, { entity_transactions: :exchanges } ])
                                        .find(params[:id])
     set_return_to
 

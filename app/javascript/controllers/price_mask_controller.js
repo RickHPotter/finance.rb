@@ -67,11 +67,12 @@ export default class extends Controller {
   }
 
   removeMasks() {
-    [...this.inputTargets].forEach((target) => {
-      this.removeMask({ target })
-    })
+    const targets = new Set([
+      ...this.element.querySelectorAll("[data-price-mask-target~='input']"),
+      ...this.element.querySelectorAll(".dynamic-price")
+    ])
 
-    this.element.querySelectorAll(".dynamic-price").forEach((target) => {
+    targets.forEach((target) => {
       this.removeMask({ target })
     })
   }

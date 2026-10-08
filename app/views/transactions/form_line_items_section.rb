@@ -125,8 +125,8 @@ class Views::Transactions::FormLineItemsSection < Views::Base
       item_form.hidden_field :id if item.persisted?
       item_form.hidden_field :_destroy, value: (item.marked_for_destruction? ? "1" : "0")
 
-      div(class: "min-w-0 flex flex-col md:flex-row items-center gap-2 flex-1") do
-        div(class: "w-full md:w-4/12") do
+      div(class: "grid min-w-0 flex-1 grid-cols-1 items-center gap-2 #{row_grid_class}") do
+        div(class: "min-w-0") do
           item_form.text_field(
             :description,
             placeholder: I18n.t("activerecord.attributes.line_item.description"),
@@ -135,7 +135,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
           )
         end
 
-        div(class: "w-full md:w-2/12") do
+        div(class: "min-w-0") do
           item_form.text_field(
             :price,
             value: (item.price.present? && item.price != 0 ? item.price : nil),
@@ -152,7 +152,9 @@ class Views::Transactions::FormLineItemsSection < Views::Base
           )
         end
 
-        div(class: "combobox-shell w-full md:w-3/12 plus-icon") do
+        line_item_exchange_intent(item, index) if transaction.is_a?(CashTransaction)
+
+        div(class: "combobox-shell min-w-0 plus-icon") do
           render Views::Shared::SingleSelectCombobox.new(
             name: "#{form.object_name}[line_items_attributes][#{index}][category_id]",
             options: categories,
@@ -164,7 +166,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
           )
         end
 
-        div(class: "flex w-full min-w-0 md:w-3/12") do
+        div(class: "flex min-w-0") do
           div(class: "combobox-shell user-icon min-w-0 flex-1") do
             render Views::Shared::SingleSelectCombobox.new(
               name: "#{form.object_name}[line_items_attributes][#{index}][entity_transactions_attributes][0][entity_id]",
@@ -208,6 +210,68 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         cached_icon(:destroy)
       end
     end
+  end
+
+  def line_item_exchange_intent(item, index)
+    disabled = !line_item_payer?(item)
+    name = "#{form.object_name}[line_items_attributes][#{index}][friend_notification_intent]"
+    option_class = "bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+
+    div(class: "min-w-0", data: { line_item_exchange_intent: true }) do
+      select(
+        name:,
+        id: "line_item_friend_notification_intent_#{index}",
+        aria: { label: I18n.t("activerecord.attributes.cash_transaction.friend_notification_intent") },
+        disabled:,
+        class: "h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-xs text-slate-900 " \
+               "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 " \
+               "disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 " \
+               "disabled:text-slate-500 disabled:opacity-60 dark:disabled:border-slate-700 " \
+               "dark:disabled:bg-slate-800/60 dark:disabled:text-slate-500",
+        data: { line_item_exchange_intent: "input" }
+      ) do
+        option(value: "", selected: item.friend_notification_intent.blank?, class: option_class) do
+          I18n.t("activerecord.attributes.cash_transaction.friend_notification_intent")
+        end
+        option(value: "loan", selected: item.friend_notification_intent == "loan", class: option_class) do
+          I18n.t("activerecord.attributes.cash_transaction.friend_notification_intents.loan")
+        end
+        option(value: "reimbursement", selected: item.friend_notification_intent == "reimbursement", class: option_class) do
+          I18n.t("activerecord.attributes.cash_transaction.friend_notification_intents.reimbursement")
+        end
+      end
+      input(
+        type: :hidden,
+        name:,
+        value: "",
+        disabled: !disabled,
+        data: { line_item_exchange_intent: "hidden" }
+      )
+    end
+  end
+
+  def row_grid_class
+    if transaction.is_a?(CashTransaction)
+      "md:grid-cols-[3fr_2fr_2fr_4fr_5fr]"
+    else
+      "md:grid-cols-[3fr_2fr_4fr_5fr]"
+    end
+  end
+
+  def line_item_payer?(item)
+    item.entity_transactions.reject(&:marked_for_destruction?).any? do |entity_transaction|
+      entity_transaction.is_payer? || entity_transaction_return_amount(entity_transaction).nonzero?
+    end
+  end
+
+  def entity_transaction_return_amount(entity_transaction)
+    amount = entity_transaction.price_to_be_returned.to_i
+    return amount if amount.nonzero?
+
+    active_exchanges = entity_transaction.exchanges.reject(&:marked_for_destruction?)
+    return amount if active_exchanges.empty?
+
+    active_exchanges.sum { |exchange| exchange.price.to_i }
   end
 
   def row_class(item)
