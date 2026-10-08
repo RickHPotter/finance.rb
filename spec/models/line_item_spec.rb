@@ -27,6 +27,22 @@ RSpec.describe LineItem do
       expect(line_item).to be_valid
     end
 
+    it "requires an exchange type for cash line items categorized as EXCHANGE" do
+      line_item = described_class.new(
+        transactable: cash_transaction,
+        description: "Shared purchase",
+        price: 50_00,
+        category: user.built_in_category("EXCHANGE")
+      )
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:friend_notification_intent]).to include("can't be blank")
+
+      line_item.friend_notification_intent = "reimbursement"
+
+      expect(line_item).to be_valid
+    end
+
     it "requires description" do
       line_item = described_class.new(
         transactable: cash_transaction,
@@ -231,14 +247,15 @@ end
 # Table name: line_items
 # Database name: primary
 #
-#  id                :bigint           not null, primary key
-#  comment           :text
-#  description       :string           not null
-#  price             :integer          default(0), not null
-#  transactable_type :string           not null, indexed => [transactable_id]
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  transactable_id   :bigint           not null, indexed => [transactable_type]
+#  id                         :bigint           not null, primary key
+#  comment                    :text
+#  description                :string           not null
+#  friend_notification_intent :string
+#  price                      :integer          default(0), not null
+#  transactable_type          :string           not null, indexed => [transactable_id]
+#  created_at                 :datetime         not null
+#  updated_at                 :datetime         not null
+#  transactable_id            :bigint           not null, indexed => [transactable_type]
 #
 # Indexes
 #

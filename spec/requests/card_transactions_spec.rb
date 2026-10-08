@@ -113,6 +113,7 @@ RSpec.describe "CardTransactions", type: :request do
 
     it "renders the split purchase toggle and line items template" do
       user_card_one
+      exchange_category = user.built_in_category("EXCHANGE")
 
       get new_card_transaction_path
 
@@ -138,6 +139,7 @@ RSpec.describe "CardTransactions", type: :request do
         "card_transaction[line_items_attributes][NEW_LINE_ITEM][entity_transactions_attributes][0][entity_id]"
       )
       expect(document.css('input[name="card_transaction[line_items_attributes][0][description]"]').size).to eq(1)
+      expect(document.css("input[name='card_transaction[line_items_attributes][0][category_id]'][value='#{exchange_category.id}']")).to be_present
     end
 
     it "renders line items for a composite card transaction on edit" do

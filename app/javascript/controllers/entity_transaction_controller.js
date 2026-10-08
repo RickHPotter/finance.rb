@@ -8,7 +8,7 @@ import { mirroredPrice, paidPricesMatch } from "../lib/installment_mirror.mjs"
 // TODO: this is almost a total copy-paste from reactive-form-controller, i will deal with this after it is working
 export default class extends Controller {
   static targets = [
-    "button", "dateInput", "priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangesCountEqualsButton",
+    "button", "dateInput", "priceInput", "payerInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangesCountEqualsButton",
     "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange", "loanReturnPercentageInput", "mirrorInstallmentsButton",
     "allocationWarning", "piggyBankReturnPriceInput"
   ]
@@ -24,6 +24,7 @@ export default class extends Controller {
     this.transactionForm()?.addEventListener("piggy-bank-mode-changed", this.boundRefreshAllocationWarning)
     this.refreshMirrorInstallmentsAvailability()
     this.refreshAllocationWarning()
+    if (this.element.matches("[data-composite-entity-modal-target~='group']")) this.checkForExchangeCategory()
   }
 
   disconnect() {
@@ -339,6 +340,7 @@ export default class extends Controller {
 
     const amount = parseInt(_removeMask(this.priceToBeReturnedInputTarget.value), 10) || 0
     this.payerInputTarget.value = amount === 0 ? "false" : "true"
+    this.checkForExchangeCategory()
   }
 
   trimTrailingZeroes(value) {
@@ -394,7 +396,8 @@ export default class extends Controller {
     const exchangeInput = categoryInputs.find((input) => input.value === exchangeCategoryId)
     if (!exchangeInput) return
 
-    const hasExchange = this.activeExchangeWrappers().length > 0
+    const isPayer = this.hasPayerInputTarget && this.payerInputTarget.value === "true"
+    const hasExchange = isPayer || this.activeExchangeWrappers().length > 0
     const selectedInput = categoryInputs.find((input) => input.checked)
 
     if (hasExchange && selectedInput !== exchangeInput) {

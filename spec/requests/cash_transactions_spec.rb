@@ -102,6 +102,7 @@ RSpec.describe "CashTransactions", type: :request do
     end
 
     it "renders the split purchase toggle and line items template" do
+      exchange_category = user.built_in_category("EXCHANGE")
       get new_cash_transaction_path
 
       expect(response).to have_http_status(:success)
@@ -122,6 +123,8 @@ RSpec.describe "CashTransactions", type: :request do
       expect(template).to be_present
       expect(template.inner_html).to include("cash_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
       expect(document.css('input[name="cash_transaction[line_items_attributes][0][description]"]').size).to eq(1)
+      expect(document.css("input[name='cash_transaction[line_items_attributes][0][category_id]'][value='#{exchange_category.id}']")).to be_present
+      expect(template.inner_html).to include("cash_transaction[line_items_attributes][NEW_LINE_ITEM][friend_notification_intent]")
       expect(document.css('[data-composite-entity-modal-target="content"]').size).to eq(1)
       expect(template.inner_html).to include(
         "cash_transaction[line_items_attributes][NEW_LINE_ITEM][entity_transactions_attributes][0][entity_id]"
@@ -170,6 +173,43 @@ RSpec.describe "CashTransactions", type: :request do
         ]
       )
       expect(modal.css("button").map(&:text)).to include(I18n.t("transactions.composite.automatic"))
+    end
+
+    it "shows linked transaction navigation for exchange returns sourced from a line item" do
+      exchange_category = user.built_in_category("EXCHANGE")
+      source = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, price: 10_000)
+      source_item = create(
+        :line_item,
+        transactable: source,
+        description: "Shared item",
+        price: 6_000,
+        category: exchange_category,
+        friend_notification_intent: "loan"
+      )
+      create(:line_item, transactable: source, description: "Other item", price: 4_000, category: create(:category, user:))
+      entity_transaction = source_item.entity_transactions.create!(entity:, is_payer: true, price: 6_000, price_to_be_returned: 6_000)
+      projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        cash_transaction_type: "Exchange",
+        price: 6_000,
+        category_transactions: [ CategoryTransaction.new(category: user.built_in_category("EXCHANGE RETURN")) ]
+      )
+      create(
+        :exchange,
+        entity_transaction:,
+        cash_transaction: projection,
+        exchange_type: "non_monetary",
+        price: 6_000,
+        starting_price: 6_000
+      )
+
+      get edit_cash_transaction_path(projection)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("List Cash Transactions")
     end
 
     it "marks a Piggy Bank entity when its return differs from the source transaction" do
@@ -2425,12 +2465,12 @@ RSpec.describe "CashTransactions", type: :request do
             month: Time.zone.today.month,
             year: Time.zone.today.year,
             user_bank_account_id: user_bank_account.id,
-            friend_notification_intent: "loan",
             line_items_attributes: [
               {
                 description: "First item",
                 price: 6_000,
                 category_id: exchange_category.id,
+                friend_notification_intent: "loan",
                 entity_transactions_attributes: {
                   "0" => {
                     entity_id: friend_entity.id,
@@ -2440,6 +2480,7 @@ RSpec.describe "CashTransactions", type: :request do
                       number: 1,
                       exchange_type: "non_monetary",
                       bound_type: "standalone",
+                      paid: false,
                       price: -6_000,
                       date: repayment_date,
                       month: repayment_date.month,
@@ -2452,6 +2493,7 @@ RSpec.describe "CashTransactions", type: :request do
                 description: "Second item",
                 price: 4_000,
                 category_id: exchange_category.id,
+                friend_notification_intent: "loan",
                 entity_transactions_attributes: {
                   "0" => {
                     entity_id: friend_entity.id,
@@ -2461,6 +2503,7 @@ RSpec.describe "CashTransactions", type: :request do
                       number: 1,
                       exchange_type: "non_monetary",
                       bound_type: "standalone",
+                      paid: false,
                       price: -4_000,
                       date: repayment_date,
                       month: repayment_date.month,

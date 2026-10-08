@@ -1019,7 +1019,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       line_items_attributes: [
-        :id, :description, :price, :comment, :category_id, :_destroy,
+        :id, :description, :price, :comment, :category_id, :friend_notification_intent, :_destroy,
         { entity_transactions_attributes: [
           :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
           { exchanges_attributes: %i[id number exchange_type bound_type price date month year paid _destroy] }
@@ -1188,8 +1188,20 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def sanitized_cash_transaction_params_for_assignment(attributes)
     sanitized = attributes.deep_dup
     sanitized[:entity_transactions_attributes] = sanitize_entity_transaction_attributes(sanitized[:entity_transactions_attributes])
+    sanitized[:line_items_attributes] = sanitize_line_item_attributes(sanitized[:line_items_attributes])
 
     sanitized
+  end
+
+  def sanitize_line_item_attributes(attributes)
+    normalized_nested_attributes(attributes).map do |line_item_attributes|
+      line_item_attributes = line_item_attributes.with_indifferent_access
+      next line_item_attributes unless line_item_attributes.key?(:entity_transactions_attributes)
+
+      line_item_attributes.merge(
+        entity_transactions_attributes: sanitize_entity_transaction_attributes(line_item_attributes[:entity_transactions_attributes])
+      )
+    end
   end
 
   def sanitize_entity_transaction_attributes(attributes)
@@ -1204,10 +1216,16 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def apply_submitted_exchange_paid_states!
-    submitted_entity_transactions = normalized_nested_attributes(effective_cash_transaction_params[:entity_transactions_attributes])
+    apply_exchange_paid_states!(effective_cash_transaction_params[:entity_transactions_attributes], @cash_transaction.entity_transactions)
 
-    submitted_entity_transactions.each do |entity_transaction_attributes|
-      entity_transaction = find_submitted_entity_transaction(entity_transaction_attributes)
+    @cash_transaction.line_items.each do |line_item|
+      apply_exchange_paid_states!(line_item.submitted_entity_transaction_attributes, line_item.entity_transactions)
+    end
+  end
+
+  def apply_exchange_paid_states!(submitted_attributes, entity_transactions)
+    normalized_nested_attributes(submitted_attributes).each do |entity_transaction_attributes|
+      entity_transaction = find_submitted_entity_transaction(entity_transaction_attributes, entity_transactions)
       next if entity_transaction.blank?
 
       normalized_nested_attributes(entity_transaction_attributes[:exchanges_attributes]).each do |exchange_attributes|
@@ -1219,15 +1237,15 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     end
   end
 
-  def find_submitted_entity_transaction(attributes)
+  def find_submitted_entity_transaction(attributes, entity_transactions)
     attributes = attributes.with_indifferent_access
     submitted_id = attributes[:id].presence&.to_i
-    return @cash_transaction.entity_transactions.find { |record| record.id == submitted_id } if submitted_id.present?
+    return entity_transactions.find { |record| record.id == submitted_id } if submitted_id.present?
 
     submitted_entity_id = attributes[:entity_id].presence&.to_i
     return if submitted_entity_id.blank?
 
-    @cash_transaction.entity_transactions.find { |record| record.entity_id == submitted_entity_id }
+    entity_transactions.find { |record| record.entity_id == submitted_entity_id }
   end
 
   def find_submitted_exchange(entity_transaction, attributes)

@@ -61,7 +61,7 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     I18n.locale = user.locale
   end
 
-  def notify_friend(friend, action) # rubocop:disable Metrics/AbcSize
+  def notify_friend(friend, action)
     friend_user = friend.entity_user
 
     friendship = user.friendship_with(friend_user)
@@ -79,33 +79,61 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     destroy_message_reference = destroy_message_reference_transactable(friend_user_reference)
     message = conversation.messages.new(user:, reference_transactable: action == :destroy ? destroy_message_reference : self)
 
+    save_friend_notification_groups(
+      conversation:,
+      message:,
+      friend_user:,
+      friend:,
+      action:,
+      destroy_reference: friend_user_reference
+    )
+  end
+
+  def save_friend_notification_groups(conversation:, message:, friend_user:, friend:, action:, destroy_reference:)
     entity_transactions_for_friend = friend_notification_entity_transactions.select { |et| et.entity_id == friend.id }
     return if entity_transactions_for_friend.empty? && action != :destroy
 
     exchanges = Exchange.where(entity_transaction_id: entity_transactions_for_friend.map(&:id)).order(:number, :date).to_a
-    save_message(message, friend_user, aggregate_notification_exchanges(exchanges), action, destroy_reference: friend_user_reference)
+    exchange_groups = if is_a?(CashTransaction) && composite? && action != :destroy
+                        exchanges.group_by { |exchange| notification_intent_for_exchange(exchange) }
+                      else
+                        { nil => exchanges }
+                      end
+
+    exchange_groups.each_with_index do |(intent, grouped_exchanges), index|
+      grouped_message = index.zero? ? message : conversation.messages.new(user:, reference_transactable: self)
+      save_message(
+        grouped_message,
+        friend_user,
+        aggregate_notification_exchanges(grouped_exchanges),
+        action,
+        destroy_reference:,
+        intent:,
+        supersede_previous: index.zero?
+      )
+    end
   end
 
   def find_or_create_conversation(user, friendship, scenario_key:)
     Logic::Conversations::Resolve.call(actor: user, friendship:, kind: :assistant, scenario_key:)
   end
 
-  def save_message(message, friend_user, exchanges, action, destroy_reference: nil)
+  def save_message(message, friend_user, exchanges, action, destroy_reference: nil, intent: nil, supersede_previous: true)
     create_body(message, friend_user, exchanges, action)
-    create_headers(message, friend_user, exchanges, action, destroy_reference:)
+    create_headers(message, friend_user, exchanges, action, destroy_reference:, intent:)
 
     return false if message.headers.present? && Message.exists?(conversation: message.conversation, headers: message.headers)
 
     message.save
 
-    supersede_previous_messages(message.conversation, message) if action != :create
+    supersede_previous_messages(message.conversation, message) if action != :create && supersede_previous
   end
 
   def create_body(message, _friend_user, _exchanges, action)
     message.body = "notification:#{action}"
   end
 
-  def create_headers(message, friend_user, exchanges, action, destroy_reference: nil)
+  def create_headers(message, friend_user, exchanges, action, destroy_reference: nil, intent: nil)
     if action == :destroy
       message.headers = {
         version: "message_notification_v2",
@@ -125,7 +153,7 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
                      elsif transaction_type == "CardTransaction"
                        build_card_transaction_headers(friend_user, exchanges)
                      else
-                       build_cash_transaction_headers(friend_user, exchanges)
+                       build_cash_transaction_headers(friend_user, exchanges, intent:)
                      end
 
     # If no mirror entity exists on the friend's side yet (friendship accepted but
@@ -201,8 +229,8 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     }
   end
 
-  def build_cash_transaction_headers(friend_user, exchanges)
-    intent = friend_notification_intent_for(friend_user)
+  def build_cash_transaction_headers(friend_user, exchanges, intent: nil)
+    intent = friend_notification_intent_for(friend_user, explicit_intent: intent)
 
     if intent == "reimbursement"
       build_cash_reimbursement_headers(friend_user, exchanges, intent)
@@ -303,13 +331,20 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     }
   end
 
-  def friend_notification_intent_for(friend_user)
-    explicit_intent = respond_to?(:friend_notification_intent) ? friend_notification_intent.presence : nil
+  def friend_notification_intent_for(friend_user, explicit_intent: nil)
+    explicit_intent ||= respond_to?(:friend_notification_intent) ? friend_notification_intent.presence : nil
     return explicit_intent if explicit_intent.in?(%w[loan reimbursement])
 
     return "reimbursement" if reimbursement_notification?(friend_user)
 
     "loan"
+  end
+
+  def notification_intent_for_exchange(exchange)
+    line_item = exchange.entity_transaction.transactable
+    return line_item.friend_notification_intent if line_item.is_a?(LineItem)
+
+    friend_notification_intent_for(exchange.entity_transaction.entity&.entity_user)
   end
 
   def supersede_previous_messages(conversation, new_message)

@@ -198,6 +198,32 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         end
       end
 
+      if transaction.is_a?(CashTransaction)
+        div(
+          class: "hidden w-full md:w-36",
+          data: { line_item_exchange_intent: true }
+        ) do
+          label(
+            for: "line_item_friend_notification_intent_#{index}",
+            class: "mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300"
+          ) { I18n.t("activerecord.attributes.cash_transaction.friend_notification_intent") }
+          select(
+            name: "#{form.object_name}[line_items_attributes][#{index}][friend_notification_intent]",
+            id: "line_item_friend_notification_intent_#{index}",
+            class: "h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-xs dark:border-slate-700 dark:bg-slate-800",
+            data: { line_item_exchange_intent: "input" }
+          ) do
+            option(value: "") { "—" }
+            option(value: "loan", selected: item.friend_notification_intent == "loan") do
+              I18n.t("activerecord.attributes.cash_transaction.friend_notification_intents.loan")
+            end
+            option(value: "reimbursement", selected: item.friend_notification_intent == "reimbursement") do
+              I18n.t("activerecord.attributes.cash_transaction.friend_notification_intents.reimbursement")
+            end
+          end
+        end
+      end
+
       Button(
         type: :button,
         variant: :ghost,

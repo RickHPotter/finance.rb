@@ -91,6 +91,7 @@ RSpec.describe CashTransaction, type: :model do
       it "is not composite when having no line items" do
         transaction = build(:cash_transaction, user:, context:, user_bank_account:, price: 100_00)
         expect(transaction).not_to be_composite
+        expect(transaction).to be_valid
       end
 
       it "allows split purchases for exchange requests and borrow returns" do
@@ -135,6 +136,7 @@ RSpec.describe CashTransaction, type: :model do
 
         expect(transaction.line_items).to be_empty
         expect(transaction).not_to be_composite
+        expect(transaction).to be_valid
       end
 
       it "ignores modal repayment fields when the starter line item is blank" do

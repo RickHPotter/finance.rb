@@ -161,7 +161,7 @@ class Views::CashTransactions::Form < Views::Base
           canonical_navigation: true
         ) do
           if cash_transaction.exchange_return?
-            transactables_type = cash_transaction.exchanges.joins(:entity_transaction).pluck(:transactable_type)
+            transactables_type = cash_transaction.exchanges.map { |exchange| exchange.transactable&.class&.name }
             card_transactions_sheet if transactables_type.include?("CardTransaction")
             cash_transactions_sheet if transactables_type.include?("CashTransaction")
           end

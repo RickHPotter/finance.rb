@@ -19,6 +19,7 @@ class LineItem < ApplicationRecord
   # @validations ..............................................................
   validates :description, presence: true
   validates :price, presence: true, numericality: { other_than: 0 }
+  validates :friend_notification_intent, inclusion: { in: %w[loan reimbursement] }, allow_nil: true
   validates :receipts,
             content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
             size: { less_than_or_equal_to: 10.megabytes },
@@ -26,6 +27,7 @@ class LineItem < ApplicationRecord
   validate :validate_category_presence
   validate :validate_leaf_category
   validate :validate_price_sign_matches_parent
+  validate :validate_exchange_friend_notification_intent
 
   # @callbacks ................................................................
   before_validation :sync_entity_transaction_price
@@ -149,6 +151,14 @@ class LineItem < ApplicationRecord
       errors.add(:price, :must_be_negative_to_match_transaction)
     end
   end
+
+  def validate_exchange_friend_notification_intent
+    return unless transactable.is_a?(CashTransaction)
+    return unless category&.category_name == "EXCHANGE"
+    return if friend_notification_intent.present?
+
+    errors.add(:friend_notification_intent, :blank)
+  end
 end
 
 # == Schema Information
@@ -156,14 +166,15 @@ end
 # Table name: line_items
 # Database name: primary
 #
-#  id                :bigint           not null, primary key
-#  comment           :text
-#  description       :string           not null
-#  price             :integer          default(0), not null
-#  transactable_type :string           not null, indexed => [transactable_id]
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  transactable_id   :bigint           not null, indexed => [transactable_type]
+#  id                         :bigint           not null, primary key
+#  comment                    :text
+#  description                :string           not null
+#  friend_notification_intent :string
+#  price                      :integer          default(0), not null
+#  transactable_type          :string           not null, indexed => [transactable_id]
+#  created_at                 :datetime         not null
+#  updated_at                 :datetime         not null
+#  transactable_id            :bigint           not null, indexed => [transactable_type]
 #
 # Indexes
 #

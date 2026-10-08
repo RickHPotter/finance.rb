@@ -850,10 +850,18 @@ export default class extends Controller {
       return input?.value === exchangeCategoryId && destroyInput?.value !== "true" && wrapper.checkVisibility()
     })
     const splitPurchase = this.element.querySelector("input[name$='[split_purchase]']")?.value === "1"
-    const hasLineItemExchangeCategory = splitPurchase && Array.from(
-      this.element.querySelectorAll("[data-composite-transaction-target~='row'] input[name$='[category_id]']:checked")
-    ).some((input) => input.value === exchangeCategoryId)
-    const isExchange = hasExchangeCategory || hasLineItemExchangeCategory
+    const lineItemRows = Array.from(this.element.querySelectorAll("[data-composite-transaction-target~='row']"))
+    lineItemRows.forEach((row) => {
+      const categoryInput = row.querySelector(".categories_category_id")
+      const intentWrapper = row.querySelector("[data-line-item-exchange-intent]")
+      const intentInput = row.querySelector("[data-line-item-exchange-intent='input']")
+      const isLineItemExchange = categoryInput?.value === exchangeCategoryId
+
+      intentWrapper?.classList.toggle("hidden", !isLineItemExchange)
+      if (!isLineItemExchange && intentInput) intentInput.value = ""
+    })
+
+    const isExchange = hasExchangeCategory && !splitPurchase
 
     this.exchangeIntentWrapperTarget.classList.toggle("hidden", !isExchange)
 

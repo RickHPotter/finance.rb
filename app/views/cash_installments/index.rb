@@ -457,8 +457,11 @@ class Views::CashInstallments::Index < Views::Base
   def entity_exchanges_info(entity_transaction)
     return if entity_transaction.exchanges_count.zero?
 
+    returned_price = entity_transaction.price_to_be_returned.to_i
+    returned_price = entity_transaction.exchanges.sum(&:price) if returned_price.zero?
+
     [
-      "[#{from_cent_based_to_float(entity_transaction.price_to_be_returned, 'R$')}]",
+      "[#{from_cent_based_to_float(returned_price, 'R$')}]",
       "(#{entity_transaction.exchanges_count})"
     ].join(" ")
   end

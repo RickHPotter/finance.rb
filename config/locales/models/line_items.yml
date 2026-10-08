@@ -11,6 +11,7 @@ en:
         comment: Comment
         category_id: Category
         entity_id: Entity
+        friend_notification_intent: Exchange Type
     errors:
       models:
         line_item:
@@ -57,6 +58,7 @@ pt-BR:
         comment: Comentário
         category_id: Categoria
         entity_id: Pessoa/Entidade
+        friend_notification_intent: Tipo de Troca
     errors:
       models:
         line_item:

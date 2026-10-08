@@ -659,12 +659,14 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def friend_notification_intent_matches_exchange_category
+    return if composite?
     return unless !exchange_category? && friend_notification_intent.present?
 
     errors.add(:friend_notification_intent, :invalid)
   end
 
   def friend_notification_intent_present_for_exchange_category
+    return if composite?
     return unless exchange_category? && friend_notification_intent.blank?
 
     errors.add(:friend_notification_intent, :blank)

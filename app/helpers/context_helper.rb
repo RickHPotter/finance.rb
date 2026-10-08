@@ -35,6 +35,9 @@ module ContextHelper
     @leaf_categories = order_categories_hierarchically(leafs).map do |category|
       format_category_combobox_option(category)
     end
+
+    exchange_category = current_user.built_in_category("EXCHANGE")
+    @leaf_categories << format_category_combobox_option(exchange_category) unless @leaf_categories.any? { |_, id, _| id == exchange_category.id }
   end
 
   def set_entities
