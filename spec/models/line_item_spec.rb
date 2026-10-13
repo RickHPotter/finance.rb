@@ -223,6 +223,58 @@ RSpec.describe LineItem do
     end
   end
 
+  describe "repayment schedule validation" do
+    let(:line_item) do
+      create(:line_item, transactable: cash_transaction, description: "Shared item", price: 50_00, category: leaf_category)
+    end
+
+    let!(:entity_transaction) do
+      line_item.entity_transactions.create!(
+        entity:,
+        is_payer: true,
+        price: line_item.price,
+        price_to_be_returned: -line_item.price,
+        loan_return_percentage: 100,
+        exchanges_count: 1
+      )
+    end
+
+    let!(:exchange) do
+      entity_transaction.exchanges.create!(
+        exchange_type: :monetary,
+        number: 1,
+        date: Date.new(2026, 10, 13),
+        month: 10,
+        year: 2026,
+        price: -line_item.price,
+        starting_price: -line_item.price
+      )
+    end
+
+    it "rejects a line-item price change when the repayment amount and schedule are stale" do
+      line_item.price = 60_00
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:base]).to include(I18n.t("activerecord.errors.models.line_item.attributes.base.exchange_schedule_must_match_price"))
+    end
+
+    it "accepts a price change after updating the repayment amount and unpaid schedule" do
+      line_item.price = 60_00
+      entity_transaction.price_to_be_returned = -60_00
+      exchange.price = -60_00
+
+      expect(line_item).to be_valid
+    end
+
+    it "does not allow a price change that would rewrite already-paid exchanges" do
+      allow(exchange).to receive(:effective_paid_state).and_return(true)
+      line_item.price = 40_00
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:base]).to include(I18n.t("activerecord.errors.models.line_item.attributes.base.paid_exchange_schedule_conflicts_with_price"))
+    end
+  end
+
   describe "attachments" do
     let(:line_item) do
       described_class.new(

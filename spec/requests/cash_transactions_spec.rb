@@ -1965,8 +1965,8 @@ RSpec.describe "CashTransactions", type: :request do
       expect(headers.fetch("replay").fetch("entity_transactions_attributes")).to contain_exactly(
         a_hash_including(
           "is_payer" => true,
-          "price" => 20_000,
-          "price_to_be_returned" => 20_000,
+          "price" => -20_000,
+          "price_to_be_returned" => -20_000,
           "entity_id" => other_user_entity.id,
           "exchanges_count" => 1
         )
@@ -2587,7 +2587,7 @@ RSpec.describe "CashTransactions", type: :request do
         expect(notification_headers.dig("event", "action")).to eq("create")
         expect(replay).to include("type" => "CashTransaction", "intent" => "loan")
         expect(replay.fetch("entity_transactions_attributes")).to contain_exactly(
-          a_hash_including("price" => 10_000, "price_to_be_returned" => 10_000, "exchanges_count" => 1)
+          a_hash_including("price" => -10_000, "price_to_be_returned" => -10_000, "exchanges_count" => 1)
         )
       end
 

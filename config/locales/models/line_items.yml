@@ -21,6 +21,9 @@ en:
             price:
               must_be_positive_to_match_transaction: "must be positive to match transaction price"
               must_be_negative_to_match_transaction: "must be negative to match transaction price"
+            base:
+              exchange_schedule_must_match_price: "has an outdated repayment schedule. Update the entity repayment details before saving."
+              paid_exchange_schedule_conflicts_with_price: "cannot be reduced below or change the sign of already-paid exchanges."
   transactions:
     composite:
       single_purchase: "Single Purchase"
@@ -68,6 +71,9 @@ pt-BR:
             price:
               must_be_positive_to_match_transaction: "deve ser positivo para coincidir com o valor da transação"
               must_be_negative_to_match_transaction: "deve ser negativo para coincidir com o valor da transação"
+            base:
+              exchange_schedule_must_match_price: "tem um plano de devolução desatualizado. Atualize os detalhes de devolução da entidade antes de salvar."
+              paid_exchange_schedule_conflicts_with_price: "não pode ser reduzido abaixo do valor já pago nem alterar o sinal de trocas pagas."
   transactions:
     composite:
       single_purchase: "Compra Simples"

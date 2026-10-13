@@ -62,7 +62,7 @@ export default class extends Controller {
     }
   }
 
-  priceChanged(event) {
+  async priceChanged(event) {
     const row = event.currentTarget.closest("[data-composite-transaction-target~='row']")
     if (!row) return
 
@@ -75,6 +75,12 @@ export default class extends Controller {
 
       const amount = group.querySelector("[data-composite-entity-modal-target~='itemPrice']")
       if (amount) amount.textContent = this.formatCurrency(lineItemPrice)
+
+      const entityTransaction = this.application.getControllerForElementAndIdentifier(group, "entity-transaction")
+      const payerInput = group.querySelector("[data-entity-transaction-target~='payerInput']")
+      if (entityTransaction && payerInput?.value === "true") {
+        await entityTransaction.applyLoanReturnPercentage()
+      }
     }
     if (this.activeEntityId) this.refreshAggregate(this.activeEntityId)
   }

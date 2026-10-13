@@ -28,6 +28,7 @@ class LineItem < ApplicationRecord
   validate :validate_leaf_category
   validate :validate_price_sign_matches_parent
   validate :validate_exchange_friend_notification_intent
+  validate :validate_entity_exchange_schedule_matches_price, if: :persisted_price_change?
 
   # @callbacks ................................................................
   before_validation :sync_entity_transaction_price
@@ -169,6 +170,47 @@ class LineItem < ApplicationRecord
     return if friend_notification_intent.present?
 
     errors.add(:friend_notification_intent, :blank)
+  end
+
+  def validate_entity_exchange_schedule_matches_price
+    entity_transactions.reject(&:marked_for_destruction?).each do |entity_transaction|
+      validate_entity_exchange_schedule(entity_transaction)
+    end
+  end
+
+  def validate_entity_exchange_schedule(entity_transaction)
+    exchanges = entity_transaction.exchanges.reject(&:marked_for_destruction?)
+    return if entity_transaction.price_to_be_returned.to_i.zero? && exchanges.empty?
+
+    expected_return = expected_entity_return(entity_transaction)
+    paid_total = exchanges.select(&:effective_paid_state).sum { |exchange| exchange.price.to_i }
+
+    if paid_exchange_conflicts_with_return?(paid_total, expected_return)
+      errors.add(:base, :paid_exchange_schedule_conflicts_with_price)
+    elsif !repayment_schedule_matches?(entity_transaction, exchanges, expected_return)
+      errors.add(:base, :exchange_schedule_must_match_price)
+    end
+  end
+
+  def paid_exchange_conflicts_with_return?(paid_total, expected_return)
+    paid_total.nonzero? && (paid_total.positive? != expected_return.positive? || paid_total.abs > expected_return.abs)
+  end
+
+  def repayment_schedule_matches?(entity_transaction, exchanges, expected_return)
+    entity_transaction.price_to_be_returned.to_i == expected_return &&
+      (exchanges.empty? || exchanges.sum { |exchange| exchange.price.to_i } == expected_return)
+  end
+
+  def expected_entity_return(entity_transaction)
+    amount = (price.to_i.abs * entity_transaction.loan_return_percentage.to_d / 100).round
+    sign = entity_transaction.price_to_be_returned.to_i
+    sign = -price.to_i if sign.zero?
+
+    amount * (sign.negative? ? -1 : 1)
+  end
+
+  def persisted_price_change?
+    persisted? && will_save_change_to_price?
   end
 
   def requires_friend_notification_intent?

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "boot"
 
 require "rails"
@@ -24,6 +26,7 @@ module Finance
     config.load_defaults 8.1
     config.active_support.cache_format_version = 7.1
     config.active_storage.draw_routes = false
+    ActiveStorage.draw_routes = false
 
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
