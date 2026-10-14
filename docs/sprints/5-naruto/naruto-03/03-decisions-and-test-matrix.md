@@ -20,12 +20,14 @@
 7. V2 implements authenticated receipt downloads, direct-upload authorization, and
    an attachment-specific delete identifier. Signed avatars remain available to
    authenticated users; anonymous Active Storage delivery is disabled.
-8. Parsing a Brazilian cupom fiscal into transaction line items is planned NARUTO-03
-   V3 scope and is required for the feature to be called complete. It prefills an
-   unsaved NARUTO-02 transaction draft; the user reviews and saves it. The
-   `naruto-03-v2` branch targets this scope. Uploaded fiscal XML/PDF/images, QR URLs,
-   and 44-digit access keys are intended inputs. A short cupom number is not a lookup
-   key; official SEFAZ item retrieval depends on a supported consultation path.
+8. The first fiscal-import workflow is implemented on `naruto-03-v2`: cash/card index
+   pages launch a modal that accepts authorized XML, a full Goiás signed QR URL, a
+   Paraná NFC-e QR URL or 44-digit key, supported PDF text, and a readable image or
+   camera QR. Successful imports prefill an unsaved NARUTO-02 transaction draft. The
+   user reviews and saves through the normal form. A short cupom number is not a
+   lookup key; each official SEFAZ path is state-specific. The modal defaults to
+   Goiás, supports Paraná selection, and allows bulk category/entity defaults with
+   per-line-item overrides. Blank categories are allowed under the current contract.
 
 ## Current tests and gaps
 
@@ -40,12 +42,15 @@
 | Direct upload | `spec/requests/attachments_spec.rb` covers anonymous and oversized rejection; authenticated controller validates allowlisted MIME and byte size before blob creation. | Unsupported-type request; cross-actor signed blob attach; inspect stored bytes/content type. |
 | Storage durability | Production and homolog now have separate named volumes at `/rails/storage`; the storage directories were empty at inspection. | Deploy with the mount, verify persistence across replacement, and exercise backup/restore. |
 | Production-style route boot | `config.active_storage.draw_routes = false` plus the early `ActiveStorage.draw_routes = false` prevents default routes from colliding with the authenticated receipt route; local homolog and production route commands boot. | Redeploy homolog and confirm container health and authenticated file/avatar flows. |
-| Fiscal receipt import | XML parser, Goiás signed-QR and Paraná key/QR adapters, PDF text-source extraction, image QR scanning, and browser prefill for cash/card drafts are implemented; focused service, request, and browser specs cover the supported paths. | Verify GO QR image and PDF flows with receipts the user is entitled to view; add printed item OCR, duplicate protection, more state adapters, and full reconciliation/manual review coverage; see [V3 plan](05-v3-brazilian-fiscal-import-plan.md). |
+| Fiscal receipt import | XML parser, Goiás signed-QR and Paraná key/QR adapters, PDF text-source extraction, image/camera QR scanning, index-page modal, cash/card draft prefill, and bulk category/entity defaults are implemented; service, request, and browser specs cover supported paths. | Manual-test the complete cash/card flow and the latest modal defaults/picker; cover missing-key/QR OCR, duplicate policy/protection, total-adjustment reconciliation, and any agreed additional states; see [V3 plan](05-v3-brazilian-fiscal-import-plan.md). |
 
 ## Release gate
 
 The attachment baseline is implemented. V2 is complete only when the security and
 storage checks above pass, the homolog deployment is healthy, the attachment route is
-unambiguous, and `bin/ci` is green. NARUTO-03 as a whole remains incomplete until V3
-fiscal import is implemented and its extraction/reconciliation tests pass. Do not mark
-either gate complete based on model or request specs alone.
+unambiguous, and `bin/ci` is green. The fiscal-import code is implemented for the
+documented source matrix, but the complete manual flow and remaining extraction,
+reconciliation, duplicate, and OCR acceptance criteria have not all been verified or
+implemented. NARUTO-03 remains open until the agreed fiscal-import criteria and V2
+attachment gates pass; broader state coverage should be tracked separately unless
+made an explicit release requirement.

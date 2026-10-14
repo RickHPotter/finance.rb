@@ -3,7 +3,7 @@
 ## Resolved Product & Technical Decisions
 
 ### D1. What is a composite transaction and how is it detected?
-**Decision**: A composite transaction is a `CashTransaction` or `CardTransaction` that has two or more `LineItem` records. The model provides a `composite?` predicate method that checks whether active (non-destroyed) line items are present.
+**Decision**: A composite transaction is a `CashTransaction` or `CardTransaction` that has one or more active `LineItem` records. The model provides a `composite?` predicate method that checks whether active (non-destroyed) line items are present.
 
 ### D2. How are line item categories and entities stored?
 **Decision**: They use the existing polymorphic join tables `category_transactions` and `entity_transactions` with `transactable_type: "LineItem"`. To keep controller params and form interactions straightforward, `LineItem` exposes virtual accessors `category_id` and `entity_id` that automatically build or update the underlying join records.
@@ -17,8 +17,8 @@
 2. **Non-Zero**: Line item prices cannot be 0.
 3. **Exact Sum**: The sum of active line item prices must equal `parent_transaction.price` exactly.
 
-### D5. Can a line item be assigned a parent category?
-**Decision**: No. In accordance with NARUTO-01, line items must be categorized into leaf categories (`!category.parent?`). Assigning a parent category to a line item fails validation with `:must_be_leaf_category`.
+### D5. Is a category required on a line item, and can it be a parent?
+**Decision**: A category is optional. When one is assigned, it must be a leaf category (`!category.parent?`); assigning a parent category fails validation with `:must_be_leaf_category`.
 
 ### D6. How do card installments interact with line items?
 **Decision**: Installments carry only payment timing (price and date). The semantic line item breakdown lives strictly on the parent `CardTransaction` and does not propagate to installments.
@@ -29,8 +29,8 @@
 ### D8. What is the minimum count for line items in composite mode?
 **Updated decision**: One or more active line items activate composite mode; zero
 active line items leave the transaction simple. The former two-item minimum was
-removed for NARUTO-03 fiscal import so a one-product receipt keeps its line-item
-description and amount. The parent sum and line-item validation rules still apply.
+removed; this supports one-product fiscal receipts and manually entered single-item
+composite transactions. The parent sum and line-item validation rules still apply.
 
 ### D9. How are composite transactions audited and rolled back?
 **Decision**:
@@ -72,14 +72,14 @@ categories, entities, and the transaction total before saving.
 
 | Layer | File Under Test | Test Description | Expected Result |
 |---|---|---|---|
-| **Model** | `LineItem` | Presence of `description`, `price`, `category_id` | Invalid without required fields |
+| **Model** | `LineItem` | Presence of `description` and `price`; category is optional | Invalid without required fields; valid with a blank category |
 | **Model** | `LineItem` | Non-zero price validation | Rejects price == 0 |
 | **Model** | `LineItem` | Sign matching validation | Rejects positive line item on negative transaction (and vice versa) |
 | **Model** | `LineItem` | Leaf category validation | Rejects category where `parent? == true` |
 | **Model** | `LineItem` | Virtual accessors `category_id=` and `entity_id=` | Synchronizes underlying join records |
 | **Model** | `LineItem` | Price changes after a repayment plan exists | Recalculates/validates against the saved percentage and protects paid exchanges |
-| **Model** | `CashTransaction` | `composite?` predicate | `true` when line items >= 2, `false` when empty |
-| **Model** | `CashTransaction` | Minimum count validation | Fails if exactly 1 line item is provided in composite mode |
+| **Model** | `CashTransaction` | `composite?` predicate | `true` with one or more active line items; `false` when empty |
+| **Model** | `CashTransaction` | One-item composite | Valid when the one line item's price equals the parent price |
 | **Model** | `CashTransaction` | Price sum validation | Passes when sum matches parent; fails with difference when mismatched |
 | **Model** | `CashTransaction` | Parent allocations clearing | Direct `category_transactions` are cleared on composite save |
 | **Model** | `CashTransaction` | Split-purchase eligibility | Allows exchange requests and `BORROW RETURN`; rejects `EXCHANGE RETURN` and system-managed types |
@@ -87,7 +87,7 @@ categories, entities, and the transaction total before saving.
 | **Service** | `Audit::OwnershipResolver` | Resolve ownership for `LineItem` | Inherits `owner_id` and `context_id` from parent transactable |
 | **Service** | `Audit::Rollback::Adapters::LineItem` | Dependencies and parent identity | Correctly references parent `CashTransaction` / `CardTransaction` |
 | **Service** | `Audit::Rollback` | Rollback composite transaction creation | Removes parent, line items, and line item join records |
-| **Request** | `CashTransactionsController` | `POST /cash_transactions` with line items | Creates composite transaction with line items and leaf categories |
+| **Request** | `CashTransactionsController` | `POST /cash_transactions` with line items | Creates a composite transaction with optional categories; assigned categories must be leaves |
 | **Request** | `CashTransactionsController` | `POST /cash_transactions` mismatched sum | Renders unprocessable entity with error |
 | **Request** | `CardTransactionsController` | `POST /card_transactions` with line items | Creates composite card transaction; installments retain schedule |
 | **Request** | `CashTransactionsController` | `GET /cash_transactions/:id/duplicate` | Clones line items and allocations |

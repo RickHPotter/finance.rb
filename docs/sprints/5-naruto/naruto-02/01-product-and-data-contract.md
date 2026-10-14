@@ -44,8 +44,8 @@ under an intent; this ticket adds **within-transaction breakdown** via line item
 
 | Term | Meaning |
 |---|---|
-| **Composite transaction** | A `CashTransaction` or `CardTransaction` that has two or more `LineItem` records |
-| **Line item** | A named sub-entry (`LineItem`) with its own price, leaf category, and optional entity |
+| **Composite transaction** | A `CashTransaction` or `CardTransaction` that has one or more active `LineItem` records |
+| **Line item** | A named sub-entry (`LineItem`) with its own price, optional leaf category, and optional entity |
 | **Parent transaction** | The composite record (`CashTransaction` or `CardTransaction`) that carries the payment instrument, date, and total price |
 | **Simple transaction** | An existing transaction without line items (unchanged behaviour) |
 
@@ -102,8 +102,7 @@ and `entity_transactions`).
 | Line item prices must match parent transaction price sign | Model validation on `LineItem` (`validate_price_sign_matches_parent`) |
 | Line item price cannot be zero | Model validation on `LineItem` (`numericality: { other_than: 0 }`) |
 | Line item description presence | Model validation on `LineItem` (`validates :description, presence: true`) |
-| Category on each line item must be a leaf (not a parent) | Model validation on `LineItem` (`validate_leaf_category`) |
-| Category presence on line item | Model validation on `LineItem` (`validates :category_id, presence: true`) |
+| A line item category may be blank; when present, it must be a leaf (not a parent) | Model validation on `LineItem` (`validate_leaf_category`) |
 | A simple transaction (no line items) is unaffected | Existing validation and persistence paths unchanged |
 | Line items belong to the same context as the parent | Inferred through `transactable` ownership |
 
@@ -119,7 +118,7 @@ The transaction create / edit form gains a **"Split purchase"** toggle button. W
 - Each line item row contains:
   - Description input
   - Price input (currency-masked)
-  - Category combobox (limited to leaf categories)
+  - Optional category combobox (limited to leaf categories when selected)
   - Optional entity combobox
   - Remove line item button
 - A running summary bar shows:

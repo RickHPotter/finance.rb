@@ -2,14 +2,20 @@
 
 ## Status and scope
 
-NARUTO-03 is not complete yet. The receipt attachment baseline is implemented. V2
-security and storage code is in the tree, but its deployment durability and remaining
-security/failure-path checks still need verification. Brazilian cupom-fiscal import is
-in development: authorized XML, Goiás signed-QR, and Paraná NFC-e key/QR paths now
-create reviewable unsaved drafts; PDF text-source and image QR adapters extend the
-input options. Printed
-item OCR, duplicate protection, and wider state coverage remain open. This separate
-V3 workstream is part of the intended NARUTO-03 outcome.
+NARUTO-03 is not complete yet. Receipt attachments and the first fiscal-import flow
+are implemented. From the cash/card index pages, an import modal accepts authorized
+XML, a complete Goiás signed QR URL, a Paraná NFC-e key/QR URL or 44-digit key, PDF
+text, and an image/camera QR scan; supported sources prefill an unsaved transaction
+draft with line items. The modal defaults to Goiás, and line-item category/entity
+defaults can be applied in bulk then edited for exceptions. Imported files can be kept
+as transaction receipts. The custom file picker shows the selected filename and keeps
+"Import file" disabled until a file is selected.
+
+Remaining work includes manual validation on both transaction types and supported
+source paths, attachment security/failure-path and deployed storage verification,
+duplicate-document handling, OCR for receipts without a usable QR/key/XML, and any
+additional state adapters agreed for product scope. This separates the implemented
+baseline from the remaining V2 attachment gates and V3 fiscal-import work.
 
 The custom receipt routes disabled Active Storage's defaults, but production-style
 boot exposed a route-registration-order collision. The early route-disable fix is in
@@ -71,19 +77,15 @@ authentication, enforce the declared MIME and 10 MiB limits, and bind their sign
 IDs to the uploader. Content sniffing and several adversarial failure cases remain V2
 release checks.
 
-## V3 fiscal receipt import (planned; required for feature completion)
+## Fiscal receipt import (implemented baseline; remaining work tracked in V3 plan)
 
-The desired workflow converts a Brazilian cupom fiscal into line items in a cash or
-card transaction. V3 depends on NARUTO-02: it should prefill an unsaved transaction
-draft with fiscal item descriptions, amounts, and the document total, then let the
-user review and complete the line items before saving. See the V3 plan for input
-formats, reconciliation rules, security constraints, and open product decisions. The
-`naruto-03-v2` branch targets this work despite the existing V3 document label.
-Supported inputs should include an uploaded XML, PDF, or image, a QR URL, or a
-44-digit access key. A short printed cupom number is not a usable lookup key on its
-own. Official SEFAZ consultation is a possible source of item data only when a
-supported state/document path permits reliable access; printed fiscal receipt OCR
-provides a reviewable fallback when structured data cannot be retrieved.
+The implemented workflow converts supported Brazilian cupom-fiscal sources into
+line items in a cash or card draft. It starts from an import modal beside the New
+Transaction actions on the index pages, not from the transaction form itself. The
+draft is unsaved and must be reviewed and completed before normal submission. Current
+supported paths and their limits are listed in the V3 plan. A short printed cupom
+number is not a usable lookup key on its own. OCR fallback, duplicate detection, and
+additional state adapters are not yet implemented.
 
 General OCR of non-fiscal or handwritten receipts and bank-statement parsing remain
 outside this scope. A photo of a supported printed fiscal receipt is in scope; its
@@ -96,7 +98,7 @@ extracted values must be reviewed before saving.
 | The sprint required 10 MB and five files per record; a detailed slice exempted `LineItem`. | All three models enforce the same rules, even without LineItem UI. |
 | The example used `size: { max: 10.megabytes }`; the installed gem requires a comparison key. | Use `size: { less_than_or_equal_to: 10.megabytes }`. `limit: { max: 5 }` remains valid. |
 | An appended draft said no model had attachments and production should use object storage, while the resolved section said attachments and local disk already existed. | The appended draft is removed. The current models and configured services are recorded above; durable production storage remains a V2 requirement. |
-| Older text treated fiscal extraction as indefinitely out of scope. | Fiscal receipt import is now planned V3 scope and required before NARUTO-03 is complete; it remains separate from the V2 attachment-hardening release gate. |
+| Older text treated fiscal extraction as indefinitely out of scope or still wholly planned. | The first fiscal-import paths are implemented; OCR fallback, duplicate protection, manual verification, and state expansion remain work tracked separately from V2 attachment hardening. |
 | The plan described a future audit version from a touch. | Deletion now writes an explicit audit annotation in the same DB transaction as detaching; Active Storage purges after commit. V2 still needs failure-path and duplicate-audit checks. |
 
 See [implementation status](02-implementation-slices.md) and

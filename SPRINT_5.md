@@ -30,7 +30,7 @@ it. Naruto focuses on making the core financial record more expressive in four
 dimensions: categories gain structural depth through parent/child grouping; a single
 real-world purchase can be described as one transaction with multiple named line items;
 transactions can carry documentary evidence such as receipts, NF-e XML, and
-orçamentos, with a planned fiscal-receipt import into line items; and the financial
+orçamentos, with fiscal-receipt import into line items; and the financial
 instrument set expands to include recurring income
 (salary as subscription), pre-paid and debit cards, and a consolidated view of the
 user's full liquid position.
@@ -92,7 +92,7 @@ References:
 Status: the original split-purchase scope has since been extended to cover per-line-item
 friend repayments and exchange notifications. The transaction breakdown and that
 friend-aware extension belong to NARUTO-02; NARUTO-03 only adds receipt/document
-handling and the planned fiscal-document import workflow that can prefill these line
+handling and the fiscal-document import workflow that can prefill these line
 items. The implementation history and current verification limits are recorded in the
 [NARUTO-02 implementation status](docs/sprints/5-naruto/naruto-02/02-implementation-slices.md).
 
@@ -121,7 +121,7 @@ Locked V1 direction:
   projections and other system-managed transaction types
 - when a transaction is composite, the parent's own category/entity join records are
   deprecated; reporting and rollback route through line items
-- line item categories must be leaf categories (NARUTO-01 required)
+- a line item's category is optional; when set, it must be a leaf category
 - card installments carry only price and date; the breakdown lives on the parent
   transaction and does not propagate to installments
 - a rollback adapter `Audit::Rollback::Adapters::LineItem` is required; attaching
@@ -137,7 +137,7 @@ Locked V1 direction:
 
 Coverage:
 
-- model specs: price-sum validation, minimum-count validation, leaf-category
+- model specs: price-sum validation, one-item composite mode, optional leaf-category
   validation, cascade of audit versions
 - request specs: create composite cash transaction, create composite card transaction,
   reject mismatched price sum
@@ -158,13 +158,15 @@ Explicitly out of scope:
 
 ### NARUTO-03: Attach documents and import Brazilian fiscal receipts
 
-Status: receipt attachment support is implemented, with security and deployment
-verification still open. Fiscal import is in development: authorized XML, Goiás
-signed-QR, and Paraná NFC-e key/QR paths prefill unsaved cash/card drafts, with PDF
-text-source extraction and image QR scanning as source adapters. GO key-only lookup
-requires the official browser challenge and is not automated. OCR for receipts without a usable key/QR,
-duplicate protection, and wider state coverage remain open, so NARUTO-03 is not yet
-complete. See the [NARUTO-03 status and plans](docs/sprints/5-naruto/naruto-03/01-product-and-data-contract.md).
+Status: attachment support and the first fiscal-import workflow are implemented.
+Cash/card index pages open an import modal where authorized XML, Goiás signed QR,
+Paraná NFC-e key/QR, PDF text, or a readable image QR can prefill an unsaved
+transaction with line items. Imported uploads can be retained as transaction receipts;
+category/entity defaults can be applied to all rows and exceptions edited individually.
+Goiás key-only lookup remains unavailable because its public page requires a browser
+challenge. Manual validation, attachment security/deployment gates, duplicate
+protection, OCR for receipts without usable structured sources, and broader state
+coverage remain open; see the [NARUTO-03 status and plans](docs/sprints/5-naruto/naruto-03/01-product-and-data-contract.md).
 
 Goal: allow any `CashTransaction`, `CardTransaction`, or `LineItem` to carry one or
 more file attachments as documentary evidence, and convert a supported Brazilian cupom
@@ -192,15 +194,13 @@ Locked V1 direction:
   attachment; deployed storage persistence, backup/restore, and remaining security
   failure cases are release gates before the feature is considered complete
 
-Fiscal document import is a planned NARUTO-03 slice and depends on NARUTO-02 for the
-transaction line-item form. The `naruto-03-v2` branch targets this slice: an uploaded
-fiscal receipt (XML, image, or PDF), QR URL, or 44-digit access key can produce a
-reviewable draft when its format and data source are supported. A short cupom number
-alone cannot identify a fiscal document. Official SEFAZ lookup is in scope where a
-supported consultation path provides item details; availability must be established
-per state and document type. Its scope and security questions are tracked separately
-from attachment hardening in `05-v3-brazilian-fiscal-import-plan.md` (the V3 label is
-the existing document phase, not the branch name).
+Fiscal document import depends on NARUTO-02's transaction line-item form. The
+`naruto-03-v2` branch implements the first supported paths: uploaded authorized XML,
+Goiás signed QR URL, Paraná NFC-e key/QR, PDF text extraction, and image/camera QR
+scanning. These create a reviewable cash/card draft; a short cupom number alone is not
+a lookup key. Remaining work and exact state/source limitations are tracked in
+`05-v3-brazilian-fiscal-import-plan.md` (the V3 label is the existing document phase,
+not the branch name).
 
 Coverage:
 
