@@ -37,7 +37,7 @@ class CardTransaction < ApplicationRecord
   validates :context, presence: true
   validates :description, :card_installments_count, presence: true
   validates :receipts,
-            content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
+            content_type: %w[application/json application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
             size: { less_than_or_equal_to: 10.megabytes },
             limit: { max: 5 }
   validate :validate_line_items_price_sum

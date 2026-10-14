@@ -42,7 +42,9 @@ the homolog deployment must still be retried and observed healthy.
   Line items have a model-level attachment association only; their upload UI is deferred.
 - The accepted types are PDF (`application/pdf`), JPEG (`image/jpeg`), PNG (`image/png`),
   HEIC (`image/heic`), XML (`application/xml` or `text/xml`), and ZIP
-  (`application/zip`).
+  (`application/zip`). Persisted fiscal receipt drafts may additionally carry a
+  generated JSON source manifest (`application/json`) for key/URL-only imports; JSON
+  is not an accepted user-upload type.
 - **Every attachment, including every picture, PDF, XML, and ZIP, is limited to 10 MiB.**
   Every host record is limited to five receipts. Both limits and the content-type
   allowlist are model validations on all three hosts. Client-side checks are feedback,

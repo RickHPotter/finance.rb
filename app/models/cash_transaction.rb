@@ -53,7 +53,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   validates :context, presence: true
   validates :description, :cash_installments_count, presence: true
   validates :receipts,
-            content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
+            content_type: %w[application/json application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
             size: { less_than_or_equal_to: 10.megabytes },
             limit: { max: 5 }
   validates :friend_notification_intent, inclusion: { in: FRIEND_NOTIFICATION_INTENTS }, allow_blank: true
