@@ -26,7 +26,8 @@ class FiscalReceiptImportsController < ApplicationController
     normalized = FiscalReceipts::SourceKey.new(source).call
     return FiscalReceipts::GoiasLookup.new(normalized).call if normalized.start_with?("https://#{FiscalReceipts::GoiasLookup::HOST}/")
     if FiscalReceipts::AccessKey.new(normalized).state_code == "52"
-      raise FiscalReceipts::GoiasLookup::Unavailable, "For Goiás, provide the complete QR URL or authorized XML. Key-only consultation requires a browser challenge."
+      raise FiscalReceipts::GoiasLookup::Unavailable,
+            "For Goiás, upload a cupom photo with a readable QR, paste its complete QR URL, or provide authorized XML. Key-only consultation requires a browser challenge."
     end
 
     FiscalReceipts::ParanaLookup.new(normalized).call

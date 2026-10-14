@@ -87,7 +87,7 @@ RSpec.describe "Fiscal receipt imports", type: :request do
                                         headers: { "Accept" => "application/json" }
 
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.fetch("error")).to include("complete QR URL")
+      expect(response.parsed_body.fetch("error")).to include("cupom photo with a readable QR")
     end
 
     it "requires authentication" do
