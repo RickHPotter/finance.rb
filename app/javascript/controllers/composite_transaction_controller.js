@@ -20,7 +20,10 @@ export default class extends Controller {
     "parentTotal",
     "allocatedSum",
     "differenceBadge",
-    "differenceLabel"
+    "differenceLabel",
+    "bulkCategory",
+    "bulkEntity",
+    "bulkAllocationStatus"
   ]
 
   connect() {
@@ -131,6 +134,38 @@ export default class extends Controller {
     }
 
     this.recalculate()
+  }
+
+  applyBulkAllocations(event) {
+    event.preventDefault()
+
+    const categoryId = this.hasBulkCategoryTarget ? this.selectedValue(this.bulkCategoryTarget) : null
+    const entityId = this.hasBulkEntityTarget ? this.selectedValue(this.bulkEntityTarget) : null
+    if (!categoryId && !entityId) return
+
+    const rows = this.activeRows
+    rows.forEach(row => {
+      if (categoryId) this.selectRowValue(row, 'input[type="radio"][name$="[category_id]"]', categoryId)
+      if (entityId) this.selectRowValue(row, 'input[type="radio"][name$="[entity_id]"]', entityId)
+    })
+
+    if (this.hasBulkAllocationStatusTarget) {
+      this.bulkAllocationStatusTarget.textContent = this.bulkAllocationStatusTarget.dataset.appliedText.replace("%{count}", rows.length)
+      this.bulkAllocationStatusTarget.classList.remove("hidden")
+    }
+  }
+
+  selectedValue(combobox) {
+    return combobox.querySelector("input[type='radio']:checked")?.value || null
+  }
+
+  selectRowValue(row, selector, value) {
+    const input = Array.from(row.querySelectorAll(selector)).find(option => option.value === value)
+    if (!input || input.checked) return
+
+    input.checked = true
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+    input.dispatchEvent(new Event("change", { bubbles: true }))
   }
 
   syncRowSign() {

@@ -31,6 +31,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         data: { composite_transaction_target: "container" }
       ) do
         summary_strip
+        bulk_allocation_controls
 
         div(class: "divide-y divide-gray-200 dark:divide-slate-700/40",
             data: { composite_transaction_target: "itemsList" }) do
@@ -96,6 +97,44 @@ class Views::Transactions::FormLineItemsSection < Views::Base
       form.fields_for :line_items, item, child_index: idx do |item_form|
         render_row(item_form, item, idx)
       end
+    end
+  end
+
+  def bulk_allocation_controls
+    div(class: "grid grid-cols-1 gap-2 border-b border-gray-200 bg-white p-3 dark:border-slate-700/40 dark:bg-slate-900/30 sm:grid-cols-[1fr_1fr_auto]") do
+      div(class: "text-xs font-medium text-slate-600 dark:text-slate-300 sm:col-span-3") do
+        I18n.t("transactions.composite.bulk_defaults")
+      end
+
+      render Views::Shared::SingleSelectCombobox.new(
+        name: "line_item_bulk_category_id",
+        options: categories,
+        selected_value: nil,
+        placeholder: I18n.t("activerecord.attributes.line_item.category_id"),
+        size: :sm,
+        combobox_data: { composite_transaction_target: "bulkCategory" }
+      )
+      render Views::Shared::SingleSelectCombobox.new(
+        name: "line_item_bulk_entity_id",
+        options: entities.map { |label, value| [ label, value, {} ] },
+        selected_value: nil,
+        placeholder: I18n.t("activerecord.attributes.line_item.entity_id"),
+        size: :sm,
+        combobox_data: { composite_transaction_target: "bulkEntity" }
+      )
+      Button(
+        type: :button,
+        variant: :outline,
+        size: :sm,
+        class: "whitespace-nowrap",
+        data: { action: "click->composite-transaction#applyBulkAllocations" }
+      ) { I18n.t("transactions.composite.apply_to_all") }
+
+      p(
+        class: "hidden text-xs text-emerald-700 dark:text-emerald-300 sm:col-span-3",
+        role: :status,
+        data: { composite_transaction_target: "bulkAllocationStatus", applied_text: I18n.t("transactions.composite.defaults_applied") }
+      )
     end
   end
 
