@@ -193,6 +193,10 @@ module Logic
       def replay_entity_transactions_attributes(payload)
         attributes = replayed_entity_transaction_attributes(payload).map do |entity_attributes|
           entity_attributes = entity_attributes.with_indifferent_access
+          # Exchange#belongs_to :entity_transaction maintains this counter.
+          # Assigning the replayed count as well would count each newly-created
+          # exchange twice (once from the payload and once from the counter cache).
+          entity_attributes = entity_attributes.except(:exchanges_count) if entity_attributes.key?(:exchanges_attributes)
           exchanges_attributes = Array(entity_attributes[:exchanges_attributes]).map do |exchange_attributes|
             exchange_attributes.with_indifferent_access.except(:paid)
           end

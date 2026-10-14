@@ -19,7 +19,8 @@ export default class extends Controller {
     "itemPrice",
     "parentTotal",
     "allocatedSum",
-    "differenceBadge"
+    "differenceBadge",
+    "differenceLabel"
   ]
 
   connect() {
@@ -37,23 +38,30 @@ export default class extends Controller {
     this.applySplitVisibility(isSplit)
 
     if (isSplit) {
-      if (this.activeRows.length < 2) {
-        while (this.activeRows.length < 2) {
-          this.addRow()
-        }
-      }
+      if (this.activeRows.length === 0) this.addRow()
     } else {
       this.clearAllRows()
     }
 
+    this.syncSplitHiddenInput(isSplit)
+    this.recalculate()
+  }
+
+  tabChanged(event) {
+    const isSplit = event.currentTarget.dataset.value === "split"
+    this.applySplitVisibility(isSplit)
+
+    if (isSplit) {
+      if (this.activeRows.length === 0) this.addRow()
+    } else {
+      this.clearAllRows()
+    }
+
+    this.syncSplitHiddenInput(isSplit)
     this.recalculate()
   }
 
   applySplitVisibility(isSplit) {
-    if (this.hasContainerTarget) {
-      this.containerTarget.classList.toggle("hidden", !isSplit)
-    }
-
     if (this.hasHeaderAllocationsTarget) {
       this.headerAllocationsTarget.classList.toggle("pointer-events-none", isSplit)
       this.headerAllocationsTarget.classList.toggle("opacity-50", isSplit)
@@ -69,6 +77,11 @@ export default class extends Controller {
         el.disabled = isSplit
       })
     }
+  }
+
+  syncSplitHiddenInput(isSplit) {
+    const input = this.element.querySelector("input[name*='[split_purchase]']")
+    if (input) input.value = isSplit ? "1" : "0"
   }
 
   clearAllRows() {
@@ -91,6 +104,12 @@ export default class extends Controller {
     const timestamp = new Date().getTime().toString() + Math.floor(Math.random() * 1000).toString()
     const content = this.templateTarget.innerHTML.replace(/NEW_LINE_ITEM/gi, timestamp)
     this.itemsListTarget.insertAdjacentHTML("beforeend", content)
+
+    const entityModalTemplate = this.element.querySelector("[data-composite-entity-modal-target~='template']")
+    const entityModalGroups = this.element.querySelector("[data-composite-entity-modal-target~='groups']")
+    if (entityModalTemplate && entityModalGroups) {
+      entityModalGroups.insertAdjacentHTML("beforeend", entityModalTemplate.innerHTML.replace(/NEW_LINE_ITEM/gi, timestamp))
+    }
 
     this.syncRowSign()
     this.recalculate()
@@ -191,25 +210,38 @@ export default class extends Controller {
 
   updateDifferenceBadge(diff, parentCents, activeRowCount) {
     const badge = this.differenceBadgeTarget
+    const label = this.hasDifferenceLabelTarget ? this.differenceLabelTarget : null
     const balancedText = badge.dataset.balancedText || "Balanced"
     const minItemsText = badge.dataset.minItemsText || "Min 2 items needed"
     const remainingText = badge.dataset.remainingText || "Remaining:"
     const overAllocatedText = badge.dataset.overAllocatedText || "Over by:"
 
-    badge.className = "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+    badge.className = "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono"
 
     if (diff === 0 && activeRowCount >= 2 && parentCents !== 0) {
+      if (label) {
+        label.textContent = ""
+        label.classList.add("hidden")
+      }
       badge.textContent = balancedText
-      badge.classList.add("bg-emerald-500/20", "text-emerald-400", "border", "border-emerald-500/30")
     } else if (diff === 0 && activeRowCount < 2) {
+      if (label) {
+        label.textContent = ""
+        label.classList.add("hidden")
+      }
       badge.textContent = minItemsText
-      badge.classList.add("bg-amber-500/20", "text-amber-400", "border", "border-amber-500/30")
     } else if ((parentCents >= 0 && diff > 0) || (parentCents < 0 && diff < 0)) {
-      badge.textContent = `${remainingText} ${this.formatCurrency(Math.abs(diff))}`
-      badge.classList.add("bg-rose-500/20", "text-rose-400", "border", "border-rose-500/30")
+      if (label) {
+        label.textContent = remainingText
+        label.classList.remove("hidden")
+      }
+      badge.textContent = this.formatCurrency(Math.abs(diff))
     } else {
-      badge.textContent = `${overAllocatedText} ${this.formatCurrency(Math.abs(diff))}`
-      badge.classList.add("bg-amber-500/20", "text-amber-400", "border", "border-amber-500/30")
+      if (label) {
+        label.textContent = overAllocatedText
+        label.classList.remove("hidden")
+      }
+      badge.textContent = this.formatCurrency(Math.abs(diff))
     }
   }
 }

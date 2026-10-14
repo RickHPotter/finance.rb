@@ -5,6 +5,7 @@ class Views::CashTransactions::Form < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::HiddenFieldTag
   include Phlex::Rails::Helpers::AssetPath
+  include Phlex::Rails::Helpers::Routes
 
   include TranslateHelper
   include ComponentsHelper
@@ -27,16 +28,28 @@ class Views::CashTransactions::Form < Views::Base
   end
 
   def view_template
+    receipts_upload = Components::TransactionReceiptsUpload.new(transaction: cash_transaction, form: nil)
+
     turbo_frame_tag dom_id cash_transaction do
       form_with model: cash_transaction,
                 id: :transaction_form,
                 class: "contents text-slate-100",
                 data: {
-                  controller: "reactive-form price-mask composite-transaction",
+                  controller: "reactive-form price-mask composite-transaction attachment-upload",
                   composite_transaction_composite_value: cash_transaction.composite?,
                   reactive_form_type_value: "CashTransaction",
                   reactive_form_preserve_installment_prices_value: cash_transaction.persisted?,
-                  action: "submit->price-mask#removeMasks"
+                  action: "submit->price-mask#removeMasks submit->attachment-upload#beforeSubmit",
+                  attachment_upload_model_name_value: cash_transaction.model_name.param_key,
+                  attachment_upload_direct_upload_url_value: rails_direct_uploads_path,
+                  attachment_upload_existing_count_value: receipts_upload.existing_count,
+                  attachment_upload_max_files_value: 5,
+                  attachment_upload_max_file_size_value: 10.megabytes.to_i,
+                  attachment_upload_too_large_message_value: I18n.t("attachments.too_large"),
+                  attachment_upload_invalid_type_message_value: I18n.t("attachments.invalid_type"),
+                  attachment_upload_max_count_message_value: I18n.t("attachments.max_count"),
+                  attachment_upload_uploading_message_value: I18n.t("attachments.uploading"),
+                  attachment_upload_wait_for_uploads_message_value: I18n.t("attachments.wait_for_uploads")
                 } do |form|
         form.hidden_field :user_id, value: current_user.id
         form.hidden_field :context_id, value: cash_transaction.context_id || current_context.id
@@ -50,6 +63,8 @@ class Views::CashTransactions::Form < Views::Base
         end
         form.hidden_field :source_message_id,
                           value: cash_transaction.source_message_id
+        # Hidden split_purchase field so the tab controller can update it
+        form.hidden_field :split_purchase, value: cash_transaction.composite? ? "1" : "0"
         hidden_field_tag :return_to, return_to
 
         hidden_field_tag :category_colours,       categories_json,        disabled: true, data: { reactive_form_target: :categoryColours }
@@ -61,7 +76,7 @@ class Views::CashTransactions::Form < Views::Base
         render Views::Transactions::FormIntroFields.new(
           form:,
           transaction: cash_transaction,
-          description_class: cash_transaction.card_payment? ? outdoor_readonly_input_class : outdoor_input_class,
+          description_class: cash_transaction.card_payment? ? outdoor_readonly_input_class(same_size: true) : outdoor_input_class,
           comment_disabled: cash_transaction.card_payment?,
           autofocus_target: :description
         )
@@ -70,22 +85,71 @@ class Views::CashTransactions::Form < Views::Base
           cash_transaction:,
           user_bank_accounts: @user_bank_accounts,
           categories: @categories,
-          entities: @entities
+          entities: @entities,
+          attachment_modal_id: receipts_upload.modal_id,
+          existing_count: receipts_upload.existing_count
         )
-        render Views::Transactions::FormLineItemsSection.new(
-          form:,
-          transaction: cash_transaction,
-          categories: @leaf_categories,
-          entities: @entities
-        )
-        render Views::CashTransactions::FormInstallmentsSection.new(form:, cash_transaction:)
-        div(
-          class: "mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-0 #{'pointer-events-none opacity-50' if cash_transaction.composite?}",
-          data: { composite_transaction_target: "allocationsContainer" }
-        ) do
-          render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
-          render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
+
+        # Tabbed section: Single Purchase | Split Purchase
+        default_tab = cash_transaction.composite? ? "split" : "single"
+        composite = cash_transaction.composite?
+
+        Tabs(default: default_tab, class: "mb-3") do
+          TabsList(class: "w-full justify-start rounded-none border-b border-slate-200 bg-transparent p-0 dark:border-slate-700/50 h-auto") do
+            TabsTrigger(
+              value: "single",
+              tabindex: -1,
+              class: "rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-slate-600 data-[state=active]:border-slate-800 " \
+                     "data-[state=active]:text-slate-900 dark:text-slate-400 dark:data-[state=active]:border-slate-200 dark:data-[state=active]:text-slate-100",
+              data: { action: "click->composite-transaction#tabChanged" }
+            ) { I18n.t("transactions.composite.single_purchase") }
+            TabsTrigger(
+              value: "split",
+              tabindex: -1,
+              disabled: !cash_transaction.split_purchase_supported?,
+              class: "rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-slate-600 data-[state=active]:border-slate-800 " \
+                     "data-[state=active]:text-slate-900 dark:text-slate-400 dark:data-[state=active]:border-slate-200 dark:data-[state=active]:text-slate-100",
+              data: { action: "click->composite-transaction#tabChanged" }
+            ) { I18n.t("transactions.composite.split_purchase") }
+          end
+
+          # Single Purchase tab: Categories (A1) + Entities (A2)
+          TabsContent(value: "single", class: "mt-0 pt-2") do
+            div(
+              class: "overflow-hidden rounded-lg border border-gray-300 bg-white dark:border-slate-700/60 dark:bg-slate-900/30 " \
+                     "#{'pointer-events-none opacity-50' if composite}",
+              data: { composite_transaction_target: "allocationsContainer" }
+            ) do
+              div(
+                class: "grid grid-cols-2 border-b border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-500 " \
+                       "dark:border-slate-700/40 dark:bg-slate-800/30 dark:text-slate-400"
+              ) do
+                div { pluralise_model(Category, 2) }
+                div(class: "border-l border-gray-200 pl-3 dark:border-slate-700/40") { pluralise_model(Entity, 2) }
+              end
+
+              div(class: "grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-slate-700/50") do
+                render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
+                render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
+              end
+            end
+          end
+
+          # Split Purchase tab: line items (always expanded)
+          TabsContent(value: "split", class: "mt-0 pt-2") do
+            render Views::Transactions::FormLineItemsSection.new(
+              form:,
+              transaction: cash_transaction,
+              categories: @leaf_categories,
+              entities: @entities
+            )
+          end
         end
+
+        # Receipts upload: modal + hidden inputs (button is in FormControls row)
+        render receipts_upload
+
+        render Views::CashTransactions::FormInstallmentsSection.new(form:, cash_transaction:)
 
         render Views::Transactions::FormActions.new(
           transaction: cash_transaction,
@@ -97,7 +161,7 @@ class Views::CashTransactions::Form < Views::Base
           canonical_navigation: true
         ) do
           if cash_transaction.exchange_return?
-            transactables_type = cash_transaction.exchanges.joins(:entity_transaction).pluck(:transactable_type)
+            transactables_type = cash_transaction.exchanges.map { |exchange| exchange.transactable&.class&.name }
             card_transactions_sheet if transactables_type.include?("CardTransaction")
             cash_transactions_sheet if transactables_type.include?("CashTransaction")
           end
@@ -120,7 +184,7 @@ class Views::CashTransactions::Form < Views::Base
           end
         end
 
-        form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
+        form.submit "Update", class: "sr-only opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
       end
     end
   end

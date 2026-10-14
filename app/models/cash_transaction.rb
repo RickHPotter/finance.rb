@@ -45,13 +45,18 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
            inverse_of: :piggy_bank_return_cash_transaction,
            dependent: :restrict_with_error
   has_many :line_items, as: :transactable, dependent: :destroy, inverse_of: :transactable
+  has_many_attached :receipts
   accepts_nested_attributes_for :piggy_bank, allow_destroy: true
-  accepts_nested_attributes_for :line_items, allow_destroy: true
+  accepts_nested_attributes_for :line_items, allow_destroy: true, reject_if: :blank_line_item_attributes?
 
   # @validations ..............................................................
   validates :context, presence: true
   validates :description, :cash_installments_count, presence: true
-  validates :friend_notification_intent, inclusion: { in: FRIEND_NOTIFICATION_INTENTS }, allow_nil: true
+  validates :receipts,
+            content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
+            size: { less_than_or_equal_to: 10.megabytes },
+            limit: { max: 5 }
+  validates :friend_notification_intent, inclusion: { in: FRIEND_NOTIFICATION_INTENTS }, allow_blank: true
   validate :friend_notification_intent_matches_exchange_category
   validate :friend_notification_intent_present_for_exchange_category
   validate :validate_piggy_bank_source_contract
@@ -151,6 +156,13 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def composite?
     active_line_items.any?
+  end
+
+  def split_purchase_supported?
+    return false if card_payment? || card_advance? || investment? || piggy_bank_source? || generated_piggy_bank_return?
+    return false if exchange_return?
+
+    true
   end
 
   def active_line_items
@@ -272,6 +284,15 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   def exchange_category?
     exchange_category = user&.categories&.find_by(category_name: "EXCHANGE")
     exchange_category_id = exchange_category&.id
+    return false if exchange_category_id.blank?
+
+    if composite?
+      return active_line_items.any? do |line_item|
+        line_item.category_transactions.reject(&:marked_for_destruction?).any? do |category_transaction|
+          category_transaction.category_id == exchange_category_id || category_transaction.category&.category_name == "EXCHANGE"
+        end
+      end
+    end
 
     category_transactions.reject(&:marked_for_destruction?).any? do |category_transaction|
       category_transaction.category_id == exchange_category_id || category_transaction.category&.category_name == "EXCHANGE"
@@ -626,7 +647,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   def prevent_linked_borrow_return_destruction
     return if context_destroying?
     return if Audit::Current.mutation_source == "rollback"
-    return if applying_actionable_message? && exchange_category?
+    return if applying_actionable_message? && (exchange_category? || linked_borrow_return?)
     return unless linked_borrow_return?
 
     errors.add(:base, :destroy_linked_shared_return)
@@ -638,12 +659,14 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def friend_notification_intent_matches_exchange_category
+    return if composite?
     return unless !exchange_category? && friend_notification_intent.present?
 
     errors.add(:friend_notification_intent, :invalid)
   end
 
   def friend_notification_intent_present_for_exchange_category
+    return if composite?
     return unless exchange_category? && friend_notification_intent.blank?
 
     errors.add(:friend_notification_intent, :blank)
@@ -842,11 +865,33 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   def validate_line_items_price_sum
     return unless composite?
 
-    line_items_sum = active_line_items.sum(&:price)
+    line_items_sum = active_line_items.sum { |line_item| line_item.price.to_i }
     return if line_items_sum == price
 
     difference = (price - line_items_sum).abs
     errors.add(:price, :line_items_sum_mismatch, difference:)
+  end
+
+  def blank_line_item_attributes?(attributes)
+    attributes = attributes.with_indifferent_access
+    return false if attributes[:id].present?
+
+    substantive_attributes = attributes.except(:id, :_destroy, :entity_transactions_attributes)
+    return false if substantive_attributes.values.any?(&:present?)
+
+    entity_transactions = attributes[:entity_transactions_attributes]
+    entity_transactions = entity_transactions.to_unsafe_h if entity_transactions.respond_to?(:to_unsafe_h)
+    entity_transactions =
+      if entity_transactions.is_a?(Hash)
+        entity_transactions.key?(:entity_id) || entity_transactions.key?("entity_id") ? [ entity_transactions ] : entity_transactions.values
+      else
+        Array(entity_transactions)
+      end
+
+    entity_transactions.none? do |entity_transaction_attributes|
+      entity_transaction_attributes = entity_transaction_attributes.with_indifferent_access
+      entity_transaction_attributes[:entity_id].present? && !ActiveModel::Type::Boolean.new.cast(entity_transaction_attributes[:_destroy])
+    end
   end
 end
 

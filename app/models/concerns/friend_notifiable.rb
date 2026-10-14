@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Shared functionality for models that can produce Installments.
-module FriendNotifiable
+module FriendNotifiable # rubocop:disable Metrics/ModuleLength
   extend ActiveSupport::Concern
 
   include TranslateHelper
@@ -31,20 +31,17 @@ module FriendNotifiable
 
   protected
 
+  def notify_friends_for_line_item_change(action)
+    notify_friends(action)
+  end
+
   def notify_friends(action)
     return if applying_actionable_message?
 
-    if (action != :create) && not_exchange?
-      return if was_not_exchange?
+    action = notification_action_for_transition(action)
+    return if action.blank?
 
-      action = :destroy
-    end
-
-    if action == :destroy
-      user.entities.where(id: entity_transactions.where(exchanges_count: 0).pluck(:entity_id).presence || original_entities).that_are_users
-    else
-      user.entities.where(id: entity_transactions.where(exchanges_count: 1..).pluck(:entity_id)).that_are_users
-    end => friends
+    friends = notification_friends(action)
 
     return if friends.empty?
 
@@ -53,6 +50,27 @@ module FriendNotifiable
     end
 
     I18n.locale = user.locale
+  end
+
+  def notification_action_for_transition(action)
+    return action if action == :create || !not_exchange?
+    return if was_not_exchange?
+    return action if action == :update && composite_notification_history? && no_current_friend_exchange_allocations?
+
+    :destroy
+  end
+
+  def notification_friends(action)
+    entity_transactions = friend_notification_entity_transactions
+    entity_ids = if action == :destroy
+                   entity_transactions.select { |et| et.exchanges_count.zero? }.map(&:entity_id).presence || original_entities
+                 else
+                   entity_transactions.select { |et| et.exchanges_count.positive? }.map(&:entity_id)
+                 end
+    friends = user.entities.where(id: entity_ids).that_are_users
+    return friends if action == :create || !composite_notification_history?
+
+    friends.or(user.entities.where(id: previous_notification_friend_entity_ids).that_are_users)
   end
 
   def notify_friend(friend, action)
@@ -73,32 +91,172 @@ module FriendNotifiable
     destroy_message_reference = destroy_message_reference_transactable(friend_user_reference)
     message = conversation.messages.new(user:, reference_transactable: action == :destroy ? destroy_message_reference : self)
 
-    entity_transaction = entity_transactions.find_by(entity_id: friend.id)
-    return if entity_transaction.nil? && action != :destroy
+    save_friend_notification_groups(
+      conversation:,
+      message:,
+      friend_user:,
+      friend:,
+      receiver_context:,
+      action:,
+      destroy_reference: friend_user_reference
+    )
+  end
 
-    save_message(message, friend_user, entity_transaction&.exchanges&.order(:number, :date), action, destroy_reference: friend_user_reference)
+  def save_friend_notification_groups(conversation:, message:, friend_user:, friend:, receiver_context:, action:, destroy_reference:)
+    entity_transactions_for_friend = friend_notification_entity_transactions.select { |et| et.entity_id == friend.id }
+    exchange_groups = notification_exchange_groups(entity_transactions_for_friend, action)
+    removed_intent_messages = removed_notification_intent_messages(conversation, exchange_groups.keys) if action == :update
+    return if entity_transactions_for_friend.empty? && action != :destroy && removed_intent_messages.blank?
+
+    current_group_messages = save_notification_exchange_groups(
+      exchange_groups:, conversation:, message:, friend_user:, receiver_context:, action:, destroy_reference:
+    )
+    current_group_messages = current_notification_group_messages(conversation, exchange_groups.keys) if current_group_messages.empty?
+
+    destroy_removed_notification_intent_groups(
+      conversation:,
+      friend_user:,
+      receiver_context:,
+      removed_messages: removed_intent_messages || [],
+      current_messages: current_group_messages
+    )
+  end
+
+  def notification_exchange_groups(entity_transactions, action)
+    exchanges = Exchange.where(entity_transaction_id: entity_transactions.map(&:id)).order(:number, :date).to_a
+    return { nil => exchanges } unless is_a?(CashTransaction) && composite? && action != :destroy
+
+    exchanges.group_by { |exchange| notification_intent_for_exchange(exchange) }
+  end
+
+  def current_notification_group_messages(conversation, intents)
+    conversation.messages
+                .where(reference_transactable_type: self.class.name, reference_transactable_id: id)
+                .where(body: %w[notification:create notification:update], superseded_by_id: nil)
+                .select { |current_message| intents.include?(current_message.replay_payload&.dig("intent")) }
+  end
+
+  def save_notification_exchange_groups(exchange_groups:, conversation:, message:, friend_user:, receiver_context:, action:, destroy_reference:)
+    group_actions = exchange_groups.keys.index_with do |intent|
+      notification_action_for_group(conversation, intent, action, exchange_groups.size, receiver_context:)
+    end
+    ordered_groups = exchange_groups.sort_by { |intent, _exchanges| group_actions[intent] == :update ? 0 : 1 }
+    superseded_previous = false
+
+    ordered_groups.each_with_index.filter_map do |(intent, grouped_exchanges), index|
+      grouped_message = index.zero? ? message : conversation.messages.new(user:, reference_transactable: self)
+      group_action = group_actions[intent]
+      saved = save_message(
+        grouped_message,
+        friend_user,
+        aggregate_notification_exchanges(grouped_exchanges),
+        group_action,
+        destroy_reference:,
+        intent:,
+        supersede_previous: group_action == :update && !superseded_previous,
+        preserve_other_intents: exchange_groups.size > 1
+      )
+      superseded_previous ||= group_action == :update && saved
+      grouped_message if saved
+    end
+  end
+
+  def notification_action_for_group(conversation, intent, action, group_count, receiver_context:)
+    return action unless action == :update && is_a?(CashTransaction) && composite?
+
+    previous_messages = conversation.messages
+                                    .where(reference_transactable_type: self.class.name, reference_transactable_id: id)
+                                    .where(body: %w[notification:create notification:update])
+                                    .to_a
+    active_messages = previous_messages.select { |previous| previous.superseded_by_id.nil? }
+    return :update if active_messages.any? { |previous| previous.replay_payload&.dig("intent") == intent }
+    return :update if previous_messages.any? do |previous|
+      previous.replay_payload&.dig("intent") == intent && previous_notification_target_exists?(previous, receiver_context)
+    end
+    return :update if group_count == 1 && active_messages.one?
+
+    :create
+  end
+
+  def previous_notification_target_exists?(message, context)
+    target = message.local_reference_for(context:)
+    return false unless target
+
+    category_ids = Array(message.replay_payload&.fetch("category_ids", nil)).flatten.compact.map(&:to_i)
+    (target.category_transactions.map(&:category_id) & category_ids).present?
+  end
+
+  def removed_notification_intent_messages(conversation, current_intents)
+    return [] unless is_a?(CashTransaction)
+    return [] unless composite? || current_intents.compact.empty?
+
+    current_intents = current_intents.compact
+    conversation.messages
+                .where(reference_transactable_type: self.class.name, reference_transactable_id: id)
+                .where(body: %w[notification:create notification:update])
+                .select do |previous_message|
+      previous_intent = previous_message.replay_payload&.dig("intent")
+      previous_intent.present? && !current_intents.include?(previous_intent)
+    end
+  end
+
+  def destroy_removed_notification_intent_groups(conversation:, friend_user:, receiver_context:, removed_messages:, current_messages:)
+    current_target_ids = notification_group_target_ids(current_messages, receiver_context)
+    current_category_ids = current_messages.flat_map { |notification| Array(notification.replay_payload&.fetch("category_ids", nil)) }
+                                           .flatten.compact.map(&:to_i)
+    stale_targets = removed_messages.filter_map { |previous| previous.local_reference_for(context: receiver_context) }.uniq(&:id)
+    fallback_preserved_target_id = unique_stale_target_id(stale_targets) if current_messages.one? && current_target_ids.empty?
+
+    stale_targets.each do |stale_target|
+      next if notification_target_is_current?(stale_target, current_target_ids, current_category_ids, fallback_preserved_target_id)
+
+      create_removed_intent_destroy_message(conversation, friend_user, stale_target)
+    end
+  end
+
+  def notification_group_target_ids(messages, context)
+    messages.filter_map { |notification| notification.local_reference_for(context:)&.id }
+  end
+
+  def unique_stale_target_id(stale_targets)
+    stale_targets.first.id if stale_targets.map(&:id).uniq.one?
+  end
+
+  def notification_target_is_current?(target, current_target_ids, current_category_ids, fallback_target_id)
+    return true if current_target_ids.include?(target.id) || fallback_target_id == target.id
+
+    (target.category_transactions.map(&:category_id) & current_category_ids).present?
+  end
+
+  def create_removed_intent_destroy_message(conversation, friend_user, target)
+    destroy_message = conversation.messages.new(user:, reference_transactable: target, body: "notification:destroy")
+    create_headers(destroy_message, friend_user, [], :destroy, destroy_reference: target)
+    destroy_message.save
   end
 
   def find_or_create_conversation(user, friendship, scenario_key:)
     Logic::Conversations::Resolve.call(actor: user, friendship:, kind: :assistant, scenario_key:)
   end
 
-  def save_message(message, friend_user, exchanges, action, destroy_reference: nil)
+  def save_message(message, friend_user, exchanges, action, destroy_reference: nil, intent: nil, supersede_previous: true,
+                   preserve_other_intents: false)
     create_body(message, friend_user, exchanges, action)
-    create_headers(message, friend_user, exchanges, action, destroy_reference:)
+    create_headers(message, friend_user, exchanges, action, destroy_reference:, intent:)
 
-    return false if message.headers.present? && Message.exists?(conversation: message.conversation, headers: message.headers)
+    return false if message.headers.present? && Message.latest.exists?(conversation: message.conversation, headers: message.headers)
 
     message.save
 
-    supersede_previous_messages(message.conversation, message) if action != :create
+    return unless action != :create && supersede_previous
+
+    supersede_previous_messages(message.conversation, message, preserve_other_intents:)
   end
 
   def create_body(message, _friend_user, _exchanges, action)
     message.body = "notification:#{action}"
   end
 
-  def create_headers(message, friend_user, exchanges, action, destroy_reference: nil)
+  def create_headers(message, friend_user, exchanges, action, destroy_reference: nil, intent: nil)
     if action == :destroy
       message.headers = {
         version: "message_notification_v2",
@@ -111,14 +269,14 @@ module FriendNotifiable
 
     return if exchanges.blank?
 
-    transaction_type = exchanges.first.entity_transaction.transactable_type
+    transaction_type = model_name.name
 
     replay_payload = if action == :destroy
                        nil
                      elsif transaction_type == "CardTransaction"
                        build_card_transaction_headers(friend_user, exchanges)
                      else
-                       build_cash_transaction_headers(friend_user, exchanges)
+                       build_cash_transaction_headers(friend_user, exchanges, intent:)
                      end
 
     # If no mirror entity exists on the friend's side yet (friendship accepted but
@@ -163,8 +321,8 @@ module FriendNotifiable
         description:,
         date: date&.iso8601,
         reference_month_year: month_year,
-        price: exchanges.sum(:price),
-        installments_count: exchanges.count,
+        price: exchanges.sum(&:price),
+        installments_count: exchanges.size,
         installments: exchanges.map { |exchange| exchange.slice(:number, :price).merge(date: exchange.date&.iso8601) }
       }
     }
@@ -178,7 +336,7 @@ module FriendNotifiable
       { **exchange.slice(:number, :date, :month, :year), price: exchange.price * -1, paid: exchange.mirrored_paid? }
     end
 
-    price = exchanges.pluck(:price).sum
+    price = exchanges.sum { |exchange| exchange[:price] }
 
     {
       id:,
@@ -194,8 +352,8 @@ module FriendNotifiable
     }
   end
 
-  def build_cash_transaction_headers(friend_user, exchanges)
-    intent = friend_notification_intent_for(friend_user)
+  def build_cash_transaction_headers(friend_user, exchanges, intent: nil)
+    intent = friend_notification_intent_for(friend_user, explicit_intent: intent)
 
     if intent == "reimbursement"
       build_cash_reimbursement_headers(friend_user, exchanges, intent)
@@ -211,8 +369,8 @@ module FriendNotifiable
     cash_installments_attributes = cash_installments_for_exchanges(exchanges)
     exchanges_attributes = cash_loan_exchange_attributes(exchanges)
 
-    installments_price = cash_installments_attributes.pluck(:price).sum
-    exchanges_price = exchanges_attributes.pluck(:price).sum
+    installments_price = cash_installments_attributes.sum { |installment| installment[:price] }
+    exchanges_price = exchanges_attributes.sum { |exchange| exchange[:price] }
 
     {
       id:,
@@ -232,7 +390,7 @@ module FriendNotifiable
           price: exchanges_price,
           price_to_be_returned: exchanges_price,
           entity_id:,
-          exchanges_count: exchanges.count,
+          exchanges_count: exchanges_attributes.count,
           exchanges_attributes:
         }
       ]
@@ -240,22 +398,30 @@ module FriendNotifiable
   end
 
   def cash_installments_for_exchanges(exchanges)
-    exchanged_numbers = exchanges.map(&:number)
-
-    # Structural notifications carry shape only — payment state travels via paid_state_sync messages.
-    # Only send the installments that were actually exchanged with this friend so that a partial
-    # transaction (some installments shared, others not) produces the correct subset for the receiver.
-    installments.order(:number, :date)
-                .select { |i| exchanged_numbers.include?(i.number) }
-                .map { |i| i.slice(:number, :date, :month, :year).merge(price: i.price * -1) }
+    # A composite transaction can have multiple LineItems sharing the same installment number.
+    # The parent installment total therefore cannot represent the amount shared by one intent
+    # group; derive the counterpart amount from that group's exchanges instead.
+    aggregated_exchange_attributes(exchanges).sort_by { |installment| [ installment[:number], installment[:date] ] }
   end
 
   def cash_loan_exchange_attributes(exchanges)
-    exchanges.map do |exchange|
-      exchange.slice(:number, :date, :month, :year).merge(
-        price: exchange.price * -1,
-        exchange_type: exchange.exchange_type
-      )
+    aggregated_exchange_attributes(exchanges, group_by_exchange_type: true)
+      .map { |exchange| exchange.merge(price: -exchange[:price]) }
+      .sort_by { |exchange| [ exchange[:number], exchange[:date] ] }
+  end
+
+  def aggregated_exchange_attributes(exchanges, group_by_exchange_type: false)
+    grouped_exchanges = exchanges.group_by do |exchange|
+      [ exchange.number, exchange.month, exchange.year, (exchange.exchange_type if group_by_exchange_type) ]
+    end
+
+    grouped_exchanges.map do |(number, month, year, exchange_type), exchange_group|
+      date = exchange_group.map(&:date).compact.min
+      # The request transaction is incoming for the recipient, while its
+      # exchange schedule represents the recipient's repayment obligation.
+      attributes = { number:, date:, month:, year:, price: exchange_group.sum { |exchange| exchange.price.to_i.abs } }
+      attributes[:exchange_type] = exchange_type if group_by_exchange_type
+      attributes
     end
   end
 
@@ -268,7 +434,7 @@ module FriendNotifiable
       exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1)
     end
 
-    installments_price = cash_installments_attributes.pluck(:price).sum
+    installments_price = cash_installments_attributes.sum { |installment| installment[:price] }
 
     {
       id:,
@@ -296,8 +462,8 @@ module FriendNotifiable
     }
   end
 
-  def friend_notification_intent_for(friend_user)
-    explicit_intent = respond_to?(:friend_notification_intent) ? friend_notification_intent.presence : nil
+  def friend_notification_intent_for(friend_user, explicit_intent: nil)
+    explicit_intent ||= respond_to?(:friend_notification_intent) ? friend_notification_intent.presence : nil
     return explicit_intent if explicit_intent.in?(%w[loan reimbursement])
 
     return "reimbursement" if reimbursement_notification?(friend_user)
@@ -305,11 +471,26 @@ module FriendNotifiable
     "loan"
   end
 
-  def supersede_previous_messages(conversation, new_message)
+  def notification_intent_for_exchange(exchange)
+    line_item = exchange.entity_transaction.transactable
+    return line_item.friend_notification_intent if line_item.is_a?(LineItem)
+
+    friend_notification_intent_for(exchange.entity_transaction.entity&.entity_user)
+  end
+
+  def supersede_previous_messages(conversation, new_message, preserve_other_intents: false)
     previous_messages = conversation.messages
                                     .merge(reference_scope_for(notification_message_reference_family))
                                     .where(superseded_by_id: nil)
                                     .where.not(id: new_message.id)
+    if preserve_other_intents && new_message.replay_payload&.dig("intent").present?
+      matching_message_ids = previous_messages.filter_map do |previous_message|
+        next unless previous_message.replay_payload&.dig("intent") == new_message.replay_payload["intent"]
+
+        previous_message.id
+      end
+      previous_messages = previous_messages.where(id: matching_message_ids)
+    end
 
     Logic::Messages::Transition.expire_scope!(previous_messages, superseded_by: new_message)
   end
@@ -385,20 +566,65 @@ module FriendNotifiable
 
   # HELPER BOOLEAN METHODS
   def not_exchange?
-    category_transactions.pluck(:category_id).exclude?(exchange_category.id)
+    friend_notification_category_ids.exclude?(exchange_category.id)
   end
 
   def was_not_exchange?
+    return false if composite_notification_history?
+
     original_categories.blank? || original_categories.exclude?(exchange_category.id)
   end
 
+  def composite_notification_history?
+    is_a?(CashTransaction) && composite? && previous_notification_messages.exists?
+  end
+
+  def previous_notification_messages
+    Message.where(reference_transactable_type: self.class.name, reference_transactable_id: id)
+           .where(body: %w[notification:create notification:update])
+  end
+
+  def previous_notification_friend_entity_ids
+    recipient_users = previous_notification_messages.filter_map do |message|
+      message.conversation.conversation_participants.find { |participant| participant.user_id != user_id }&.user
+    end.uniq(&:id)
+
+    recipient_users.flat_map { |recipient_user| user.entities.that_are_users.where_entity_user(recipient_user).pluck(:id) }.uniq
+  end
+
+  def no_current_friend_exchange_allocations?
+    friend_entity_ids = previous_notification_friend_entity_ids
+    friend_notification_entity_transactions.none? do |entity_transaction|
+      friend_entity_ids.include?(entity_transaction.entity_id) && entity_transaction.exchanges_count.positive?
+    end
+  end
+
   def reimbursement_notification?(friend_user)
-    category_names = categories.pluck(:category_name)
+    category_names = Category.where(id: friend_notification_category_ids).pluck(:category_name)
     return true if (category_names - [ "EXCHANGE" ]).present?
 
     counterpart_entity_id = user.entities.that_are_users.where_entity_user(friend_user).first&.id
 
-    entity_transactions.where.not(entity_id: counterpart_entity_id).exists?
+    friend_notification_entity_transactions.any? { |et| et.entity_id != counterpart_entity_id }
+  end
+
+  def friend_notification_entity_transactions
+    return entity_transactions.to_a unless respond_to?(:composite?) && composite?
+
+    active_line_items.flat_map { |line_item| line_item.entity_transactions.reject(&:marked_for_destruction?) }
+  end
+
+  def friend_notification_category_ids
+    return category_transactions.pluck(:category_id) unless respond_to?(:composite?) && composite?
+
+    active_line_items.filter_map(&:category_id)
+  end
+
+  def aggregate_notification_exchanges(exchanges)
+    exchanges.group_by { |exchange| [ exchange.number, exchange.date, exchange.month, exchange.year, exchange.exchange_type, exchange.bound_type ] }
+             .values.map do |group|
+      group.first.dup.tap { |exchange| exchange.price = group.sum(&:price) }
+    end
   end
 
   def applying_actionable_message?

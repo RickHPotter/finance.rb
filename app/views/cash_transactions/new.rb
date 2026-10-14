@@ -13,7 +13,8 @@ class Views::CashTransactions::New < Views::Base
       render Views::Shared::FormShell.new(
         badge_text:,
         badge_class:,
-        skeleton_view: Views::CashTransactions::FormSubmissionSkeleton
+        skeleton_view: Views::CashTransactions::FormSubmissionSkeleton,
+        skeleton_options: { transaction: @cash_transaction }
       ) do
         render Views::CashTransactions::Form.new(
           current_user: @current_user,

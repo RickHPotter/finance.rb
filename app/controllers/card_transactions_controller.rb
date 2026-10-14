@@ -2,6 +2,7 @@
 
 class CardTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
+  include ReceiptUploadAuthorization
 
   before_action :set_card_transaction, only: %i[show edit update destroy]
   before_action :set_card_tabs, except: :index
@@ -72,7 +73,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def edit
     @card_transaction = current_context.card_transactions
-                                       .includes(line_items: %i[category_transactions entity_transactions])
+                                       .includes(line_items: [ :category_transactions, { entity_transactions: :exchanges } ])
                                        .find(params[:id])
     set_return_to
 
@@ -111,7 +112,9 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       @card_transaction.category_transactions.each(&:mark_for_destruction)
       @card_transaction.entity_transactions.each(&:mark_for_destruction)
     end
-    @card_transaction.assign_attributes(assignable_card_transaction_params.merge(imported: false))
+    submitted_receipts = Array(assignable_card_transaction_params[:receipts]).compact_blank
+    @card_transaction.receipts.attach(submitted_receipts) if submitted_receipts.present?
+    @card_transaction.assign_attributes(assignable_card_transaction_params.except(:receipts).merge(imported: false))
     @card_transaction.historical_correction_confirmation = card_transaction_params[:historical_correction_confirmation]
     @card_transaction.build_month_year if @card_transaction.user_card_id
     prune_exchange_entity_transactions_without_exchanges!
@@ -257,6 +260,10 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   private
+
+  def receipt_upload_param_key
+    :card_transaction
+  end
 
   def seed_transaction_associations
     @card_transaction.category_transactions.build(category_id: card_transaction_params[:category_id]) if card_transaction_params[:category_id]
@@ -577,9 +584,16 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     params.require(:card_transaction).permit(
       %i[id description comment date month year price paid user_id user_card_id category_id entity_id duplicate subscription_id historical_correction_confirmation],
       id: [], subscription_id: [], card_installment_ids: [], category_id: [], entity_id: [],
+      receipts: [],
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],
-      line_items_attributes: %i[id description price comment category_id entity_id _destroy],
+      line_items_attributes: [
+        :id, :description, :price, :comment, :category_id, :_destroy,
+        { entity_transactions_attributes: [
+          :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
+          { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
+        ] }
+      ],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
         { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
@@ -631,7 +645,12 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     return false unless attributes.key?(:line_items_attributes)
 
     normalized_nested_attributes(attributes[:line_items_attributes]).any? do |entry|
-      !ActiveModel::Type::Boolean.new.cast(entry[:_destroy])
+      line_entity_selected = normalized_nested_attributes(entry[:entity_transactions_attributes]).any? do |entity_entry|
+        entity_entry[:entity_id].present? && !ActiveModel::Type::Boolean.new.cast(entity_entry[:_destroy])
+      end
+
+      !ActiveModel::Type::Boolean.new.cast(entry[:_destroy]) &&
+        (entry[:id].present? || %i[description price category_id].any? { |attribute| entry[attribute].present? } || line_entity_selected)
     end
   end
 

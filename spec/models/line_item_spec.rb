@@ -27,6 +27,46 @@ RSpec.describe LineItem do
       expect(line_item).to be_valid
     end
 
+    it "requires an exchange type for cash line items categorized as EXCHANGE" do
+      friend_entity = create(:entity, user:, entity_user: create(:user, :random))
+      line_item = described_class.new(
+        transactable: cash_transaction,
+        description: "Shared purchase",
+        price: 50_00,
+        category: user.built_in_category("EXCHANGE")
+      )
+      line_item.entity_transactions.build(
+        entity: friend_entity,
+        is_payer: true,
+        price: 50_00,
+        price_to_be_returned: 50_00
+      )
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:friend_notification_intent]).to include("can't be blank")
+
+      line_item.friend_notification_intent = "reimbursement"
+
+      expect(line_item).to be_valid
+    end
+
+    it "does not require an exchange type for a non-friend entity" do
+      line_item = described_class.new(
+        transactable: cash_transaction,
+        description: "Shared purchase",
+        price: 50_00,
+        category: user.built_in_category("EXCHANGE")
+      )
+      line_item.entity_transactions.build(
+        entity:,
+        is_payer: true,
+        price: 50_00,
+        price_to_be_returned: 50_00
+      )
+
+      expect(line_item).to be_valid
+    end
+
     it "requires description" do
       line_item = described_class.new(
         transactable: cash_transaction,
@@ -72,6 +112,17 @@ RSpec.describe LineItem do
 
       expect(line_item).not_to be_valid
       expect(line_item.errors[:category_id]).to be_present
+    end
+
+    it "allows a blank category for a non-payer entity allocation without exchanges" do
+      line_item = described_class.new(
+        transactable: cash_transaction,
+        description: "Shared item",
+        price: 50_00
+      )
+      line_item.entity_transactions.build(entity:, is_payer: false, price: 0, price_to_be_returned: 0)
+
+      expect(line_item).to be_valid
     end
 
     it "rejects parent categories" do
@@ -172,6 +223,102 @@ RSpec.describe LineItem do
     end
   end
 
+  describe "repayment schedule validation" do
+    let(:line_item) do
+      create(:line_item, transactable: cash_transaction, description: "Shared item", price: 50_00, category: leaf_category)
+    end
+
+    let!(:entity_transaction) do
+      line_item.entity_transactions.create!(
+        entity:,
+        is_payer: true,
+        price: line_item.price,
+        price_to_be_returned: -line_item.price,
+        loan_return_percentage: 100,
+        exchanges_count: 1
+      )
+    end
+
+    let!(:exchange) do
+      entity_transaction.exchanges.create!(
+        exchange_type: :monetary,
+        number: 1,
+        date: Date.new(2026, 10, 13),
+        month: 10,
+        year: 2026,
+        price: -line_item.price,
+        starting_price: -line_item.price
+      )
+    end
+
+    it "rejects a line-item price change when the repayment amount and schedule are stale" do
+      line_item.price = 60_00
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:base]).to include(I18n.t("activerecord.errors.models.line_item.attributes.base.exchange_schedule_must_match_price"))
+    end
+
+    it "accepts a price change after updating the repayment amount and unpaid schedule" do
+      line_item.price = 60_00
+      entity_transaction.price_to_be_returned = -60_00
+      exchange.price = -60_00
+
+      expect(line_item).to be_valid
+    end
+
+    it "does not allow a price change that would rewrite already-paid exchanges" do
+      allow(exchange).to receive(:effective_paid_state).and_return(true)
+      line_item.price = 40_00
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:base]).to include(I18n.t("activerecord.errors.models.line_item.attributes.base.paid_exchange_schedule_conflicts_with_price"))
+    end
+  end
+
+  describe "attachments" do
+    let(:line_item) do
+      described_class.new(
+        transactable: cash_transaction,
+        description: "Organic Apples",
+        price: 50_00,
+        category: leaf_category
+      )
+    end
+
+    it "has many attached receipts" do
+      expect(described_class.reflect_on_attachment(:receipts)).not_to be_nil
+    end
+
+    it "accepts an allowed attachment at exactly 10 MiB" do
+      line_item.receipts.attach(io: StringIO.new("a" * 10.megabytes), filename: "receipt.pdf", content_type: "application/pdf")
+
+      expect(line_item).to be_valid
+    end
+
+    it "rejects an unsupported content type" do
+      line_item.receipts.attach(io: StringIO.new("binary"), filename: "script.exe", content_type: "application/x-msdownload")
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:receipts]).to be_present
+    end
+
+    it "rejects a file larger than 10 MiB" do
+      line_item.receipts.attach(io: StringIO.new("a" * (10.megabytes + 1)), filename: "large.pdf", content_type: "application/pdf")
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:receipts]).to be_present
+    end
+
+    it "rejects a sixth attachment" do
+      6.times do |index|
+        line_item.receipts.attach(io: StringIO.new("data"), filename: "receipt_#{index}.pdf", content_type: "application/pdf")
+      end
+
+      expect(line_item).not_to be_valid
+      expect(line_item.errors[:receipts]).to be_present
+    end
+  end
+
   describe "delegations" do
     it "delegates user and context to transactable" do
       line_item = described_class.new(transactable: cash_transaction)
@@ -187,14 +334,15 @@ end
 # Table name: line_items
 # Database name: primary
 #
-#  id                :bigint           not null, primary key
-#  comment           :text
-#  description       :string           not null
-#  price             :integer          default(0), not null
-#  transactable_type :string           not null, indexed => [transactable_id]
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  transactable_id   :bigint           not null, indexed => [transactable_type]
+#  id                         :bigint           not null, primary key
+#  comment                    :text
+#  description                :string           not null
+#  friend_notification_intent :string
+#  price                      :integer          default(0), not null
+#  transactable_type          :string           not null, indexed => [transactable_id]
+#  created_at                 :datetime         not null
+#  updated_at                 :datetime         not null
+#  transactable_id            :bigint           not null, indexed => [transactable_type]
 #
 # Indexes
 #

@@ -26,6 +26,8 @@ RSpec.describe "Audit query plans" do
   end
 
   it "uses operation chronology and operation-version indexes" do
+    seed_operation_version_rows
+
     source_plan = explain(<<~SQL)
       SELECT id, created_at
       FROM audit_operations
@@ -53,5 +55,23 @@ RSpec.describe "Audit query plans" do
 
   def explain(sql)
     connection.select_values("EXPLAIN (COSTS OFF) #{sql.squish}").join("\n")
+  end
+
+  def seed_operation_version_rows
+    target_operation_id = "00000000-0000-4000-8000-000000000001"
+    connection.execute(<<~SQL)
+      INSERT INTO audit_operations (id, source, result, created_at)
+      VALUES ('#{target_operation_id}', 'web', 'committed', CURRENT_TIMESTAMP);
+
+      INSERT INTO audit_operations (source, result, created_at)
+      SELECT 'web', 'committed', CURRENT_TIMESTAMP
+      FROM generate_series(1, 1000);
+
+      INSERT INTO audit_versions (item_type, item_id, event, operation_id, owner_id, mutation_source, created_at)
+      SELECT 'CashTransaction', row_number() OVER (), 'update', id, 17, 'web', CURRENT_TIMESTAMP
+      FROM audit_operations;
+
+      ANALYZE audit_versions;
+    SQL
   end
 end

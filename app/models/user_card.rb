@@ -74,7 +74,7 @@ class UserCard < ApplicationRecord
 
   def calculate_reference_date(transaction_date)
     due_date = transaction_date.change(day: due_date_day)
-    due_date = (due_date + 1.month) if transaction_date >= due_date
+    due_date += 1.month if transaction_date >= due_date
     closing_date = due_date - days_until_due_date.days
 
     return due_date if closing_date > transaction_date

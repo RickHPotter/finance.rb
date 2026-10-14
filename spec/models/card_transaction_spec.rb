@@ -179,6 +179,38 @@ RSpec.describe CardTransaction, type: :model do
       end
     end
 
+    context "( attachments )" do
+      it "has many attached receipts" do
+        expect(described_class.reflect_on_attachment(:receipts)).not_to be_nil
+      end
+
+      it "is valid with allowed content types" do
+        card_transaction.receipts.attach(io: StringIO.new("image data"), filename: "receipt.jpg", content_type: "image/jpeg")
+        expect(card_transaction).to be_valid
+      end
+
+      it "is invalid with disallowed content types" do
+        card_transaction.receipts.attach(io: StringIO.new("binary"), filename: "script.exe", content_type: "application/x-msdownload")
+        expect(card_transaction).not_to be_valid
+        expect(card_transaction.errors[:receipts]).to be_present
+      end
+
+      it "is invalid when file size exceeds 10 MB" do
+        large_io = StringIO.new("a" * 11.megabytes)
+        card_transaction.receipts.attach(io: large_io, filename: "large.pdf", content_type: "application/pdf")
+        expect(card_transaction).not_to be_valid
+        expect(card_transaction.errors[:receipts]).to be_present
+      end
+
+      it "is invalid when more than 5 receipts are attached" do
+        6.times do |i|
+          card_transaction.receipts.attach(io: StringIO.new("data"), filename: "receipt_#{i}.pdf", content_type: "application/pdf")
+        end
+        expect(card_transaction).not_to be_valid
+        expect(card_transaction.errors[:receipts]).to be_present
+      end
+    end
+
     describe "composite transactions" do
       let(:user) { user_card.user }
       let(:context) { user.main_context }
@@ -188,6 +220,49 @@ RSpec.describe CardTransaction, type: :model do
       it "is not composite when having no line items" do
         transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
         expect(transaction).not_to be_composite
+      end
+
+      it "locks split purchases for card advances" do
+        transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
+        transaction.categories << user.built_in_category("CARD ADVANCE")
+
+        expect(transaction).not_to be_split_purchase_supported
+      end
+
+      it "ignores the blank starter line item from the split purchase form" do
+        transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
+        transaction.assign_attributes(line_items_attributes: [ { description: "", price: "", category_id: "", entity_id: "", _destroy: "0" } ])
+
+        expect(transaction.line_items).to be_empty
+        expect(transaction).not_to be_composite
+      end
+
+      it "ignores modal repayment fields when the starter line item is blank" do
+        transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
+        transaction.assign_attributes(
+          line_items_attributes: [
+            {
+              description: "",
+              price: "",
+              category_id: "",
+              _destroy: "0",
+              entity_transactions_attributes: {
+                "0" => { entity_id: "", price: "0", price_to_be_returned: "0", loan_return_percentage: "100", _destroy: "true" }
+              }
+            }
+          ]
+        )
+
+        expect(transaction.line_items).to be_empty
+        expect(transaction).not_to be_composite
+      end
+
+      it "validates partially filled composite line item prices without raising" do
+        transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
+        transaction.line_items.build(description: "Incomplete item", price: nil, category: food_category)
+        transaction.line_items.build(description: "Complete item", price: -100_00, category: tools_category)
+
+        expect { transaction.valid? }.not_to raise_error
       end
 
       it "is composite when having line items with matching negative prices" do

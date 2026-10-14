@@ -175,14 +175,38 @@ RSpec.describe AllocationMutations::EntityPlanner do
     end
   end
 
-  it "protects entities inherited from a subscription" do
+  it "protects entities inherited from a subscription on remove and switch" do
     subscription = create(:subscription, user:)
     subscription.entities << source
     subscription.attach_transactions!([ transaction ])
 
-    result = plan(transaction.reload, :remove, source_id: source.id)
+    remove_result = plan(transaction.reload, :remove, source_id: source.id)
+    switch_result = plan(transaction.reload, :switch, source_id: source.id, destination_id: destination.id)
 
-    expect(result.outcome).to have_attributes(status: :conflict, reason_code: :subscription_owned_entity)
+    expect(remove_result.outcome).to have_attributes(status: :conflict, reason_code: :subscription_owned_entity)
+    expect(switch_result.outcome).to have_attributes(status: :conflict, reason_code: :subscription_owned_entity)
+  end
+
+  it "allows mutating non-subscription entities on a transaction attached to a subscription" do
+    subscription = create(:subscription, user:)
+    subscription.entities << source
+    subscription.attach_transactions!([ transaction ])
+    add_neutral(transaction, destination)
+
+    unrelated = create(:entity, user:, entity_name: "UNRELATED")
+
+    remove_result = plan(transaction.reload, :remove, source_id: destination.id)
+    switch_result = plan(transaction.reload, :switch, source_id: destination.id, destination_id: unrelated.id)
+    add_result = plan(transaction.reload, :add, destination_id: unrelated.id)
+
+    expect(remove_result).to be_eligible
+    expect(remove_result.entity_ids_after).to contain_exactly(source.id)
+
+    expect(switch_result).to be_eligible
+    expect(switch_result.entity_ids_after).to contain_exactly(source.id, unrelated.id)
+
+    expect(add_result).to be_eligible
+    expect(add_result.entity_ids_after).to contain_exactly(source.id, destination.id, unrelated.id)
   end
 
   it "rejects removing the final allocation from a budget" do

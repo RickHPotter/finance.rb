@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class Views::Transactions::FormEntitiesSection < Views::Base
+  include ComponentsHelper
+  include TranslateHelper
+
   attr_reader :form, :transaction
 
   def initialize(form:, transaction:)
@@ -11,7 +14,7 @@ class Views::Transactions::FormEntitiesSection < Views::Base
   def view_template
     div(
       id: "entities_nested",
-      class: "border-y py-2 md:border-l md:pl-2 dark:border-slate-700/50",
+      class: "p-2",
       data: {
         controller: "nested-form form-collection-carousel",
         nested_form_wrapper_selector_value: ".nested-form-wrapper"

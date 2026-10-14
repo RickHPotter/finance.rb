@@ -38,6 +38,31 @@
 ### D10. How do transaction duplications behave?
 **Decision**: Duplicating a composite transaction via `CashTransaction.duplicate(id)` or `CardTransaction.duplicate(id)` clones all active line items and their respective category and entity associations.
 
+### D11. Which transaction types support split purchase?
+**Decision**: Ordinary purchases, exchange requests, and `BORROW RETURN` transactions
+support split purchase so line items can represent multiple entities, including the
+current user. `EXCHANGE RETURN` projections and other system-managed cash transaction
+types (card payments, card advances, investments, and piggy-bank projections) do not.
+
+### D12. How are friend repayment plans represented in a composite transaction?
+**Decision**: Each line item's `EntityTransaction` and `Exchange` rows form an
+independent source-side repayment plan. Multiple items assigned to one friend may be
+grouped into a notification by recipient and intent, but their saved line-item plans
+remain separate. Cash line items select `loan` or `reimbursement` intent individually;
+this intent is distinct from `Exchange#exchange_type`. Card line items do not expose
+the cash intent selector.
+
+### D13. What happens when a line-item price changes after exchanges are configured?
+**Decision**: Recalculate the return amount and unpaid exchange rows using the saved
+return percentage. Never rewrite paid exchanges. Reject a save if the edited price
+would leave a stale schedule or conflict with already-paid amounts. Deleting an item
+must reconcile its counterpart notification/transactions as part of the same feature.
+
+### D14. Does NARUTO-02 parse receipts into line items?
+**Decision**: No. Parsing a Brazilian fiscal receipt is NARUTO-03 work. It may prefill
+an unsaved draft of the NARUTO-02 form, where the user reviews descriptions, amounts,
+categories, entities, and the transaction total before saving.
+
 ---
 
 ## Test Matrix
@@ -49,10 +74,12 @@
 | **Model** | `LineItem` | Sign matching validation | Rejects positive line item on negative transaction (and vice versa) |
 | **Model** | `LineItem` | Leaf category validation | Rejects category where `parent? == true` |
 | **Model** | `LineItem` | Virtual accessors `category_id=` and `entity_id=` | Synchronizes underlying join records |
+| **Model** | `LineItem` | Price changes after a repayment plan exists | Recalculates/validates against the saved percentage and protects paid exchanges |
 | **Model** | `CashTransaction` | `composite?` predicate | `true` when line items >= 2, `false` when empty |
 | **Model** | `CashTransaction` | Minimum count validation | Fails if exactly 1 line item is provided in composite mode |
 | **Model** | `CashTransaction` | Price sum validation | Passes when sum matches parent; fails with difference when mismatched |
 | **Model** | `CashTransaction` | Parent allocations clearing | Direct `category_transactions` are cleared on composite save |
+| **Model** | `CashTransaction` | Split-purchase eligibility | Allows exchange requests and `BORROW RETURN`; rejects `EXCHANGE RETURN` and system-managed types |
 | **Model** | `CardTransaction` | Negative price sum validation | Passes when sum of negative line items equals negative card price |
 | **Service** | `Audit::OwnershipResolver` | Resolve ownership for `LineItem` | Inherits `owner_id` and `context_id` from parent transactable |
 | **Service** | `Audit::Rollback::Adapters::LineItem` | Dependencies and parent identity | Correctly references parent `CashTransaction` / `CardTransaction` |
@@ -61,3 +88,5 @@
 | **Request** | `CashTransactionsController` | `POST /cash_transactions` mismatched sum | Renders unprocessable entity with error |
 | **Request** | `CardTransactionsController` | `POST /card_transactions` with line items | Creates composite card transaction; installments retain schedule |
 | **Request** | `CashTransactionsController` | `GET /cash_transactions/:id/duplicate` | Clones line items and allocations |
+| **Request/service** | Cash friend notification flow | Multiple items for one friend, same/mixed intents, price or intent changes, and item removal | Keeps source plans separate and reconciles counterpart records by friend/intent |
+| **Request** | Fiscal document import | Brazilian fiscal receipt becomes line-item draft values | Not implemented; tracked by NARUTO-03 V3 plan |

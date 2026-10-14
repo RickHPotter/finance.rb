@@ -2,6 +2,7 @@
 
 class CashTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
+  include ReceiptUploadAuthorization
 
   before_action :set_cash_transaction, only: %i[show edit update destroy fix_exchange_projection]
   before_action :ensure_submitted_context_matches_current_context!, only: %i[create update]
@@ -58,7 +59,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
                                          :categories,
                                          category_transactions: { category: :parent_category },
                                          entity_transactions: %i[entity exchanges],
-                                         line_items: %i[category_transactions entity_transactions]
+                                         line_items: [ :category_transactions, { entity_transactions: :exchanges } ]
                                        )
                                        .find(params[:id])
     handle_params
@@ -86,7 +87,9 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @shared_return_counterpart_notification_required = shared_return_counterpart_notification_required?
     @cash_transaction.edit_phase = true if submitted_cash_installment_attributes.present?
     synchronize_submitted_category_transactions!
-    @cash_transaction.assign_attributes(assignable_cash_transaction_params.merge(imported: false))
+    submitted_receipts = Array(assignable_cash_transaction_params[:receipts]).compact_blank
+    @cash_transaction.receipts.attach(submitted_receipts) if submitted_receipts.present?
+    @cash_transaction.assign_attributes(assignable_cash_transaction_params.except(:receipts).merge(imported: false))
     apply_submitted_exchange_paid_states!
     @cash_transaction.historical_correction_confirmation = cash_transaction_params[:historical_correction_confirmation]
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
@@ -469,7 +472,19 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def effective_category_names
-    category_ids = effective_category_ids
+    line_item_category_ids = normalized_nested_attributes(effective_cash_transaction_params[:line_items_attributes]).flat_map do |attributes|
+      next [] if ActiveModel::Type::Boolean.new.cast(attributes[:_destroy])
+
+      direct_id = attributes[:category_id]
+      nested_ids = normalized_nested_attributes(attributes[:category_transactions_attributes]).filter_map do |category_attributes|
+        next if ActiveModel::Type::Boolean.new.cast(category_attributes[:_destroy])
+
+        category_attributes[:category_id]
+      end
+
+      [ direct_id, *nested_ids ]
+    end
+    category_ids = effective_category_ids + line_item_category_ids.compact_blank.map(&:to_i)
     return @cash_transaction.categories.pluck(:category_name) if category_ids.blank? && @cash_transaction&.persisted?
 
     current_user.categories.where(id: category_ids).pluck(:category_name)
@@ -905,6 +920,10 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   private
 
+  def receipt_upload_param_key
+    :cash_transaction
+  end
+
   def render_top_level(view)
     respond_to do |format|
       format.html { render view }
@@ -996,9 +1015,16 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         friend_notification_intent source_message_id historical_correction_confirmation
       ],
       id: [], subscription_id: [], user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
+      receipts: [],
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
-      line_items_attributes: %i[id description price comment category_id entity_id _destroy],
+      line_items_attributes: [
+        :id, :description, :price, :comment, :category_id, :friend_notification_intent, :_destroy,
+        { entity_transactions_attributes: [
+          :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
+          { exchanges_attributes: %i[id number exchange_type bound_type price date month year paid _destroy] }
+        ] }
+      ],
       piggy_bank_attributes: %i[id return_cash_transaction_id return_date return_price iof_exempt_on _destroy],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
@@ -1150,15 +1176,32 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     return false unless attributes.key?(:line_items_attributes)
 
     normalized_nested_attributes(attributes[:line_items_attributes]).any? do |entry|
-      !ActiveModel::Type::Boolean.new.cast(entry[:_destroy])
+      line_entity_selected = normalized_nested_attributes(entry[:entity_transactions_attributes]).any? do |entity_entry|
+        entity_entry[:entity_id].present? && !ActiveModel::Type::Boolean.new.cast(entity_entry[:_destroy])
+      end
+
+      !ActiveModel::Type::Boolean.new.cast(entry[:_destroy]) &&
+        (entry[:id].present? || %i[description price category_id].any? { |attribute| entry[attribute].present? } || line_entity_selected)
     end
   end
 
   def sanitized_cash_transaction_params_for_assignment(attributes)
     sanitized = attributes.deep_dup
     sanitized[:entity_transactions_attributes] = sanitize_entity_transaction_attributes(sanitized[:entity_transactions_attributes])
+    sanitized[:line_items_attributes] = sanitize_line_item_attributes(sanitized[:line_items_attributes])
 
     sanitized
+  end
+
+  def sanitize_line_item_attributes(attributes)
+    normalized_nested_attributes(attributes).map do |line_item_attributes|
+      line_item_attributes = line_item_attributes.with_indifferent_access
+      next line_item_attributes unless line_item_attributes.key?(:entity_transactions_attributes)
+
+      line_item_attributes.merge(
+        entity_transactions_attributes: sanitize_entity_transaction_attributes(line_item_attributes[:entity_transactions_attributes])
+      )
+    end
   end
 
   def sanitize_entity_transaction_attributes(attributes)
@@ -1173,10 +1216,16 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def apply_submitted_exchange_paid_states!
-    submitted_entity_transactions = normalized_nested_attributes(effective_cash_transaction_params[:entity_transactions_attributes])
+    apply_exchange_paid_states!(effective_cash_transaction_params[:entity_transactions_attributes], @cash_transaction.entity_transactions)
 
-    submitted_entity_transactions.each do |entity_transaction_attributes|
-      entity_transaction = find_submitted_entity_transaction(entity_transaction_attributes)
+    @cash_transaction.line_items.each do |line_item|
+      apply_exchange_paid_states!(line_item.submitted_entity_transaction_attributes, line_item.entity_transactions)
+    end
+  end
+
+  def apply_exchange_paid_states!(submitted_attributes, entity_transactions)
+    normalized_nested_attributes(submitted_attributes).each do |entity_transaction_attributes|
+      entity_transaction = find_submitted_entity_transaction(entity_transaction_attributes, entity_transactions)
       next if entity_transaction.blank?
 
       normalized_nested_attributes(entity_transaction_attributes[:exchanges_attributes]).each do |exchange_attributes|
@@ -1188,15 +1237,15 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     end
   end
 
-  def find_submitted_entity_transaction(attributes)
+  def find_submitted_entity_transaction(attributes, entity_transactions)
     attributes = attributes.with_indifferent_access
     submitted_id = attributes[:id].presence&.to_i
-    return @cash_transaction.entity_transactions.find { |record| record.id == submitted_id } if submitted_id.present?
+    return entity_transactions.find { |record| record.id == submitted_id } if submitted_id.present?
 
     submitted_entity_id = attributes[:entity_id].presence&.to_i
     return if submitted_entity_id.blank?
 
-    @cash_transaction.entity_transactions.find { |record| record.entity_id == submitted_entity_id }
+    entity_transactions.find { |record| record.entity_id == submitted_entity_id }
   end
 
   def find_submitted_exchange(entity_transaction, attributes)

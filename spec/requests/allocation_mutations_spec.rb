@@ -197,6 +197,43 @@ RSpec.describe "Allocation mutations" do
     expect(transaction.entity_transactions.sole).to have_attributes(is_payer: false, price: 0, price_to_be_returned: 0, exchanges_count: 0)
   end
 
+  it "allows removing a non-subscription entity from a transaction attached to a subscription" do
+    subscription = create(:subscription, user:)
+    subscription_entity = user.built_in_entity
+    subscription.entities << subscription_entity
+    subscription.attach_transactions!([ transaction ])
+
+    extra_entity = create(:entity, user:, entity_name: "OBLIGATION")
+    transaction.entity_transactions.create!(entity: extra_entity, is_payer: false, price: 0, price_to_be_returned: 0)
+
+    post preview_allocation_mutations_path, params: {
+      allocation_mutation: {
+        owner_type: "CashTransaction",
+        owner_ids: [ transaction.id ],
+        selected_row_count: 1,
+        return_to: cash_transactions_path,
+        action: {
+          allocation_type: "entity",
+          operation: "remove",
+          source_id: extra_entity.id
+        }
+      }
+    }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body).to include("affected_count" => 1, "strict_apply_available" => true)
+
+    post apply_allocation_mutations_path, params: {
+      apply_token: response.parsed_body.fetch("apply_token"),
+      mode: "strict",
+      allocation_confirmation: "1",
+      return_to: cash_transactions_path
+    }
+
+    expect(response).to redirect_to(cash_transactions_path)
+    expect(transaction.reload.entities).to contain_exactly(subscription_entity)
+  end
+
   it "keeps Turbo apply on the workflow and returns detailed failure status" do
     post preview_allocation_mutations_path, params: preview_params, as: :json
     token = response.parsed_body.fetch("apply_token")

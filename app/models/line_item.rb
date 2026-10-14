@@ -14,17 +14,27 @@ class LineItem < ApplicationRecord
 
   # @relationships ............................................................
   belongs_to :transactable, polymorphic: true, touch: true
+  has_many_attached :receipts
 
   # @validations ..............................................................
   validates :description, presence: true
   validates :price, presence: true, numericality: { other_than: 0 }
+  validates :friend_notification_intent, inclusion: { in: %w[loan reimbursement] }, allow_blank: true
+  validates :receipts,
+            content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
+            size: { less_than_or_equal_to: 10.megabytes },
+            limit: { max: 5 }
   validate :validate_category_presence
   validate :validate_leaf_category
   validate :validate_price_sign_matches_parent
+  validate :validate_exchange_friend_notification_intent
+  validate :validate_entity_exchange_schedule_matches_price, if: :persisted_price_change?
 
   # @callbacks ................................................................
   before_validation :sync_entity_transaction_price
   after_commit :update_associations_total, on: %i[create update destroy]
+  after_commit -> { notify_parent_friends(:create) }, on: :create
+  after_commit -> { notify_parent_friends(:update) }, on: :update
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -112,10 +122,26 @@ class LineItem < ApplicationRecord
     end
   end
 
+  def notify_parent_friends(action)
+    return unless transactable.respond_to?(:notify_friends_for_line_item_change, true)
+
+    transactable.send(:notify_friends_for_line_item_change, action)
+  end
+
   def validate_category_presence
     return if skip_category_presence_validation
+    return if category_id.blank? && non_payer_entity_allocation?
 
     errors.add(:category_id, :blank) if category_id.blank?
+  end
+
+  def non_payer_entity_allocation?
+    allocations = entity_transactions.reject(&:marked_for_destruction?)
+    allocations.present? && allocations.all? do |entity_transaction|
+      entity_transaction.entity_id.present? &&
+        !entity_transaction.is_payer? &&
+        entity_transaction.exchanges.reject(&:marked_for_destruction?).empty?
+    end
   end
 
   def validate_leaf_category
@@ -136,6 +162,64 @@ class LineItem < ApplicationRecord
       errors.add(:price, :must_be_negative_to_match_transaction)
     end
   end
+
+  def validate_exchange_friend_notification_intent
+    return unless transactable.is_a?(CashTransaction)
+    return unless category&.category_name == "EXCHANGE"
+    return unless requires_friend_notification_intent?
+    return if friend_notification_intent.present?
+
+    errors.add(:friend_notification_intent, :blank)
+  end
+
+  def validate_entity_exchange_schedule_matches_price
+    entity_transactions.reject(&:marked_for_destruction?).each do |entity_transaction|
+      validate_entity_exchange_schedule(entity_transaction)
+    end
+  end
+
+  def validate_entity_exchange_schedule(entity_transaction)
+    exchanges = entity_transaction.exchanges.reject(&:marked_for_destruction?)
+    return if entity_transaction.price_to_be_returned.to_i.zero? && exchanges.empty?
+
+    expected_return = expected_entity_return(entity_transaction)
+    paid_total = exchanges.select(&:effective_paid_state).sum { |exchange| exchange.price.to_i }
+
+    if paid_exchange_conflicts_with_return?(paid_total, expected_return)
+      errors.add(:base, :paid_exchange_schedule_conflicts_with_price)
+    elsif !repayment_schedule_matches?(entity_transaction, exchanges, expected_return)
+      errors.add(:base, :exchange_schedule_must_match_price)
+    end
+  end
+
+  def paid_exchange_conflicts_with_return?(paid_total, expected_return)
+    paid_total.nonzero? && (paid_total.positive? != expected_return.positive? || paid_total.abs > expected_return.abs)
+  end
+
+  def repayment_schedule_matches?(entity_transaction, exchanges, expected_return)
+    entity_transaction.price_to_be_returned.to_i == expected_return &&
+      (exchanges.empty? || exchanges.sum { |exchange| exchange.price.to_i } == expected_return)
+  end
+
+  def expected_entity_return(entity_transaction)
+    amount = (price.to_i.abs * entity_transaction.loan_return_percentage.to_d / 100).round
+    sign = entity_transaction.price_to_be_returned.to_i
+    sign = -price.to_i if sign.zero?
+
+    amount * (sign.negative? ? -1 : 1)
+  end
+
+  def persisted_price_change?
+    persisted? && will_save_change_to_price?
+  end
+
+  def requires_friend_notification_intent?
+    entity_transactions.reject(&:marked_for_destruction?).any? do |entity_transaction|
+      next false unless entity_transaction.entity&.friendship_id.present?
+
+      entity_transaction.is_payer? || entity_transaction.exchanges.reject(&:marked_for_destruction?).any?
+    end
+  end
 end
 
 # == Schema Information
@@ -143,14 +227,15 @@ end
 # Table name: line_items
 # Database name: primary
 #
-#  id                :bigint           not null, primary key
-#  comment           :text
-#  description       :string           not null
-#  price             :integer          default(0), not null
-#  transactable_type :string           not null, indexed => [transactable_id]
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  transactable_id   :bigint           not null, indexed => [transactable_type]
+#  id                         :bigint           not null, primary key
+#  comment                    :text
+#  description                :string           not null
+#  friend_notification_intent :string
+#  price                      :integer          default(0), not null
+#  transactable_type          :string           not null, indexed => [transactable_id]
+#  created_at                 :datetime         not null
+#  updated_at                 :datetime         not null
+#  transactable_id            :bigint           not null, indexed => [transactable_type]
 #
 # Indexes
 #

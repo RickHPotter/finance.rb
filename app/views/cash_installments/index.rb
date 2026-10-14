@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CashInstallments::Index < Views::Base
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
 
@@ -50,13 +50,15 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
       failed_zeroed_installment = failed_zeroed_return_installment?(cash_installment, cash_transaction)
+      pulsing_payment = should_display_link_to_pay && !failed_zeroed_installment
 
       render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay || cash_transaction.card_payment?
 
       div(class: "relative") do
         div(
           class: "absolute -top-2 right-0 p-1 rounded-t-lg bg-yellow-400 shadow-sm border border-yellow-600 font-lekton font-bold text-black text-sm z-40 " \
-                 "#{'animate-pulse' if should_display_link_to_pay && !failed_zeroed_installment}"
+                 "#{'animate-pulse' if pulsing_payment}",
+          style: ("animation-duration: 5s" if pulsing_payment)
         ) do
           localized_cent_based_currency(cash_installment.balance, "R$")
         end
@@ -64,56 +66,66 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
       div(
         class: [
-          "rounded-lg shadow-sm overflow-visible my-4 cursor-pointer",
-          presentation.row_classes,
-          ("animate-pulse" if should_display_link_to_pay && !failed_zeroed_installment)
+          "relative rounded-lg shadow-sm overflow-visible my-4 cursor-pointer",
+          presentation.row_classes
         ].compact.join(" "),
-        style: presentation.row_style,
+        style: pulsing_payment ? pulsing_row_style(presentation) : presentation.row_style,
         data: {
           id: cash_installment.id,
           datatable_target: :row,
           action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection"
         }.merge(presentation.metadata)
       ) do
-        render_row_checkbox(cash_installment, cash_transaction, mobile: true)
+        if pulsing_payment
+          div(
+            class: [ "pointer-events-none absolute inset-0 z-0 rounded-lg animate-pulse", presentation.background_classes ].compact.join(" "),
+            style: pulsing_animation_style(presentation.row_style),
+            data: { row_background: true }
+          )
+        end
 
-        div(class: "p-4") do
-          div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
-            div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
-              if cash_transaction.composite?
-                div(class: "flex-1 flex items-center min-w-0 gap-1.5") do
-                  render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment)
-                  render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
+        div(class: "relative z-10") do
+          render_row_checkbox(cash_installment, cash_transaction, mobile: true)
+
+          div(class: "p-4") do
+            div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
+              div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
+                if cash_transaction.composite? || cash_transaction.receipts.attached?
+                  div(class: "flex-1 flex items-center min-w-0 gap-1.5") do
+                    render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment) if cash_transaction.composite?
+                    render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
+                    receipts_badge(cash_transaction) if cash_transaction.receipts.attached?
+                  end
+                else
+                  render_description_link(cash_transaction, class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]")
                 end
-              else
-                render_description_link(cash_transaction, class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]")
-              end
 
-              span(class: "shrink p-1 rounded-sm bg-white text-black border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
-                pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
-              end
-            end
-          end
-
-          div(class: "flex items-center justify-between py-2") do
-            div(class: "text-xs text-start flex-1 flex items-center") do
-              render_action_menu(cash_installment, cash_transaction, payable: should_display_link_to_pay)
-
-              span(class: "whitespace-nowrap pl-2") do
-                format = cash_transaction.investment? ? "%B %Y" : :short
-                I18n.l(cash_installment.date, format:)
+                span(class: "shrink p-1 rounded-sm bg-white text-black border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
+                  pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
+                end
               end
             end
 
-            div(class: price_column_class(cash_installment, cash_transaction), title: localized_cent_based_currency(cash_transaction.price, "R$")) do
-              localized_cent_based_currency(display_price(cash_installment, cash_transaction), "R$")
+            div(class: "flex items-center justify-between py-2") do
+              div(class: "text-xs text-start flex-1 flex items-center") do
+                render_action_menu(cash_installment, cash_transaction, payable: should_display_link_to_pay)
+
+                span(class: "whitespace-nowrap pl-2") do
+                  format = cash_transaction.investment? ? "%B %Y" : :short
+                  I18n.l(cash_installment.date, format:)
+                end
+              end
+
+              div(class: price_column_class(cash_installment, cash_transaction), title: localized_cent_based_currency(cash_transaction.price, "R$")) do
+                localized_cent_based_currency(display_price(cash_installment, cash_transaction), "R$")
+              end
             end
-          end
 
-          div(class: "flex flex-wrap items-center gap-1") do
-            render_mobile_categories(cash_transaction)
+            div(class: "flex flex-wrap items-center gap-1") do
+              render_mobile_categories(cash_transaction)
 
-            render_mobile_entities(cash_transaction, avatar_name)
+              render_mobile_entities(cash_transaction, avatar_name)
+            end
           end
         end
       end
@@ -124,6 +136,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
       failed_zeroed_installment = failed_zeroed_return_installment?(cash_installment, cash_transaction)
+      pulsing_payment = should_display_link_to_pay && !failed_zeroed_installment
       render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay || cash_transaction.card_payment?
 
       div(
@@ -131,10 +144,9 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           "group relative z-0 grid grid-cols-12 transition-all hover:z-40",
           "[&>*:not([data-row-background])]:relative [&>*:not([data-row-background])]:z-10",
           "[&.exchange-sheet-active>*:not([data-row-background])]:z-[60]",
-          presentation.row_classes,
-          ("animate-pulse" if should_display_link_to_pay && !failed_zeroed_installment)
+          presentation.row_classes
         ].compact.join(" "),
-        style: presentation.row_style,
+        style: pulsing_payment ? pulsing_row_style(presentation) : presentation.row_style,
         draggable: true,
         data: { id: cash_installment.id,
                 datatable_target: :row,
@@ -149,9 +161,10 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           class: [
             "pointer-events-none absolute inset-0 z-0 transition-all duration-150",
             "group-hover:ring-2 group-hover:ring-slate-700/80 group-hover:ring-inset",
+            ("animate-pulse" if pulsing_payment),
             presentation.background_classes
           ].compact.join(" "),
-          style: presentation.row_style,
+          style: pulsing_payment ? pulsing_animation_style(presentation.row_style) : presentation.row_style,
           data: { row_background: true }
         )
 
@@ -168,10 +181,11 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         end
 
         div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
-          if cash_transaction.composite?
+          if cash_transaction.composite? || cash_transaction.receipts.attached?
             div(class: "flex-1 flex items-center justify-center min-w-0 gap-1.5") do
-              render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment)
+              render Views::Transactions::CompositeBadge.new(transaction: cash_transaction, installment: cash_installment) if cash_transaction.composite?
               render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
+              receipts_badge(cash_transaction) if cash_transaction.receipts.attached?
             end
           else
             render_description_link(cash_transaction, class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]")
@@ -397,6 +411,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     CategoryColours::RowPresentation.new(categories:, mode: category_colour_display_mode)
   end
 
+  def pulsing_row_style(presentation)
+    [ presentation.row_style, "background-color: transparent !important" ].compact.join("; ")
+  end
+
+  def pulsing_animation_style(style = nil)
+    [ style, "animation-duration: 5s" ].compact.join("; ")
+  end
+
   def cash_category_popover_items(cash_transaction)
     categories_for(cash_transaction).map do |category|
       {
@@ -435,8 +457,11 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   def entity_exchanges_info(entity_transaction)
     return if entity_transaction.exchanges_count.zero?
 
+    returned_price = entity_transaction.price_to_be_returned.to_i
+    returned_price = entity_transaction.exchanges.sum(&:price) if returned_price.zero?
+
     [
-      "[#{from_cent_based_to_float(entity_transaction.price_to_be_returned, 'R$')}]",
+      "[#{from_cent_based_to_float(returned_price, 'R$')}]",
       "(#{entity_transaction.exchanges_count})"
     ].join(" ")
   end
@@ -488,6 +513,15 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       end
 
       yield if block_given?
+    end
+  end
+
+  def receipts_badge(_transaction)
+    span(
+      class: "inline-flex items-center text-slate-400 hover:text-slate-600 dark:text-slate-500 shrink-0",
+      title: I18n.t("attachments.title")
+    ) do
+      cached_icon(:paperclip)
     end
   end
 end

@@ -8,7 +8,7 @@ import { mirroredPrice, paidPricesMatch } from "../lib/installment_mirror.mjs"
 // TODO: this is almost a total copy-paste from reactive-form-controller, i will deal with this after it is working
 export default class extends Controller {
   static targets = [
-    "button", "dateInput", "priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangesCountEqualsButton",
+    "button", "dateInput", "priceInput", "payerInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangesCountEqualsButton",
     "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange", "loanReturnPercentageInput", "mirrorInstallmentsButton",
     "allocationWarning", "piggyBankReturnPriceInput"
   ]
@@ -24,6 +24,9 @@ export default class extends Controller {
     this.transactionForm()?.addEventListener("piggy-bank-mode-changed", this.boundRefreshAllocationWarning)
     this.refreshMirrorInstallmentsAvailability()
     this.refreshAllocationWarning()
+    if (this.element.matches("[data-composite-entity-modal-target~='group']")) {
+      this.updatePayer()
+    }
   }
 
   disconnect() {
@@ -79,21 +82,24 @@ export default class extends Controller {
     const price = parseInt(_removeMask(target.value))
     const shouldBeDisabled = price === 0
 
-    if (shouldBeDisabled !== this.exchangesCountInputTarget.disabled) {
+    if (shouldBeDisabled) {
       this.exchangesCountInputTarget.disabled = shouldBeDisabled
-      this.exchangesCountEqualsButtonTarget.disabled = shouldBeDisabled
+      if (this.hasExchangesCountEqualsButtonTarget) this.exchangesCountEqualsButtonTarget.disabled = shouldBeDisabled
 
-      this.exchangesCountInputTarget.value = document.querySelector("[data-reactive-form-target='installmentsCountInput']").value
-      await this._updateExchangesPrices()
-
-      if (shouldBeDisabled) {
-        this.exchangesCountInputTarget.value = 0
-        this.activeExchangeWrappers().forEach((wrapper) => this.deactivateExchangeWrapper(wrapper))
-        this.exchangesCountInputTarget.classList.add("opacity-50")
-      } else {
-        this.exchangesCountInputTarget.classList.remove("opacity-50")
+      this.exchangesCountInputTarget.value = 0
+      this.activeExchangeWrappers().forEach((wrapper) => this.deactivateExchangeWrapper(wrapper))
+      this.exchangesCountInputTarget.classList.add("opacity-50")
+    } else {
+      this.exchangesCountInputTarget.disabled = false
+      if (this.hasExchangesCountEqualsButtonTarget) this.exchangesCountEqualsButtonTarget.disabled = false
+      this.exchangesCountInputTarget.classList.remove("opacity-50")
+      if (Number(this.exchangesCountInputTarget.value) === 0) {
+        const installmentsCount = Number(document.querySelector("[data-reactive-form-target='installmentsCountInput']")?.value)
+        this.exchangesCountInputTarget.value = installmentsCount > 0 ? installmentsCount : 1
       }
     }
+
+    if (!shouldBeDisabled) await this._updateExchangesPrices()
 
     this.checkForExchangeCategory()
   }
@@ -134,7 +140,7 @@ export default class extends Controller {
   }
 
   async updatePrice() {
-    const totalPrice = parseInt(_removeMask(document.querySelector("#transaction_price").value)) * - 1
+    const totalPrice = this.transactionTotalCents()
     const priceToBeReturned = parseInt(_removeMask(this.priceToBeReturnedInputTarget.value))
     const price = parseInt(_removeMask(this.priceInputTarget.value))
 
@@ -159,6 +165,7 @@ export default class extends Controller {
 
     this.priceInputTarget.value = this._applyMask(entityCents.toString())
     this.priceToBeReturnedInputTarget.value = this._applyMask(entityCents.toString())
+    this.updatePayer()
 
     await this.updatePrice()
     await this.toggleExchanges({ target: this.priceToBeReturnedInputTarget })
@@ -328,7 +335,40 @@ export default class extends Controller {
   }
 
   transactionTotalCents() {
+    const itemTotal = Number(this.element.dataset.transactionTotalCents)
+    if (Number.isFinite(itemTotal)) return itemTotal
+
     return parseInt(this._removeMask(document.querySelector("#transaction_price").value)) * - 1
+  }
+
+  updatePayer() {
+    if (!this.hasPriceToBeReturnedInputTarget || !this.hasPayerInputTarget) return
+
+    const amount = parseInt(_removeMask(this.priceToBeReturnedInputTarget.value), 10) || 0
+    this.payerInputTarget.value = amount === 0 ? "false" : "true"
+    this.syncLineItemExchangeIntent()
+    this.checkForExchangeCategory()
+  }
+
+  syncLineItemExchangeIntent() {
+    const group = this.element.closest("[data-composite-entity-modal-target~='group']")
+    if (!group) return
+
+    const key = group.dataset.lineItemKey
+    const row = Array.from(document.querySelectorAll("[data-composite-transaction-target~='row']"))
+      .find((item) => item.querySelector("input[name*='[line_items_attributes]']")?.name.match(/line_items_attributes\]\[([^\]]+)\]/)?.[1] === key)
+    const intentInput = row?.querySelector("[data-line-item-exchange-intent='input']")
+    const hiddenIntentInput = row?.querySelector("[data-line-item-exchange-intent='hidden']")
+    if (!intentInput || !hiddenIntentInput) return
+
+    const isPayer = this.hasPayerInputTarget && this.payerInputTarget.value === "true"
+    intentInput.disabled = !isPayer
+    hiddenIntentInput.disabled = isPayer
+
+    if (!isPayer) {
+      intentInput.value = ""
+      hiddenIntentInput.value = ""
+    }
   }
 
   trimTrailingZeroes(value) {
@@ -354,6 +394,12 @@ export default class extends Controller {
   }
 
   checkForExchangeCategory() {
+    const lineItemGroup = this.element.closest("[data-composite-entity-modal-target~='group']")
+    if (lineItemGroup) {
+      this.syncLineItemExchangeCategory(lineItemGroup)
+      return
+    }
+
     const reactiveFormTarget = document.querySelector("#transaction_form")
     const comboboxController = this.application.getControllerForElementAndIdentifier(reactiveFormTarget, "reactive-form")
     if (!comboboxController) return console.error("Combobox controller not found")
@@ -364,6 +410,35 @@ export default class extends Controller {
       comboboxController._insertExchangeCategory()
     } else {
       comboboxController._removeExchangeCategory()
+    }
+  }
+
+  syncLineItemExchangeCategory(group) {
+    const lineItemKey = group.dataset.lineItemKey
+    const row = Array.from(document.querySelectorAll("[data-composite-transaction-target~='row']"))
+      .find((item) => item.querySelector("input[name*='[line_items_attributes]']")?.name.match(/line_items_attributes\]\[([^\]]+)\]/)?.[1] === lineItemKey)
+    if (!row) return
+
+    const exchangeCategoryId = document.querySelector("#exchange_category_id")?.value
+    const categoryInputs = Array.from(row.querySelectorAll("input[name$='[category_id]']"))
+    const exchangeInput = categoryInputs.find((input) => input.value === exchangeCategoryId)
+    if (!exchangeInput) return
+
+    const isPayer = this.hasPayerInputTarget && this.payerInputTarget.value === "true"
+    const hasExchange = isPayer
+    const selectedInput = categoryInputs.find((input) => input.checked)
+
+    if (hasExchange && selectedInput !== exchangeInput) {
+      row.dataset.preExchangeCategoryId = selectedInput?.value || ""
+      exchangeInput.checked = true
+      exchangeInput.dispatchEvent(new Event("change", { bubbles: true }))
+    } else if (!hasExchange && row.dataset.preExchangeCategoryId && selectedInput === exchangeInput) {
+      const previousInput = categoryInputs.find((input) => input.value === row.dataset.preExchangeCategoryId)
+      if (previousInput) {
+        previousInput.checked = true
+        previousInput.dispatchEvent(new Event("change", { bubbles: true }))
+      }
+      delete row.dataset.preExchangeCategoryId
     }
   }
 
@@ -382,6 +457,19 @@ export default class extends Controller {
       const prevMonthTarget = this.element.querySelector("[data-entity-transaction-target='button']")
       this.updateExchangeDate(prevMonthTarget, 0)
     }
+  }
+
+  async automaticLineItemRepayment() {
+    this.exchangesCountInputTarget.value = document.querySelector("[data-reactive-form-target='installmentsCountInput']").value
+    if (this.hasLoanReturnPercentageInputTarget) {
+      this.loanReturnPercentageInputTarget.value = "100"
+      await this.applyLoanReturnPercentage()
+    } else {
+      await this._updateExchangesPrices()
+    }
+
+    this.updatePayer()
+    this.checkForExchangeCategory()
   }
 
   copyTransactionInstallmentsCount() {

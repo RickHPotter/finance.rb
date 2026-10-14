@@ -11,6 +11,7 @@ en:
         comment: Comment
         category_id: Category
         entity_id: Entity
+        friend_notification_intent: Exchange Type
     errors:
       models:
         line_item:
@@ -20,9 +21,13 @@ en:
             price:
               must_be_positive_to_match_transaction: "must be positive to match transaction price"
               must_be_negative_to_match_transaction: "must be negative to match transaction price"
+            base:
+              exchange_schedule_must_match_price: "has an outdated repayment schedule. Update the entity repayment details before saving."
+              paid_exchange_schedule_conflicts_with_price: "cannot be reduced below or change the sign of already-paid exchanges."
   transactions:
     composite:
-      split_purchase: "Split purchase"
+      single_purchase: "Single Purchase"
+      split_purchase: "Split Purchase"
       split_purchase_hint: "Break down purchase across multiple categories and entities"
       add_item: "Add item"
       no_entity: "No entity"
@@ -35,6 +40,11 @@ en:
       badge: "Split [%{count}]"
       breakdown: "Line Items"
       breakdown_title: "Line Items Breakdown"
+      entity_modal_title: "Entity repayment plan"
+      entity_modal_description: "Configure a repayment plan for each line item assigned to this entity."
+      entity_modal_total: "Combined line-item amount"
+      entity_modal_trigger: "Details"
+      automatic: "Automatic"
       percentage: "% of Total"
       no_items: "No line items recorded."
 
@@ -51,6 +61,7 @@ pt-BR:
         comment: Comentário
         category_id: Categoria
         entity_id: Pessoa/Entidade
+        friend_notification_intent: Tipo de Troca
     errors:
       models:
         line_item:
@@ -60,9 +71,13 @@ pt-BR:
             price:
               must_be_positive_to_match_transaction: "deve ser positivo para coincidir com o valor da transação"
               must_be_negative_to_match_transaction: "deve ser negativo para coincidir com o valor da transação"
+            base:
+              exchange_schedule_must_match_price: "tem um plano de devolução desatualizado. Atualize os detalhes de devolução da entidade antes de salvar."
+              paid_exchange_schedule_conflicts_with_price: "não pode ser reduzido abaixo do valor já pago nem alterar o sinal de trocas pagas."
   transactions:
     composite:
-      split_purchase: "Dividir compra"
+      single_purchase: "Compra Simples"
+      split_purchase: "Compra Dividida"
       split_purchase_hint: "Divida a compra entre múltiplas categorias e pessoas"
       add_item: "Adicionar item"
       no_entity: "Nenhuma pessoa"
@@ -75,5 +90,10 @@ pt-BR:
       badge: "Divisão [%{count}]"
       breakdown: "Itens da Compra"
       breakdown_title: "Detalhamento de Itens"
+      entity_modal_title: "Plano de devolução da entidade"
+      entity_modal_description: "Configure um plano de devolução para cada item associado a esta pessoa/entidade."
+      entity_modal_total: "Valor total dos itens"
+      entity_modal_trigger: "Detalhes"
+      automatic: "Automático"
       percentage: "% do Total"
       no_items: "Nenhum item registrado."

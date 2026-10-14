@@ -28,14 +28,15 @@ end
 # Table name: line_items
 # Database name: primary
 #
-#  id                :bigint           not null, primary key
-#  comment           :text
-#  description       :string           not null
-#  price             :integer          default(0), not null
-#  transactable_type :string           not null, indexed => [transactable_id]
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  transactable_id   :bigint           not null, indexed => [transactable_type]
+#  id                         :bigint           not null, primary key
+#  comment                    :text
+#  description                :string           not null
+#  friend_notification_intent :string
+#  price                      :integer          default(0), not null
+#  transactable_type          :string           not null, indexed => [transactable_id]
+#  created_at                 :datetime         not null
+#  updated_at                 :datetime         not null
+#  transactable_id            :bigint           not null, indexed => [transactable_type]
 #
 # Indexes
 #

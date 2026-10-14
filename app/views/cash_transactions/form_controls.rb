@@ -5,23 +5,26 @@ class Views::CashTransactions::FormControls < Views::Base
   include ComponentsHelper
   include TranslateHelper
 
-  attr_reader :form, :cash_transaction, :user_bank_accounts, :categories, :entities
+  attr_reader :form, :cash_transaction, :user_bank_accounts, :categories, :entities, :attachment_modal_id, :existing_count
 
-  def initialize(form:, cash_transaction:, user_bank_accounts:, categories:, entities:)
+  def initialize(form:, cash_transaction:, user_bank_accounts:, categories:, entities:, attachment_modal_id: nil, existing_count: 0)
     @form = form
     @cash_transaction = cash_transaction
     @user_bank_accounts = user_bank_accounts
     @categories = categories
     @entities = entities
+    @attachment_modal_id = attachment_modal_id
+    @existing_count = existing_count
   end
 
   def view_template
-    div(class: "lg:flex lg:gap-2 w-full mb-3") do
+    div(class: "lg:flex lg:gap-2 w-full mb-2") do
       user_bank_account_field
       category_and_entity_fields
       exchange_intent_field
       date_field
       price_and_installments_controls
+      attachments_button if attachment_modal_id
     end
   end
 
@@ -98,10 +101,10 @@ class Views::CashTransactions::FormControls < Views::Base
     sign_bg_colour = positive ? "bg-green-300 dark:bg-green-400 dark:text-slate-950" : "bg-red-300 dark:bg-red-400 dark:text-slate-950"
     sign = positive ? "+" : "-"
 
-    div(class: "flex w-full lg:w-[24%] lg:flex-none gap-1 mb-3 lg:mb-0") do
+    div(class: "flex w-full lg:w-[24%] lg:flex-none gap-0 mb-3 lg:mb-0") do
       Button(
         size: :lg,
-        class: "w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
+        class: "h-10 w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
         tabindex: -1,
         title: action_message(:toggle_sign),
         disabled: cash_transaction.card_payment? || cash_transaction.generated_piggy_bank_return?,
@@ -114,7 +117,7 @@ class Views::CashTransactions::FormControls < Views::Base
           inputmode: :numeric,
           svg: :money,
           id: :transaction_price,
-          class: "sign-based font-graduate dark:font-mono",
+          class: "sign-based h-10 rounded-r-none py-2 font-graduate dark:font-mono",
           autocomplete: :off,
           disabled: cash_transaction.card_payment? || cash_transaction.generated_piggy_bank_return?,
           data: { price_mask_target: :input,
@@ -135,18 +138,43 @@ class Views::CashTransactions::FormControls < Views::Base
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
-      div(class: "w-3/12 lg:w-4/12") do
+      div(class: "w-3/12 pl-1 lg:w-4/12") do
         TextFieldTag \
           :cash_installments_count,
           type: :number,
           svg: :number,
           min: 1, max: 72,
           value: [ visible_cash_installments_count, 1 ].max,
-          class: "font-graduate dark:font-mono",
+          class: "h-10 py-2 font-graduate dark:font-mono",
           disabled: cash_transaction.card_payment? || cash_transaction.generated_piggy_bank_return?,
           data: { controller: "input-select",
                   reactive_form_target: :installmentsCountInput,
                   action: "click->input-select#select input->reactive-form#updateInstallmentsPrices" }
+      end
+    end
+  end
+
+  def attachments_button
+    div(class: "mb-3 lg:mb-0 flex items-stretch") do
+      Button(
+        type: :button,
+        size: :lg,
+        class: "h-10 w-full lg:w-auto gap-2 rounded-md border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm " \
+               "transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 " \
+               "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:bg-slate-700/70",
+        title: I18n.t("attachments.title"),
+        data: {
+          modal_target: attachment_modal_id,
+          modal_toggle: attachment_modal_id,
+          action: "dragover->attachment-upload#dragOver dragleave->attachment-upload#dragLeave drop->attachment-upload#drop"
+        }
+      ) do
+        span(class: "text-slate-500 dark:text-slate-400 shrink-0") { cached_icon(:paperclip) }
+        span(
+          class: "flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-100 px-1 font-mono text-xs font-bold text-slate-700 " \
+                 "border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200",
+          data: { attachment_upload_target: "counter" }
+        ) { existing_count.to_s }
       end
     end
   end
@@ -177,7 +205,7 @@ class Views::CashTransactions::FormControls < Views::Base
   end
 
   def calculate_button_class
-    "w-1/12 border border-black bg-white text-slate-950 dark:border-slate-600 dark:bg-transparent dark:text-slate-400 " \
+    "h-10 w-1/12 rounded-l-none rounded-r-md border border-black px-0 py-0 bg-white text-slate-950 dark:border-slate-600 dark:bg-transparent dark:text-slate-400 " \
       "dark:hover:bg-slate-800 dark:hover:text-slate-100"
   end
 

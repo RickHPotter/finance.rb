@@ -1,4 +1,18 @@
-# NARUTO-02 Bulk / Composite Transactions: Implementation Slices
+# NARUTO-02 Bulk / Composite Transactions: Implementation and Status
+
+## Current Status
+
+The original composite-transaction slices are implemented. Follow-up work expanded
+NARUTO-02 to include per-line-item cash friend repayments, intent-specific notification
+reconciliation, and safe repayment recalculation when an item price changes. This
+extension was discovered while building NARUTO-03 attachment support, but it remains
+NARUTO-02 behavior because it concerns financial line items and their counterpart
+transactions. Fiscal-document parsing/prefill is the NARUTO-03 integration that is
+still unimplemented.
+
+The focused line-item, request, and attachment checks described in the recent work
+passed. The entire CI sequence has not been rerun after the latest changes, so do not
+use this document as a claim that the full release gate is green.
 
 ## Delivery Strategy
 
@@ -193,3 +207,39 @@ back operations, and confirming CI pass.
    - `spec/requests/cash_transactions_spec.rb`
    - `spec/requests/card_transactions_spec.rb`
    - `bin/ci`
+
+---
+
+## Slice 6: Per-Line-Item Cash Friend Repayments (Implemented Extension)
+
+### Delivered behavior
+
+- Each line item owns its entity transaction and exchange schedule, including its
+  return percentage, repayment amount, exchange count, dates, and exchange rows.
+- The shared entity repayment modal has per-line-item groups and can be opened from
+  the corresponding row. Multiple items may use the same friend without merging their
+  source repayment plans.
+- Cash `EXCHANGE` line items store `loan` or `reimbursement` intent individually.
+  Validation only requires an intent for friend allocations that participate in an
+  exchange. Card line items do not use this cash intent selector.
+- Friend messages are grouped by recipient and intent, while create/update/remove and
+  intent-switch flows reconcile prior counterpart messages and transactions.
+- When a line-item price changes, the modal recalculates its repayment amount and
+  redistributes the schedule across unpaid exchanges using the saved percentage.
+  Paid exchanges remain locked; the model rejects a stale or incompatible schedule.
+
+### Regression coverage
+
+Request and service specs cover loan/reimbursement replay, multiple line items for the
+same entity, same-intent grouping, mixed intents, intent changes, price updates, and
+line-item removal/reconciliation. `spec/models/line_item_spec.rb` covers stale schedule
+rejection, correctly updated unpaid schedules, and conflicts with paid exchanges.
+
+---
+
+## Slice 7: Fiscal Document to Line-Item Prefill
+
+Not implemented. This is planned in NARUTO-03's
+[Brazilian fiscal import plan](../naruto-03/05-v3-brazilian-fiscal-import-plan.md).
+The parser should produce a reviewable draft for the existing NARUTO-02 line-item form;
+it must not silently create or save a transaction.

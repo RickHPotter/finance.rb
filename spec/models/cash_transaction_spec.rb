@@ -46,6 +46,38 @@ RSpec.describe CashTransaction, type: :model do
         expect(association.options[:optional]).to be(false)
       end
     end
+
+    context "( attachments )" do
+      it "has many attached receipts" do
+        expect(described_class.reflect_on_attachment(:receipts)).not_to be_nil
+      end
+
+      it "is valid with allowed content types" do
+        subject.receipts.attach(io: StringIO.new("pdf data"), filename: "receipt.pdf", content_type: "application/pdf")
+        expect(subject).to be_valid
+      end
+
+      it "is invalid with disallowed content types" do
+        subject.receipts.attach(io: StringIO.new("binary"), filename: "script.exe", content_type: "application/x-msdownload")
+        expect(subject).not_to be_valid
+        expect(subject.errors[:receipts]).to be_present
+      end
+
+      it "is invalid when file size exceeds 10 MB" do
+        large_io = StringIO.new("a" * 11.megabytes)
+        subject.receipts.attach(io: large_io, filename: "large.pdf", content_type: "application/pdf")
+        expect(subject).not_to be_valid
+        expect(subject.errors[:receipts]).to be_present
+      end
+
+      it "is invalid when more than 5 receipts are attached" do
+        6.times do |i|
+          subject.receipts.attach(io: StringIO.new("data"), filename: "receipt_#{i}.pdf", content_type: "application/pdf")
+        end
+        expect(subject).not_to be_valid
+        expect(subject.errors[:receipts]).to be_present
+      end
+    end
   end
 
   describe "[ business logic ]" do
@@ -59,6 +91,80 @@ RSpec.describe CashTransaction, type: :model do
       it "is not composite when having no line items" do
         transaction = build(:cash_transaction, user:, context:, user_bank_account:, price: 100_00)
         expect(transaction).not_to be_composite
+        expect(transaction).to be_valid
+      end
+
+      it "allows split purchases for exchange requests and borrow returns" do
+        exchange_request = build(:cash_transaction, user:, context:, user_bank_account:)
+        exchange_request.category_transactions.build(category: user.built_in_category("EXCHANGE"))
+
+        expect(exchange_request).to be_split_purchase_supported
+
+        borrow_return = create(:cash_transaction, user:, context:, user_bank_account:)
+        borrow_return.categories = [ user.built_in_category("BORROW RETURN") ]
+
+        expect(borrow_return).to be_split_purchase_supported
+      end
+
+      it "locks split purchases for exchange returns" do
+        transaction = build(:cash_transaction, user:, context:, user_bank_account:, cash_transaction_type: "Exchange")
+
+        expect(transaction).not_to be_split_purchase_supported
+
+        transaction = create(:cash_transaction, user:, context:, user_bank_account:)
+        transaction.categories = [ user.built_in_category("EXCHANGE RETURN") ]
+
+        expect(transaction).not_to be_split_purchase_supported
+      end
+
+      it "locks split purchases for system-managed cash transaction types" do
+        %w[CardInstallment CardTransaction Investment PiggyBank].each do |transaction_type|
+          transaction = build(:cash_transaction, user:, context:, user_bank_account:, cash_transaction_type: transaction_type)
+
+          expect(transaction).not_to be_split_purchase_supported, transaction_type
+        end
+
+        transaction = build(:cash_transaction, user:, context:, user_bank_account:)
+        transaction.category_transactions.build(category: user.built_in_category("PIGGY BANK"))
+
+        expect(transaction).not_to be_split_purchase_supported
+      end
+
+      it "ignores the blank starter line item from the split purchase form" do
+        transaction = build(:cash_transaction, user:, context:, user_bank_account:, price: 100_00)
+        transaction.assign_attributes(line_items_attributes: [ { description: "", price: "", category_id: "", entity_id: "", _destroy: "0" } ])
+
+        expect(transaction.line_items).to be_empty
+        expect(transaction).not_to be_composite
+        expect(transaction).to be_valid
+      end
+
+      it "ignores modal repayment fields when the starter line item is blank" do
+        transaction = build(:cash_transaction, user:, context:, user_bank_account:, price: 100_00)
+        transaction.assign_attributes(
+          line_items_attributes: [
+            {
+              description: "",
+              price: "",
+              category_id: "",
+              _destroy: "0",
+              entity_transactions_attributes: {
+                "0" => { entity_id: "", price: "0", price_to_be_returned: "0", loan_return_percentage: "100", _destroy: "true" }
+              }
+            }
+          ]
+        )
+
+        expect(transaction.line_items).to be_empty
+        expect(transaction).not_to be_composite
+      end
+
+      it "validates partially filled composite line item prices without raising" do
+        transaction = build(:cash_transaction, user:, context:, user_bank_account:, price: 100_00)
+        transaction.line_items.build(description: "Incomplete item", price: nil, category: food_category)
+        transaction.line_items.build(description: "Complete item", price: 100_00, category: tools_category)
+
+        expect { transaction.valid? }.not_to raise_error
       end
 
       it "is composite when having line items" do
@@ -1271,11 +1377,11 @@ RSpec.describe CashTransaction, type: :model do
           {
             entity_id: rikki.entities.that_are_users.where_entity_user(gigi).first.id,
             is_payer: true,
-            price: -5_000,
-            price_to_be_returned: -5_000,
+            price: -1_000,
+            price_to_be_returned: -1_000,
             exchanges_count: 1,
             exchanges_attributes: [
-              { number: 1, price: -5_000, date: Date.new(2026, 3, 20), month: 3, year: 2026 }
+              { number: 1, price: -1_000, date: Date.new(2026, 3, 20), month: 3, year: 2026 }
             ]
           }
         ]
@@ -1287,18 +1393,44 @@ RSpec.describe CashTransaction, type: :model do
       expect(headers.fetch("replay")).to include(
         "version" => "cash_exchange_v2",
         "intent" => "loan",
-        "category_ids" => gigi.built_in_category("EXCHANGE").id
+        "category_ids" => gigi.built_in_category("EXCHANGE").id,
+        "price" => 1_000
+      )
+      expect(headers.dig("replay", "cash_installments_attributes")).to contain_exactly(
+        a_hash_including("price" => 1_000, "number" => 1)
       )
       expect(headers.fetch("replay").fetch("entity_transactions_attributes")).to contain_exactly(
         a_hash_including(
           "is_payer" => true,
-          "price" => 5000,
-          "price_to_be_returned" => 5000,
+          "price" => -1_000,
+          "price_to_be_returned" => -1_000,
           "entity_id" => gigi_entity_for_rikki.id,
           "exchanges_count" => 1
         )
       )
+      expect(headers.dig("replay", "entity_transactions_attributes", 0, "exchanges_attributes", 0)).to include("price" => -1_000)
       expect(headers.dig("replay", "entity_transactions_attributes", 0, "exchanges_attributes", 0)).not_to have_key("paid")
+    end
+
+    it "aggregates same-number loan exchanges shared by multiple line items" do
+      transaction = described_class.new
+      exchanges = [ 1_000, 2_000 ].map do |price|
+        Exchange.new(
+          number: 1,
+          date: Date.new(2026, 3, 20),
+          month: 3,
+          year: 2026,
+          price:,
+          exchange_type: "monetary"
+        )
+      end
+
+      expect(transaction.send(:cash_loan_exchange_attributes, exchanges)).to contain_exactly(
+        { number: 1, date: Time.zone.local(2026, 3, 20), month: 3, year: 2026, price: -3_000, exchange_type: "monetary" }
+      )
+      expect(transaction.send(:cash_installments_for_exchanges, exchanges)).to contain_exactly(
+        { number: 1, date: Time.zone.local(2026, 3, 20), month: 3, year: 2026, price: 3_000 }
+      )
     end
 
     it "hydrates the effective friend notification intent from the latest active message headers" do

@@ -79,6 +79,10 @@ RSpec.describe "CashTransactions", type: :request do
       datetime_wrapper = active_installment_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
       installment_wrapper = active_installment_date.ancestors.find { |node| node["data-installment-lock-target"] == "installment" }
       price_input = installment_wrapper.at_css("[data-installment-lock-target~='price']")
+      installments_count = document.at_css("#cash_installments_count")
+      attachments_button = document.at_css("[data-modal-toggle='cash_transaction_attachments_modal_new']")
+      calculate_button = document.at_css('button[title="Calculate Installments Price"]')
+      transaction_price = document.at_css("#transaction_price")
 
       expect(installment_dates.map { |input| input["id"] }).to contain_exactly("installment_date_NEW_RECORD", "installment_date_0")
       expect(active_installment_date["type"]).to eq("hidden")
@@ -91,40 +95,175 @@ RSpec.describe "CashTransactions", type: :request do
       expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present
       expect(price_input["readonly"]).to be_nil
       expect(price_input["name"]).to eq("cash_transaction[cash_installments_attributes][0][price]")
+      expect(installments_count["class"].split).to include("h-10")
+      expect(attachments_button["class"].split).to include("h-10")
+      expect(calculate_button["class"].split).to include("h-10", "rounded-l-none", "rounded-r-md")
+      expect(transaction_price["class"].split).to include("h-10", "rounded-r-none")
     end
 
     it "renders the split purchase toggle and line items template" do
+      exchange_category = user.built_in_category("EXCHANGE")
       get new_cash_transaction_path
 
       expect(response).to have_http_status(:success)
       document = Nokogiri::HTML.fragment(response.body)
 
-      split_toggle = document.at_css('input[type="checkbox"][name="cash_transaction[split_purchase]"]')
-      expect(split_toggle).to be_present
-      expect(split_toggle["data-composite-transaction-target"]).to eq("splitToggle")
+      # Split purchase is now tab-driven; hidden input carries the value
+      split_input = document.at_css('input[type="hidden"][name="cash_transaction[split_purchase]"]')
+      expect(split_input).to be_present
+
+      # Tab triggers present
+      single_tab = document.css('[data-ruby-ui--tabs-target="trigger"]').find { |el| el.text.strip.include?("Simples") || el.text.strip.include?("Single") }
+      split_tab  = document.css('[data-ruby-ui--tabs-target="trigger"]').find { |el| el.text.strip.include?("Dividida") || el.text.strip.include?("Split") }
+      expect(single_tab).to be_present
+      expect(split_tab).to be_present
+      expect(split_tab["disabled"]).to be_nil
 
       template = document.at_css('template[data-composite-transaction-target="template"]')
       expect(template).to be_present
       expect(template.inner_html).to include("cash_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
+      expect(document.css('input[name="cash_transaction[line_items_attributes][0][description]"]').size).to eq(1)
+      expect(document.css("input[name='cash_transaction[line_items_attributes][0][category_id]'][value='#{exchange_category.id}']")).to be_present
+      expect(template.inner_html).to include("cash_transaction[line_items_attributes][NEW_LINE_ITEM][friend_notification_intent]")
+      template_row = Nokogiri::HTML.fragment(template.inner_html)
+      intent_select = template_row.at_css("select[data-line-item-exchange-intent='input']")
+      expect(intent_select["disabled"]).to be_present
+      expect(intent_select["class"]).to include("disabled:cursor-not-allowed", "disabled:bg-slate-100", "disabled:opacity-60")
+      expect(intent_select["aria-label"]).to eq(I18n.t("activerecord.attributes.cash_transaction.friend_notification_intent"))
+      expect(intent_select.at_css("option")["value"]).to eq("")
+      expect(intent_select.at_css("option").text).to eq(I18n.t("activerecord.attributes.cash_transaction.friend_notification_intent"))
+      expect(intent_select["class"]).to include("text-slate-900", "bg-white")
+      expect(intent_select.at_css("option[value='reimbursement']")["class"]).to include("text-slate-900", "bg-white")
+      template_row_control_names = template_row.css("select, input").map { |control| control["name"] }
+      expect(template_row_control_names.index(intent_select["name"])).to be < template_row_control_names.index(
+        "cash_transaction[line_items_attributes][NEW_LINE_ITEM][category_id]"
+      )
+      expect(template_row.at_css("label[for='line_item_friend_notification_intent_NEW_LINE_ITEM']")).to be_nil
+      modal = document.at_css('[data-composite-entity-modal-target="content"]')
+      expect(document.css('[data-composite-entity-modal-target="content"]').size).to eq(1)
+      modal_template = modal.at_css('template[data-composite-entity-modal-target="template"]')
+      expect(modal_template.inner_html).to include("line_item_return_percentage_NEW_LINE_ITEM")
+      exchange_type = modal.at_css('input[name$="[exchange_type]"]')
+      expect(exchange_type["value"]).to eq("monetary")
+      expect(template.inner_html).to include(
+        "cash_transaction[line_items_attributes][NEW_LINE_ITEM][entity_transactions_attributes][0][entity_id]"
+      )
     end
 
     it "renders line items for a composite transaction on edit" do
       cat1 = create(:category, :random, user:)
       cat2 = create(:category, :random, user:)
+      shared_entity = create(:entity, user:)
       composite = create(:cash_transaction, user:, price: 3_000, user_bank_account:)
-      create(:line_item, transactable: composite, description: "Item A", price: 1_000, category_id: cat1.id)
-      create(:line_item, transactable: composite, description: "Item B", price: 2_000, category_id: cat2.id)
+      create(:line_item, transactable: composite, description: "Item A", price: 1_000, category_id: cat1.id, entity_id: shared_entity.id)
+      create(:line_item, transactable: composite, description: "Item B", price: 2_000, category_id: cat2.id, entity_id: shared_entity.id)
 
       get edit_cash_transaction_path(composite)
 
       expect(response).to have_http_status(:success)
       document = Nokogiri::HTML.fragment(response.body)
 
-      split_toggle = document.at_css('input[type="checkbox"][name="cash_transaction[split_purchase]"]')
-      expect(split_toggle.key?("checked")).to be(true)
+      # When composite, hidden split_purchase input has value "1"
+      split_input = document.at_css('input[type="hidden"][name="cash_transaction[split_purchase]"]')
+      expect(split_input).to be_present
+      expect(split_input["value"]).to eq("1")
 
       item_descriptions = document.css('input[name*="[description]"]').map { |i| i["value"] }
       expect(item_descriptions).to include("Item A", "Item B")
+      modal = document.at_css('[data-composite-entity-modal-target="content"]')
+      visible_rows = document.css("[data-composite-transaction-target~='row']").reject do |row|
+        row.ancestors.any? { |ancestor| ancestor.name == "template" }
+      end
+      expect(visible_rows.sum { |row| row.css("[data-composite-entity-modal-target~='trigger']").size }).to eq(2)
+      expect(visible_rows.first.at_css("[data-composite-entity-modal-target~='trigger']")["data-action"]).to include(
+        "click->ruby-ui--sheet#open",
+        "click->composite-entity-modal#open"
+      )
+      details_button = visible_rows.first.at_css("[data-composite-entity-modal-target~='trigger'] button")
+      expect(details_button.text).to include(I18n.t("transactions.composite.entity_modal_trigger"))
+      expect(details_button.at_css("svg")).to be_present
+
+      groups = modal.css("[data-composite-entity-modal-target~='groups'] > [data-composite-entity-modal-target~='group']")
+      expect(groups.size).to eq(2)
+      expect(groups.map { |group| group.at_css("[data-composite-entity-modal-target~='itemPrice']").text }).to eq(
+        [
+          ActiveSupport::NumberHelper.number_to_currency(10, unit: "R$ "),
+          ActiveSupport::NumberHelper.number_to_currency(20, unit: "R$ ")
+        ]
+      )
+      expect(modal.css("button").map(&:text)).to include(I18n.t("transactions.composite.automatic"))
+    end
+
+    it "shows the repayment amount from exchanges when a line item amount was saved as zero" do
+      composite = create(:cash_transaction, user:, price: -10_000, user_bank_account:)
+      exchange_category = user.built_in_category("EXCHANGE")
+      item = create(
+        :line_item,
+        transactable: composite,
+        description: "Shared item",
+        price: -10_000,
+        category: exchange_category,
+        friend_notification_intent: "reimbursement"
+      )
+      entity_transaction = create(
+        :entity_transaction,
+        transactable: item,
+        entity:,
+        price: -10_000,
+        price_to_be_returned: 0,
+        loan_return_percentage: 100,
+        is_payer: false
+      )
+      create(:exchange, entity_transaction:, exchange_type: "monetary", number: 1, price: 10_000)
+
+      get edit_cash_transaction_path(composite)
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+      repayment_input = document.at_css("#line_item_return_0")
+      payer_input = document.at_css("input[name$='[is_payer]']")
+      intent_select = document.at_css("select[name$='[friend_notification_intent]']")
+
+      expect(repayment_input["value"]).to eq("10000")
+      expect(payer_input["value"]).to eq("true")
+      expect(intent_select["disabled"]).to be_nil
+    end
+
+    it "shows linked transaction navigation for exchange returns sourced from a line item" do
+      exchange_category = user.built_in_category("EXCHANGE")
+      source = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, price: 10_000)
+      source_item = create(
+        :line_item,
+        transactable: source,
+        description: "Shared item",
+        price: 6_000,
+        category: exchange_category,
+        friend_notification_intent: "loan"
+      )
+      create(:line_item, transactable: source, description: "Other item", price: 4_000, category: create(:category, user:))
+      entity_transaction = source_item.entity_transactions.create!(entity:, is_payer: true, price: 6_000, price_to_be_returned: 6_000)
+      projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        cash_transaction_type: "Exchange",
+        price: 6_000,
+        category_transactions: [ CategoryTransaction.new(category: user.built_in_category("EXCHANGE RETURN")) ]
+      )
+      create(
+        :exchange,
+        entity_transaction:,
+        cash_transaction: projection,
+        exchange_type: "non_monetary",
+        price: 6_000,
+        starting_price: 6_000
+      )
+
+      get edit_cash_transaction_path(projection)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("List Cash Transactions")
     end
 
     it "marks a Piggy Bank entity when its return differs from the source transaction" do
@@ -190,8 +329,12 @@ RSpec.describe "CashTransactions", type: :request do
       get edit_cash_transaction_path(generated_transaction)
 
       document = Nokogiri::HTML.fragment(response.body)
+      split_tab = document.css('[data-ruby-ui--tabs-target="trigger"]').find { |el| el.text.strip.include?("Dividida") || el.text.strip.include?("Split") }
+      description_input = document.at_css("#cash_transaction_description")
       price_input = document.css("[data-installment-lock-target~='price']").find { |input| input["name"].exclude?("NEW_RECORD") }
 
+      expect(split_tab["disabled"]).to eq("disabled")
+      expect(description_input["class"].split).to include("text-2xl", "lg:text-3xl", "xl:text-4xl", "2xl:text-5xl")
       expect(price_input["readonly"]).to eq("readonly")
       expect(price_input["aria-readonly"]).to eq("true")
       expect(price_input["data-lock-permanent-readonly"]).to eq("true")
@@ -602,6 +745,27 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include("border-orange-500")
       expect(response.body).to include("cashInstallmentModal_#{transaction.cash_installments.second.id}")
       expect(response.body).to include(user_bank_account.user_bank_account_name)
+    end
+
+    it "renders the attachments section with attached files and download links" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Transaction with receipt"
+      )
+      transaction.receipts.attach(
+        io: StringIO.new("sample receipt content"),
+        filename: "my_receipt.pdf",
+        content_type: "application/pdf"
+      )
+
+      get cash_transaction_path(transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("my_receipt.pdf")
+      expect(response.body).to include(I18n.t("attachments.download"))
     end
 
     it "renders the line items breakdown section and aggregated categories for a composite transaction" do
@@ -1801,8 +1965,8 @@ RSpec.describe "CashTransactions", type: :request do
       expect(headers.fetch("replay").fetch("entity_transactions_attributes")).to contain_exactly(
         a_hash_including(
           "is_payer" => true,
-          "price" => 20_000,
-          "price_to_be_returned" => 20_000,
+          "price" => -20_000,
+          "price_to_be_returned" => -20_000,
           "entity_id" => other_user_entity.id,
           "exchanges_count" => 1
         )
@@ -2341,6 +2505,92 @@ RSpec.describe "CashTransactions", type: :request do
         expect(created_transaction.line_items.map(&:category_id)).to contain_exactly(grocery_category.id, supply_category.id)
       end
 
+      it "stores separate repayment plans for multiple line items assigned to one entity" do
+        exchange_category = user.built_in_category("EXCHANGE")
+        repayment_date = 1.month.from_now.to_date
+        recipient = create(:user, :random)
+        friendship = create(:friendship, user:, friend: recipient, state: "accepted")
+        friend_entity = create(:entity, user:, entity_name: "FRIEND", entity_user: recipient, friendship:)
+        create(:entity, user: recipient, entity_name: "ME", entity_user: user, friendship:)
+
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Composite loan request",
+            price: 10_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_bank_account_id: user_bank_account.id,
+            line_items_attributes: [
+              {
+                description: "First item",
+                price: 6_000,
+                category_id: exchange_category.id,
+                friend_notification_intent: "loan",
+                entity_transactions_attributes: {
+                  "0" => {
+                    entity_id: friend_entity.id,
+                    price_to_be_returned: -6_000,
+                    loan_return_percentage: 100,
+                    exchanges_attributes: [ {
+                      number: 1,
+                      exchange_type: "non_monetary",
+                      bound_type: "standalone",
+                      paid: false,
+                      price: -6_000,
+                      date: repayment_date,
+                      month: repayment_date.month,
+                      year: repayment_date.year
+                    } ]
+                  }
+                }
+              },
+              {
+                description: "Second item",
+                price: 4_000,
+                category_id: exchange_category.id,
+                friend_notification_intent: "loan",
+                entity_transactions_attributes: {
+                  "0" => {
+                    entity_id: friend_entity.id,
+                    price_to_be_returned: -4_000,
+                    loan_return_percentage: 100,
+                    exchanges_attributes: [ {
+                      number: 1,
+                      exchange_type: "non_monetary",
+                      bound_type: "standalone",
+                      paid: false,
+                      price: -4_000,
+                      date: repayment_date,
+                      month: repayment_date.month,
+                      year: repayment_date.year
+                    } ]
+                  }
+                }
+              }
+            ]
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:see_other)
+
+        created_transaction = CashTransaction.find_by!(description: "Composite loan request")
+        expect(created_transaction.entity_transactions).to be_empty
+        expect(created_transaction.line_items.flat_map(&:entity_transactions).map(&:entity_id)).to eq([ friend_entity.id, friend_entity.id ])
+        expect(created_transaction.line_items.flat_map(&:entity_transactions).sum(&:price_to_be_returned)).to eq(-10_000)
+        expect(created_transaction.line_items.flat_map(&:entity_transactions).flat_map(&:exchanges).sum(&:price)).to eq(-10_000)
+
+        notification = Message.order(:id).last
+        notification_headers = JSON.parse(notification.headers)
+        replay = notification_headers.fetch("replay")
+        expect(notification.body).to eq("notification:create")
+        expect(notification_headers.dig("event", "action")).to eq("create")
+        expect(replay).to include("type" => "CashTransaction", "intent" => "loan")
+        expect(replay.fetch("entity_transactions_attributes")).to contain_exactly(
+          a_hash_including("price" => -10_000, "price_to_be_returned" => -10_000, "exchanges_count" => 1)
+        )
+      end
+
       it "leaves parent category and entity allocations empty" do
         post cash_transactions_path, params: {
           cash_transaction: {
@@ -2416,6 +2666,19 @@ RSpec.describe "CashTransactions", type: :request do
       cash_transaction.year = cash_transaction.date.year
       post cash_transactions_path, params: cash_transaction.params, headers: turbo_stream_headers
       @existing_cash_transaction = CashTransaction.last
+    end
+
+    it "attaches receipts submitted in update params" do
+      receipt_file = Rack::Test::UploadedFile.new(StringIO.new("invoice data"), "application/pdf", original_filename: "invoice.pdf")
+      cash_transaction.use_base(@existing_cash_transaction)
+      update_params = cash_transaction.params.deep_dup
+      update_params[:cash_transaction][:receipts] = [ receipt_file ]
+
+      put cash_transaction_path(@existing_cash_transaction), params: update_params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other).or have_http_status(:redirect)
+      expect(@existing_cash_transaction.reload.receipts).to be_attached
+      expect(@existing_cash_transaction.receipts.first.filename.to_s).to eq("invoice.pdf")
     end
 
     it "updates the record and its installment price" do
@@ -5861,7 +6124,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       document = Nokogiri::HTML.fragment(response.body)
       description_link = document.at_css("#edit_cash_transaction_#{transaction.id}")
-      description_column = description_link.parent
+      description_column = description_link.ancestors.find { |node| node["class"]&.include?("col-span-4") } || description_link.parent
       action_button = document.at_css("#cash_installment_actions_#{installment.id}")
       pay_action = document.at_css("button[data-modal-toggle='cashInstallmentModal_#{installment.id}']")
 
@@ -5870,6 +6133,36 @@ RSpec.describe "CashTransactions", type: :request do
       expect(description_column.text).not_to include(I18n.t("actions.analyse"))
       expect(action_button).to be_present
       expect(pay_action.text).to include(CashInstallment.human_attribute_name(:pay))
+    end
+
+    it "renders the paperclip badge on rows with attached receipts" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Cash row with receipt",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, paid: false)
+        ]
+      )
+      transaction.receipts.attach(
+        io: StringIO.new("receipt pdf data"),
+        filename: "receipt.pdf",
+        content_type: "application/pdf"
+      )
+      transaction.save!
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("attachments.title"))
     end
 
     it "uses the normal row surface and renders two incompatible categories as readable pills" do
@@ -5908,9 +6201,10 @@ RSpec.describe "CashTransactions", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(row["class"]).to include("text-slate-900", "dark:text-slate-100")
+      expect(row["class"]).not_to include("animate-pulse")
       expect(row["data-category-multiple"]).to eq("true")
-      expect(row["style"]).to be_blank
-      expect(row_background["class"]).to include("bg-white", "dark:bg-slate-900")
+      expect(row["style"]).to include("background-color: transparent !important")
+      expect(row_background["class"]).to include("bg-white", "dark:bg-slate-900", "animate-pulse")
       expect(category_pills.map(&:text)).to eq(category_names)
       expect(category_pills).to all(satisfy { |pill| pill["data-category-colour"] == "true" })
       expect(category_pills.find { |pill| pill.text == "LEISURE" }["style"]).to include("background-color: #4b5563", "color: #ffffff")
@@ -5925,10 +6219,13 @@ RSpec.describe "CashTransactions", type: :request do
 
       mobile_document = Nokogiri::HTML.fragment(response.body)
       mobile_row = mobile_document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
+      mobile_background = mobile_row.at_css("[data-row-background]")
       mobile_pills = mobile_row.css("[data-datatable-target='category'] span").select { |pill| category_names.include?(pill.text) }
 
       expect(mobile_row["class"]).to include("bg-white", "dark:bg-slate-900")
-      expect(mobile_row["style"]).to be_blank
+      expect(mobile_row["class"]).not_to include("animate-pulse")
+      expect(mobile_row["style"]).to include("background-color: transparent !important")
+      expect(mobile_background["class"]).to include("bg-white", "dark:bg-slate-900", "animate-pulse")
       expect(mobile_pills.map(&:text)).to eq(category_names)
       expect(mobile_row.text).not_to include("+1")
 

@@ -59,11 +59,20 @@ class AllocationMutations::EntityPlanner
       return { reason_code: :entity_protected, details: { entity_id: } } if protected_identity?(entity) && !protected_identity_switch?
     end
 
-    nil
+    validate_subscription_entities
+  end
+
+  def validate_subscription_entities
+    return unless owner.respond_to?(:subscription) && owner.subscription.present?
+    return if action.add?
+
+    subscription_entity_ids = owner.subscription.entity_ids
+    return unless subscription_entity_ids.include?(action.source_id)
+
+    { reason_code: :subscription_owned_entity, details: { subscription_id: owner.subscription_id, entity_id: action.source_id } }
   end
 
   def validate_owner_structure
-    return validate_subscription_structure if subscription_managed?
     return unless owner.is_a?(CashTransaction) || owner.is_a?(CardTransaction)
 
     family = AllocationMutations::StructuralFamily.call(owner)
@@ -79,18 +88,6 @@ class AllocationMutations::EntityPlanner
 
   def protected_identity_switch?
     action.switch?
-  end
-
-  def validate_subscription_structure
-    { reason_code: :subscription_owned_entity, details: { subscription_id: owner.subscription_id } }
-  end
-
-  def subscription_managed?
-    return false unless owner.respond_to?(:subscription) && owner.subscription.present?
-
-    subscription_entity_ids = owner.subscription.entity_ids
-    current_entity_ids = adapter.entity_ids
-    current_entity_ids.intersect?(subscription_entity_ids)
   end
 
   def projected_entity_ids

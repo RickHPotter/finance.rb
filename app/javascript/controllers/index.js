@@ -10,6 +10,9 @@ application.register("allocation-mutation", AllocationMutationController)
 import AllocationTrendController from "./allocation_trend_controller"
 application.register("allocation-trend", AllocationTrendController)
 
+import AttachmentUploadController from "./attachment_upload_controller"
+application.register("attachment-upload", AttachmentUploadController)
+
 import AutofocusController from "./autofocus_controller"
 application.register("autofocus", AutofocusController)
 
@@ -50,7 +53,9 @@ import ColourPickerController from "./colour_picker_controller"
 application.register("colour-picker", ColourPickerController)
 
 import CompositeTransactionController from "./composite_transaction_controller"
+import CompositeEntityModalController from "./composite_entity_modal_controller"
 application.register("composite-transaction", CompositeTransactionController)
+application.register("composite-entity-modal", CompositeEntityModalController)
 
 import ConfirmController from "./confirm_controller"
 application.register("confirm", ConfirmController)

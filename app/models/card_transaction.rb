@@ -30,11 +30,16 @@ class CardTransaction < ApplicationRecord
   belongs_to :user_card, counter_cache: true
   belongs_to :reference_transactable, polymorphic: true, optional: true
   has_many :line_items, as: :transactable, dependent: :destroy, inverse_of: :transactable
-  accepts_nested_attributes_for :line_items, allow_destroy: true
+  has_many_attached :receipts
+  accepts_nested_attributes_for :line_items, allow_destroy: true, reject_if: :blank_line_item_attributes?
 
   # @validations ..............................................................
   validates :context, presence: true
   validates :description, :card_installments_count, presence: true
+  validates :receipts,
+            content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
+            size: { less_than_or_equal_to: 10.megabytes },
+            limit: { max: 5 }
   validate :validate_composite_line_items_count
   validate :validate_line_items_price_sum
 
@@ -95,6 +100,10 @@ class CardTransaction < ApplicationRecord
 
   def composite?
     active_line_items.any?
+  end
+
+  def split_purchase_supported?
+    !card_advance_category? && advance_cash_transaction.blank?
   end
 
   def active_line_items
@@ -361,11 +370,33 @@ class CardTransaction < ApplicationRecord
   def validate_line_items_price_sum
     return unless composite?
 
-    line_items_sum = active_line_items.sum(&:price)
+    line_items_sum = active_line_items.sum { |line_item| line_item.price.to_i }
     return if line_items_sum == price
 
     difference = (price - line_items_sum).abs
     errors.add(:price, :line_items_sum_mismatch, difference:)
+  end
+
+  def blank_line_item_attributes?(attributes)
+    attributes = attributes.with_indifferent_access
+    return false if attributes[:id].present?
+
+    substantive_attributes = attributes.except(:id, :_destroy, :entity_transactions_attributes)
+    return false if substantive_attributes.values.any?(&:present?)
+
+    entity_transactions = attributes[:entity_transactions_attributes]
+    entity_transactions = entity_transactions.to_unsafe_h if entity_transactions.respond_to?(:to_unsafe_h)
+    entity_transactions =
+      if entity_transactions.is_a?(Hash)
+        entity_transactions.key?(:entity_id) || entity_transactions.key?("entity_id") ? [ entity_transactions ] : entity_transactions.values
+      else
+        Array(entity_transactions)
+      end
+
+    entity_transactions.none? do |entity_transaction_attributes|
+      entity_transaction_attributes = entity_transaction_attributes.with_indifferent_access
+      entity_transaction_attributes[:entity_id].present? && !ActiveModel::Type::Boolean.new.cast(entity_transaction_attributes[:_destroy])
+    end
   end
 end
 

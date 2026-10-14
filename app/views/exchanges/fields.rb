@@ -9,10 +9,11 @@ module Views
 
       include CacheHelper
 
-      def initialize(form:, bound_type:)
+      def initialize(form:, bound_type:, id_prefix: nil)
         @form = form
         @exchange = form.object
         @bound_type = bound_type
+        @id_prefix = id_prefix
       end
 
       def view_template
@@ -126,7 +127,7 @@ module Views
         parent_index = form.options[:parent_builder]&.index
         nested_index = [ parent_index, form.index ].compact.join("_")
 
-        "exchange_date_#{nested_index}"
+        [ "exchange_date", @id_prefix, nested_index.presence ].compact.join("_")
       end
 
       def exchange_border_class

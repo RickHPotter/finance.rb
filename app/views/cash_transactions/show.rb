@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CashTransactions::Show < Views::Base
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ButtonTo
   include Phlex::Rails::Helpers::ImageTag
@@ -29,6 +29,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
           piggy_bank_return_section if cash_transaction.generated_piggy_bank_return?
           card_bound_projection_exchanges_section
           exchanges_section
+          TransactionReceiptsList(transaction: cash_transaction)
           links_section
         end
       end

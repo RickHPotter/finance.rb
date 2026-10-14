@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CardTransactions::Show < Views::Base
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
@@ -26,6 +26,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
           render Views::Transactions::ShowLineItemsSection.new(transaction: card_transaction) if card_transaction.composite?
           installments_and_invoices_section
           exchanges_section
+          TransactionReceiptsList(transaction: card_transaction)
           links_section
         end
       end

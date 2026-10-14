@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CardInstallments::Index < Views::Base
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
 
@@ -58,10 +58,11 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                       data: { turbo_frame: "_top", turbo_prefetch: false }
             end
 
-            if card_transaction.composite?
+            if card_transaction.composite? || card_transaction.receipts.attached?
               div(class: "flex-1 flex items-center min-w-0 gap-1.5") do
-                render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment)
+                render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment) if card_transaction.composite?
                 render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
+                receipts_badge(card_transaction) if card_transaction.receipts.attached?
               end
             else
               render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
@@ -187,10 +188,11 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                       data: { turbo_frame: "_top", turbo_prefetch: false }
             end
 
-            if card_transaction.composite?
+            if card_transaction.composite? || card_transaction.receipts.attached?
               div(class: "flex-1 flex items-center justify-center min-w-0 gap-1.5 ml-2") do
-                render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment)
+                render Views::Transactions::CompositeBadge.new(transaction: card_transaction, installment: card_installment) if card_transaction.composite?
                 render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
+                receipts_badge(card_transaction) if card_transaction.receipts.attached?
               end
             else
               render_description_link(card_transaction, class: "flex-5 truncate text-md underline underline-offset-[3px]")
@@ -427,6 +429,15 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       end
 
       yield if block_given?
+    end
+  end
+
+  def receipts_badge(_transaction)
+    span(
+      class: "inline-flex items-center text-slate-400 hover:text-slate-600 dark:text-slate-500 shrink-0",
+      title: I18n.t("attachments.title")
+    ) do
+      cached_icon(:paperclip)
     end
   end
 end

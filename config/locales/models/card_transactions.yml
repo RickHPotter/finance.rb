@@ -34,6 +34,7 @@ en:
         description_placeholder: Card Transaction Name
         comment: Comment
         comment_placeholder: Any comment about?
+        receipts: Receipts
         date: Date
         card_transaction_date: Card Transaction Date
         card_installment_date: Card Installment Date
@@ -106,6 +107,7 @@ pt-BR:
         description_placeholder: Nome da Transação
         comment: Comentário
         comment_placeholder: Algum comentário?
+        receipts: Anexos
         date: Data
         card_transaction_date: Data da Transação
         card_installment_date: Data da Parcela

@@ -84,6 +84,10 @@ RSpec.describe "CardTransactions", type: :request do
       document = Nokogiri::HTML.fragment(response.body)
       transaction_date = document.at_css("#card_transaction_date")
       transaction_datetime_wrapper = transaction_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+      installments_count = document.at_css("#card_installments_count")
+      attachments_button = document.at_css("[data-modal-toggle='card_transaction_attachments_modal_new']")
+      calculate_button = document.at_css('button[title="Calculate Installments Price"]')
+      transaction_price = document.at_css("#transaction_price")
       installment_dates = document.css("input.installment_date")
       active_installment_date = installment_dates.find { |input| input["name"].exclude?("NEW_RECORD") }
       datetime_wrapper = active_installment_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
@@ -101,23 +105,44 @@ RSpec.describe "CardTransactions", type: :request do
       expect(datetime_wrapper["data-datetime-input-readonly-value"]).to be_nil
       expect(datetime_wrapper.at_css("#installment_date_0_date_input")).to be_present
       expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present
+      expect(installments_count["class"].split).to include("h-10")
+      expect(attachments_button["class"].split).to include("h-10")
+      expect(calculate_button["class"].split).to include("h-10", "rounded-l-none", "rounded-r-md")
+      expect(transaction_price["class"].split).to include("h-10", "rounded-r-none")
     end
 
     it "renders the split purchase toggle and line items template" do
       user_card_one
+      exchange_category = user.built_in_category("EXCHANGE")
 
       get new_card_transaction_path
 
       expect(response).to have_http_status(:success)
       document = Nokogiri::HTML.fragment(response.body)
 
-      split_toggle = document.at_css('input[type="checkbox"][name="card_transaction[split_purchase]"]')
-      expect(split_toggle).to be_present
-      expect(split_toggle["data-composite-transaction-target"]).to eq("splitToggle")
+      # Split purchase is now tab-driven; hidden input carries the value
+      split_input = document.at_css('input[type="hidden"][name="card_transaction[split_purchase]"]')
+      expect(split_input).to be_present
+
+      # Tab triggers present
+      single_tab = document.css('[data-ruby-ui--tabs-target="trigger"]').find { |el| el.text.strip.include?("Simples") || el.text.strip.include?("Single") }
+      split_tab  = document.css('[data-ruby-ui--tabs-target="trigger"]').find { |el| el.text.strip.include?("Dividida") || el.text.strip.include?("Split") }
+      expect(single_tab).to be_present
+      expect(split_tab).to be_present
+      expect(split_tab["disabled"]).to be_nil
 
       template = document.at_css('template[data-composite-transaction-target="template"]')
       expect(template).to be_present
       expect(template.inner_html).to include("card_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
+      expect(template.inner_html).not_to include("friend_notification_intent")
+      template_row = Nokogiri::HTML.fragment(template.inner_html)
+      expect(template_row.at_css("select[data-line-item-exchange-intent='input']")).to be_nil
+      expect(document.css('[data-composite-entity-modal-target="content"]').size).to eq(1)
+      expect(template.inner_html).to include(
+        "card_transaction[line_items_attributes][NEW_LINE_ITEM][entity_transactions_attributes][0][entity_id]"
+      )
+      expect(document.css('input[name="card_transaction[line_items_attributes][0][description]"]').size).to eq(1)
+      expect(document.css("input[name='card_transaction[line_items_attributes][0][category_id]'][value='#{exchange_category.id}']")).to be_present
     end
 
     it "renders line items for a composite card transaction on edit" do
@@ -132,8 +157,10 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response).to have_http_status(:success)
       document = Nokogiri::HTML.fragment(response.body)
 
-      split_toggle = document.at_css('input[type="checkbox"][name="card_transaction[split_purchase]"]')
-      expect(split_toggle.key?("checked")).to be(true)
+      # When composite, hidden split_purchase input has value "1"
+      split_input = document.at_css('input[type="hidden"][name="card_transaction[split_purchase]"]')
+      expect(split_input).to be_present
+      expect(split_input["value"]).to eq("1")
 
       item_descriptions = document.css('input[name*="[description]"]').map { |i| i["value"] }
       expect(item_descriptions).to include("Card Item A", "Card Item B")
@@ -1612,6 +1639,19 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response).to redirect_to(card_transactions_path(user_card_id: user_card_one.id))
     end
 
+    it "attaches receipts submitted in update params" do
+      receipt_file = Rack::Test::UploadedFile.new(StringIO.new("invoice data"), "application/pdf", original_filename: "invoice.pdf")
+      card_transaction.use_base(@existing_card_transaction)
+      update_params = card_transaction.params.deep_dup
+      update_params[:card_transaction][:receipts] = [ receipt_file ]
+
+      put card_transaction_path(@existing_card_transaction), params: update_params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:redirect).or have_http_status(:success)
+      expect(@existing_card_transaction.reload.receipts).to be_attached
+      expect(@existing_card_transaction.receipts.first.filename.to_s).to eq("invoice.pdf")
+    end
+
     it "updates the record to have a non_paying entity" do
       card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: false })
       put(card_transaction_path(@existing_card_transaction), params: card_transaction.params, headers: turbo_stream_headers)
@@ -2115,6 +2155,37 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include(I18n.t("transactions.composite.breakdown_title"))
       expect(response.body).to include("Cable")
       expect(response.body).to include("Adapter")
+    end
+
+    it "renders the paperclip badge on rows with attached receipts" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Card row with receipt",
+        price: -3_000,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -3_000, date: Date.new(2026, 4, 10), month: 4, year: 2026)
+        ]
+      )
+      transaction.receipts.attach(
+        io: StringIO.new("card receipt image"),
+        filename: "receipt.jpg",
+        content_type: "image/jpeg"
+      )
+      transaction.save!
+
+      get month_year_card_transactions_path, params: {
+        month_year: "202604",
+        card_transaction: { card_installment_ids: transaction.card_installments.ids, user_card_id: user_card_one.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("attachments.title"))
     end
 
     it "renders single and multiple category allocations through either display mode" do
@@ -2777,6 +2848,27 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include("Pen")
       expect(response.body).to include(cat1.name)
       expect(response.body).to include(cat2.name)
+    end
+
+    it "renders the attachments section with attached files and download links" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Card transaction with receipt"
+      )
+      transaction.receipts.attach(
+        io: StringIO.new("sample receipt content"),
+        filename: "card_receipt.pdf",
+        content_type: "application/pdf"
+      )
+
+      get card_transaction_path(transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("card_receipt.pdf")
+      expect(response.body).to include(I18n.t("attachments.download"))
     end
   end
 

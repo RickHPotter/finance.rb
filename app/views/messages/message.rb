@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::Messages::Message < Views::Base
   attr_reader :message
 
   include Phlex::Rails::Helpers::AssetPath
