@@ -16,7 +16,8 @@ class Views::Transactions::FiscalImportModal < Views::Base
       id: modal_id,
       title: I18n.t("fiscal_import.title"),
       options: {
-        content_class: "w-[calc(100vw-2rem)] max-w-2xl text-slate-900 dark:text-slate-100",
+        content_class: "w-[calc(100vw-1rem)] max-w-2xl max-h-[calc(100dvh-1rem)] overflow-y-auto !p-3 text-slate-900 " \
+                       "dark:text-slate-100 sm:w-[calc(100vw-2rem)] sm:max-h-none sm:overflow-visible sm:!p-6",
         content_data: {
           controller: "fiscal-import",
           fiscal_import_url_value: fiscal_receipt_imports_path,

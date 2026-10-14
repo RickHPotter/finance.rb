@@ -55,12 +55,12 @@ class Views::Transactions::FiscalImportSection < Views::Base
         ) { I18n.t("fiscal_import.cancel_camera") }
       end
 
-      div(class: "mt-3 flex flex-wrap items-center gap-2") do
+      div(class: "mt-3 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 sm:flex sm:flex-wrap") do
         label(class: "sr-only", for: "fiscal_import_state") { I18n.t("fiscal_import.state") }
         select(
           id: "fiscal_import_state",
           name: "state",
-          class: "h-10 w-36 shrink-0 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 " \
+          class: "h-10 w-full shrink-0 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 sm:w-36 " \
                  "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100",
           data: {
             fiscal_import_target: "state",
@@ -75,7 +75,7 @@ class Views::Transactions::FiscalImportSection < Views::Base
           inputmode: :text,
           autocomplete: :off,
           placeholder: I18n.t("fiscal_import.key_placeholder.goias"),
-          class: "min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 " \
+          class: "min-w-0 w-full flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 " \
                  "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100",
           data: {
             fiscal_import_target: "source",
@@ -85,7 +85,8 @@ class Views::Transactions::FiscalImportSection < Views::Base
         )
         button(
           type: :button,
-          class: "rounded-md border border-sky-700 px-3 py-2 text-xs font-semibold text-sky-800 hover:bg-sky-100 " \
+          class: "col-span-2 justify-self-end rounded-md border border-sky-700 px-3 py-2 text-xs font-semibold text-sky-800 " \
+                 "hover:bg-sky-100 sm:col-span-1 sm:justify-self-auto " \
                  "disabled:opacity-50 dark:text-sky-300 dark:hover:bg-sky-950",
           data: { action: "click->fiscal-import#lookup", fiscal_import_target: "button" }
         ) { I18n.t("fiscal_import.lookup") }

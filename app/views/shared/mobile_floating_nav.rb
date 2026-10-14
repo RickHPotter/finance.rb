@@ -37,7 +37,7 @@ class Views::Shared::MobileFloatingNav < Views::Base
           type: :button,
           title: modal_action.fetch(:label),
           aria: { label: modal_action.fetch(:label) },
-          class: "flex items-center justify-center fixed bottom-40 right-4 h-12 w-12 rounded-full bg-sky-700 text-white shadow-lg " \
+          class: "flex items-center justify-center fixed bottom-20 right-3 h-14 w-14 rounded-full bg-sky-700 text-white shadow-lg " \
                  "z-50 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400",
           data: { modal_target: modal_action.fetch(:id), modal_toggle: modal_action.fetch(:id) }
         ) do
@@ -59,7 +59,7 @@ class Views::Shared::MobileFloatingNav < Views::Base
   private
 
   def nav_button_class
-    "opacity-0 translate-y-2 pointer-events-none flex items-center justify-center fixed bottom-24 right-3
+    "opacity-0 translate-y-2 pointer-events-none flex items-center justify-center fixed bottom-36 right-3
      h-12 w-12 bg-gray-300/95 text-black rounded-full shadow-lg z-50 transition-all duration-200".squish
   end
 
