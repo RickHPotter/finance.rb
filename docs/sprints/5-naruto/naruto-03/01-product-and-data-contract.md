@@ -2,10 +2,20 @@
 
 ## Status and scope
 
-V1 is implemented in the current tree. This contract records the intended behavior and
-the remaining gaps as reviewed on 2026-10-06. The [V2 development plan](04-v2-development-plan.md)
-covers security, durable storage, deletion identity, and missing verification. Fiscal
-document extraction remains a separate, deferred feature; it is not part of hardening V2.
+NARUTO-03 is not complete yet. The receipt attachment baseline is implemented. V2
+security and storage code is in the tree, but its deployment durability and remaining
+security/failure-path checks still need verification. The feature also still needs the
+Brazilian cupom-fiscal import flow that converts fiscal items into a reviewable
+transaction draft. That import is a separate V3 workstream, but it is part of the
+intended NARUTO-03 outcome, not a permanently deferred feature.
+
+The custom receipt routes disabled Active Storage's defaults, but production-style
+boot exposed a route-registration-order collision. The early route-disable fix is in
+the tree and route loading was verified locally for both `homolog` and `production`;
+the homolog deployment must still be retried and observed healthy.
+
+- [V2 attachment-hardening plan](04-v2-development-plan.md)
+- [V3 Brazilian fiscal import plan](05-v3-brazilian-fiscal-import-plan.md)
 
 ## V1 contract
 
@@ -52,18 +62,24 @@ validated across a deployment or backup/restore; do not treat production receipt
 durable until those checks pass.
 
 Receipt downloads and deletes now use authenticated app routes and attachment IDs;
-the default public Active Storage routes are disabled. Authenticated blob delivery
-retains avatar display. Direct uploads require authentication, enforce the declared
-MIME and 10 MiB limits, and bind their signed IDs to the uploader. Content sniffing
-and several adversarial failure cases remain V2 release checks.
+the default public Active Storage routes are disabled at application load so
+production-style route initialization cannot add a duplicate default route.
+Authenticated blob delivery retains avatar display. Direct uploads require
+authentication, enforce the declared MIME and 10 MiB limits, and bind their signed
+IDs to the uploader. Content sniffing and several adversarial failure cases remain V2
+release checks.
 
-## Deferred fiscal extraction
+## V3 fiscal receipt import (planned; required for feature completion)
 
-Parsing NF-e XML or a cupom fiscal QR URL to suggest an entity, line items, and a
-transaction total is deferred. It depends on composite transactions from NARUTO-02.
-The future design must assess what issuer, recipient, and URL data can leave the
-application before using a third-party service. OCR and bank statement parsing are
-also outside NARUTO-03.
+The desired workflow converts a Brazilian cupom fiscal into line items in a cash or
+card transaction. V3 depends on NARUTO-02: it should prefill an unsaved transaction
+draft with fiscal item descriptions, amounts, and the document total, then let the
+user review and complete the line items before saving. See the V3 plan for input
+formats, reconciliation rules, security constraints, and open product decisions.
+
+General OCR of arbitrary receipt photos and bank-statement parsing remain outside this
+scope. QR scanning is only an input mechanism for supported fiscal data, not a promise
+to understand arbitrary text in a photo.
 
 ## Reconciled contradictions
 
@@ -72,7 +88,7 @@ also outside NARUTO-03.
 | The sprint required 10 MB and five files per record; a detailed slice exempted `LineItem`. | All three models enforce the same rules, even without LineItem UI. |
 | The example used `size: { max: 10.megabytes }`; the installed gem requires a comparison key. | Use `size: { less_than_or_equal_to: 10.megabytes }`. `limit: { max: 5 }` remains valid. |
 | An appended draft said no model had attachments and production should use object storage, while the resolved section said attachments and local disk already existed. | The appended draft is removed. The current models and configured services are recorded above; durable production storage remains a V2 requirement. |
-| The old draft reopened audit, rollback, and fiscal-extraction timing questions after they were marked resolved. | Attachment deletion is annotated without file rollback; fiscal extraction stays deferred. V2 is reserved for attachment hardening. |
+| Older text treated fiscal extraction as indefinitely out of scope. | Fiscal receipt import is now planned V3 scope and required before NARUTO-03 is complete; it remains separate from the V2 attachment-hardening release gate. |
 | The plan described a future audit version from a touch. | Deletion now writes an explicit audit annotation in the same DB transaction as detaching; Active Storage purges after commit. V2 still needs failure-path and duplicate-audit checks. |
 
 See [implementation status](02-implementation-slices.md) and

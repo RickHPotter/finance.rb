@@ -2,7 +2,11 @@
 
 ## Status
 
-Approved planning contract as of 2026-09-28.
+The original planning contract was approved on 2026-09-28. The feature has since been
+implemented and extended with cash friend-repayment workflows. This document records
+the current product contract; see the [implementation status](02-implementation-slices.md)
+for delivered behavior and verification limits. Brazilian fiscal-document parsing is
+NARUTO-03 work; the line-item model and transaction prefill target are NARUTO-02.
 
 ---
 
@@ -124,6 +128,32 @@ The transaction create / edit form gains a **"Split purchase"** toggle button. W
   - Remaining unallocated amount (highlighted in red if non-zero, green when balanced)
 - "Add line item" button to append rows dynamically.
 
+### Friend repayment plans per line item
+
+Each line item may have its own entity allocation and repayment schedule. The same
+friend may be assigned to multiple line items; each line item retains its own return
+percentage, repayment amount, exchange count, dates, and exchange rows. Its details
+are edited through the shared entity repayment modal, with a trigger on each applicable
+line-item row.
+
+For cash transactions, an `EXCHANGE` line item involving a friend can choose a
+`loan` or `reimbursement` notification intent. The intent belongs to the line item so
+different items in one purchase can use different intents. It is required only for a
+friend allocation that actually participates in an exchange; non-friend allocations
+and non-payer shares do not require it. Card line items do not expose this cash
+exchange-intent selector.
+
+Friend notifications are reconciled per friend and intent. Multiple line items can
+therefore share a recipient notification without losing their separate source-side
+repayment plans. Changes to a line item's amount or intent, and removing a line item,
+must reconcile the counterpart notification/transactions without leaving stale amounts
+or orphaned exchange records.
+
+When a line-item price changes, its repayment amount and unpaid exchange schedule are
+recalculated from the saved return percentage. Paid exchange rows are immutable; a
+change that cannot be represented without conflicting with paid rows must fail
+validation and ask the user to resolve the repayment plan.
+
 Split purchase is available for ordinary purchases and exchange requests, including
 `BORROW RETURN` transactions, where one transaction can allocate amounts to multiple
 entities (including the current user). It is unavailable for generated `EXCHANGE RETURN`
@@ -162,3 +192,12 @@ advances, investments, and piggy-bank projections.
 3. **Parent allocations**: Cleared completely when composite mode is active so allocations reside exclusively on line items without double-counting.
 4. **Line item sign matching**: Line item prices must share the sign of the parent transaction (both negative for expense card transactions, or matching sign for cash transactions).
 5. **Direct virtual accessors**: `LineItem#category_id` and `LineItem#entity_id` provide clean accessors that coordinate with underlying polymorphic join tables.
+6. **Repayment ownership**: Per-item entity transactions and exchanges belong to each
+   `LineItem`, even when multiple items use the same friend. The parent transaction's
+   allocations remain empty in composite mode.
+7. **Cash intent**: Loan versus reimbursement is selected per cash line item. It is
+   distinct from `Exchange#exchange_type` (`monetary` / `non_monetary`) and is not a
+   card line-item field.
+8. **Fiscal prefill boundary**: Fiscal extraction belongs to NARUTO-03, but its output
+   is an unsaved draft of NARUTO-02 line items. The user reviews and saves the
+   transaction; extraction must not create financial records by itself.

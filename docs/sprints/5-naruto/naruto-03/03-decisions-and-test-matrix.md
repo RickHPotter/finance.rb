@@ -20,6 +20,9 @@
 7. V2 implements authenticated receipt downloads, direct-upload authorization, and
    an attachment-specific delete identifier. Signed avatars remain available to
    authenticated users; anonymous Active Storage delivery is disabled.
+8. Parsing a Brazilian cupom fiscal into transaction line items is planned NARUTO-03
+   V3 scope and is required for the feature to be called complete. It prefills an
+   unsaved NARUTO-02 transaction draft; the user reviews and saves it.
 
 ## Current tests and gaps
 
@@ -33,10 +36,13 @@
 | Download | `spec/requests/attachments_spec.rb` covers owner stream and cross-user denial; receipt blob route is authenticated. | Anonymous and wrong-context cases; avatar access regression check. |
 | Direct upload | `spec/requests/attachments_spec.rb` covers anonymous and oversized rejection; authenticated controller validates allowlisted MIME and byte size before blob creation. | Unsupported-type request; cross-actor signed blob attach; inspect stored bytes/content type. |
 | Storage durability | Production and homolog now have separate named volumes at `/rails/storage`; the storage directories were empty at inspection. | Deploy with the mount, verify persistence across replacement, and exercise backup/restore. |
+| Production-style route boot | `config.active_storage.draw_routes = false` plus the early `ActiveStorage.draw_routes = false` prevents default routes from colliding with the authenticated receipt route; local homolog and production route commands boot. | Redeploy homolog and confirm container health and authenticated file/avatar flows. |
+| Fiscal receipt import | No parser or transaction-prefill workflow exists yet. | Implement and test supported NFC-e/cupom fiscal XML and QR/URL inputs, draft line-item prefill, total reconciliation, and user review; see [V3 plan](05-v3-brazilian-fiscal-import-plan.md). |
 
 ## Release gate
 
-V1 model limits are complete only when all three models and their focused specs
-pass. V2 is complete only when the security and storage checks above pass, the
-attachment route is unambiguous, and `bin/ci` is green. Do not mark those V2
-items complete based on model or request specs alone.
+The attachment baseline is implemented. V2 is complete only when the security and
+storage checks above pass, the homolog deployment is healthy, the attachment route is
+unambiguous, and `bin/ci` is green. NARUTO-03 as a whole remains incomplete until V3
+fiscal import is implemented and its extraction/reconciliation tests pass. Do not mark
+either gate complete based on model or request specs alone.

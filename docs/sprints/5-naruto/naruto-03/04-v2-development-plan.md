@@ -2,9 +2,10 @@
 
 ## Purpose and current baseline
 
-V2 finishes the attachment feature's security and operational contract. It does not
-include NF-e, QR-code, or OCR extraction. The V1 [contract](01-product-and-data-contract.md)
-and [implementation status](02-implementation-slices.md) describe the current tree.
+V2 finishes the attachment feature's security and operational contract. Brazilian
+fiscal receipt parsing is a separate V3 workstream, but it remains required for the
+overall NARUTO-03 feature. The V1 [contract](01-product-and-data-contract.md) and
+[implementation status](02-implementation-slices.md) describe the current tree.
 
 The three attachment hosts have the 10 MiB per-file, five-file model contract; only
 cash and card transactions have UI. V2 code now routes receipt delivery and upload
@@ -12,6 +13,12 @@ through authenticated controllers, identifies deletions by attachment, and decla
 separate persistent Disk volumes for production and homolog. Remaining code and
 operational verification gates are tracked in the
 [decision matrix](03-decisions-and-test-matrix.md).
+
+Production-style route loading previously failed because Active Storage's default
+`rails_service_blob` route was drawn alongside the custom authenticated route. The
+application now disables Active Storage route drawing early as well as through the
+Rails configuration. Local `homolog` and `production` route commands pass; a healthy
+homolog deployment is still an acceptance check.
 
 ## Slice 1 — Define receipt identity and authorization
 
@@ -117,9 +124,12 @@ Run focused specs after each slice, then `bin/rubocop -A` and `bin/ci` under the
 repository's test environment. Do not mark V2 complete until the deployment check
 and the security cases pass in addition to CI.
 
-## Explicitly deferred
+## Separate required workstream: V3 fiscal import
 
-Fiscal XML parsing, QR-code retrieval, OCR, line-item upload UI, attachment
-versioning, and document management are separate product work. Any future fiscal
-integration must review recipient and issuer data before sending URLs or XML to an
-external service.
+The cupom-fiscal-to-line-items feature is tracked in the
+[V3 Brazilian fiscal import plan](05-v3-brazilian-fiscal-import-plan.md). It is not a
+V2 attachment-hardening task, but it is required before NARUTO-03 can be called
+finished. General-purpose OCR, line-item receipt upload UI, attachment versioning, and
+document management remain outside the current V3 proposal. Any remote fiscal lookup
+must review issuer/recipient data and protect against unsafe URL fetching before
+implementation.

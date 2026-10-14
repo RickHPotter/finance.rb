@@ -1,8 +1,9 @@
 # NARUTO-03 — Implementation status and remaining slices
 
-This file maps the V1 work to the current tree. It is not a claim that the full
-acceptance matrix or production deployment has passed. The remaining work is specified
-in the [V2 development plan](04-v2-development-plan.md).
+This file maps the implemented attachment baseline and remaining NARUTO-03 work.
+Receipt attachment support is implemented; V2 deployment/security verification and V3
+Brazilian fiscal import are still open. NARUTO-03 should not be marked complete until
+both workstreams meet their acceptance criteria.
 
 ## Slice 1 — Attachment hosts and model limits
 
@@ -64,7 +65,11 @@ its `attachments_deleted` audit annotation in the same database transaction, the
 relies on Active Storage's post-commit purge job; a blob still attached elsewhere is
 not deleted. The Turbo response removes only that attachment's row.
 
-The default public Active Storage routes are disabled. Blob delivery now goes through
+The default public Active Storage routes are disabled at application load, before
+production-style route initialization can draw them. This avoids a duplicate
+`rails_service_blob` name with the authenticated app route. Local route boot has been
+verified in `homolog` and `production`; the failed homolog deployment has not yet been
+retried. Blob delivery now goes through
 an authenticated controller that checks receipt ownership/context (and preserves
 authenticated avatar delivery). Direct-upload disk-service routes remain for the
 upload protocol. Operational reconciliation for a post-commit storage purge failure
@@ -79,6 +84,22 @@ wrong-context coverage, browser upload failure paths, audit failure, and confirm
 deployment storage checks are still pending.
 
 The [decisions and test matrix](03-decisions-and-test-matrix.md) separates current
-coverage from pending checks. Once V2 code is complete, run focused specs and
-`bin/ci` with the test environment loaded as required by the repository. A clean
-test run alone cannot prove a production storage mount; verify that separately.
+coverage from pending checks. A clean test run alone cannot prove a production storage
+mount; verify that separately.
+
+## Slice 6 — Production-style route boot and deployment verification
+
+The duplicate Active Storage route failure was reproduced locally under both
+`RAILS_ENV=homolog` and `RAILS_ENV=production`. `ActiveStorage.draw_routes = false` is
+now set when the application is configured, in addition to
+`config.active_storage.draw_routes = false`. Both environments now load the custom
+authenticated receipt route locally. Retrying homolog and confirming container health
+is still required.
+
+## Slice 7 — Brazilian cupom-fiscal import to transaction line items
+
+Not implemented. This is planned V3 scope and a required part of completing NARUTO-03.
+The [V3 plan](05-v3-brazilian-fiscal-import-plan.md) defines the intended flow: read a
+supported fiscal XML or cupom QR source, prefill the NARUTO-02 cash/card transaction
+form with item descriptions and amounts, reconcile its total, and require user review
+before saving. Fiscal extraction is separate from attachment hardening V2.

@@ -6,7 +6,7 @@
   - [SPRINT V: NARUTO](#sprint-v-naruto)
     - [NARUTO-01: Create category hierarchy](#naruto-01-create-category-hierarchy)
     - [NARUTO-02: Add bulk and composite transactions](#naruto-02-add-bulk-and-composite-transactions)
-    - [NARUTO-03: Attach documents to transactions](#naruto-03-attach-documents-to-transactions)
+    - [NARUTO-03: Attach documents and import Brazilian fiscal receipts](#naruto-03-attach-documents-and-import-brazilian-fiscal-receipts)
     - [NARUTO-04: Extend subscriptions with salary support and bulk operations](#naruto-04-extend-subscriptions-with-salary-support-and-bulk-operations)
     - [NARUTO-05: Add pre-paid and debit card support](#naruto-05-add-pre-paid-and-debit-card-support)
     - [NARUTO-06: Consolidate card and account balance dashboard](#naruto-06-consolidate-card-and-account-balance-dashboard)
@@ -30,7 +30,8 @@ it. Naruto focuses on making the core financial record more expressive in four
 dimensions: categories gain structural depth through parent/child grouping; a single
 real-world purchase can be described as one transaction with multiple named line items;
 transactions can carry documentary evidence such as receipts, NF-e XML, and
-orçamentos; and the financial instrument set expands to include recurring income
+orçamentos, with a planned fiscal-receipt import into line items; and the financial
+instrument set expands to include recurring income
 (salary as subscription), pre-paid and debit cards, and a consolidated view of the
 user's full liquid position.
 
@@ -88,6 +89,13 @@ References:
 
 ### NARUTO-02: Add bulk and composite transactions
 
+Status: the original split-purchase scope has since been extended to cover per-line-item
+friend repayments and exchange notifications. The transaction breakdown and that
+friend-aware extension belong to NARUTO-02; NARUTO-03 only adds receipt/document
+handling and the planned fiscal-document import workflow that can prefill these line
+items. The implementation history and current verification limits are recorded in the
+[NARUTO-02 implementation status](docs/sprints/5-naruto/naruto-02/02-implementation-slices.md).
+
 Goal: let one `CashTransaction` or `CardTransaction` carry multiple named line items,
 each with its own description, price, category, and optional entity, so a single
 real-world purchase that spans multiple categories (an Amazon order, a supermarket
@@ -119,6 +127,12 @@ Locked V1 direction:
   composite mode is a financial mutation and must be recoverable
 - the subscription `subscription_id` FK remains on the parent transaction;
   a composite transaction may be linked to a subscription
+- each line item can hold its own repayment allocation and, for cash friend exchanges,
+  its own loan/reimbursement intent and exchange schedule; details are edited in the
+  shared entity repayment modal and notifications are grouped by friend and intent
+- changing a line-item price refreshes its repayment amount and unpaid exchange
+  schedule using the saved return percentage; changes that conflict with paid exchanges
+  are rejected rather than silently rewriting paid history
 
 Coverage:
 
@@ -139,12 +153,18 @@ Explicitly out of scope:
 - multi-context line items
 - CSV import of composite transactions
 - three or more nesting levels for line items
+- parsing fiscal receipts (NARUTO-03 owns that workflow; its prefill target is this line-item form)
 
-### NARUTO-03: Attach documents to transactions
+### NARUTO-03: Attach documents and import Brazilian fiscal receipts
+
+Status: receipt attachment support is implemented, with security and deployment
+verification still open. Fiscal receipt parsing and conversion into transaction line
+items is not implemented and remains required product work before NARUTO-03 can be
+called complete. See the [NARUTO-03 status and plans](docs/sprints/5-naruto/naruto-03/01-product-and-data-contract.md).
 
 Goal: allow any `CashTransaction`, `CardTransaction`, or `LineItem` to carry one or
-more file attachments so transactions have documentary evidence (receipts, NF-e XML,
-PDF orçamentos, maintenance invoices, insurance documents, etc.).
+more file attachments as documentary evidence, and convert a supported Brazilian cupom
+fiscal into reviewable line items in a cash or card transaction draft.
 
 `ActiveStorage` is configured and its tables already exist. V1 adds model declarations,
 validators, and cash/card upload and display UI. Attachment security and durable
@@ -168,13 +188,9 @@ Locked V1 direction:
   attachment; deployed storage persistence, backup/restore, and remaining security
   failure cases are release gates before the feature is considered complete
 
-Future fiscal document extraction (separate from attachment-hardening V2):
-
-- parse a Brazilian NF-e XML with `Nokogiri` to extract issuer name, item descriptions,
-  and prices and pre-fill a composite transaction form (NARUTO-02)
-- follow a cupom fiscal QR-code URL (SEFAZ state endpoint) to extract the same data
-- external API calls run through Solid Queue background jobs
-- extraction requires NARUTO-02 for the line-item pre-fill step
+Fiscal document import is a planned NARUTO-03 slice and depends on NARUTO-02 for the
+transaction line-item form. Its scope and security questions are tracked separately
+from attachment hardening in `05-v3-brazilian-fiscal-import-plan.md`.
 
 Coverage:
 
@@ -187,12 +203,13 @@ References:
 - [implementation slices](docs/sprints/5-naruto/naruto-03/02-implementation-slices.md)
 - [decisions and test matrix](docs/sprints/5-naruto/naruto-03/03-decisions-and-test-matrix.md)
 - [V2 development plan for pending attachment fixes](docs/sprints/5-naruto/naruto-03/04-v2-development-plan.md)
+- [V3 Brazilian fiscal import plan](docs/sprints/5-naruto/naruto-03/05-v3-brazilian-fiscal-import-plan.md)
 
-Explicitly out of scope:
+Explicitly out of scope for the current attachment and fiscal-import plan:
 
-- OCR of unstructured receipt images
 - bank statement PDF parsing
-- NF-e XML / cupom fiscal QR-code extraction (separate deferred feature)
+- general-purpose OCR of unstructured receipt photos; QR scanning is only a way to
+  provide a supported fiscal URL
 
 ### NARUTO-04: Extend subscriptions with salary support and bulk operations
 
