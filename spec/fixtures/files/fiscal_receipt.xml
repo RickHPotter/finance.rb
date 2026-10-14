@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe">
+  <NFe><infNFe Id="NFe41140978393592000146651000000000031222222235">
+    <ide><mod>65</mod><dhEmi>2026-10-14T12:30:00-03:00</dhEmi></ide>
+    <emit><xNome>Mercado Exemplo</xNome></emit>
+    <det nItem="1"><prod><xProd>Arroz</xProd><vProd>12.50</vProd><vDesc>1.00</vDesc></prod></det>
+    <det nItem="2"><prod><xProd>Feijao</xProd><vProd>8.25</vProd></prod></det>
+    <total><ICMSTot><vNF>19.75</vNF></ICMSTot></total>
+  </infNFe></NFe>
+  <protNFe><infProt><cStat>100</cStat></infProt></protNFe>
+</nfeProc>

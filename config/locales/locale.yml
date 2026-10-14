@@ -1,4 +1,10 @@
 en:
+  fiscal_import:
+    title: "Import a fiscal receipt"
+    xml_hint: "Start with an authorized NFC-e/NF-e XML. The items will fill an unsaved transaction draft. Review every category and amount before saving."
+    import: "Fill from XML"
+    review: "Imported %{count} items. Review the draft and complete the categories before saving."
+    replace: "Replace the current transaction description, price, and line items with this fiscal receipt?"
   attachments:
     title: "Attachments"
     hint: "PDF, JPEG, PNG, HEIC, XML, ZIP — max 10 MB each, up to 5 files."
@@ -430,6 +436,12 @@ en:
       remove_block: "Remove Block"
 
 pt-BR:
+  fiscal_import:
+    title: "Importar cupom fiscal"
+    xml_hint: "Comece com um XML autorizado de NFC-e/NF-e. Os itens preencherão uma transação não salva. Confira todas as categorias e valores antes de salvar."
+    import: "Preencher pelo XML"
+    review: "%{count} itens importados. Confira os dados e complete as categorias antes de salvar."
+    replace: "Substituir a descrição, o valor e os itens atuais por este cupom fiscal?"
   attachments:
     title: "Anexos"
     hint: "PDF, JPEG, PNG, HEIC, XML, ZIP — máximo de 10 MB por arquivo, até 5 arquivos."

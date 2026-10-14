@@ -142,6 +142,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :fiscal_receipt_imports, only: :create
+
   resources :cash_installments, only: [] do
     member do
       patch :pay
