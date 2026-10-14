@@ -100,6 +100,9 @@ is still required.
 
 Not implemented. This is planned V3 scope and a required part of completing NARUTO-03.
 The [V3 plan](05-v3-brazilian-fiscal-import-plan.md) defines the intended flow: read a
-supported fiscal XML or cupom QR source, prefill the NARUTO-02 cash/card transaction
-form with item descriptions and amounts, reconcile its total, and require user review
-before saving. Fiscal extraction is separate from attachment hardening V2.
+supported fiscal XML, PDF/image, QR URL, or 44-digit access key; retrieve item details
+from an official consultation where feasible or extract a printed receipt locally;
+prefill the NARUTO-02 cash/card transaction form; reconcile its total; and require
+user review before saving. A short cupom number alone is insufficient. Fiscal
+extraction is separate from attachment hardening V2. The `naruto-03-v2` branch targets
+this slice; the V3 document label predates the branch name.

@@ -22,7 +22,10 @@
    authenticated users; anonymous Active Storage delivery is disabled.
 8. Parsing a Brazilian cupom fiscal into transaction line items is planned NARUTO-03
    V3 scope and is required for the feature to be called complete. It prefills an
-   unsaved NARUTO-02 transaction draft; the user reviews and saves it.
+   unsaved NARUTO-02 transaction draft; the user reviews and saves it. The
+   `naruto-03-v2` branch targets this scope. Uploaded fiscal XML/PDF/images, QR URLs,
+   and 44-digit access keys are intended inputs. A short cupom number is not a lookup
+   key; official SEFAZ item retrieval depends on a supported consultation path.
 
 ## Current tests and gaps
 
@@ -37,7 +40,7 @@
 | Direct upload | `spec/requests/attachments_spec.rb` covers anonymous and oversized rejection; authenticated controller validates allowlisted MIME and byte size before blob creation. | Unsupported-type request; cross-actor signed blob attach; inspect stored bytes/content type. |
 | Storage durability | Production and homolog now have separate named volumes at `/rails/storage`; the storage directories were empty at inspection. | Deploy with the mount, verify persistence across replacement, and exercise backup/restore. |
 | Production-style route boot | `config.active_storage.draw_routes = false` plus the early `ActiveStorage.draw_routes = false` prevents default routes from colliding with the authenticated receipt route; local homolog and production route commands boot. | Redeploy homolog and confirm container health and authenticated file/avatar flows. |
-| Fiscal receipt import | No parser or transaction-prefill workflow exists yet. | Implement and test supported NFC-e/cupom fiscal XML and QR/URL inputs, draft line-item prefill, total reconciliation, and user review; see [V3 plan](05-v3-brazilian-fiscal-import-plan.md). |
+| Fiscal receipt import | No parser or transaction-prefill workflow exists yet. | Implement and test supported XML, PDF/image, QR URL, and 44-digit key inputs; state-specific official lookup feasibility; OCR fallback for printed fiscal receipts; draft line-item prefill, total reconciliation, and user review; see [V3 plan](05-v3-brazilian-fiscal-import-plan.md). |
 
 ## Release gate
 

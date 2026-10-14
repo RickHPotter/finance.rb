@@ -189,8 +189,14 @@ Locked V1 direction:
   failure cases are release gates before the feature is considered complete
 
 Fiscal document import is a planned NARUTO-03 slice and depends on NARUTO-02 for the
-transaction line-item form. Its scope and security questions are tracked separately
-from attachment hardening in `05-v3-brazilian-fiscal-import-plan.md`.
+transaction line-item form. The `naruto-03-v2` branch targets this slice: an uploaded
+fiscal receipt (XML, image, or PDF), QR URL, or 44-digit access key can produce a
+reviewable draft when its format and data source are supported. A short cupom number
+alone cannot identify a fiscal document. Official SEFAZ lookup is in scope where a
+supported consultation path provides item details; availability must be established
+per state and document type. Its scope and security questions are tracked separately
+from attachment hardening in `05-v3-brazilian-fiscal-import-plan.md` (the V3 label is
+the existing document phase, not the branch name).
 
 Coverage:
 
@@ -208,8 +214,8 @@ References:
 Explicitly out of scope for the current attachment and fiscal-import plan:
 
 - bank statement PDF parsing
-- general-purpose OCR of unstructured receipt photos; QR scanning is only a way to
-  provide a supported fiscal URL
+- general-purpose OCR of non-fiscal or handwritten receipts; supported printed fiscal
+  receipts may use bounded OCR when structured lookup cannot provide their item rows
 
 ### NARUTO-04: Extend subscriptions with salary support and bulk operations
 

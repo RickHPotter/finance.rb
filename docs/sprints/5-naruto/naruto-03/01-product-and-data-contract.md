@@ -75,11 +75,17 @@ The desired workflow converts a Brazilian cupom fiscal into line items in a cash
 card transaction. V3 depends on NARUTO-02: it should prefill an unsaved transaction
 draft with fiscal item descriptions, amounts, and the document total, then let the
 user review and complete the line items before saving. See the V3 plan for input
-formats, reconciliation rules, security constraints, and open product decisions.
+formats, reconciliation rules, security constraints, and open product decisions. The
+`naruto-03-v2` branch targets this work despite the existing V3 document label.
+Supported inputs should include an uploaded XML, PDF, or image, a QR URL, or a
+44-digit access key. A short printed cupom number is not a usable lookup key on its
+own. Official SEFAZ consultation is a possible source of item data only when a
+supported state/document path permits reliable access; printed fiscal receipt OCR
+provides a reviewable fallback when structured data cannot be retrieved.
 
-General OCR of arbitrary receipt photos and bank-statement parsing remain outside this
-scope. QR scanning is only an input mechanism for supported fiscal data, not a promise
-to understand arbitrary text in a photo.
+General OCR of non-fiscal or handwritten receipts and bank-statement parsing remain
+outside this scope. A photo of a supported printed fiscal receipt is in scope; its
+extracted values must be reviewed before saving.
 
 ## Reconciled contradictions
 
