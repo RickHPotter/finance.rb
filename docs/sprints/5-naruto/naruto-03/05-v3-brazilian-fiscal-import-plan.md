@@ -57,8 +57,8 @@ interfaces, **not** a claim that an importer already works:
 | Input/path | Official evidence | Initial development decision |
 |---|---|---|
 | NFC-e/NF-e XML supplied by the user | Structured fiscal item and total fields are defined by the official XML schemas. | Parse locally first; require an authorized document and validate the fiscal key/total. |
-| NFC-e QR URL, including QR 3.0 | PR publishes a QR consultation URL and the QR 3.0 parameter layout. The public result is a state page, not a documented universal item API. | Pilot only a verified state/QR format; confirm live item rows before adding an adapter. |
-| NFC-e 44-digit key without a QR URL | NFC-e public consultation supports key entry, but PR's complete consultation has CAPTCHA. | Accept and validate the key; only promise automatic items for a verified no-CAPTCHA state path. Otherwise explain the limitation and offer receipt upload. |
+| NFC-e QR URL, including QR 3.0 | PR publishes a QR consultation URL and the QR 3.0 parameter layout. The public result is a state page, not a documented universal item API. | The Paraná adapter requests its fixed HTTPS QR path and parses verified item rows; other states need separate evidence/adapters. |
+| NFC-e 44-digit key without a QR URL | NFC-e public consultation supports key entry, but PR's complete consultation has CAPTCHA. A Paraná QR 3.0 request built from a valid key returned item rows in a live probe on 2026-10-14. | Accept and validate the key for Paraná NFC-e. Keep CAPTCHA and layout changes as explicit failure cases; never claim universal key-only lookup. |
 | NF-e 44-digit key through `NFeDistribuicaoDFe` | The service requires an eligible interested party and certificate; key possession alone is insufficient. | Do not use it for ordinary consumer import. |
 | Printed fiscal image/PDF | No state lookup is guaranteed from the short receipt number or illegible QR. | Extract local text/QR where feasible, require review of uncertain rows, and keep manual entry available. |
 
@@ -129,6 +129,11 @@ split-purchase form before submission.
 - Do not log raw XML, full QR URLs, access keys, or personal taxpayer identifiers.
 
 ## Implementation slices
+
+Development on `naruto-03-v2` is being committed in vertical slices. The first
+working path is authorized XML into an unsaved cash/card draft; Paraná key/QR lookup
+is the next state-specific source. Printed receipt extraction and the remaining
+verification are separate slices, and this plan remains incomplete until they pass.
 
 ### Slice 1 — Supported-source discovery and fixtures
 

@@ -4,7 +4,7 @@ class Views::Transactions::FiscalImportSection < Views::Base
   def view_template
     section(class: "mb-5 rounded-lg border border-sky-300 bg-sky-50 p-3 text-slate-800 dark:border-sky-700/60 dark:bg-slate-900/50 dark:text-slate-200") do
       h3(class: "text-sm font-semibold") { I18n.t("fiscal_import.title") }
-      p(class: "mt-1 text-xs text-slate-600 dark:text-slate-400") { I18n.t("fiscal_import.xml_hint") }
+      p(class: "mt-1 text-xs text-slate-600 dark:text-slate-400") { I18n.t("fiscal_import.hint") }
 
       div(class: "mt-3 flex flex-wrap items-center gap-2") do
         input(
@@ -17,8 +17,26 @@ class Views::Transactions::FiscalImportSection < Views::Base
         button(
           type: :button,
           class: "rounded-md bg-sky-700 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-800 disabled:opacity-50",
-          data: { action: "click->fiscal-import#import", fiscal_import_target: "button" }
-        ) { I18n.t("fiscal_import.import") }
+          data: { action: "click->fiscal-import#importFile", fiscal_import_target: "button" }
+        ) { I18n.t("fiscal_import.import_file") }
+      end
+
+      div(class: "mt-3 flex flex-wrap items-center gap-2") do
+        input(
+          type: :text,
+          inputmode: :text,
+          autocomplete: :off,
+          placeholder: I18n.t("fiscal_import.key_placeholder"),
+          class: "min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 " \
+                 "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100",
+          data: { fiscal_import_target: "source" }
+        )
+        button(
+          type: :button,
+          class: "rounded-md border border-sky-700 px-3 py-2 text-xs font-semibold text-sky-800 hover:bg-sky-100 " \
+                 "disabled:opacity-50 dark:text-sky-300 dark:hover:bg-sky-950",
+          data: { action: "click->fiscal-import#lookup", fiscal_import_target: "button" }
+        ) { I18n.t("fiscal_import.lookup") }
       end
 
       p(class: "mt-2 text-xs", role: :status, data: { fiscal_import_target: "status" })

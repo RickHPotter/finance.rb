@@ -1,8 +1,10 @@
 en:
   fiscal_import:
     title: "Import a fiscal receipt"
-    xml_hint: "Start with an authorized NFC-e/NF-e XML. The items will fill an unsaved transaction draft. Review every category and amount before saving."
-    import: "Fill from XML"
+    hint: "Upload an authorized fiscal XML or enter a Paraná NFC-e key/QR URL. Review the unsaved draft before saving."
+    import_file: "Fill from XML"
+    key_placeholder: "44-digit NFC-e key or Paraná QR URL"
+    lookup: "Look up receipt"
     review: "Imported %{count} items. Review the draft and complete the categories before saving."
     replace: "Replace the current transaction description, price, and line items with this fiscal receipt?"
   attachments:
@@ -438,8 +440,10 @@ en:
 pt-BR:
   fiscal_import:
     title: "Importar cupom fiscal"
-    xml_hint: "Comece com um XML autorizado de NFC-e/NF-e. Os itens preencherão uma transação não salva. Confira todas as categorias e valores antes de salvar."
-    import: "Preencher pelo XML"
+    hint: "Envie um XML fiscal autorizado ou informe a chave/URL QR de uma NFC-e do Paraná. Confira a transação antes de salvar."
+    import_file: "Preencher pelo XML"
+    key_placeholder: "Chave NFC-e de 44 dígitos ou URL QR do Paraná"
+    lookup: "Consultar cupom"
     review: "%{count} itens importados. Confira os dados e complete as categorias antes de salvar."
     replace: "Substituir a descrição, o valor e os itens atuais por este cupom fiscal?"
   attachments:

@@ -2,10 +2,10 @@ import { Controller } from "@hotwired/stimulus"
 import { _applyMask, _removeMask } from "../utils/mask.js"
 
 export default class extends Controller {
-  static targets = ["file", "button", "status"]
+  static targets = ["file", "source", "button", "status"]
   static values = { url: String, reviewMessage: String, replaceMessage: String }
 
-  async import() {
+  importFile() {
     const file = this.fileTarget.files[0]
     if (!file) {
       this.showStatus("Choose an XML file first.", true)
@@ -17,12 +17,27 @@ export default class extends Controller {
       return
     }
 
-    this.buttonTarget.disabled = true
+    this.performImport({ file })
+  }
+
+  lookup() {
+    const source = this.sourceTarget.value.trim()
+    if (!source) {
+      this.showStatus("Enter a 44-digit key or Paraná QR URL first.", true)
+      return
+    }
+
+    this.performImport({ source })
+  }
+
+  async performImport({ file, source }) {
+    this.buttonTargets.forEach(button => { button.disabled = true })
     this.showStatus("Reading fiscal items...")
 
     try {
       const body = new FormData()
-      body.append("file", file)
+      if (file) body.append("file", file)
+      if (source) body.append("source", source)
       const response = await fetch(this.urlValue, {
         method: "POST",
         headers: { "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content || "", Accept: "application/json" },
@@ -33,12 +48,12 @@ export default class extends Controller {
       if (this.hasExistingValues() && !window.confirm(this.replaceMessageValue)) return
 
       this.applyDraft(result.draft)
-      this.stageAttachment(file)
+      if (file) this.stageAttachment(file)
       this.showStatus(this.reviewMessageValue.replace("%{count}", result.draft.items.length))
     } catch (error) {
       this.showStatus(error.message, true)
     } finally {
-      this.buttonTarget.disabled = false
+      this.buttonTargets.forEach(button => { button.disabled = false })
     }
   }
 
