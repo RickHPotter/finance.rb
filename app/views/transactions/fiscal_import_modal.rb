@@ -25,7 +25,7 @@ class Views::Transactions::FiscalImportModal < Views::Base
           fiscal_import_transaction_type_value: transaction_type,
           fiscal_import_direct_upload_url_value: rails_direct_uploads_path,
           fiscal_import_review_message_value: I18n.t("fiscal_import.review"),
-          fiscal_import_messages_value: I18n.t("fiscal_import.messages")
+          fiscal_import_messages_value: I18n.t("fiscal_import.messages").to_json
         }
       }
     ) do

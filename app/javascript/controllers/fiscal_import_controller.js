@@ -284,6 +284,22 @@ export default class extends Controller {
       price.dispatchEvent(new Event("input", { bubbles: true }))
     })
     composite.recalculate()
+    this.applyIssueTimestamp(draft.issued_at)
+  }
+
+  applyIssueTimestamp(issuedAt) {
+    const match = issuedAt?.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/)
+    const input = this.element.querySelector(".transaction-date")
+    if (!match || !input) return
+
+    input.value = match[1] + "T" + match[2]
+    input.closest("[data-controller~='datetime-input']")?.dispatchEvent(
+      new CustomEvent("datetime-input:refresh", { bubbles: true })
+    )
+
+    this.application
+      .getControllerForElementAndIdentifier(this.element, "reactive-form")
+      ?.updateInstallmentsDates()
   }
 
   async readImageQr(file) {

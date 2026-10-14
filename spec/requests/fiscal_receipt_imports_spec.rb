@@ -17,6 +17,7 @@ RSpec.describe "Fiscal receipt imports", type: :request do
       expect(response).to have_http_status(:ok)
       draft = response.parsed_body.fetch("draft")
       expect(draft.fetch("total_cents")).to eq(1975)
+      expect(draft.fetch("issued_at")).to eq("2026-10-14T12:30:00-03:00")
       expect(draft.fetch("items")).to eq([
                                            { "description" => "Arroz", "price_cents" => 1150 },
                                            { "description" => "Feijao", "price_cents" => 825 }

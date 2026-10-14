@@ -27,6 +27,8 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 2)
     expect(page).to have_field("cash_transaction[description]", with: "Mercado Exemplo")
     expect(page).to have_field("cash_transaction[price]", with: "-R$ 19.75")
+    expect(page).to have_field("cash_transaction_date_date_input", with: "2026-10-14")
+    expect(page).to have_field("cash_transaction_date_time_input", with: "12:30")
     descriptions = all("[data-composite-transaction-target~='row']:not(.hidden) input[name$='[description]']").map(&:value)
     expect(descriptions).to eq(%w[Arroz Feijao])
     expect(CashTransaction.where(description: "Mercado Exemplo")).not_to exist
@@ -45,6 +47,8 @@ RSpec.describe "Fiscal receipt import", type: :feature do
 
     expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 2)
     expect(page).to have_field("card_transaction[price]", with: "-R$ 19.75")
+    expect(page).to have_field("card_transaction_date_date_input", with: "2026-10-14")
+    expect(page).to have_field("card_transaction_date_time_input", with: "12:30")
     descriptions = all("[data-composite-transaction-target~='row']:not(.hidden) input[name$='[description]']").map(&:value)
     expect(descriptions).to eq(%w[Arroz Feijao])
     expect(CardTransaction.where(description: "Mercado Exemplo")).not_to exist
@@ -60,7 +64,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
       [ 1280, 390 ].each do |width|
         page.driver.browser.manage.window.resize_to(width, 844)
         visit cash_transactions_path
-        messages = page.find("[data-controller~='fiscal-import']", visible: :all)["data-fiscal-import-messages-value"]
+        messages = page.find("#cashFiscalImportModal [data-fiscal-import-messages-value]", visible: :all)["data-fiscal-import-messages-value"]
 
         expect(JSON.parse(messages)).to eq(expected_messages)
       end
