@@ -136,6 +136,10 @@ RSpec.describe "CardTransactions", type: :request do
       expect(template.inner_html).to include("card_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
       expect(template.inner_html).not_to include("friend_notification_intent")
       template_row = Nokogiri::HTML.fragment(template.inner_html)
+      row = template_row.at_css("[data-composite-transaction-target='row']")
+      row_grid = row.css("div.grid").first
+      expect(row["class"].split).to include("md:flex-row")
+      expect(row_grid["class"].split).to include("grid-cols-2", "md:grid-cols-[3fr_2fr_4fr_5fr]")
       expect(template_row.at_css("select[data-line-item-exchange-intent='input']")).to be_nil
       expect(document.css('[data-composite-entity-modal-target="content"]').size).to eq(1)
       expect(template.inner_html).to include(

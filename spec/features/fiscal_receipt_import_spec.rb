@@ -50,6 +50,23 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(CardTransaction.where(description: "Mercado Exemplo")).not_to exist
   end
 
+  it "provides localized import status messages in desktop and PWA layouts" do
+    [ [ "en", :en ], [ "pt-BR", :"pt-BR" ] ].each do |stored_locale, locale|
+      user.profile.update!(locale: stored_locale)
+      expected_messages = I18n.with_locale(locale) do
+        I18n.t("fiscal_import.messages").stringify_keys
+      end
+
+      [ 1280, 390 ].each do |width|
+        page.driver.browser.manage.window.resize_to(width, 844)
+        visit cash_transactions_path
+        messages = page.find("[data-controller~='fiscal-import']", visible: :all)["data-fiscal-import-messages-value"]
+
+        expect(JSON.parse(messages)).to eq(expected_messages)
+      end
+    end
+  end
+
   it "reads a Paraná QR code from a receipt image" do
     key = "41140978393592000146651000000000031222222235"
     qr_url = "https://www.fazenda.pr.gov.br/nfce/qrcode?p=#{key}|3|1"

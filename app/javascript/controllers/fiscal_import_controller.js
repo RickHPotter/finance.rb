@@ -129,7 +129,7 @@ export default class extends Controller {
         if (!source) throw new Error(this.message("qr_not_found"))
         await this.performImport({ file, source })
       } catch (error) {
-        this.showStatus(error.message, true)
+        this.showStatus(this.localizedError(error, "image_read_failed"), true)
       }
       return
     }
@@ -186,7 +186,7 @@ export default class extends Controller {
         this.showStatus(this.reviewMessageValue.replace("%{count}", result.draft.items.length))
       }
     } catch (error) {
-      this.showStatus(error.message, true)
+      this.showStatus(this.localizedError(error, "import_failed"), true)
     } finally {
       this.buttonTargets.forEach(button => {
         button.disabled = button === this.importButtonTarget ? !this.fileTarget.files[0] : false
@@ -210,7 +210,7 @@ export default class extends Controller {
       window.location.assign(this.transactionUrlValue)
     } catch (error) {
       this.continueButtonTarget.disabled = false
-      this.showStatus(error.message || this.message("upload_failed"), true)
+      this.showStatus(this.localizedError(error, "upload_failed"), true)
     }
   }
 
@@ -320,5 +320,11 @@ export default class extends Controller {
 
   message(key) {
     return this.messagesValue?.[key] || key
+  }
+
+  localizedError(error, fallbackKey) {
+    const message = error?.message
+    const localizedMessages = Object.values(this.messagesValue || {})
+    return localizedMessages.includes(message) ? message : this.message(fallbackKey)
   }
 }
