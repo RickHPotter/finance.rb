@@ -191,12 +191,19 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
       render Views::Shared::MonthYearSelector.new(current_user:, default_year:, years:, active_month_years:, count_by_month_year:) do
-        link_to new_cash_transaction_path(return_to:),
-                id: "new_cash_transaction",
-                class: index_new_button_class,
-                data: { turbo_frame: "_top", turbo_prefetch: false } do
-          span { action_message(:newa) }
-          span { pluralise_model(CashTransaction, 1) }
+        div(class: "flex items-center gap-2") do
+          link_to new_cash_transaction_path(return_to:),
+                  id: "new_cash_transaction",
+                  class: index_new_button_class,
+                  data: { turbo_frame: "_top", turbo_prefetch: false } do
+            span { action_message(:newa) }
+            span { pluralise_model(CashTransaction, 1) }
+          end
+          button(
+            type: :button,
+            class: index_new_button_class,
+            data: { modal_target: "cashFiscalImportModal", modal_toggle: "cashFiscalImportModal" }
+          ) { I18n.t("fiscal_import.open") }
         end
       end
     end

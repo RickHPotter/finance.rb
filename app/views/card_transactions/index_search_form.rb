@@ -165,13 +165,20 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
       render Views::Shared::MonthYearSelector.new(current_user:, default_year:, years:, active_month_years:, count_by_month_year:) do
-        link_to new_card_transaction_path(user_card_id: user_card&.id, return_to: index_context[:return_to]),
-                id: "new_card_transaction",
-                class: index_new_button_class,
-                data: { turbo_frame: "_top", turbo_action: "replace", turbo_prefetch: false } do
-          span { action_message(:newa) }
-          span { pluralise_model(CardTransaction, 1) }
-          span(id: "month_year_selector_title") { user_card.user_card_name } if user_card.present?
+        div(class: "flex items-center gap-2") do
+          link_to new_card_transaction_path(user_card_id: user_card&.id, return_to: index_context[:return_to]),
+                  id: "new_card_transaction",
+                  class: index_new_button_class,
+                  data: { turbo_frame: "_top", turbo_action: "replace", turbo_prefetch: false } do
+            span { action_message(:newa) }
+            span { pluralise_model(CardTransaction, 1) }
+            span(id: "month_year_selector_title") { user_card.user_card_name } if user_card.present?
+          end
+          button(
+            type: :button,
+            class: index_new_button_class,
+            data: { modal_target: "cardFiscalImportModal", modal_toggle: "cardFiscalImportModal" }
+          ) { I18n.t("fiscal_import.open") }
         end
       end
     end

@@ -2,8 +2,7 @@
 
 class Views::Transactions::FiscalImportSection < Views::Base
   def view_template
-    section(class: "mb-5 rounded-lg border border-sky-300 bg-sky-50 p-3 text-slate-800 dark:border-sky-700/60 dark:bg-slate-900/50 dark:text-slate-200") do
-      h3(class: "text-sm font-semibold") { I18n.t("fiscal_import.title") }
+    section(class: "rounded-lg border border-sky-300 bg-sky-50 p-3 text-slate-800 dark:border-sky-700/60 dark:bg-slate-900/50 dark:text-slate-200") do
       p(class: "mt-1 text-xs text-slate-600 dark:text-slate-400") { I18n.t("fiscal_import.hint") }
 
       div(class: "mt-3 flex flex-wrap items-center gap-2") do

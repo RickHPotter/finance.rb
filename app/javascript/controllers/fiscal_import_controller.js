@@ -1,13 +1,38 @@
 import { Controller } from "@hotwired/stimulus"
-import { _applyMask, _removeMask } from "../utils/mask.js"
+import { DirectUpload } from "@rails/activestorage"
+import { _applyMask } from "../utils/mask.js"
 import jsQR from "jsqr"
 
+const PENDING_DRAFT_KEY = "pendingFiscalReceiptImport"
+
 export default class extends Controller {
-  static targets = ["file", "source", "button", "status", "cameraPanel", "video"]
-  static values = { url: String, reviewMessage: String, replaceMessage: String }
+  static targets = ["file", "source", "button", "status", "cameraPanel", "video", "continueButton"]
+  static values = {
+    url: String,
+    reviewMessage: String,
+    transactionUrl: String,
+    transactionType: String,
+    directUploadUrl: String
+  }
+
+  connect() {
+    this.observeModalVisibility()
+    requestAnimationFrame(() => this.applyPendingDraft())
+  }
 
   disconnect() {
+    this.modalObserver?.disconnect()
     this.stopCamera()
+  }
+
+  observeModalVisibility() {
+    const modal = this.element.closest('[role="dialog"]')
+    if (!modal) return
+
+    this.modalObserver = new MutationObserver(() => {
+      if (modal.classList.contains("hidden")) this.stopCamera()
+    })
+    this.modalObserver.observe(modal, { attributes: true, attributeFilter: ["class"] })
   }
 
   async startCamera() {
@@ -135,11 +160,17 @@ export default class extends Controller {
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || "The receipt could not be imported.")
-      if (this.hasExistingValues() && !window.confirm(this.replaceMessageValue)) return
 
-      this.applyDraft(result.draft)
-      if (file) this.stageAttachment(file)
-      this.showStatus(this.reviewMessageValue.replace("%{count}", result.draft.items.length))
+      if (this.hasTransactionUrlValue) {
+        this.pendingDraft = result.draft
+        this.importedFile = file
+        this.continueButtonTarget.hidden = false
+        this.continueButtonTarget.disabled = false
+        this.showStatus(this.reviewMessageValue.replace("%{count}", result.draft.items.length))
+      } else {
+        this.applyDraft(result.draft)
+        this.showStatus(this.reviewMessageValue.replace("%{count}", result.draft.items.length))
+      }
     } catch (error) {
       this.showStatus(error.message, true)
     } finally {
@@ -147,11 +178,69 @@ export default class extends Controller {
     }
   }
 
-  hasExistingValues() {
-    const description = this.parentDescriptionInput()?.value.trim()
-    const price = _removeMask(this.parentPriceInput()?.value || "")
-    const lineDescription = this.element.querySelector("[data-composite-transaction-target~='row'] input[name$='[description]']")?.value.trim()
-    return Boolean(description || (price && parseInt(price, 10) !== 0) || lineDescription)
+  async continueToTransaction() {
+    if (!this.pendingDraft || !this.hasTransactionUrlValue) return
+
+    this.continueButtonTarget.disabled = true
+    this.showStatus("Preparing the imported receipt...")
+
+    try {
+      const receiptSignedId = this.importedFile ? await this.uploadReceipt(this.importedFile) : null
+      sessionStorage.setItem(PENDING_DRAFT_KEY, JSON.stringify({
+        transactionType: this.transactionTypeValue,
+        draft: this.pendingDraft,
+        receiptSignedId
+      }))
+      window.location.assign(this.transactionUrlValue)
+    } catch (error) {
+      this.continueButtonTarget.disabled = false
+      this.showStatus(error.message || "The receipt attachment could not be uploaded.", true)
+    }
+  }
+
+  uploadReceipt(file) {
+    return new Promise((resolve, reject) => {
+      new DirectUpload(file, this.directUploadUrlValue).create((error, blob) => {
+        if (error) reject(new Error(error))
+        else resolve(blob.signed_id)
+      })
+    })
+  }
+
+  applyPendingDraft() {
+    if (!this.element.matches("#transaction_form")) return
+
+    const serialized = sessionStorage.getItem(PENDING_DRAFT_KEY)
+    if (!serialized || !this.hasTransactionTypeValue) return
+
+    let payload
+    try {
+      payload = JSON.parse(serialized)
+    } catch {
+      sessionStorage.removeItem(PENDING_DRAFT_KEY)
+      return
+    }
+    if (payload.transactionType !== this.transactionTypeValue) return
+
+    sessionStorage.removeItem(PENDING_DRAFT_KEY)
+    try {
+      this.applyDraft(payload.draft)
+      if (payload.receiptSignedId) this.attachImportedReceipt(payload.receiptSignedId)
+    } catch (error) {
+      console.error("Could not apply the imported fiscal receipt draft", error)
+    }
+  }
+
+  attachImportedReceipt(signedId) {
+    const container = this.element.querySelector("[data-attachment-upload-target='hiddenContainer']")
+    if (!container) return
+
+    const modelName = this.element.dataset.attachmentUploadModelNameValue
+    const input = document.createElement("input")
+    input.type = "hidden"
+    input.name = `${modelName}[receipts][]`
+    input.value = signedId
+    container.appendChild(input)
   }
 
   applyDraft(draft) {
@@ -179,15 +268,6 @@ export default class extends Controller {
       price.dispatchEvent(new Event("input", { bubbles: true }))
     })
     composite.recalculate()
-  }
-
-  stageAttachment(file) {
-    const signature = `${file.name}:${file.size}:${file.lastModified}`
-    if (signature === this.lastStagedFile) return
-
-    const upload = this.application.getControllerForElementAndIdentifier(this.element, "attachment-upload")
-    upload?.processFiles([file])
-    this.lastStagedFile = signature
   }
 
   async readImageQr(file) {

@@ -27,6 +27,11 @@ class Views::CashTransactions::Index < Views::Base
                 render IndexSearchForm.new(url: cash_transactions_path, index_context:, mobile:)
               end
 
+              render Views::Transactions::FiscalImportModal.new(
+                modal_id: "cashFiscalImportModal",
+                transaction_type: "cash_transaction",
+                transaction_url: new_cash_transaction_path(return_to: index_context[:return_to])
+              )
               render PayMultipleModal.new(index_context:)
               render PartialPayMultipleModal.new(index_context:)
               render TransferMultipleModal.new(index_context:)

@@ -29,6 +29,11 @@ class Views::CardTransactions::Index < Views::Base
                 render IndexSearchForm.new(url:, index_context:, mobile:)
               end
 
+              render Views::Transactions::FiscalImportModal.new(
+                modal_id: "cardFiscalImportModal",
+                transaction_type: "card_transaction",
+                transaction_url: new_card_transaction_path(user_card_id: user_card&.id, return_to: index_context[:return_to])
+              )
               render Views::Shared::AddToSubscriptionModal.new(
                 modal_id: "cardTransactionsAddToSubscriptionModal",
                 url: add_to_subscription_card_transactions_path,

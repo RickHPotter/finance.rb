@@ -1,14 +1,15 @@
 en:
   fiscal_import:
     title: "Import a fiscal receipt"
+    open: "Import receipt"
+    continue: "Continue to transaction"
     hint: "Upload authorized XML, a text PDF or an image with a readable QR code. Goiás needs the complete signed QR URL; Paraná also accepts a 44-digit key. Review before saving."
     import_file: "Fill from receipt"
     scan_camera: "Scan with camera"
     cancel_camera: "Close camera"
     key_placeholder: "Goiás/Paraná QR URL or Paraná 44-digit key"
     lookup: "Look up receipt"
-    review: "Imported %{count} items. Review the draft and complete the categories before saving."
-    replace: "Replace the current transaction description, price, and line items with this fiscal receipt?"
+    review: "Imported %{count} items. Review the draft; categories may be left blank."
   attachments:
     title: "Attachments"
     hint: "PDF, JPEG, PNG, HEIC, XML, ZIP — max 10 MB each, up to 5 files."
@@ -442,14 +443,15 @@ en:
 pt-BR:
   fiscal_import:
     title: "Importar cupom fiscal"
+    open: "Importar cupom"
+    continue: "Continuar para a transação"
     hint: "Envie XML autorizado, PDF com texto ou imagem com QR legível. Goiás exige a URL QR assinada completa; Paraná também aceita chave de 44 dígitos. Confira antes de salvar."
     import_file: "Preencher pelo cupom"
     scan_camera: "Ler com a câmera"
     cancel_camera: "Fechar câmera"
     key_placeholder: "URL QR de Goiás/Paraná ou chave de 44 dígitos do Paraná"
     lookup: "Consultar cupom"
-    review: "%{count} itens importados. Confira os dados e complete as categorias antes de salvar."
-    replace: "Substituir a descrição, o valor e os itens atuais por este cupom fiscal?"
+    review: "%{count} itens importados. Confira os dados; as categorias podem ficar em branco."
   attachments:
     title: "Anexos"
     hint: "PDF, JPEG, PNG, HEIC, XML, ZIP — máximo de 10 MB por arquivo, até 5 arquivos."

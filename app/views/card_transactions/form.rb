@@ -52,9 +52,7 @@ class Views::CardTransactions::Form < Views::Base
         class: "contents text-slate-100",
         data: {
           controller: "reactive-form price-mask composite-transaction attachment-upload fiscal-import",
-          fiscal_import_url_value: fiscal_receipt_imports_path,
-          fiscal_import_review_message_value: I18n.t("fiscal_import.review"),
-          fiscal_import_replace_message_value: I18n.t("fiscal_import.replace"),
+          fiscal_import_transaction_type_value: "card_transaction",
           composite_transaction_composite_value: card_transaction.composite?,
           reactive_form_preserve_installment_prices_value: card_transaction.persisted?,
           action: "submit->price-mask#removeMasks submit->attachment-upload#beforeSubmit",
@@ -82,8 +80,6 @@ class Views::CardTransactions::Form < Views::Base
 
         hidden_field_tag :exchange_category_id,   exchange_category.id,   disabled: true, id: :exchange_category_id
         hidden_field_tag :exchange_category_name, exchange_category.name, disabled: true, id: :exchange_category_name
-
-        render Views::Transactions::FiscalImportSection.new if card_transaction.new_record?
 
         render Views::Transactions::FormIntroFields.new(
           form:,
