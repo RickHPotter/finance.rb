@@ -14,6 +14,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
 
   it "prefills an unsaved cash split purchase from fiscal XML" do
     visit cash_transactions_path
+    expect(page).to have_css("div[class~='md:hidden'] button[data-modal-toggle='cashFiscalImportModal']")
     click_button(I18n.t("fiscal_import.open"))
     expect(page).to have_button(I18n.t("fiscal_import.import_file"), disabled: true)
     find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
@@ -32,6 +33,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
   it "prefills an unsaved card split purchase from fiscal XML" do
     card = create(:user_card, :random, user:)
     visit card_transactions_path(user_card_id: card.id)
+    expect(page).to have_css("div[class~='md:hidden'] button[data-modal-toggle='cardFiscalImportModal']")
     click_button(I18n.t("fiscal_import.open"))
     find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
     expect(page).to have_button(I18n.t("fiscal_import.import_file"), disabled: false)

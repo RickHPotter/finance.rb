@@ -25,8 +25,9 @@ saving. Import must never silently create a financial transaction.
 
 ## Inputs and retrieval contract
 
-The entry point is an import modal beside the New Cash/Card Transaction actions on
-their index pages. It accepts an uploaded receipt (XML, PDF, or supported image), a
+The desktop entry point is beside the New Cash/Card Transaction actions; the PWA has
+a floating receipt-import action above its New button. Both open the same modal, which
+accepts an uploaded receipt (XML, PDF, or supported image), a
 pasted QR-code URL, or a manually entered **44-digit fiscal access key**. An image or
 PDF may contain a QR code, printed key, and/or readable text. The existing 10 MiB
 per-file attachment limit applies; ZIP remains an attachment type, but importing its

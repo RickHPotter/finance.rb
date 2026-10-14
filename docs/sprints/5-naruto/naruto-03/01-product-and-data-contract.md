@@ -3,10 +3,11 @@
 ## Status and scope
 
 NARUTO-03 is not complete yet. Receipt attachments and the first fiscal-import flow
-are implemented. From the cash/card index pages, an import modal accepts authorized
-XML, a complete Goiás signed QR URL, a Paraná NFC-e key/QR URL or 44-digit key, PDF
-text, and an image/camera QR scan; supported sources prefill an unsaved transaction
-draft with line items. The modal defaults to Goiás, and line-item category/entity
+are implemented. Desktop cash/card index pages expose an import action beside New;
+the PWA exposes it as a floating action above the New button. Both open the same modal,
+which accepts authorized XML, a complete Goiás signed QR URL, a Paraná NFC-e key/QR
+URL or 44-digit key, PDF text, and an image/camera QR scan. Supported sources prefill
+an unsaved transaction draft with line items. The modal defaults to Goiás, and line-item category/entity
 defaults can be applied in bulk then edited for exceptions. Imported files can be kept
 as transaction receipts. The custom file picker shows the selected filename and keeps
 "Import file" disabled until a file is selected.
@@ -80,10 +81,10 @@ release checks.
 ## Fiscal receipt import (implemented baseline; remaining work tracked in V3 plan)
 
 The implemented workflow converts supported Brazilian cupom-fiscal sources into
-line items in a cash or card draft. It starts from an import modal beside the New
-Transaction actions on the index pages, not from the transaction form itself. The
-draft is unsaved and must be reviewed and completed before normal submission. Current
-supported paths and their limits are listed in the V3 plan. A short printed cupom
+line items in a cash or card draft. It starts from an import modal opened by the
+desktop index action or the PWA floating action, not from the transaction form itself.
+The draft is unsaved and must be reviewed and completed before normal submission.
+Current supported paths and their limits are listed in the V3 plan. A short printed cupom
 number is not a usable lookup key on its own. OCR fallback, duplicate detection, and
 additional state adapters are not yet implemented.
 

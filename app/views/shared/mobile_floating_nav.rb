@@ -5,11 +5,12 @@ class Views::Shared::MobileFloatingNav < Views::Base
 
   include CacheHelper
 
-  attr_reader :new_href, :new_data
+  attr_reader :new_href, :new_data, :modal_action
 
-  def initialize(new_href:, new_data: {})
+  def initialize(new_href:, new_data: {}, modal_action: nil)
     @new_href = new_href
     @new_data = new_data
+    @modal_action = modal_action
   end
 
   def view_template
@@ -29,6 +30,19 @@ class Views::Shared::MobileFloatingNav < Views::Base
         data: { turbo_frame: "_top", mobile_scroll_nav: "plus" }.merge(new_data)
       ) do
         cached_icon :bigger_plus
+      end
+
+      if modal_action
+        button(
+          type: :button,
+          title: modal_action.fetch(:label),
+          aria: { label: modal_action.fetch(:label) },
+          class: "flex items-center justify-center fixed bottom-40 right-4 h-12 w-12 rounded-full bg-sky-700 text-white shadow-lg " \
+                 "z-50 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400",
+          data: { modal_target: modal_action.fetch(:id), modal_toggle: modal_action.fetch(:id) }
+        ) do
+          cached_icon :paperclip
+        end
       end
 
       link_to(

@@ -116,7 +116,10 @@ class Views::CashTransactions::Index < Views::Base
               render_budget_bulk_action_bar
             end
 
-            render Views::Shared::MobileFloatingNav.new(new_href: new_cash_transaction_path(return_to: index_context[:return_to]))
+            render Views::Shared::MobileFloatingNav.new(
+              new_href: new_cash_transaction_path(return_to: index_context[:return_to]),
+              modal_action: { id: "cashFiscalImportModal", label: I18n.t("fiscal_import.open") }
+            )
           end
         end
       end

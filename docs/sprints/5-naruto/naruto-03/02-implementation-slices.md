@@ -2,7 +2,8 @@
 
 This file maps the implemented attachment baseline and remaining NARUTO-03 work.
 Receipt attachments and the first Brazilian fiscal-import path are implemented. The
-import flow is launched from cash/card index pages, supports authorized XML, Goiás
+import flow is launched from the desktop index action or the PWA floating action on
+cash/card index pages, supports authorized XML, Goiás
 signed QR, Paraná key/QR, PDF text, and image/camera QR inputs, and fills a reviewable
 unsaved draft. Manual validation, V2 deployment/security verification, OCR without a
 usable structured source, duplicate protection, and any agreed state expansion remain.
@@ -119,8 +120,9 @@ until a file is selected. The modal also provides a camera QR scanner and contro
 apply category/entity defaults across imported rows before individual exceptions are
 edited. Categories may remain blank under the current NARUTO-02 contract.
 
-Still open: manual testing on cash and card flows with entitled/redacted examples for
-each supported source; printed-item OCR when there is no usable structured source;
+Still open: manual testing on cash and card flows—including the PWA floating action—
+with entitled/redacted examples for each supported source; printed-item OCR when
+there is no usable structured source;
 duplicate-document protection and its product policy; any additional state adapters;
 and total-adjustment reconciliation cases. Do not describe Goiás key-only lookup as
 supported: it needs a complete signed QR URL or authorized XML. See the V3 plan for
