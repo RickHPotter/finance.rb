@@ -15,6 +15,31 @@ translated into an unsaved draft using NARUTO-02's existing `LineItem` form and 
 it does not change the ownership of composite-transaction behavior from NARUTO-02.
 The V3 label names the existing document/feature slice, not a required branch name.
 
+## New requirement — saved receipt inbox
+
+The current import result lives in browser `sessionStorage` until the user submits a
+cash/card form. That is not enough for the intended phone-to-PC workflow. Add a
+server-persisted **receipt inbox**: a user can import a cupom on mobile, save it for
+later, collect multiple receipts, then open each on desktop, choose cash or card,
+review/edit the prefilled transaction, and submit it normally. Saving an inbox item
+must not create a financial transaction or affect balances, installments, or reports.
+
+Treat inbox items as fiscal-receipt drafts, not incomplete `CashTransaction` or
+`CardTransaction` rows. This avoids weakening normal transaction validations or
+letting incomplete records leak into financial queries. Each saved item stores the
+normalized import payload, owner, creation time, and original source attachment where
+available. Persist the exact uploaded XML/PDF/photo (including a camera-captured QR
+image); when the user supplied only a key/URL, preserve a small JSON source manifest
+with the identifier and parsed draft instead of retaining remote SEFAZ HTML. Keep the
+source file under the existing 10 MiB / attachment-count / MIME security contract.
+
+On final transaction save, attach the saved source artifact to the resulting cash/card
+transaction and consume the inbox item atomically. Explicit deletion removes the saved
+item and its source attachment. Enforce owner/context access on list, read, consume,
+and delete operations; never expose a public blob URL. A user can save multiple items
+and process them independently. A failed transaction save must leave the inbox item
+available for correction/retry.
+
 ## Goal
 
 Let a user start a cash or card transaction from the transaction index and import a
@@ -210,6 +235,28 @@ it includes state choice, a non-overflowing custom file picker with filename dis
 disabled-until-selected Import file action, and bulk category/entity defaults. This
 plan remains incomplete pending manual validation, the agreed OCR/duplicate/reconciliation
 work, and the V2 attachment release gates.
+
+The saved receipt inbox is a newly agreed requirement and is not implemented. It is
+the persistence layer for phone capture and later desktop transaction entry; it does
+not replace or auto-save normal cash/card transactions.
+
+### Slice 0 — Persisted receipt inbox and cross-device handoff
+
+- Add an owner-scoped `FiscalReceiptDraft` (or equivalently named) record to persist
+  normalized import data independently from financial transactions. Store its source
+  using a private Active Storage attachment; use the uploaded XML/PDF/photo when
+  present, and a generated JSON manifest for key/URL-only imports.
+- Add a localized “Save for later” action after a successful import, plus a responsive
+  inbox page/action that lists multiple pending receipts on desktop and mobile.
+- Allow opening an inbox item into the ordinary cash/card new-transaction form. Keep
+  existing immediate “Continue” behavior. On successful normal submission, attach the
+  source artifact to the transaction and consume the inbox item; on validation failure,
+  retain the item for retry.
+- Add authenticated ownership/context checks, safe deletion, and tests proving inbox
+  items do not appear in transaction totals, installments, audits, or reports.
+- Acceptance check: import several receipts on mobile, close/reopen the browser or
+  switch devices, review each on desktop, save as cash/card transactions, and confirm
+  each final transaction retains its original source attachment.
 
 ### Slice 1 — Supported-source discovery and fixtures
 

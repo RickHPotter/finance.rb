@@ -12,6 +12,15 @@ defaults can be applied in bulk then edited for exceptions. Imported files can b
 as transaction receipts. The custom file picker shows the selected filename and keeps
 "Import file" disabled until a file is selected.
 
+The current imported draft is browser-session state, so it cannot support collecting
+receipts on a phone and completing transactions later on a PC. A persisted receipt
+inbox is now required: users may save multiple imported cupoms without creating
+financial transactions, then open each later in the ordinary cash/card form. Preserve
+the uploaded XML/PDF/photo as the source attachment; key/URL-only imports should keep
+a private JSON source manifest rather than archiving remote SEFAZ HTML. Transfer the
+source to the final transaction only when its normal save succeeds. See the V3 plan's
+“saved receipt inbox” requirement and Slice 0.
+
 Remaining work includes manual validation on both transaction types and supported
 source paths, attachment security/failure-path and deployed storage verification,
 duplicate-document handling, OCR for receipts without a usable QR/key/XML, and any
