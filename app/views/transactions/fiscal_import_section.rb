@@ -19,6 +19,27 @@ class Views::Transactions::FiscalImportSection < Views::Base
           class: "rounded-md bg-sky-700 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-800 disabled:opacity-50",
           data: { action: "click->fiscal-import#importFile", fiscal_import_target: "button" }
         ) { I18n.t("fiscal_import.import_file") }
+        button(
+          type: :button,
+          class: "rounded-md border border-sky-700 px-3 py-2 text-xs font-semibold text-sky-800 hover:bg-sky-100 " \
+                 "disabled:opacity-50 dark:text-sky-300 dark:hover:bg-sky-950",
+          data: { action: "click->fiscal-import#startCamera", fiscal_import_target: "button" }
+        ) { I18n.t("fiscal_import.scan_camera") }
+      end
+
+      div(class: "mt-3 hidden", data: { fiscal_import_target: "cameraPanel" }, hidden: true) do
+        video(
+          autoplay: true,
+          muted: true,
+          playsinline: true,
+          class: "mx-auto max-h-72 w-full rounded-md bg-slate-950 object-contain",
+          data: { fiscal_import_target: "video" }
+        )
+        button(
+          type: :button,
+          class: "mt-2 rounded-md border border-slate-400 px-3 py-2 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800",
+          data: { action: "click->fiscal-import#stopCamera" }
+        ) { I18n.t("fiscal_import.cancel_camera") }
       end
 
       div(class: "mt-3 flex flex-wrap items-center gap-2") do

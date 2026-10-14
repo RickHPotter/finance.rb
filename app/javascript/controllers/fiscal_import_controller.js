@@ -3,8 +3,85 @@ import { _applyMask, _removeMask } from "../utils/mask.js"
 import jsQR from "jsqr"
 
 export default class extends Controller {
-  static targets = ["file", "source", "button", "status"]
+  static targets = ["file", "source", "button", "status", "cameraPanel", "video"]
   static values = { url: String, reviewMessage: String, replaceMessage: String }
+
+  disconnect() {
+    this.stopCamera()
+  }
+
+  async startCamera() {
+    if (this.cameraOpening || this.cameraStream) return
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      this.showStatus("Live camera scanning needs HTTPS or localhost. Upload a receipt photo instead.", true)
+      return
+    }
+
+    this.cameraOpening = true
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      })
+      if (!this.element.isConnected) {
+        stream.getTracks().forEach(track => track.stop())
+        return
+      }
+
+      this.cameraStream = stream
+      this.cameraPanelTarget.hidden = false
+      this.cameraPanelTarget.classList.remove("hidden")
+      this.videoTarget.srcObject = this.cameraStream
+      await this.videoTarget.play()
+      this.showStatus("Point the camera at the cupom QR code.")
+      this.scanCameraFrame()
+    } catch (error) {
+      this.stopCamera()
+      const message = error.name === "NotAllowedError"
+        ? "Camera access was denied. Allow camera access or upload a receipt photo."
+        : "Could not open the camera. Upload a receipt photo instead."
+      this.showStatus(message, true)
+    } finally {
+      this.cameraOpening = false
+    }
+  }
+
+  stopCamera() {
+    if (this.cameraFrame) cancelAnimationFrame(this.cameraFrame)
+    this.cameraFrame = null
+    this.cameraStream?.getTracks().forEach(track => track.stop())
+    this.cameraStream = null
+    if (this.hasVideoTarget) this.videoTarget.srcObject = null
+    if (this.hasCameraPanelTarget) this.cameraPanelTarget.hidden = true
+    if (this.hasCameraPanelTarget) this.cameraPanelTarget.classList.add("hidden")
+  }
+
+  async scanCameraFrame() {
+    if (!this.cameraStream) return
+
+    const video = this.videoTarget
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      const scale = Math.min(1, 1600 / Math.max(video.videoWidth, video.videoHeight))
+      const canvas = this.cameraCanvas || (this.cameraCanvas = document.createElement("canvas"))
+      canvas.width = Math.max(1, Math.round(video.videoWidth * scale))
+      canvas.height = Math.max(1, Math.round(video.videoHeight * scale))
+      const context = canvas.getContext("2d", { willReadFrequently: true })
+      context.drawImage(video, 0, 0, canvas.width, canvas.height)
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height)
+      const source = jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: "attemptBoth" })?.data
+      if (source) {
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.9))
+        const file = blob ? new File([blob], "fiscal-receipt-camera.jpg", { type: "image/jpeg", lastModified: Date.now() }) : null
+        this.stopCamera()
+        this.showStatus("QR found. Retrieving fiscal items...")
+        this.performImport({ source, file })
+        return
+      }
+    }
+
+    this.cameraFrame = requestAnimationFrame(() => this.scanCameraFrame())
+  }
 
   async importFile() {
     const file = this.fileTarget.files[0]
@@ -22,7 +99,7 @@ export default class extends Controller {
       try {
         this.showStatus("Reading the receipt QR code...")
         const source = await this.readImageQr(file)
-        if (!source) throw new Error("No readable QR code was found in this image. Try XML, PDF, or enter its 44-digit key.")
+        if (!source) throw new Error("No readable QR code was found in this image. Try live camera scan, XML, PDF, or a supported key.")
         await this.performImport({ file, source })
       } catch (error) {
         this.showStatus(error.message, true)
