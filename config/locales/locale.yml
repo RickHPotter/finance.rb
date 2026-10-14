@@ -8,7 +8,7 @@ en:
       goias: "Goiás"
       parana: "Paraná"
     hint: "Upload authorized XML, a text PDF or an image with a readable QR code. Goiás needs the complete signed QR URL; Paraná also accepts a 44-digit key. Review before saving."
-    import_file: "Fill from receipt"
+    import_file: "Import file"
     scan_camera: "Scan with camera"
     cancel_camera: "Close camera"
     key_placeholder:
@@ -456,7 +456,7 @@ pt-BR:
       goias: "Goiás"
       parana: "Paraná"
     hint: "Envie XML autorizado, PDF com texto ou imagem com QR legível. Goiás exige a URL QR assinada completa; Paraná também aceita chave de 44 dígitos. Confira antes de salvar."
-    import_file: "Preencher pelo cupom"
+    import_file: "Importar arquivo"
     scan_camera: "Ler com a câmera"
     cancel_camera: "Fechar câmera"
     key_placeholder:
