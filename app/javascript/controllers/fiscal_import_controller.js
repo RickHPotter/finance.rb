@@ -6,7 +6,7 @@ import jsQR from "jsqr"
 const PENDING_DRAFT_KEY = "pendingFiscalReceiptImport"
 
 export default class extends Controller {
-  static targets = ["file", "source", "state", "button", "status", "cameraPanel", "video", "continueButton"]
+  static targets = ["file", "fileName", "importButton", "source", "state", "button", "status", "cameraPanel", "video", "continueButton"]
   static values = {
     url: String,
     reviewMessage: String,
@@ -136,6 +136,12 @@ export default class extends Controller {
     this.performImport({ file })
   }
 
+  fileChosen() {
+    const file = this.fileTarget.files[0]
+    this.fileNameTarget.textContent = file?.name || this.fileNameTarget.dataset.emptyText
+    this.importButtonTarget.disabled = !file
+  }
+
   lookup() {
     const source = this.sourceTarget.value.trim()
     if (!source) {
@@ -181,7 +187,9 @@ export default class extends Controller {
     } catch (error) {
       this.showStatus(error.message, true)
     } finally {
-      this.buttonTargets.forEach(button => { button.disabled = false })
+      this.buttonTargets.forEach(button => {
+        button.disabled = button === this.importButtonTarget ? !this.fileTarget.files[0] : false
+      })
     }
   }
 
