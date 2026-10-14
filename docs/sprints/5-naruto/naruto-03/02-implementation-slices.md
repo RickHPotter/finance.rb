@@ -3,7 +3,8 @@
 This file maps the implemented attachment baseline and remaining NARUTO-03 work.
 Receipt attachment support is implemented; V2 deployment/security verification and V3
 Brazilian fiscal import are still open. The fiscal import now has working XML and
-Paraná key/QR draft-prefill paths, but printed item OCR, duplicate protection, and
+Goiás signed-QR and Paraná key/QR draft-prefill paths, but printed item OCR,
+duplicate protection, and
 wider coverage remain. NARUTO-03 should not be marked complete until both workstreams
 meet their acceptance criteria.
 
@@ -108,6 +109,7 @@ prefill the NARUTO-02 cash/card transaction form; reconcile its total; and requi
 user review before saving. A short cupom number alone is insufficient. Fiscal
 extraction is separate from attachment hardening V2. The `naruto-03-v2` branch targets
 this slice; the V3 document label predates the branch name. Authorized XML,
-Paraná NFC-e key/QR lookup, PDF text-key extraction, and image QR scanning now prefill
+Goiás signed-QR lookup, Paraná NFC-e key/QR lookup, PDF text-source extraction, and
+image QR scanning now prefill
 unsaved cash/card drafts. OCR when the printed receipt has no usable QR/key,
 duplicate-document protection, and additional state adapters are not yet implemented.

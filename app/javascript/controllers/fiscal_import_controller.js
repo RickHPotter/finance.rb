@@ -36,7 +36,7 @@ export default class extends Controller {
   lookup() {
     const source = this.sourceTarget.value.trim()
     if (!source) {
-      this.showStatus("Enter a 44-digit key or Paraná QR URL first.", true)
+      this.showStatus("Enter a supported 44-digit key or Paraná/Goiás QR URL first.", true)
       return
     }
 

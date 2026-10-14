@@ -159,9 +159,10 @@ Explicitly out of scope:
 ### NARUTO-03: Attach documents and import Brazilian fiscal receipts
 
 Status: receipt attachment support is implemented, with security and deployment
-verification still open. Fiscal import is in development: authorized XML and Paraná
-NFC-e key/QR paths prefill unsaved cash/card drafts, with PDF text-key extraction and
-image QR scanning as source adapters. OCR for receipts without a usable key/QR,
+verification still open. Fiscal import is in development: authorized XML, Goiás
+signed-QR, and Paraná NFC-e key/QR paths prefill unsaved cash/card drafts, with PDF
+text-source extraction and image QR scanning as source adapters. GO key-only lookup
+requires the official browser challenge and is not automated. OCR for receipts without a usable key/QR,
 duplicate protection, and wider state coverage remain open, so NARUTO-03 is not yet
 complete. See the [NARUTO-03 status and plans](docs/sprints/5-naruto/naruto-03/01-product-and-data-contract.md).
 

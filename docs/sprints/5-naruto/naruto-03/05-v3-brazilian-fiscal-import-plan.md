@@ -3,8 +3,9 @@
 ## Status and ownership
 
 **In development; not complete. Required for NARUTO-03 to be considered complete.**
-Authorized XML prefill and Paraná NFC-e key/QR lookup are implemented. PDF text-key
-extraction and image QR scanning are available as source adapters. General printed
+Authorized XML prefill, Goiás NFC-e signed-QR lookup, and Paraná NFC-e key/QR lookup
+are implemented. PDF text-source extraction and image QR scanning are available as
+source adapters. General printed
 item OCR, duplicate protection, and wider state coverage remain open. This
 workstream is distinct from V2 attachment security and deployment hardening. Fiscal
 data is translated into a draft using NARUTO-02's existing `LineItem` form and model;
@@ -61,9 +62,11 @@ interfaces, **not** a claim that an importer already works:
 |---|---|---|
 | NFC-e/NF-e XML supplied by the user | Structured fiscal item and total fields are defined by the official XML schemas. | Parse locally first; require an authorized document and validate the fiscal key/total. |
 | NFC-e QR URL, including QR 3.0 | PR publishes a QR consultation URL and the QR 3.0 parameter layout. The public result is a state page, not a documented universal item API. | The Paraná adapter requests its fixed HTTPS QR path and parses verified item rows; other states need separate evidence/adapters. |
+| Goiás NFC-e signed QR URL | The official Goiás consultation renders an itemized DANFE from the full signed QR URL and a session-bound second response. A live probe with a publicly published 2026 GO receipt returned its item and total on 2026-10-14. | Accept the complete official HTTPS QR URL and preserve its signed payload and consultation session; import item rows only when both responses match the expected key. |
 | NFC-e 44-digit key without a QR URL | NFC-e public consultation supports key entry, but PR's complete consultation has CAPTCHA. A Paraná QR 3.0 request built from a valid key returned item rows in a live probe on 2026-10-14. | Accept and validate the key for Paraná NFC-e. Keep CAPTCHA and layout changes as explicit failure cases; never claim universal key-only lookup. |
+| Goiás NFC-e key without a QR URL | Goiás's public key-entry page currently uses a browser challenge; a key does not include the QR signature. | Explain that automatic GO lookup needs the complete QR URL or supplied authorized XML. Do not attempt to bypass the challenge. |
 | NF-e 44-digit key through `NFeDistribuicaoDFe` | The service requires an eligible interested party and certificate; key possession alone is insufficient. | Do not use it for ordinary consumer import. |
-| Printed fiscal image/PDF | No state lookup is guaranteed from the short receipt number or illegible QR. | The implemented paths extract a QR URL from a browser-readable image or a valid key from text in the first three PDF pages, then use the Paraná adapter. Scanned PDFs without selectable text, images without a readable QR, and other states still need a later adapter/OCR path. |
+| Printed fiscal image/PDF | No state lookup is guaranteed from the short receipt number or illegible QR. | The implemented paths extract a QR URL from a browser-readable image, a complete GO QR URL from text in the first three PDF pages, or a PR key from PDF text. Scanned PDFs without selectable text and images without a readable QR still need a later OCR path. |
 
 Unsupported or inaccessible documents must show a useful explanation and preserve
 the user's ability to enter line items manually.
@@ -72,6 +75,9 @@ Official starting points: [NFC-e public consultation manual](https://www.nfe.faz
 [PR consultation example with CAPTCHA](https://sped.fazenda.pr.gov.br/NFCe/webservices/sped/nfce/completa),
 [PR QR 3.0 layout](https://sped.fazenda.pr.gov.br/NFCe/Pagina/QR-Code),
 and [NF-e distribution service specification](https://www.nfe.fazenda.gov.br/Portal/exibirArquivo.aspx?conteudo=U0LlsYVGBRU%3D).
+For Goiás, see the [official public consultation](https://nfeweb.sefaz.go.gov.br/nfeweb/sites/nfe/consulta-completa),
+the [state's NFC-e consultation rule](https://legisla.casacivil.go.gov.br/pesquisa_legislacao/69865/decreto-9121),
+and a [publicly published GO NFC-e example](https://www.camara.leg.br/cota-parlamentar/documentos/publ/3614/2026/8070694.pdf).
 
 ## Draft data contract
 
@@ -125,11 +131,14 @@ to view, and check every imported amount before saving:
 1. Upload an authorized NFC-e/NF-e XML with at least one product. Choose **Fill from
    receipt**. The form should switch to Split Purchase and show one editable LineItem
    per product, the issuer as description, and the negative transaction total.
-2. Enter a Paraná NFC-e 44-digit access key, or paste its official QR URL, then choose
-   **Look up receipt**. The fixed HTTPS Paraná consultation should return item rows.
-   The short printed cupom number should show a validation error instead.
-3. Upload a text PDF containing a Paraná NFC-e key, or a JPEG/PNG receipt image with a
-   readable Paraná QR code. The extracted key/QR should use the same lookup. The
+2. Paste the **complete signed Goiás NFC-e QR URL**, then choose **Look up receipt**.
+   The official GO consultation should return the itemized rows. A bare GO key should
+   explain that GO's key-entry page requires a browser challenge; the short printed
+   cupom number should also fail. Then try a Paraná NFC-e 44-digit key or official QR
+   URL to verify the older path still works.
+3. Upload a text PDF containing the complete Goiás QR URL, or a JPEG/PNG receipt image
+   with a readable Goiás QR code. The extracted URL should use the same GO lookup.
+   A text PDF containing a Paraná key or a PR QR image should still work. The
    uploaded file is staged in Attachments after a successful import; wait for its
    upload to finish before saving. A key-only lookup creates no attachment.
 4. Assign categories, review any total difference, and save through the ordinary
@@ -137,13 +146,14 @@ to view, and check every imported amount before saving:
    discount; the former is valid with one LineItem, while the latter must display the
    difference for manual correction.
 
-Current limits: only Paraná NFC-e has automatic public key/QR lookup; XML works for
-supported authorized NF-e/NFC-e regardless of state. Image import currently needs a
-readable QR, and PDF import needs selectable text containing a valid key in the first
-three pages. Printed item OCR, scanned PDFs without text, HEIC browser decoding on
-unsupported devices, duplicate-document warnings, and additional state adapters are
-still pending. Lookup can fail if Paraná changes its public HTML or blocks the query;
-the form should retain manual entry as the fallback.
+Current limits: Goiás NFC-e lookup needs the complete signed QR URL; only Paraná
+currently supports key-only lookup. XML works for supported authorized NF-e/NFC-e
+regardless of state. Image import needs a readable QR, and PDF import needs selectable
+text containing a GO QR URL or PR key in the first three pages. Printed item OCR,
+scanned PDFs without text, HEIC browser decoding on unsupported devices,
+duplicate-document warnings, and additional state adapters are still pending.
+Lookup can fail if a state's public HTML changes or blocks the query; the form must
+retain manual entry as the fallback.
 
 ## Security and privacy constraints
 
@@ -167,8 +177,9 @@ the form should retain manual entry as the fallback.
 ## Implementation slices
 
 Development on `naruto-03-v2` is being committed in vertical slices. Working paths
-now include authorized XML, Paraná key/QR lookup, PDF text-key extraction, and image
-QR scanning into unsaved cash/card drafts. Printed item OCR and the remaining
+now include authorized XML, Goiás signed-QR lookup, Paraná key/QR lookup, PDF text
+source extraction, and image QR scanning into unsaved cash/card drafts. Printed item
+OCR and the remaining
 verification are separate slices, and this plan remains incomplete until they pass.
 
 ### Slice 1 — Supported-source discovery and fixtures

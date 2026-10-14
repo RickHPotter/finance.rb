@@ -65,6 +65,31 @@ RSpec.describe "Fiscal receipt imports", type: :request do
       expect(response.parsed_body.dig("draft", "source")).to eq("sefaz_pr")
     end
 
+    it "imports Goiás items from the full signed QR URL" do
+      sign_in user
+      key = "52260301427744000150650010005752241062577988"
+      source = "https://nfeweb.sefaz.go.gov.br/nfeweb/sites/nfce/danfeNFCe?p=#{key}|2|1|1|8063029A08AC070E0D5C6DDB0891AC3F116830AC"
+      draft = FiscalReceipts::Draft.new(access_key: key, issuer: "Mercado", issued_at: nil, total_cents: 1250,
+                                        items: [ { description: "Arroz", price_cents: 1250 } ], source: "sefaz_go")
+      allow(FiscalReceipts::GoiasLookup).to receive(:new).with(source).and_return(instance_double(FiscalReceipts::GoiasLookup, call: draft))
+
+      post fiscal_receipt_imports_path, params: { source: }, headers: { "Accept" => "application/json" }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.dig("draft", "source")).to eq("sefaz_go")
+      expect(response.parsed_body.dig("draft", "items", 0, "price_cents")).to eq(1250)
+    end
+
+    it "explains why a bare Goiás key cannot be looked up automatically" do
+      sign_in user
+
+      post fiscal_receipt_imports_path, params: { source: "52260301427744000150650010005752241062577988" },
+                                        headers: { "Accept" => "application/json" }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body.fetch("error")).to include("complete QR URL")
+    end
+
     it "requires authentication" do
       receipt = fixture_file_upload("fiscal_receipt.xml", "application/xml")
 

@@ -4,9 +4,6 @@ module FiscalReceipts
   class SourceKey
     class InvalidSource < StandardError; end
 
-    HOST = FiscalReceipts::ParanaLookup::HOST
-    PATH = FiscalReceipts::ParanaLookup::PATH
-
     def initialize(value)
       @value = value.to_s.strip
     end
@@ -21,11 +18,14 @@ module FiscalReceipts
 
     def url_key
       uri = URI.parse(@value)
-      raise InvalidSource, "Use a Paraná NFC-e QR URL or a 44-digit access key." unless %w[http https].include?(uri.scheme) && uri.host == HOST && uri.path == PATH
+      if %w[http https].include?(uri.scheme) && uri.host == ParanaLookup::HOST && uri.path == ParanaLookup::PATH
+        return URI.decode_www_form(uri.query.to_s).to_h.fetch("p").split("|", 2).first
+      end
+      return @value if uri.scheme == "https" && uri.host == GoiasLookup::HOST && uri.path == GoiasLookup::PATH
 
-      URI.decode_www_form(uri.query.to_s).to_h.fetch("p").split("|", 2).first
+      raise InvalidSource, "Use an official Paraná or Goiás NFC-e QR URL, or a supported 44-digit key."
     rescue URI::InvalidURIError, KeyError
-      raise InvalidSource, "Use a Paraná NFC-e QR URL or a 44-digit access key."
+      raise InvalidSource, "Use an official Paraná or Goiás NFC-e QR URL, or a supported 44-digit key."
     end
   end
 end

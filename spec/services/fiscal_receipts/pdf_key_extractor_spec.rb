@@ -22,4 +22,11 @@ RSpec.describe FiscalReceipts::PdfKeyExtractor do
     expect(described_class.new(file).call).to eq(access_key)
     expect(Open3).to have_received(:capture3).with("pdftotext", "-f", "1", "-l", "3", "-enc", "UTF-8", "/tmp/receipt.pdf", "-")
   end
+
+  it "preserves a line-wrapped Goiás QR URL from PDF text" do
+    goias_key = "52260301427744000150650010005752241062577988"
+    text = "QR-Code https://nfeweb.sefaz.go.gov.br/nfeweb/sites/nfce/danfeNFCe?p=#{goias_key}|2|1|1|8063029A08AC070E0D5C6DDB\n0891AC3F116830AC"
+
+    expect(described_class.source_from_text(text)).to eq(text.delete("\n").split.last)
+  end
 end

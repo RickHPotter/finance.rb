@@ -19,7 +19,7 @@ module FiscalReceipts
       end
       raise Unreadable, "The PDF text could not be read." unless status.success? && output.bytesize <= MAX_TEXT_BYTES
 
-      self.class.key_from_text(output)
+      self.class.source_from_text(output)
     rescue Errno::ENOENT, Timeout::Error
       raise Unreadable, "PDF extraction is unavailable right now. Try XML or enter the access key."
     end
@@ -30,6 +30,14 @@ module FiscalReceipts
       raise Unreadable, "No valid 44-digit fiscal access key was found in the PDF." unless key
 
       key
+    end
+
+    def self.source_from_text(text)
+      normalized = text.gsub(/\s+/, "")
+      qr_url = normalized.match(%r{https://#{Regexp.escape(GoiasLookup::HOST)}#{Regexp.escape(GoiasLookup::PATH)}\?p=\d{44}\|[\d|A-Fa-f]{1,180}})&.to_s
+      return qr_url if qr_url.present?
+
+      key_from_text(text)
     end
   end
 end

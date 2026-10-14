@@ -5,8 +5,9 @@
 NARUTO-03 is not complete yet. The receipt attachment baseline is implemented. V2
 security and storage code is in the tree, but its deployment durability and remaining
 security/failure-path checks still need verification. Brazilian cupom-fiscal import is
-in development: authorized XML and Paraná NFC-e key/QR paths now create reviewable
-unsaved drafts; PDF text-key and image QR adapters extend the input options. Printed
+in development: authorized XML, Goiás signed-QR, and Paraná NFC-e key/QR paths now
+create reviewable unsaved drafts; PDF text-source and image QR adapters extend the
+input options. Printed
 item OCR, duplicate protection, and wider state coverage remain open. This separate
 V3 workstream is part of the intended NARUTO-03 outcome.
 

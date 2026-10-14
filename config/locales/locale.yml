@@ -1,9 +1,9 @@
 en:
   fiscal_import:
     title: "Import a fiscal receipt"
-    hint: "Upload an authorized XML, a text PDF containing the key, or a receipt image with a QR code. Key/QR lookup currently supports Paraná NFC-e. Review before saving."
+    hint: "Upload authorized XML, a text PDF or an image with a readable QR code. Goiás needs the complete signed QR URL; Paraná also accepts a 44-digit key. Review before saving."
     import_file: "Fill from receipt"
-    key_placeholder: "44-digit NFC-e key or Paraná QR URL"
+    key_placeholder: "Goiás/Paraná QR URL or Paraná 44-digit key"
     lookup: "Look up receipt"
     review: "Imported %{count} items. Review the draft and complete the categories before saving."
     replace: "Replace the current transaction description, price, and line items with this fiscal receipt?"
@@ -440,9 +440,9 @@ en:
 pt-BR:
   fiscal_import:
     title: "Importar cupom fiscal"
-    hint: "Envie um XML autorizado, PDF com a chave em texto ou imagem com QR code. A consulta por chave/QR aceita NFC-e do Paraná. Confira antes de salvar."
+    hint: "Envie XML autorizado, PDF com texto ou imagem com QR legível. Goiás exige a URL QR assinada completa; Paraná também aceita chave de 44 dígitos. Confira antes de salvar."
     import_file: "Preencher pelo cupom"
-    key_placeholder: "Chave NFC-e de 44 dígitos ou URL QR do Paraná"
+    key_placeholder: "URL QR de Goiás/Paraná ou chave de 44 dígitos do Paraná"
     lookup: "Consultar cupom"
     review: "%{count} itens importados. Confira os dados e complete as categorias antes de salvar."
     replace: "Substituir a descrição, o valor e os itens atuais por este cupom fiscal?"
