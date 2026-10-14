@@ -3,11 +3,17 @@ en:
     title: "Import a fiscal receipt"
     open: "Import receipt"
     continue: "Continue to transaction"
+    state: "State"
+    states:
+      goias: "Goiás"
+      parana: "Paraná"
     hint: "Upload authorized XML, a text PDF or an image with a readable QR code. Goiás needs the complete signed QR URL; Paraná also accepts a 44-digit key. Review before saving."
     import_file: "Fill from receipt"
     scan_camera: "Scan with camera"
     cancel_camera: "Close camera"
-    key_placeholder: "Goiás/Paraná QR URL or Paraná 44-digit key"
+    key_placeholder:
+      goias: "Complete signed Goiás QR URL"
+      parana: "Paraná QR URL or 44-digit access key"
     lookup: "Look up receipt"
     review: "Imported %{count} items. Review the draft; categories may be left blank."
   attachments:
@@ -445,11 +451,17 @@ pt-BR:
     title: "Importar cupom fiscal"
     open: "Importar cupom"
     continue: "Continuar para a transação"
+    state: "Estado"
+    states:
+      goias: "Goiás"
+      parana: "Paraná"
     hint: "Envie XML autorizado, PDF com texto ou imagem com QR legível. Goiás exige a URL QR assinada completa; Paraná também aceita chave de 44 dígitos. Confira antes de salvar."
     import_file: "Preencher pelo cupom"
     scan_camera: "Ler com a câmera"
     cancel_camera: "Fechar câmera"
-    key_placeholder: "URL QR de Goiás/Paraná ou chave de 44 dígitos do Paraná"
+    key_placeholder:
+      goias: "URL completa e assinada do QR de Goiás"
+      parana: "URL do QR ou chave de acesso de 44 dígitos do Paraná"
     lookup: "Consultar cupom"
     review: "%{count} itens importados. Confira os dados; as categorias podem ficar em branco."
   attachments:

@@ -6,7 +6,7 @@ import jsQR from "jsqr"
 const PENDING_DRAFT_KEY = "pendingFiscalReceiptImport"
 
 export default class extends Controller {
-  static targets = ["file", "source", "button", "status", "cameraPanel", "video", "continueButton"]
+  static targets = ["file", "source", "state", "button", "status", "cameraPanel", "video", "continueButton"]
   static values = {
     url: String,
     reviewMessage: String,
@@ -17,6 +17,7 @@ export default class extends Controller {
 
   connect() {
     this.observeModalVisibility()
+    if (this.hasStateTarget) this.stateChanged()
     requestAnimationFrame(() => this.applyPendingDraft())
   }
 
@@ -143,6 +144,12 @@ export default class extends Controller {
     }
 
     this.performImport({ source })
+  }
+
+  stateChanged() {
+    const state = this.stateTarget.value
+    const placeholder = this.sourceTarget.dataset[`placeholder${state[0].toUpperCase()}${state.slice(1)}`]
+    if (placeholder) this.sourceTarget.placeholder = placeholder
   }
 
   async performImport({ file, source }) {

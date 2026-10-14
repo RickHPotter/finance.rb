@@ -42,14 +42,32 @@ class Views::Transactions::FiscalImportSection < Views::Base
       end
 
       div(class: "mt-3 flex flex-wrap items-center gap-2") do
+        label(class: "sr-only", for: "fiscal_import_state") { I18n.t("fiscal_import.state") }
+        select(
+          id: "fiscal_import_state",
+          name: "state",
+          class: "h-10 shrink-0 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 " \
+                 "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100",
+          data: {
+            fiscal_import_target: "state",
+            action: "change->fiscal-import#stateChanged"
+          }
+        ) do
+          option(value: "goias", selected: true) { I18n.t("fiscal_import.states.goias") }
+          option(value: "parana") { I18n.t("fiscal_import.states.parana") }
+        end
         input(
           type: :text,
           inputmode: :text,
           autocomplete: :off,
-          placeholder: I18n.t("fiscal_import.key_placeholder"),
+          placeholder: I18n.t("fiscal_import.key_placeholder.goias"),
           class: "min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 " \
                  "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100",
-          data: { fiscal_import_target: "source" }
+          data: {
+            fiscal_import_target: "source",
+            placeholder_goias: I18n.t("fiscal_import.key_placeholder.goias"),
+            placeholder_parana: I18n.t("fiscal_import.key_placeholder.parana")
+          }
         )
         button(
           type: :button,
