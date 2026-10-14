@@ -5,7 +5,8 @@ class FiscalReceiptImportsController < ApplicationController
     file = params[:file]
     draft = file.respond_to?(:tempfile) ? draft_from_file(file) : draft_from_source(params[:source])
     render json: { draft: draft.as_json }
-  rescue FiscalReceipts::XmlParser::InvalidDocument, FiscalReceipts::ParanaLookup::Unavailable, FiscalReceipts::SourceKey::InvalidSource => e
+  rescue FiscalReceipts::XmlParser::InvalidDocument, FiscalReceipts::ParanaLookup::Unavailable,
+         FiscalReceipts::SourceKey::InvalidSource, FiscalReceipts::PdfKeyExtractor::Unreadable => e
     render_error(e.message)
   end
 
@@ -13,12 +14,12 @@ class FiscalReceiptImportsController < ApplicationController
 
   def draft_from_file(file)
     raise FiscalReceipts::XmlParser::InvalidDocument, "The fiscal file must be 10 MB or smaller." if file.size > 10.megabytes
-    unless File.extname(file.original_filename.to_s).casecmp?(".xml")
-      raise FiscalReceipts::XmlParser::InvalidDocument,
-            "Only fiscal XML is supported in this import step."
-    end
 
-    FiscalReceipts::XmlParser.new(file.read).call
+    case File.extname(file.original_filename.to_s).downcase
+    when ".xml" then FiscalReceipts::XmlParser.new(file.read).call
+    when ".pdf" then FiscalReceipts::ParanaLookup.new(FiscalReceipts::PdfKeyExtractor.new(file).call).call
+    else raise FiscalReceipts::XmlParser::InvalidDocument, "Upload a fiscal XML, PDF, or a readable QR image."
+    end
   end
 
   def draft_from_source(source)

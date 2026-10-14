@@ -2,7 +2,10 @@
 
 ## Status and ownership
 
-**Planned; not implemented. Required for NARUTO-03 to be considered complete.** This
+**In development; not complete. Required for NARUTO-03 to be considered complete.**
+Authorized XML prefill and Paraná NFC-e key/QR lookup are implemented. PDF text-key
+extraction and image QR scanning are available as source adapters. General printed
+item OCR, duplicate protection, and wider state coverage remain open. This
 workstream is distinct from V2 attachment security and deployment hardening. Fiscal
 data is translated into a draft using NARUTO-02's existing `LineItem` form and model;
 it does not change the ownership of composite-transaction behavior from NARUTO-02.
@@ -60,7 +63,7 @@ interfaces, **not** a claim that an importer already works:
 | NFC-e QR URL, including QR 3.0 | PR publishes a QR consultation URL and the QR 3.0 parameter layout. The public result is a state page, not a documented universal item API. | The Paraná adapter requests its fixed HTTPS QR path and parses verified item rows; other states need separate evidence/adapters. |
 | NFC-e 44-digit key without a QR URL | NFC-e public consultation supports key entry, but PR's complete consultation has CAPTCHA. A Paraná QR 3.0 request built from a valid key returned item rows in a live probe on 2026-10-14. | Accept and validate the key for Paraná NFC-e. Keep CAPTCHA and layout changes as explicit failure cases; never claim universal key-only lookup. |
 | NF-e 44-digit key through `NFeDistribuicaoDFe` | The service requires an eligible interested party and certificate; key possession alone is insufficient. | Do not use it for ordinary consumer import. |
-| Printed fiscal image/PDF | No state lookup is guaranteed from the short receipt number or illegible QR. | Extract local text/QR where feasible, require review of uncertain rows, and keep manual entry available. |
+| Printed fiscal image/PDF | No state lookup is guaranteed from the short receipt number or illegible QR. | The implemented paths extract a QR URL from a browser-readable image or a valid key from text in the first three PDF pages, then use the Paraná adapter. Scanned PDFs without selectable text, images without a readable QR, and other states still need a later adapter/OCR path. |
 
 Unsupported or inaccessible documents must show a useful explanation and preserve
 the user's ability to enter line items manually.
@@ -130,9 +133,9 @@ split-purchase form before submission.
 
 ## Implementation slices
 
-Development on `naruto-03-v2` is being committed in vertical slices. The first
-working path is authorized XML into an unsaved cash/card draft; Paraná key/QR lookup
-is the next state-specific source. Printed receipt extraction and the remaining
+Development on `naruto-03-v2` is being committed in vertical slices. Working paths
+now include authorized XML, Paraná key/QR lookup, PDF text-key extraction, and image
+QR scanning into unsaved cash/card drafts. Printed item OCR and the remaining
 verification are separate slices, and this plan remains incomplete until they pass.
 
 ### Slice 1 — Supported-source discovery and fixtures

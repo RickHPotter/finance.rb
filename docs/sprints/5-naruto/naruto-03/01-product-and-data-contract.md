@@ -4,10 +4,11 @@
 
 NARUTO-03 is not complete yet. The receipt attachment baseline is implemented. V2
 security and storage code is in the tree, but its deployment durability and remaining
-security/failure-path checks still need verification. The feature also still needs the
-Brazilian cupom-fiscal import flow that converts fiscal items into a reviewable
-transaction draft. That import is a separate V3 workstream, but it is part of the
-intended NARUTO-03 outcome, not a permanently deferred feature.
+security/failure-path checks still need verification. Brazilian cupom-fiscal import is
+in development: authorized XML and Paraná NFC-e key/QR paths now create reviewable
+unsaved drafts; PDF text-key and image QR adapters extend the input options. Printed
+item OCR, duplicate protection, and wider state coverage remain open. This separate
+V3 workstream is part of the intended NARUTO-03 outcome.
 
 The custom receipt routes disabled Active Storage's defaults, but production-style
 boot exposed a route-registration-order collision. The early route-disable fix is in

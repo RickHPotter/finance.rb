@@ -40,7 +40,7 @@
 | Direct upload | `spec/requests/attachments_spec.rb` covers anonymous and oversized rejection; authenticated controller validates allowlisted MIME and byte size before blob creation. | Unsupported-type request; cross-actor signed blob attach; inspect stored bytes/content type. |
 | Storage durability | Production and homolog now have separate named volumes at `/rails/storage`; the storage directories were empty at inspection. | Deploy with the mount, verify persistence across replacement, and exercise backup/restore. |
 | Production-style route boot | `config.active_storage.draw_routes = false` plus the early `ActiveStorage.draw_routes = false` prevents default routes from colliding with the authenticated receipt route; local homolog and production route commands boot. | Redeploy homolog and confirm container health and authenticated file/avatar flows. |
-| Fiscal receipt import | No parser or transaction-prefill workflow exists yet. | Implement and test supported XML, PDF/image, QR URL, and 44-digit key inputs; state-specific official lookup feasibility; OCR fallback for printed fiscal receipts; draft line-item prefill, total reconciliation, and user review; see [V3 plan](05-v3-brazilian-fiscal-import-plan.md). |
+| Fiscal receipt import | XML parser, Paraná key/QR adapter, PDF text-key extraction, image QR scanning, and browser prefill for cash/card drafts are implemented; focused service, request, and browser specs cover XML/key prefill. | Verify image QR and PDF flows with redacted real receipts; add printed item OCR, duplicate protection, more state adapters, and full reconciliation/manual review coverage; see [V3 plan](05-v3-brazilian-fiscal-import-plan.md). |
 
 ## Release gate
 

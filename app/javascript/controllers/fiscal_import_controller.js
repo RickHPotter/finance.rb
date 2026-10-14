@@ -1,19 +1,32 @@
 import { Controller } from "@hotwired/stimulus"
 import { _applyMask, _removeMask } from "../utils/mask.js"
+import jsQR from "jsqr"
 
 export default class extends Controller {
   static targets = ["file", "source", "button", "status"]
   static values = { url: String, reviewMessage: String, replaceMessage: String }
 
-  importFile() {
+  async importFile() {
     const file = this.fileTarget.files[0]
     if (!file) {
-      this.showStatus("Choose an XML file first.", true)
+      this.showStatus("Choose a fiscal XML, PDF, or image first.", true)
       return
     }
 
     if (file.size > 10 * 1024 * 1024) {
       this.showStatus("The fiscal file must be 10 MB or smaller.", true)
+      return
+    }
+
+    if (file.type.startsWith("image/") || /\.(jpe?g|png|heic)$/i.test(file.name)) {
+      try {
+        this.showStatus("Reading the receipt QR code...")
+        const source = await this.readImageQr(file)
+        if (!source) throw new Error("No readable QR code was found in this image. Try XML, PDF, or enter its 44-digit key.")
+        await this.performImport({ file, source })
+      } catch (error) {
+        this.showStatus(error.message, true)
+      }
       return
     }
 
@@ -36,8 +49,8 @@ export default class extends Controller {
 
     try {
       const body = new FormData()
-      if (file) body.append("file", file)
       if (source) body.append("source", source)
+      else if (file) body.append("file", file)
       const response = await fetch(this.urlValue, {
         method: "POST",
         headers: { "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content || "", Accept: "application/json" },
@@ -98,6 +111,24 @@ export default class extends Controller {
     const upload = this.application.getControllerForElementAndIdentifier(this.element, "attachment-upload")
     upload?.processFiles([file])
     this.lastStagedFile = signature
+  }
+
+  async readImageQr(file) {
+    const bitmap = await createImageBitmap(file)
+    try {
+      if (bitmap.width * bitmap.height > 25_000_000) throw new Error("The receipt image has too many pixels to scan safely.")
+
+      const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height))
+      const canvas = document.createElement("canvas")
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+      const context = canvas.getContext("2d", { willReadFrequently: true })
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height)
+      return jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: "attemptBoth" })?.data
+    } finally {
+      bitmap.close()
+    }
   }
 
   parentDescriptionInput() {

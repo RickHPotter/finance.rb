@@ -48,6 +48,23 @@ RSpec.describe "Fiscal receipt imports", type: :request do
       expect(response.parsed_body.dig("draft", "items").first.fetch("price_cents")).to eq(1250)
     end
 
+    it "extracts a fiscal key from a text PDF before looking up its items" do
+      sign_in user
+      key = "41140978393592000146651000000000031222222235"
+      pdf = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"), "application/pdf", original_filename: "receipt.pdf")
+      allow(FiscalReceipts::PdfKeyExtractor).to receive(:new).and_return(instance_double(FiscalReceipts::PdfKeyExtractor, call: key))
+      html = <<~HTML
+        <table id="tabResult"><tr><td><span class="txtTit2">Arroz</span></td><td class="txtTit3">Vl. Total 12,50</td></tr></table>
+        <div id="linhaTotal"><label>Valor a pagar R$:</label><span class="totalNumb">12,50</span></div>
+      HTML
+      stub_request(:get, %r{www\.fazenda\.pr\.gov\.br/nfce/qrcode}).to_return(status: 200, body: html)
+
+      post fiscal_receipt_imports_path, params: { file: pdf }, headers: { "Accept" => "application/json" }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.dig("draft", "source")).to eq("sefaz_pr")
+    end
+
     it "requires authentication" do
       receipt = fixture_file_upload("fiscal_receipt.xml", "application/xml")
 

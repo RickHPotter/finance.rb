@@ -19,6 +19,7 @@
     "embla-carousel": "^8.6.0",
     "flowbite": "^4.0.1",
     "hotkeys-js": "4.0.8",
+    "jsqr": "^1.4.0",
     "mustache": "^4.2.0",
     "stimulus-notification": "^2.2.0",
     "stimulus-rails-autosave": "^5.1.0",

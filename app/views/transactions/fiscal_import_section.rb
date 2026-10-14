@@ -9,7 +9,7 @@ class Views::Transactions::FiscalImportSection < Views::Base
       div(class: "mt-3 flex flex-wrap items-center gap-2") do
         input(
           type: :file,
-          accept: ".xml,application/xml,text/xml",
+          accept: ".xml,.pdf,.jpg,.jpeg,.png,.heic,application/xml,text/xml,application/pdf,image/jpeg,image/png,image/heic",
           class: "max-w-full text-xs file:mr-2 file:rounded-md file:border-0 file:bg-sky-100 file:px-3 file:py-2 " \
                  "file:text-sky-900 dark:file:bg-sky-950 dark:file:text-sky-200",
           data: { fiscal_import_target: "file" }
