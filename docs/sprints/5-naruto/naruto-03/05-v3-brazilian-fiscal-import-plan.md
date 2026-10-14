@@ -116,6 +116,35 @@ simple transaction. Price-sum and line-item validations continue to apply.
 6. Detect an already-imported document identifier for the current user/context and
    warn before creating a duplicate. The exact duplicate policy is an open decision.
 
+## Manual-test handoff for the implemented slice
+
+The supported paths below are ready for development-environment testing on both
+`/cash_transactions/new` and `/card_transactions/new`. Use a receipt you are entitled
+to view, and check every imported amount before saving:
+
+1. Upload an authorized NFC-e/NF-e XML with at least one product. Choose **Fill from
+   receipt**. The form should switch to Split Purchase and show one editable LineItem
+   per product, the issuer as description, and the negative transaction total.
+2. Enter a Paraná NFC-e 44-digit access key, or paste its official QR URL, then choose
+   **Look up receipt**. The fixed HTTPS Paraná consultation should return item rows.
+   The short printed cupom number should show a validation error instead.
+3. Upload a text PDF containing a Paraná NFC-e key, or a JPEG/PNG receipt image with a
+   readable Paraná QR code. The extracted key/QR should use the same lookup. The
+   uploaded file is staged in Attachments after a successful import; wait for its
+   upload to finish before saving. A key-only lookup creates no attachment.
+4. Assign categories, review any total difference, and save through the ordinary
+   transaction form. Also try a one-product receipt and a receipt with a document
+   discount; the former is valid with one LineItem, while the latter must display the
+   difference for manual correction.
+
+Current limits: only Paraná NFC-e has automatic public key/QR lookup; XML works for
+supported authorized NF-e/NFC-e regardless of state. Image import currently needs a
+readable QR, and PDF import needs selectable text containing a valid key in the first
+three pages. Printed item OCR, scanned PDFs without text, HEIC browser decoding on
+unsupported devices, duplicate-document warnings, and additional state adapters are
+still pending. Lookup can fail if Paraná changes its public HTML or blocks the query;
+the form should retain manual entry as the fallback.
+
 ## Security and privacy constraints
 
 - Parse uploaded XML locally with a hardened XML parser configuration: disable external

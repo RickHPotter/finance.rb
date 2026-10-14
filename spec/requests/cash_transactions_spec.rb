@@ -2637,7 +2637,7 @@ RSpec.describe "CashTransactions", type: :request do
         expect(response).to have_http_status(:unprocessable_content)
       end
 
-      it "fails when only one line item is provided" do
+      it "creates a composite transaction with one line item" do
         expect do
           post cash_transactions_path, params: {
             cash_transaction: {
@@ -2652,9 +2652,10 @@ RSpec.describe "CashTransactions", type: :request do
               ]
             }
           }, headers: turbo_stream_headers
-        end.not_to change(CashTransaction, :count)
+        end.to change(CashTransaction, :count).by(1)
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:see_other)
+        expect(CashTransaction.last.line_items.pluck(:description, :price)).to eq([ [ "Single item", 10_000 ] ])
       end
     end
   end
