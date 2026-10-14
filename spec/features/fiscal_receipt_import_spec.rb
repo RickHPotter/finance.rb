@@ -13,9 +13,13 @@ RSpec.describe "Fiscal receipt import", type: :feature do
   end
 
   it "prefills an unsaved cash split purchase from fiscal XML" do
-    visit new_cash_transaction_path
+    visit cash_transactions_path
+    click_button(I18n.t("fiscal_import.open"))
+    expect(page).to have_button(I18n.t("fiscal_import.import_file"), disabled: true)
     find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
-    find("[data-action='click->fiscal-import#importFile']").click
+    expect(page).to have_button(I18n.t("fiscal_import.import_file"), disabled: false)
+    click_button(I18n.t("fiscal_import.import_file"))
+    click_button(I18n.t("fiscal_import.continue"))
 
     expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 2)
     expect(page).to have_field("cash_transaction[description]", with: "Mercado Exemplo")
@@ -26,10 +30,13 @@ RSpec.describe "Fiscal receipt import", type: :feature do
   end
 
   it "prefills an unsaved card split purchase from fiscal XML" do
-    create(:user_card, :random, user:)
-    visit new_card_transaction_path
+    card = create(:user_card, :random, user:)
+    visit card_transactions_path(user_card_id: card.id)
+    click_button(I18n.t("fiscal_import.open"))
     find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
-    find("[data-action='click->fiscal-import#importFile']").click
+    expect(page).to have_button(I18n.t("fiscal_import.import_file"), disabled: false)
+    click_button(I18n.t("fiscal_import.import_file"))
+    click_button(I18n.t("fiscal_import.continue"))
 
     expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 2)
     expect(page).to have_field("card_transaction[price]", with: "-R$ 19.75")
@@ -52,9 +59,12 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     stub_request(:get, %r{www\.fazenda\.pr\.gov\.br/nfce/qrcode}).to_return(status: 200, body: html)
 
     with_qr_png(qr_url) do |path|
-      visit new_cash_transaction_path
+      visit cash_transactions_path
+      click_button(I18n.t("fiscal_import.open"))
       find("[data-fiscal-import-target='file']", visible: :all).attach_file(path)
-      find("[data-action='click->fiscal-import#importFile']").click
+      expect(page).to have_button(I18n.t("fiscal_import.import_file"), disabled: false)
+      click_button(I18n.t("fiscal_import.import_file"))
+      click_button(I18n.t("fiscal_import.continue"))
 
       expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 2)
       expect(page).to have_field("cash_transaction[price]", with: "-R$ 20.75")

@@ -17,17 +17,17 @@ module FiscalReceipts
       output, _error, status = Timeout.timeout(10) do
         Open3.capture3("pdftotext", "-f", "1", "-l", "3", "-enc", "UTF-8", @file.tempfile.path, "-")
       end
-      raise Unreadable, "The PDF text could not be read." unless status.success? && output.bytesize <= MAX_TEXT_BYTES
+      raise Unreadable, I18n.t("fiscal_import.messages.pdf_unreadable") unless status.success? && output.bytesize <= MAX_TEXT_BYTES
 
       self.class.source_from_text(output)
     rescue Errno::ENOENT, Timeout::Error
-      raise Unreadable, "PDF extraction is unavailable right now. Try XML or enter the access key."
+      raise Unreadable, I18n.t("fiscal_import.messages.pdf_unavailable")
     end
 
     def self.key_from_text(text)
       candidates = text.scan(/(?:\d\s*){44}/).map { |candidate| candidate.gsub(/\D/, "") }
       key = candidates.find { |candidate| AccessKey.new(candidate).valid? }
-      raise Unreadable, "No valid 44-digit fiscal access key was found in the PDF." unless key
+      raise Unreadable, I18n.t("fiscal_import.messages.pdf_key_not_found") unless key
 
       key
     end

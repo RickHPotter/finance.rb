@@ -23,9 +23,9 @@ module FiscalReceipts
       end
       return @value if uri.scheme == "https" && uri.host == GoiasLookup::HOST && uri.path == GoiasLookup::PATH
 
-      raise InvalidSource, "Use an official Paraná or Goiás NFC-e QR URL, or a supported 44-digit key."
+      raise InvalidSource, I18n.t("fiscal_import.messages.source_url_invalid")
     rescue URI::InvalidURIError, KeyError
-      raise InvalidSource, "Use an official Paraná or Goiás NFC-e QR URL, or a supported 44-digit key."
+      raise InvalidSource, I18n.t("fiscal_import.messages.source_url_invalid")
     end
   end
 end

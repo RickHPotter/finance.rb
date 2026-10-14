@@ -15,13 +15,13 @@ module FiscalReceipts
     end
 
     def call
-      raise Unavailable, "Enter a valid 44-digit NFC-e access key." unless @access_key.valid? && @access_key.model == "65"
-      raise Unavailable, "Automatic key lookup currently supports Paraná NFC-e only." unless @access_key.state_code == "41"
+      raise Unavailable, I18n.t("fiscal_import.messages.pr_key_invalid") unless @access_key.valid? && @access_key.model == "65"
+      raise Unavailable, I18n.t("fiscal_import.messages.pr_only") unless @access_key.state_code == "41"
 
       response = fetch
       parse(response)
     rescue SocketError, SystemCallError, Timeout::Error, OpenSSL::SSL::SSLError
-      raise Unavailable, "The Paraná fiscal consultation is unavailable right now. Try an XML file or enter the items manually."
+      raise Unavailable, I18n.t("fiscal_import.messages.consultation_unavailable")
     end
 
     private
@@ -34,11 +34,11 @@ module FiscalReceipts
 
       Net::HTTP.start(HOST, 443, use_ssl: true, open_timeout: 4, read_timeout: 8) do |http|
         http.request(request) do |response|
-          raise Unavailable, "The Paraná fiscal consultation did not return a receipt." unless response.is_a?(Net::HTTPSuccess)
+          raise Unavailable, I18n.t("fiscal_import.messages.receipt_not_returned") unless response.is_a?(Net::HTTPSuccess)
 
           response.read_body do |chunk|
             body << chunk
-            raise Unavailable, "The Paraná fiscal response is too large." if body.bytesize > MAX_RESPONSE_BYTES
+            raise Unavailable, I18n.t("fiscal_import.messages.response_too_large") if body.bytesize > MAX_RESPONSE_BYTES
           end
         end
       end
@@ -51,8 +51,8 @@ module FiscalReceipts
       rows = document.css("#tabResult tr")
       payable_row = document.css("#linhaTotal").find { |row| row.at_css("label")&.text&.include?("Valor a pagar") }
       total = payable_row&.at_css(".totalNumb")&.text
-      raise Unavailable, "The Paraná consultation did not provide item details. Try the XML or a receipt image." if rows.empty? || total.blank?
-      raise Unavailable, "The fiscal receipt contains too many items to import." if rows.size > 500
+      raise Unavailable, I18n.t("fiscal_import.messages.pr_item_details_missing") if rows.empty? || total.blank?
+      raise Unavailable, I18n.t("fiscal_import.messages.too_many_items") if rows.size > 500
 
       items = rows.map { |row| parse_item(row) }
       Draft.new(
@@ -69,14 +69,14 @@ module FiscalReceipts
       description = row.at_css(".txtTit2")&.text&.strip
       amount_text = row.at_css("td.txtTit3")&.text
       amount = amount_text&.match(/\d[\d.]*,\d{2}/)&.to_s
-      raise Unavailable, "The Paraná consultation returned an unreadable item." if description.blank? || amount.blank?
+      raise Unavailable, I18n.t("fiscal_import.messages.item_unreadable") if description.blank? || amount.blank?
 
       { description: description.first(255), price_cents: brazilian_cents(amount) }
     end
 
     def brazilian_cents(value)
       normalized = value.to_s.strip
-      raise Unavailable, "The Paraná consultation returned an invalid amount." unless normalized.match?(/\A\d[\d.]*,\d{2}\z/)
+      raise Unavailable, I18n.t("fiscal_import.messages.amount_invalid") unless normalized.match?(/\A\d[\d.]*,\d{2}\z/)
 
       (BigDecimal(normalized.delete(".").tr(",", ".")) * 100).to_i
     end

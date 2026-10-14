@@ -18,34 +18,34 @@ module FiscalReceipts
       info, key = authorized_info(document)
       build_draft(info, key)
     rescue Nokogiri::XML::SyntaxError, ArgumentError, TypeError
-      raise InvalidDocument, "The fiscal XML could not be read."
+      raise InvalidDocument, I18n.t("fiscal_import.messages.xml_unreadable")
     end
 
     private
 
     def validate_payload!
-      raise InvalidDocument, "The XML is empty or too large." if @xml.blank? || @xml.bytesize > MAX_BYTES
-      raise InvalidDocument, "Document type declarations are not supported." if @xml.match?(/<!DOCTYPE|<!ENTITY/i)
+      raise InvalidDocument, I18n.t("fiscal_import.messages.xml_empty_or_large") if @xml.blank? || @xml.bytesize > MAX_BYTES
+      raise InvalidDocument, I18n.t("fiscal_import.messages.xml_doctype_unsupported") if @xml.match?(/<!DOCTYPE|<!ENTITY/i)
     end
 
     def authorized_info(document)
       info = document.at_xpath("/nfeProc/NFe/infNFe")
       protocol = document.at_xpath("/nfeProc/protNFe/infProt/cStat")&.text
-      raise InvalidDocument, "An authorized NF-e or NFC-e XML is required." unless info && %w[100 150].include?(protocol)
+      raise InvalidDocument, I18n.t("fiscal_import.messages.authorized_xml_required") unless info && %w[100 150].include?(protocol)
 
       key = AccessKey.new(info["Id"].to_s.delete_prefix("NFe"))
-      raise InvalidDocument, "The fiscal access key is invalid." unless key.valid?
-      raise InvalidDocument, "The fiscal document model does not match its key." unless value_at(info, "ide/mod") == key.model
+      raise InvalidDocument, I18n.t("fiscal_import.messages.access_key_invalid") unless key.valid?
+      raise InvalidDocument, I18n.t("fiscal_import.messages.document_model_mismatch") if value_at(info, "ide/mod") != key.model
 
       [ info, key ]
     end
 
     def build_draft(info, key)
       rows = info.xpath("det")
-      raise InvalidDocument, "The fiscal document has no supported item rows." if rows.empty? || rows.size > MAX_ITEMS
+      raise InvalidDocument, I18n.t("fiscal_import.messages.item_rows_missing") if rows.empty? || rows.size > MAX_ITEMS
 
       total_cents = cents(value_at(info, "total/ICMSTot/vNF"))
-      raise InvalidDocument, "The fiscal document total is invalid." unless total_cents.positive?
+      raise InvalidDocument, I18n.t("fiscal_import.messages.document_total_invalid") unless total_cents.positive?
 
       Draft.new(
         access_key: key.value,
@@ -59,12 +59,12 @@ module FiscalReceipts
 
     def parse_item(row)
       product = row.at_xpath("prod")
-      raise InvalidDocument, "A fiscal item is missing its description or amount." unless product
+      raise InvalidDocument, I18n.t("fiscal_import.messages.item_data_missing") unless product
 
       description = value_at(product, "xProd")
       amount = cents(value_at(product, "vProd")) - optional_cents(product, "vDesc") +
                optional_cents(product, "vFrete") + optional_cents(product, "vSeg") + optional_cents(product, "vOutro")
-      raise InvalidDocument, "A fiscal item has an invalid description or amount." if description.blank? || !amount.positive?
+      raise InvalidDocument, I18n.t("fiscal_import.messages.item_data_invalid") if description.blank? || !amount.positive?
 
       { description: description.first(255), price_cents: amount }
     end
@@ -75,7 +75,7 @@ module FiscalReceipts
     end
 
     def cents(value)
-      raise InvalidDocument, "A fiscal amount is invalid." unless value.to_s.match?(/\A\d+(?:\.\d{1,2})?\z/)
+      raise InvalidDocument, I18n.t("fiscal_import.messages.amount_value_invalid") unless value.to_s.match?(/\A\d+(?:\.\d{1,2})?\z/)
 
       (BigDecimal(value) * 100).to_i
     end

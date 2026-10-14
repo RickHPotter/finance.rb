@@ -10,6 +10,7 @@ export default class extends Controller {
   static values = {
     url: String,
     reviewMessage: String,
+    messages: Object,
     transactionUrl: String,
     transactionType: String,
     directUploadUrl: String
@@ -40,7 +41,7 @@ export default class extends Controller {
     if (this.cameraOpening || this.cameraStream) return
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      this.showStatus("Live camera scanning needs HTTPS or localhost. Upload a receipt photo instead.", true)
+      this.showStatus(this.message("camera_https"), true)
       return
     }
 
@@ -60,13 +61,13 @@ export default class extends Controller {
       this.cameraPanelTarget.classList.remove("hidden")
       this.videoTarget.srcObject = this.cameraStream
       await this.videoTarget.play()
-      this.showStatus("Point the camera at the cupom QR code.")
+      this.showStatus(this.message("camera_point"))
       this.scanCameraFrame()
     } catch (error) {
       this.stopCamera()
       const message = error.name === "NotAllowedError"
-        ? "Camera access was denied. Allow camera access or upload a receipt photo."
-        : "Could not open the camera. Upload a receipt photo instead."
+        ? this.message("camera_denied")
+        : this.message("camera_failed")
       this.showStatus(message, true)
     } finally {
       this.cameraOpening = false
@@ -100,7 +101,7 @@ export default class extends Controller {
         const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.9))
         const file = blob ? new File([blob], "fiscal-receipt-camera.jpg", { type: "image/jpeg", lastModified: Date.now() }) : null
         this.stopCamera()
-        this.showStatus("QR found. Retrieving fiscal items...")
+        this.showStatus(this.message("qr_found"))
         this.performImport({ source, file })
         return
       }
@@ -112,20 +113,20 @@ export default class extends Controller {
   async importFile() {
     const file = this.fileTarget.files[0]
     if (!file) {
-      this.showStatus("Choose a fiscal XML, PDF, or image first.", true)
+      this.showStatus(this.message("choose_file"), true)
       return
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      this.showStatus("The fiscal file must be 10 MB or smaller.", true)
+      this.showStatus(this.message("file_too_large"), true)
       return
     }
 
     if (file.type.startsWith("image/") || /\.(jpe?g|png|heic)$/i.test(file.name)) {
       try {
-        this.showStatus("Reading the receipt QR code...")
+        this.showStatus(this.message("reading_qr"))
         const source = await this.readImageQr(file)
-        if (!source) throw new Error("No readable QR code was found in this image. Try live camera scan, XML, PDF, or a supported key.")
+        if (!source) throw new Error(this.message("qr_not_found"))
         await this.performImport({ file, source })
       } catch (error) {
         this.showStatus(error.message, true)
@@ -145,7 +146,7 @@ export default class extends Controller {
   lookup() {
     const source = this.sourceTarget.value.trim()
     if (!source) {
-      this.showStatus("Enter a supported 44-digit key or Paraná/Goiás QR URL first.", true)
+      this.showStatus(this.message("enter_supported_source"), true)
       return
     }
 
@@ -160,7 +161,7 @@ export default class extends Controller {
 
   async performImport({ file, source }) {
     this.buttonTargets.forEach(button => { button.disabled = true })
-    this.showStatus("Reading fiscal items...")
+    this.showStatus(this.message("reading_items"))
 
     try {
       const body = new FormData()
@@ -172,7 +173,7 @@ export default class extends Controller {
         body
       })
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error || "The receipt could not be imported.")
+      if (!response.ok) throw new Error(result.error || this.message("import_failed"))
 
       if (this.hasTransactionUrlValue) {
         this.pendingDraft = result.draft
@@ -197,7 +198,7 @@ export default class extends Controller {
     if (!this.pendingDraft || !this.hasTransactionUrlValue) return
 
     this.continueButtonTarget.disabled = true
-    this.showStatus("Preparing the imported receipt...")
+    this.showStatus(this.message("preparing"))
 
     try {
       const receiptSignedId = this.importedFile ? await this.uploadReceipt(this.importedFile) : null
@@ -209,7 +210,7 @@ export default class extends Controller {
       window.location.assign(this.transactionUrlValue)
     } catch (error) {
       this.continueButtonTarget.disabled = false
-      this.showStatus(error.message || "The receipt attachment could not be uploaded.", true)
+      this.showStatus(error.message || this.message("upload_failed"), true)
     }
   }
 
@@ -262,7 +263,7 @@ export default class extends Controller {
     const splitTab = this.element.querySelector("[data-value='split']")
     const composite = this.application.getControllerForElementAndIdentifier(this.element, "composite-transaction")
     const priceMask = this.application.getControllerForElementAndIdentifier(this.element, "price-mask")
-    if (!splitTab || splitTab.disabled || !composite || !priceMask) throw new Error("The split purchase form is unavailable.")
+    if (!splitTab || splitTab.disabled || !composite || !priceMask) throw new Error(this.message("split_unavailable"))
 
     splitTab.click()
     composite.clearAllRows()
@@ -288,7 +289,7 @@ export default class extends Controller {
   async readImageQr(file) {
     const bitmap = await createImageBitmap(file)
     try {
-      if (bitmap.width * bitmap.height > 25_000_000) throw new Error("The receipt image has too many pixels to scan safely.")
+      if (bitmap.width * bitmap.height > 25_000_000) throw new Error(this.message("image_too_large"))
 
       const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height))
       const canvas = document.createElement("canvas")
@@ -315,5 +316,9 @@ export default class extends Controller {
     this.statusTarget.textContent = message
     this.statusTarget.classList.toggle("text-rose-600", error)
     this.statusTarget.classList.toggle("text-emerald-700", !error)
+  }
+
+  message(key) {
+    return this.messagesValue?.[key] || key
   }
 }

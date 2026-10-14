@@ -16,20 +16,20 @@ module FiscalReceipts
       @payload = URI.decode_www_form(@url.query.to_s).to_h["p"]
       @access_key = AccessKey.new(@payload.to_s.split("|", 2).first)
     rescue URI::InvalidURIError, ArgumentError
-      raise Unavailable, "Enter an official Goiás NFC-e QR URL. A bare GO key cannot bypass the public consultation challenge."
+      raise Unavailable, I18n.t("fiscal_import.messages.goias_url_required")
     end
 
     def call
       validate_source!
       Net::HTTP.start(HOST, 443, use_ssl: true, open_timeout: 4, read_timeout: 8) do |http|
         landing, cookies = fetch(http, "#{PATH}?#{URI.encode_www_form(p: @payload)}")
-        raise Unavailable, "The Goiás QR consultation rejected this receipt. Check the complete QR URL." unless valid_landing?(landing)
+        raise Unavailable, I18n.t("fiscal_import.messages.goias_rejected") unless valid_landing?(landing)
 
         detail, = fetch(http, "#{DETAIL_PATH}?#{URI.encode_www_form(chNFe: @access_key.value)}", cookies:)
         parse(detail)
       end
     rescue SocketError, SystemCallError, Timeout::Error, OpenSSL::SSL::SSLError
-      raise Unavailable, "The Goiás fiscal consultation is unavailable right now. Try an XML file or enter the items manually."
+      raise Unavailable, I18n.t("fiscal_import.messages.consultation_unavailable")
     end
 
     private
@@ -39,7 +39,7 @@ module FiscalReceipts
       valid_payload = @payload&.match?(/\A\d{44}\|[\d|A-Fa-f]{1,180}\z/)
       return if valid_uri && valid_payload && @access_key.valid? && @access_key.state_code == "52" && @access_key.model == "65"
 
-      raise Unavailable, "Enter an official Goiás NFC-e QR URL. A bare GO key cannot bypass the public consultation challenge."
+      raise Unavailable, I18n.t("fiscal_import.messages.goias_url_required")
     end
 
     def fetch(http, path, cookies: nil)
@@ -50,12 +50,12 @@ module FiscalReceipts
       response_cookies = nil
 
       http.request(request) do |response|
-        raise Unavailable, "The Goiás fiscal consultation did not return a receipt." unless response.is_a?(Net::HTTPSuccess)
+        raise Unavailable, I18n.t("fiscal_import.messages.receipt_not_returned") unless response.is_a?(Net::HTTPSuccess)
 
         response_cookies = response.get_fields("Set-Cookie")&.map { |cookie| cookie.split(";", 2).first }&.join("; ")
         response.read_body do |chunk|
           body << chunk
-          raise Unavailable, "The Goiás fiscal response is too large." if body.bytesize > MAX_RESPONSE_BYTES
+          raise Unavailable, I18n.t("fiscal_import.messages.response_too_large") if body.bytesize > MAX_RESPONSE_BYTES
         end
       end
 
@@ -70,12 +70,12 @@ module FiscalReceipts
     def parse(html)
       document = Nokogiri::HTML(extract_receipt_html(html), nil, "UTF-8")
       displayed_key = document.at_css(".chave")&.text&.gsub(/\D/, "")
-      raise Unavailable, "The Goiás consultation returned a different receipt. Try an XML file." unless displayed_key == @access_key.value
+      raise Unavailable, I18n.t("fiscal_import.messages.different_receipt") unless displayed_key == @access_key.value
 
       rows = document.css("#tabResult tr")
       total = payable_total(document)
-      raise Unavailable, "The Goiás consultation did not provide item details. Try an XML file." if rows.empty? || total.blank?
-      raise Unavailable, "The fiscal receipt contains too many items to import." if rows.size > 500
+      raise Unavailable, I18n.t("fiscal_import.messages.item_details_missing") if rows.empty? || total.blank?
+      raise Unavailable, I18n.t("fiscal_import.messages.too_many_items") if rows.size > 500
 
       Draft.new(
         access_key: @access_key.value,
@@ -89,11 +89,11 @@ module FiscalReceipts
 
     def extract_receipt_html(html)
       embedded = html.match(/new DanfeNFCe\(\s*'[^']*',\s*'[^']*',\s*'((?:\\.|[^'\\])*)'\s*\)/m)&.captures&.first
-      raise Unavailable, "The Goiás consultation did not provide item details. Try an XML file." if embedded.blank?
+      raise Unavailable, I18n.t("fiscal_import.messages.item_details_missing") if embedded.blank?
 
       JSON.parse(%["#{embedded.gsub("\\'", "'")}"])
     rescue JSON::ParserError
-      raise Unavailable, "The Goiás consultation returned an unreadable receipt. Try an XML file."
+      raise Unavailable, I18n.t("fiscal_import.messages.receipt_unreadable")
     end
 
     def payable_total(document)
@@ -104,14 +104,14 @@ module FiscalReceipts
     def parse_item(row)
       description = row.at_css(".txtTit")&.text&.strip
       amount = row.at_css("td .valor")&.text&.strip
-      raise Unavailable, "The Goiás consultation returned an unreadable item." if description.blank? || amount.blank?
+      raise Unavailable, I18n.t("fiscal_import.messages.item_unreadable") if description.blank? || amount.blank?
 
       { description: description.first(255), price_cents: brazilian_cents(amount) }
     end
 
     def brazilian_cents(value)
       normalized = value.to_s.strip
-      raise Unavailable, "The Goiás consultation returned an invalid amount." unless normalized.match?(/\A\d[\d.]*,\d{2}\z/)
+      raise Unavailable, I18n.t("fiscal_import.messages.amount_invalid") unless normalized.match?(/\A\d[\d.]*,\d{2}\z/)
 
       (BigDecimal(normalized.delete(".").tr(",", ".")) * 100).to_i
     end
