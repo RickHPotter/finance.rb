@@ -64,9 +64,12 @@ RSpec.describe "Fiscal receipt import", type: :feature do
       [ 1280, 390 ].each do |width|
         page.driver.browser.manage.window.resize_to(width, 844)
         visit cash_transactions_path
-        messages = page.find("#cashFiscalImportModal [data-fiscal-import-messages-value]", visible: :all)["data-fiscal-import-messages-value"]
+        messages = page.evaluate_script(
+          "JSON.parse(document.querySelector('#cashFiscalImportModal [data-controller~=\\\"fiscal-import\\\"]')" \
+          ".dataset.fiscalImportMessagesValue)"
+        )
 
-        expect(JSON.parse(messages)).to eq(expected_messages)
+        expect(messages).to eq(expected_messages)
       end
     end
   end
