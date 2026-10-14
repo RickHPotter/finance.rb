@@ -212,19 +212,19 @@ export default class extends Controller {
     const badge = this.differenceBadgeTarget
     const label = this.hasDifferenceLabelTarget ? this.differenceLabelTarget : null
     const balancedText = badge.dataset.balancedText || "Balanced"
-    const minItemsText = badge.dataset.minItemsText || "Min 2 items needed"
+    const minItemsText = badge.dataset.minItemsText || "Add a line item"
     const remainingText = badge.dataset.remainingText || "Remaining:"
     const overAllocatedText = badge.dataset.overAllocatedText || "Over by:"
 
     badge.className = "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono"
 
-    if (diff === 0 && activeRowCount >= 2 && parentCents !== 0) {
+    if (diff === 0 && activeRowCount >= 1 && parentCents !== 0) {
       if (label) {
         label.textContent = ""
         label.classList.add("hidden")
       }
       badge.textContent = balancedText
-    } else if (diff === 0 && activeRowCount < 2) {
+    } else if (diff === 0 && activeRowCount < 1) {
       if (label) {
         label.textContent = ""
         label.classList.add("hidden")

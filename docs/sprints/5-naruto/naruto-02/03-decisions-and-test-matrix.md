@@ -27,7 +27,10 @@
 **Decision**: Yes. The `subscription_id` foreign key lives on the parent transaction record, allowing recurring subscriptions to be recorded as composite transactions.
 
 ### D8. What is the minimum count for line items in composite mode?
-**Decision**: At least 2 line items are required. If a transaction has only 1 line item, composite mode is invalid and the purchase should be recorded as a simple transaction.
+**Updated decision**: One or more active line items activate composite mode; zero
+active line items leave the transaction simple. The former two-item minimum was
+removed for NARUTO-03 fiscal import so a one-product receipt keeps its line-item
+description and amount. The parent sum and line-item validation rules still apply.
 
 ### D9. How are composite transactions audited and rolled back?
 **Decision**:

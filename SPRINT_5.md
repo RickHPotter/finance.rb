@@ -113,8 +113,9 @@ Locked V1 direction:
   and `entity_transactions` rows through the same polymorphic join tables already used
   by `CashTransaction` and `CardTransaction`
 - parent transaction price must equal the sum of line item prices; validated on save
-- at least two line items are required to activate composite mode; the form presents a
-  "Split purchase" toggle
+- one or more active line items activate composite mode; zero line items keep the
+  transaction simple. The form presents a "Split Purchase" tab. This replaces the
+  earlier two-item minimum so a one-product fiscal receipt can retain its item row.
 - split purchase is available for exchange requests and `BORROW RETURN` transactions,
   which may allocate across multiple entities; it is unavailable for `EXCHANGE RETURN`
   projections and other system-managed transaction types

@@ -71,7 +71,8 @@ and `Audit::Rollback::Adapters::LineItem`, and add comprehensive unit/model/roll
    - Helpers:
      - `def composite?`: returns true when active line items (`reject(&:marked_for_destruction?)`) are present.
    - Validations:
-     - `validate :validate_composite_line_items_count` (if `composite?`, must have at least 2 line items).
+     - `composite?` is active with one or more non-destroyed line items. The former
+       two-item minimum was removed for one-product fiscal receipts.
      - `validate :validate_line_items_price_sum` (if `composite?`, sum of active line items' price must equal `price`).
    - Callbacks:
      - Before validation / save: when `composite?`, clear direct `category_transactions` and `entity_transactions` on the parent to prevent double-counting.

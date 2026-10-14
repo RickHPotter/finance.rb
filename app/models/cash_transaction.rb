@@ -62,7 +62,6 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   validate :validate_piggy_bank_source_contract
   validate :validate_piggy_bank_return_contract, on: :update
   validate :prevent_paid_piggy_bank_rewrite, on: :update
-  validate :validate_composite_line_items_count
   validate :validate_line_items_price_sum
 
   # @callbacks ................................................................
@@ -854,12 +853,6 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
     category_transactions.each(&:mark_for_destruction)
     entity_transactions.each(&:mark_for_destruction)
-  end
-
-  def validate_composite_line_items_count
-    return unless composite?
-
-    errors.add(:base, :composite_requires_at_least_two_items) if active_line_items.size < 2
   end
 
   def validate_line_items_price_sum

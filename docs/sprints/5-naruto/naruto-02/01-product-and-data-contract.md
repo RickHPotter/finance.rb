@@ -98,7 +98,7 @@ and `entity_transactions`).
 | Invariant | Enforcement |
 |---|---|
 | Parent price must equal sum of line item prices | Model validation on parent (`validate_line_items_price_sum`) |
-| At least two line items if composite mode is active | Model validation on parent (`validate_composite_line_items_count`) |
+| One or more active line items activate composite mode; zero active items remain simple | `composite?` checks active line items; the two-item minimum was removed for one-product fiscal receipts |
 | Line item prices must match parent transaction price sign | Model validation on `LineItem` (`validate_price_sign_matches_parent`) |
 | Line item price cannot be zero | Model validation on `LineItem` (`numericality: { other_than: 0 }`) |
 | Line item description presence | Model validation on `LineItem` (`validates :description, presence: true`) |

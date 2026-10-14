@@ -96,6 +96,10 @@ match. If document-level adjustments cannot be allocated unambiguously, preserve
 item amounts, show the difference, and require the user to resolve it in the existing
 split-purchase form before submission.
 
+A receipt with one product remains a one-LineItem composite transaction. NARUTO-02's
+former two-item minimum was removed for this case; zero active rows still mean a
+simple transaction. Price-sum and line-item validations continue to apply.
+
 ## User flow
 
 1. From a new transaction form, choose fiscal import and upload a receipt, paste a QR

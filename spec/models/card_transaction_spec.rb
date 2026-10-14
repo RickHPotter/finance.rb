@@ -274,14 +274,11 @@ RSpec.describe CardTransaction, type: :model do
         expect(transaction).to be_valid
       end
 
-      it "validates that composite transactions require at least two line items" do
+      it "allows one line item when it accounts for the full transaction" do
         transaction = build(:card_transaction, user:, context:, user_card:, price: -100_00)
         transaction.line_items.build(description: "Single Item", price: -100_00, category: food_category)
 
-        expect(transaction).not_to be_valid
-        expect(transaction.errors[:base]).to include(
-          I18n.t("activerecord.errors.models.card_transaction.attributes.base.composite_requires_at_least_two_items")
-        )
+        expect(transaction).to be_valid
       end
 
       it "validates that line items sum must equal transaction price" do
