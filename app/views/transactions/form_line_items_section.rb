@@ -31,7 +31,6 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         data: { composite_transaction_target: "container" }
       ) do
         summary_strip
-        bulk_allocation_controls
 
         div(class: "divide-y divide-gray-200 dark:divide-slate-700/40",
             data: { composite_transaction_target: "itemsList" }) do
@@ -42,6 +41,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
       end
 
       render Views::Transactions::FormLineItemEntityModal.new(form:, transaction:)
+      bulk_defaults_modal
     end
   end
 
@@ -74,16 +74,26 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         ) { "R$ 0,00" }
       end
       div(class: "ml-auto") do
-        Button(
-          type: :button,
-          variant: :ghost,
-          size: :sm,
-          class: "gap-1 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 px-2 py-1 h-auto " \
-                 "dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800 cursor-pointer",
-          data: { action: "click->composite-transaction#addRow" }
-        ) do
-          cached_icon(:plus)
-          span { I18n.t("transactions.composite.add_item") }
+        div(class: "flex items-center gap-1") do
+          Button(
+            type: :button,
+            variant: :ghost,
+            size: :sm,
+            class: "px-2 py-1 h-auto text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 " \
+                   "dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800 cursor-pointer",
+            data: { modal_target: bulk_defaults_modal_id, modal_toggle: bulk_defaults_modal_id }
+          ) { I18n.t("transactions.composite.defaults_button") }
+          Button(
+            type: :button,
+            variant: :ghost,
+            size: :sm,
+            class: "gap-1 px-2 py-1 h-auto text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 " \
+                   "dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800 cursor-pointer",
+            data: { action: "click->composite-transaction#addRow" }
+          ) do
+            cached_icon(:plus)
+            span { I18n.t("transactions.composite.add_item") }
+          end
         end
       end
     end
@@ -100,42 +110,53 @@ class Views::Transactions::FormLineItemsSection < Views::Base
     end
   end
 
-  def bulk_allocation_controls
-    div(class: "grid grid-cols-1 gap-2 border-b border-gray-200 bg-white p-3 dark:border-slate-700/40 dark:bg-slate-900/30 sm:grid-cols-[1fr_1fr_auto]") do
-      div(class: "text-xs font-medium text-slate-600 dark:text-slate-300 sm:col-span-3") do
-        I18n.t("transactions.composite.bulk_defaults")
+  def bulk_defaults_modal
+    ModalShell(
+      id: bulk_defaults_modal_id,
+      title: I18n.t("transactions.composite.bulk_defaults"),
+      options: { content_class: "w-[calc(100vw-2rem)] max-w-lg text-slate-900 dark:text-slate-100" }
+    ) do
+      div(class: "space-y-4") do
+        p(class: "text-sm text-slate-600 dark:text-slate-400") do
+          I18n.t("transactions.composite.bulk_defaults_hint")
+        end
+
+        render Views::Shared::SingleSelectCombobox.new(
+          name: "line_item_bulk_category_id",
+          options: categories,
+          selected_value: nil,
+          placeholder: I18n.t("activerecord.attributes.line_item.category_id"),
+          input_data: { action: "change->ruby-ui--combobox#inputChanged change->composite-transaction#bulkDefaultChanged" },
+          combobox_data: { composite_transaction_target: "bulkCategory" }
+        )
+        render Views::Shared::SingleSelectCombobox.new(
+          name: "line_item_bulk_entity_id",
+          options: entities.map { |label, value| [ label, value, {} ] },
+          selected_value: nil,
+          placeholder: I18n.t("activerecord.attributes.line_item.entity_id"),
+          input_data: { action: "change->ruby-ui--combobox#inputChanged change->composite-transaction#bulkDefaultChanged" },
+          combobox_data: { composite_transaction_target: "bulkEntity" }
+        )
+
+        div(class: "flex justify-end") do
+          Button(
+            type: :button,
+            variant: :default,
+            disabled: true,
+            class: "whitespace-nowrap",
+            data: {
+              action: "click->composite-transaction#applyBulkAllocations",
+              modal_hide: bulk_defaults_modal_id,
+              composite_transaction_target: "bulkApplyButton"
+            }
+          ) { I18n.t("transactions.composite.apply_to_all") }
+        end
       end
-
-      render Views::Shared::SingleSelectCombobox.new(
-        name: "line_item_bulk_category_id",
-        options: categories,
-        selected_value: nil,
-        placeholder: I18n.t("activerecord.attributes.line_item.category_id"),
-        size: :sm,
-        combobox_data: { composite_transaction_target: "bulkCategory" }
-      )
-      render Views::Shared::SingleSelectCombobox.new(
-        name: "line_item_bulk_entity_id",
-        options: entities.map { |label, value| [ label, value, {} ] },
-        selected_value: nil,
-        placeholder: I18n.t("activerecord.attributes.line_item.entity_id"),
-        size: :sm,
-        combobox_data: { composite_transaction_target: "bulkEntity" }
-      )
-      Button(
-        type: :button,
-        variant: :outline,
-        size: :sm,
-        class: "whitespace-nowrap",
-        data: { action: "click->composite-transaction#applyBulkAllocations" }
-      ) { I18n.t("transactions.composite.apply_to_all") }
-
-      p(
-        class: "hidden text-xs text-emerald-700 dark:text-emerald-300 sm:col-span-3",
-        role: :status,
-        data: { composite_transaction_target: "bulkAllocationStatus", applied_text: I18n.t("transactions.composite.defaults_applied") }
-      )
     end
+  end
+
+  def bulk_defaults_modal_id
+    "lineItemBulkDefaultsModal"
   end
 
   def render_initial_row

@@ -23,7 +23,7 @@ export default class extends Controller {
     "differenceLabel",
     "bulkCategory",
     "bulkEntity",
-    "bulkAllocationStatus"
+    "bulkApplyButton"
   ]
 
   connect() {
@@ -149,10 +149,14 @@ export default class extends Controller {
       if (entityId) this.selectRowValue(row, 'input[type="radio"][name$="[entity_id]"]', entityId)
     })
 
-    if (this.hasBulkAllocationStatusTarget) {
-      this.bulkAllocationStatusTarget.textContent = this.bulkAllocationStatusTarget.dataset.appliedText.replace("%{count}", rows.length)
-      this.bulkAllocationStatusTarget.classList.remove("hidden")
-    }
+  }
+
+  bulkDefaultChanged() {
+    if (!this.hasBulkApplyButtonTarget) return
+
+    const hasDefault = (this.hasBulkCategoryTarget && this.selectedValue(this.bulkCategoryTarget)) ||
+      (this.hasBulkEntityTarget && this.selectedValue(this.bulkEntityTarget))
+    this.bulkApplyButtonTarget.disabled = !hasDefault
   }
 
   selectedValue(combobox) {
