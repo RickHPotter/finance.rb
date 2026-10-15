@@ -177,6 +177,111 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(JSON.parse(blob.download)).to include("format" => "finance-fiscal-receipt-draft-v1")
   end
 
+  it "attaches Goiás page snapshots and detailed JSON when continuing immediately" do
+    url = stub_goias_import_with_evidence
+
+    visit cash_transactions_path
+    open_receipt_menu
+    find("[data-fiscal-import-target='source']").set(url)
+    click_button(I18n.t("fiscal_import.lookup"))
+    click_button(I18n.t("fiscal_import.continue"))
+
+    signed_ids = all("input[name='cash_transaction[receipts][]']", visible: :all).map(&:value)
+    filenames = signed_ids.map { |signed_id| ActiveStorage::Blob.find_signed!(signed_id).filename.to_s }
+    expect(filenames).to contain_exactly(
+      "fiscal-receipt-source.json", "goias-nfce-danfe.html", "goias-nfce-detailed.html", "goias-nfce-detailed.json"
+    )
+  end
+
+  it "keeps Goiás page evidence when saving an import for later" do
+    url = stub_goias_import_with_evidence
+
+    visit cash_transactions_path
+    open_receipt_menu
+    find("[data-fiscal-import-target='source']").set(url)
+    click_button(I18n.t("fiscal_import.lookup"))
+    click_button(I18n.t("fiscal_import.save_for_later"))
+
+    expect(page).to have_css("[data-fiscal-import-target='status']", text: I18n.t("fiscal_import.messages.draft_saved"))
+    receipt_draft = user.fiscal_receipt_drafts.sole
+    expect(receipt_draft.source.blob.filename.to_s).to eq("fiscal-receipt-source.json")
+    expect(receipt_draft.evidence_files.blobs.map { |blob| blob.filename.to_s }).to contain_exactly(
+      "goias-nfce-danfe.html", "goias-nfce-detailed.html", "goias-nfce-detailed.json"
+    )
+  end
+
+  it "does not upload the camera capture when Goiás evidence is available for an immediate transaction" do
+    url = stub_goias_import_with_evidence
+
+    visit cash_transactions_path
+    open_receipt_menu
+    simulate_camera_import(url)
+    click_button(I18n.t("fiscal_import.continue"))
+
+    signed_ids = all("input[name='cash_transaction[receipts][]']", visible: :all).map(&:value)
+    filenames = signed_ids.map { |signed_id| ActiveStorage::Blob.find_signed!(signed_id).filename.to_s }
+    expect(filenames).to contain_exactly("goias-nfce-danfe.html", "goias-nfce-detailed.html", "goias-nfce-detailed.json")
+    expect(ActiveStorage::Blob.where(filename: "fiscal-receipt-camera.jpg")).not_to exist
+  end
+
+  it "keeps a small source manifest but not the camera capture when saving Goiás evidence for later" do
+    url = stub_goias_import_with_evidence
+
+    visit cash_transactions_path
+    open_receipt_menu
+    simulate_camera_import(url)
+    click_button(I18n.t("fiscal_import.save_for_later"))
+
+    expect(page).to have_css("[data-fiscal-import-target='status']", text: I18n.t("fiscal_import.messages.draft_saved"))
+    receipt_draft = user.fiscal_receipt_drafts.sole
+    expect(receipt_draft.source.blob.filename.to_s).to eq("fiscal-receipt-source.json")
+    expect(receipt_draft.evidence_files.blobs.map { |blob| blob.filename.to_s }).to contain_exactly(
+      "goias-nfce-danfe.html", "goias-nfce-detailed.html", "goias-nfce-detailed.json"
+    )
+    expect(ActiveStorage::Blob.where(filename: "fiscal-receipt-camera.jpg")).not_to exist
+  end
+
+  it "keeps the camera capture when consultation provides no replacement evidence" do
+    url = stub_goias_import_with_evidence
+    allow(FiscalReceipts::GoiasLookup.new(url)).to receive(:evidence_files).and_return([])
+
+    visit cash_transactions_path
+    open_receipt_menu
+    simulate_camera_import(url)
+    click_button(I18n.t("fiscal_import.save_for_later"))
+
+    expect(page).to have_css("[data-fiscal-import-target='status']", text: I18n.t("fiscal_import.messages.draft_saved"))
+    receipt_draft = user.fiscal_receipt_drafts.sole
+    expect(receipt_draft.source.blob.filename.to_s).to eq("fiscal-receipt-camera.jpg")
+    expect(receipt_draft.evidence_files.blobs).to be_empty
+  end
+
+  def stub_goias_import_with_evidence
+    key = "52260301427744000150650010005752241062577988"
+    url = "https://nfeweb.sefaz.go.gov.br/nfeweb/sites/nfce/danfeNFCe?p=#{key}|3|1"
+    draft = FiscalReceipts::Draft.new(access_key: key, issuer: "Mercado Exemplo", issued_at: Time.zone.parse("2026-10-14T12:30:00-03:00"),
+                                      total_cents: 1250, items: [ { description: "Arroz", price_cents: 1250 } ], source: "sefaz_go")
+    evidence_files = [
+      { filename: "goias-nfce-danfe.html", content_type: "text/html", data: "<html>DANFE</html>" },
+      { filename: "goias-nfce-detailed.html", content_type: "text/html", data: "<html>Detalhada</html>" },
+      { filename: "goias-nfce-detailed.json", content_type: "application/json", data: { access_key: key }.to_json }
+    ]
+    allow(FiscalReceipts::GoiasLookup).to receive(:new).with(url)
+                                                       .and_return(instance_double(FiscalReceipts::GoiasLookup, call: draft, evidence_files:))
+    url
+  end
+
+  def simulate_camera_import(url)
+    page.execute_script(<<~JS, url)
+      const sourceInput = document.querySelector("[data-fiscal-import-target='source']")
+      const element = sourceInput.closest("[data-controller~='fiscal-import']")
+      const controller = window.Stimulus.getControllerForElementAndIdentifier(element, "fiscal-import")
+      const file = new File(["camera image"], "fiscal-receipt-camera.jpg", { type: "image/jpeg" })
+      controller.performImport({ source: arguments[0], file, cameraCapture: true })
+    JS
+    expect(page).to have_button(I18n.t("fiscal_import.continue"), disabled: false)
+  end
+
   def with_qr_png(value)
     data_url, status = Open3.capture2("node", "-e", "require('qrcode').toDataURL(process.argv[1], { width: 500 }).then(console.log)", value)
     raise "Could not generate test QR code" unless status.success?

@@ -105,7 +105,7 @@ export default class extends Controller {
         const file = blob ? new File([blob], "fiscal-receipt-camera.jpg", { type: "image/jpeg", lastModified: Date.now() }) : null
         this.stopCamera()
         this.showStatus(this.message("qr_found"))
-        this.performImport({ source, file })
+        this.performImport({ source, file, cameraCapture: true })
         return
       }
     }
@@ -162,7 +162,7 @@ export default class extends Controller {
     if (placeholder) this.sourceTarget.placeholder = placeholder
   }
 
-  async performImport({ file, source }) {
+  async performImport({ file, source, cameraCapture = false }) {
     this.buttonTargets.forEach(button => { button.disabled = true })
     this.showStatus(this.message("reading_items"))
 
@@ -178,9 +178,12 @@ export default class extends Controller {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || this.message("import_failed"))
 
+      this.evidenceSignedIds = result.evidence_signed_ids || []
+
       if (this.hasTransactionUrlValue) {
         this.pendingDraft = result.draft
         this.importedFile = file
+        this.cameraCapture = cameraCapture
         this.continueButtonTarget.hidden = false
         this.continueButtonTarget.disabled = false
         this.saveDraftButtonTarget.hidden = false
@@ -188,6 +191,7 @@ export default class extends Controller {
         this.showStatus(this.reviewMessageValue.replace("%{count}", result.draft.items.length))
       } else {
         this.applyDraft(result.draft)
+        this.evidenceSignedIds.forEach(signedId => this.attachImportedReceipt(signedId))
         this.showStatus(this.reviewMessageValue.replace("%{count}", result.draft.items.length))
       }
     } catch (error) {
@@ -206,11 +210,13 @@ export default class extends Controller {
     this.showStatus(this.message("preparing"))
 
     try {
-      const receiptSignedId = await this.uploadReceipt(this.sourceFileForPendingDraft())
+      const sourceFile = this.shouldOmitCameraSource() ? null : this.sourceFileForPendingDraft()
+      const receiptSignedId = sourceFile ? await this.uploadReceipt(sourceFile) : null
       sessionStorage.setItem(PENDING_DRAFT_KEY, JSON.stringify({
         transactionType: this.transactionTypeValue,
         draft: this.pendingDraft,
-        receiptSignedId
+        receiptSignedId,
+        evidenceSignedIds: this.evidenceSignedIds || []
       }))
       window.location.assign(this.transactionUrlValue)
     } catch (error) {
@@ -226,7 +232,7 @@ export default class extends Controller {
     this.showStatus(this.message("saving_draft"))
 
     try {
-      const sourceSignedId = this.importedFile ? await this.uploadReceipt(this.importedFile) : null
+      const sourceSignedId = this.importedFile && !this.shouldOmitCameraSource() ? await this.uploadReceipt(this.importedFile) : null
       const response = await fetch(this.draftsUrlValue, {
         method: "POST",
         headers: {
@@ -234,7 +240,7 @@ export default class extends Controller {
           Accept: "application/json",
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ draft: this.pendingDraft, source_signed_id: sourceSignedId })
+        body: JSON.stringify({ draft: this.pendingDraft, source_signed_id: sourceSignedId, evidence_signed_ids: this.evidenceSignedIds || [] })
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || this.message("import_failed"))
@@ -242,6 +248,8 @@ export default class extends Controller {
       this.showStatus(this.message("draft_saved"))
       this.pendingDraft = null
       this.importedFile = null
+      this.cameraCapture = false
+      this.evidenceSignedIds = []
       this.fileTarget.value = ""
       this.fileChosen()
       this.sourceTarget.value = ""
@@ -262,6 +270,10 @@ export default class extends Controller {
       draft: this.pendingDraft
     }
     return new File([JSON.stringify(manifest)], "fiscal-receipt-source.json", { type: "application/json" })
+  }
+
+  shouldOmitCameraSource() {
+    return this.cameraCapture && (this.evidenceSignedIds || []).length > 0
   }
 
   uploadReceipt(file) {
@@ -303,6 +315,7 @@ export default class extends Controller {
     try {
       this.applyDraft(payload.draft)
       if (payload.receiptSignedId) this.attachImportedReceipt(payload.receiptSignedId)
+      for (const signedId of payload.evidenceSignedIds || []) this.attachImportedReceipt(signedId)
     } catch (error) {
       console.error("Could not apply the imported fiscal receipt draft", error)
     }

@@ -221,7 +221,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     return if params[:fiscal_receipt_draft_id].blank?
 
     draft = current_user.fiscal_receipt_drafts.with_attached_source.find(params[:fiscal_receipt_draft_id])
-    @card_transaction.receipts.attach(draft.source.blob) if draft.source.attached?
+    blobs = [ draft.source.blob, *draft.evidence_files.blobs ] if draft.source.attached?
+    @card_transaction.receipts.attach(blobs) if blobs.present?
   end
 
   def consume_fiscal_receipt_draft
@@ -327,6 +328,9 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def set_return_to
     @return_to = dashboard_navigation_destination(params[:return_to]) || card_navigation_destination(params[:return_to])
     @return_to = card_transactions_path(user_card_id: @card_transaction.user_card_id) if @return_to == card_transactions_path && @card_transaction.user_card_id
+    return unless action_name == "create" && params[:fiscal_receipt_draft_id].present? && @card_transaction.user_card_id
+
+    @return_to = card_transactions_path(user_card_id: @card_transaction.user_card_id)
   end
 
   def card_navigation_destination(raw)

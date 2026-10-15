@@ -7,6 +7,7 @@ class FiscalReceiptDraft < ApplicationRecord
   # @relationships ............................................................
   belongs_to :user
   has_one_attached :source
+  has_many_attached :evidence_files
 
   # @validations ..............................................................
   validates :payload, presence: true
@@ -15,6 +16,10 @@ class FiscalReceiptDraft < ApplicationRecord
             content_type: %w[application/json application/pdf image/jpeg image/png image/heic application/xml text/xml],
             size: { less_than_or_equal_to: 10.megabytes },
             limit: { max: 1 }
+  validates :evidence_files,
+            content_type: %w[application/json text/html],
+            size: { less_than_or_equal_to: 10.megabytes },
+            limit: { max: 3 }
 
   # @callbacks ................................................................
   before_validation :normalize_payload_keys

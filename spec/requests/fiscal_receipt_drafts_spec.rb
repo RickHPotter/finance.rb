@@ -40,6 +40,34 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
       expect(response).to have_http_status(:created)
       expect(user.fiscal_receipt_drafts.sole.payload).not_to have_key("user_id")
     end
+
+    it "keeps owner-scoped Goiás page evidence with the saved receipt" do
+      blob = ActiveStorage::Blob.create_and_upload!(
+        io: StringIO.new("<html>Goiás detailed page</html>"),
+        filename: "goias-nfce-detailed.html",
+        content_type: "text/html",
+        metadata: { custom: { receipt_upload_user_id: user.id.to_s } }
+      )
+
+      post fiscal_receipt_drafts_path, params: { draft:, evidence_signed_ids: [ blob.signed_id ] }, as: :json
+
+      expect(response).to have_http_status(:created)
+      expect(user.fiscal_receipt_drafts.sole.evidence_files.blobs).to contain_exactly(blob)
+    end
+
+    it "rejects page evidence uploaded by another user" do
+      blob = ActiveStorage::Blob.create_and_upload!(
+        io: StringIO.new("<html>Private page</html>"),
+        filename: "goias-nfce-detailed.html",
+        content_type: "text/html",
+        metadata: { custom: { receipt_upload_user_id: create(:user, :random).id.to_s } }
+      )
+
+      post fiscal_receipt_drafts_path, params: { draft:, evidence_signed_ids: [ blob.signed_id ] }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(FiscalReceiptDraft.where(user:)).not_to exist
+    end
   end
 
   describe "GET /fiscal_receipt_drafts" do
@@ -94,6 +122,9 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
         filename: "fiscal_receipt.xml",
         content_type: "application/xml"
       )
+      receipt_draft.evidence_files.attach(
+        io: StringIO.new("<html>Goiás DANFE</html>"), filename: "goias-nfce-danfe.html", content_type: "text/html"
+      )
       params = Params::CashTransactions.new(
         cash_transaction: {
           description: "Imported purchase",
@@ -110,7 +141,7 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
       end.to change(CashTransaction, :count).by(1)
 
       transaction = user.cash_transactions.order(:id).last
-      expect(transaction.receipts.blobs.map { |blob| blob.filename.to_s }).to eq([ "fiscal_receipt.xml" ])
+      expect(transaction.receipts.blobs.map { |blob| blob.filename.to_s }).to contain_exactly("fiscal_receipt.xml", "goias-nfce-danfe.html")
       expect(user.fiscal_receipt_drafts.reload).to be_empty
     end
 
@@ -144,6 +175,11 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
         filename: "fiscal-source.json",
         content_type: "application/json"
       )
+      receipt_draft.evidence_files.attach(
+        io: StringIO.new({ format: "goias-nfce-detailed-page-v1" }.to_json),
+        filename: "goias-nfce-detailed.json",
+        content_type: "application/json"
+      )
       params = Params::CardTransactions.new(
         card_transaction: {
           description: "Imported purchase",
@@ -162,7 +198,33 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
       end.to change(CardTransaction, :count).by(1)
 
       transaction = user.card_transactions.order(:id).last
-      expect(transaction.receipts.blobs.map { |blob| blob.filename.to_s }).to eq([ "fiscal-source.json" ])
+      expect(transaction.receipts.blobs.map { |blob| blob.filename.to_s }).to contain_exactly("fiscal-source.json", "goias-nfce-detailed.json")
+      expect(user.fiscal_receipt_drafts.reload).to be_empty
+    end
+
+    it "returns to the chosen card rather than the card preselected when opening the draft" do
+      receipt_draft = user.fiscal_receipt_drafts.create!(payload: draft.stringify_keys)
+      selected_card = create(:user_card, :random, user:)
+      params = Params::CardTransactions.new(
+        card_transaction: {
+          description: "Imported purchase on selected card",
+          date: Date.new(2026, 10, 14),
+          month: 10,
+          year: 2026,
+          price: -1150,
+          user_id: user.id,
+          user_card_id: selected_card.id
+        },
+        card_installments: { count: 1 }
+      ).params
+
+      post card_transactions_path, params: params.merge(
+        fiscal_receipt_draft_id: receipt_draft.id,
+        return_to: card_transactions_path(user_card_id: user_card.id)
+      )
+
+      expect(response).to redirect_to(card_transactions_path(user_card_id: selected_card.id))
+      expect(user.card_transactions.find_by!(description: "Imported purchase on selected card").user_card).to eq(selected_card)
       expect(user.fiscal_receipt_drafts.reload).to be_empty
     end
   end

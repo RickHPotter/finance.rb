@@ -566,7 +566,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     return if params[:fiscal_receipt_draft_id].blank?
 
     draft = current_user.fiscal_receipt_drafts.with_attached_source.find(params[:fiscal_receipt_draft_id])
-    @cash_transaction.receipts.attach(draft.source.blob) if draft.source.attached?
+    blobs = [ draft.source.blob, *draft.evidence_files.blobs ] if draft.source.attached?
+    @cash_transaction.receipts.attach(blobs) if blobs.present?
   end
 
   def consume_fiscal_receipt_draft

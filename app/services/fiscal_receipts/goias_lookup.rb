@@ -9,7 +9,10 @@ module FiscalReceipts
     HOST = "nfeweb.sefaz.go.gov.br"
     PATH = "/nfeweb/sites/nfce/danfeNFCe"
     DETAIL_PATH = "/nfeweb/sites/nfce/render/danfeNFCe"
+    DETAILED_PAGE_PATH = "/nfeweb/sites/nfce/render/NFCe"
     MAX_RESPONSE_BYTES = 1.megabyte
+
+    attr_reader :evidence_files
 
     def initialize(url)
       @url = URI.parse(url)
@@ -25,14 +28,29 @@ module FiscalReceipts
         landing, cookies = fetch(http, "#{PATH}?#{URI.encode_www_form(p: @payload)}")
         raise Unavailable, I18n.t("fiscal_import.messages.goias_rejected") unless valid_landing?(landing)
 
-        detail, = fetch(http, "#{DETAIL_PATH}?#{URI.encode_www_form(chNFe: @access_key.value)}", cookies:)
-        parse(detail)
+        danfe_html, = fetch(http, "#{DETAIL_PATH}?#{URI.encode_www_form(chNFe: @access_key.value)}", cookies:)
+        draft = parse(danfe_html)
+        detailed_html, = fetch(http, "#{DETAILED_PAGE_PATH}?#{URI.encode_www_form(chNFe: @access_key.value)}", cookies:)
+        detail_snapshot = GoiasDetailSnapshot.new(detailed_html, access_key: @access_key.value)
+        detailed_json = detail_snapshot.call
+        @evidence_files = [
+          { filename: "goias-nfce-danfe.html", content_type: "text/html", data: html_snapshot(extract_receipt_html(danfe_html), "DANFE NFC-e") },
+          { filename: "goias-nfce-detailed.html", content_type: "text/html", data: html_snapshot(detail_snapshot.rendered_markup, "NFC-e detalhada") },
+          { filename: "goias-nfce-detailed.json", content_type: "application/json", data: JSON.generate(detailed_json) }
+        ]
+        draft
       end
     rescue SocketError, SystemCallError, Timeout::Error, OpenSSL::SSL::SSLError
       raise Unavailable, I18n.t("fiscal_import.messages.consultation_unavailable")
+    rescue GoiasDetailSnapshot::Unreadable
+      raise Unavailable, I18n.t("fiscal_import.messages.receipt_unreadable")
     end
 
     private
+
+    def html_snapshot(markup, title)
+      GoiasHtmlSnapshot.new(markup, title:, access_key: @access_key.value).call
+    end
 
     def validate_source!
       valid_uri = @url.scheme == "https" && @url.host == HOST && @url.port == 443 && @url.path == PATH && @url.userinfo.nil? && @url.fragment.nil?

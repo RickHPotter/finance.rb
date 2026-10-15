@@ -142,6 +142,23 @@ RSpec.describe "Attachments", type: :request do
     end
   end
 
+  describe "GET /rails/active_storage/blobs/:signed_id/*filename" do
+    it "forces downloaded HTML evidence even when inline rendering is requested" do
+      sign_in user
+      cash_transaction.receipts.attach(
+        io: StringIO.new("<html>Fiscal evidence</html>"),
+        filename: "goias-nfce-detailed.html",
+        content_type: "text/html"
+      )
+      blob = cash_transaction.receipts.blobs.first
+
+      get rails_service_blob_path(blob.signed_id, blob.filename, disposition: "inline")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.headers.fetch("Content-Disposition")).to include("attachment")
+    end
+  end
+
   describe "POST /rails/active_storage/direct_uploads" do
     let(:upload_params) do
       {

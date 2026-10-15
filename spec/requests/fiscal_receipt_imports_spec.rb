@@ -72,13 +72,23 @@ RSpec.describe "Fiscal receipt imports", type: :request do
       source = "https://nfeweb.sefaz.go.gov.br/nfeweb/sites/nfce/danfeNFCe?p=#{key}|2|1|1|8063029A08AC070E0D5C6DDB0891AC3F116830AC"
       draft = FiscalReceipts::Draft.new(access_key: key, issuer: "Mercado", issued_at: nil, total_cents: 1250,
                                         items: [ { description: "Arroz", price_cents: 1250 } ], source: "sefaz_go")
-      allow(FiscalReceipts::GoiasLookup).to receive(:new).with(source).and_return(instance_double(FiscalReceipts::GoiasLookup, call: draft))
+      evidence_files = [
+        { filename: "goias-nfce-danfe.html", content_type: "text/html", data: "<html>Danfe</html>" },
+        { filename: "goias-nfce-detailed.html", content_type: "text/html", data: "<html>Detalhada</html>" },
+        { filename: "goias-nfce-detailed.json", content_type: "application/json", data: { access_key: key }.to_json }
+      ]
+      allow(FiscalReceipts::GoiasLookup).to receive(:new).with(source)
+                                                         .and_return(instance_double(FiscalReceipts::GoiasLookup, call: draft, evidence_files:))
 
       post fiscal_receipt_imports_path, params: { source: }, headers: { "Accept" => "application/json" }
 
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body.dig("draft", "source")).to eq("sefaz_go")
       expect(response.parsed_body.dig("draft", "items", 0, "price_cents")).to eq(1250)
+      evidence_blobs = response.parsed_body.fetch("evidence_signed_ids").map { |signed_id| ActiveStorage::Blob.find_signed!(signed_id) }
+      expect(evidence_blobs.map { |blob| blob.filename.to_s }).to eq(evidence_files.pluck(:filename))
+      expect(evidence_blobs.map(&:download)).to eq(evidence_files.pluck(:data))
+      expect(evidence_blobs.map { |blob| blob.custom_metadata.fetch("receipt_upload_user_id") }).to eq([ user.id.to_s ] * 3)
     end
 
     it "explains why a bare Goiás key cannot be looked up automatically" do

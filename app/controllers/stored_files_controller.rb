@@ -12,6 +12,7 @@ class StoredFilesController < ApplicationController
     response.headers["Cache-Control"] = "private, no-store"
 
     disposition = params[:disposition].presence_in(%w[inline attachment])
+    disposition = "attachment" if blob.content_type == "text/html"
     if request.headers["Range"].present?
       send_blob_byte_range_data(blob, request.headers["Range"], disposition:)
     else

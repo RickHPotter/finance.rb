@@ -13,6 +13,7 @@ class FiscalReceiptDraftsController < ApplicationController
   def create
     receipt_draft = current_user.fiscal_receipt_drafts.new(payload: fiscal_draft_payload)
     attach_uploaded_source(receipt_draft) if params[:source_signed_id].present?
+    attach_uploaded_evidence(receipt_draft)
     attach_manifest_source(receipt_draft) unless receipt_draft.source.attached?
 
     if receipt_draft.save
@@ -54,11 +55,27 @@ class FiscalReceiptDraftsController < ApplicationController
   end
 
   def attach_uploaded_source(receipt_draft)
-    blob = ActiveStorage::Blob.find_signed!(params[:source_signed_id])
+    receipt_draft.source.attach(owned_upload_blob(params[:source_signed_id]))
+  end
+
+  def attach_uploaded_evidence(receipt_draft)
+    signed_ids = Array(params[:evidence_signed_ids]).compact_blank
+    raise ActiveRecord::RecordNotFound if signed_ids.size > 3
+
+    signed_ids.each do |signed_id|
+      blob = owned_upload_blob(signed_id)
+      raise ActiveRecord::RecordNotFound unless %w[application/json text/html].include?(blob.content_type)
+
+      receipt_draft.evidence_files.attach(blob)
+    end
+  end
+
+  def owned_upload_blob(signed_id)
+    blob = ActiveStorage::Blob.find_signed!(signed_id)
     uploader_id = blob.custom_metadata.fetch("receipt_upload_user_id", nil)
     raise ActiveRecord::RecordNotFound unless uploader_id.to_s == current_user.id.to_s
 
-    receipt_draft.source.attach(blob)
+    blob
   end
 
   def attach_manifest_source(receipt_draft)
