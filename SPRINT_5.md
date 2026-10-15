@@ -228,38 +228,51 @@ Explicitly out of scope for the current attachment and fiscal-import plan:
 
 ### NARUTO-04: Extend subscriptions with salary support and bulk operations
 
+Status: planning refreshed on 2026-10-15. The signed-total, cash-only income,
+immutable-kind, category-choice, and atomic bulk-edit decisions are locked. See the
+[NARUTO-04 product contract](docs/sprints/5-naruto/naruto-04/01-product-and-data-contract.md)
+and [implementation slices](docs/sprints/5-naruto/naruto-04/02-implementation-slices.md).
+
 Goal: extend the existing `Subscription` (`finance_subscriptions`) model with three
 improvements: salary as a first-class subscription kind, bulk status and allocation
 changes, and verified rollback audit coverage.
 
-Currently all subscriptions model outgoing expense intents. Salary, freelance
-retainers, and rental income are recurring incomes that belong in the same subscription
-workflow but lack a signal to distinguish them from expenses. Bulk edit allows pausing
+Currently subscriptions can already contain positive or negative linked transactions,
+but have no explicit income/expense kind. Salary, freelance retainers, and rental income
+belong in the same recurring workflow and need that distinction. Bulk edit allows pausing
 or finishing a set of subscriptions in one audited action. Rollback audit verification
 confirms the existing adapter covers every mutation path before new paths are added.
 
-Locked V1 direction:
+Current direction:
 
 - add `subscription_kind varchar NOT NULL DEFAULT 'expense'` to `finance_subscriptions`
   with string-backed enum values `expense` and `income`
-- `price` is always stored as a positive integer; income vs. expense direction is
-  inferred from `subscription_kind` at the reporting layer
-- income subscriptions appear on the income side of monthly analysis, not the expense
-  side
-- the create/edit form gains an income/expense toggle; when `income` is selected,
-  the built-in "SALARY" category is suggested as a default if the user has one
-- bulk edit: checkbox column on the subscription index, floating action bar when one or
-  more subscriptions are selected, `SubscriptionsController#bulk_update` action
+- preserve signed cash/card transaction and installment prices; `Subscription#price`
+  remains the derived signed sum, not an always-positive amount
+- monthly analysis continues to classify actual installment signs; kind describes
+  recurring intent and must not invert or double-count cash flow
+- add localized salary built-ins, preserving existing `SALARY`/`SALARIO` category IDs
+  and allocations and creating a locale-appropriate category only where missing
+- add built-in parent categories `OTHER` and `OTHER INCOME`; both are directly
+  selectable, even without children, and permit user-created children without adding
+  general category income/expense flags or changing ordinary parent selectability
+- the create/edit form offers SUBSCRIPTION (Expense), SALARY (Income), OTHER (Expense),
+  and OTHER (Income), with the latter two showing their children as expandable choices
+- new income cash entries default positive; income subscriptions are cash-only and
+  kind cannot change after creation, while same-kind category changes can update
+  linked transaction allocations
+- the selected SALARY, OTHER parent, or OTHER child category replaces automatic
+  `SUBSCRIPTION` tagging on linked transactions; that tag remains for the first path
+- bulk edit: selection on desktop rows and PWA cards, with localized actions when one
+  or more subscriptions are selected
 - supported bulk fields: `status`, `category`, `entity`
-- each bulk edit is wrapped in one `AuditOperation` with `operation_kind:
-  "subscription_bulk_edit"`; each affected subscription generates its own
-  `AuditVersion` under the shared operation
-- individual subscription rollback uses the existing
-  `Audit::Rollback::Adapters::Subscription`; bulk edit rolls back record-by-record
-  under a single visible rollback action in the audit timeline
-- rollback audit verification delivers `spec/services/audit/rollback/adapters/
-  subscription_spec.rb` covering create, update, destroy, bulk edit, and the new
-  `subscription_kind` field
+- bulk category/entity actions replace allocations with an explicit clear action;
+  invalid mixed-state status transitions reject the entire selection
+- all selected records update atomically through existing validation/sync paths, with
+  one request-scoped audit operation and one operation-level rollback action; no
+  `operation_kind` database column exists
+- extend the existing `spec/services/audit/rollback/subscription_adapter_spec.rb`
+  to cover create, update, destroy, bulk edit, and the new `subscription_kind` field
 
 Coverage:
 
@@ -271,6 +284,7 @@ Coverage:
 References:
 
 - [product and data contract](docs/sprints/5-naruto/naruto-04/01-product-and-data-contract.md)
+- [implementation slices](docs/sprints/5-naruto/naruto-04/02-implementation-slices.md)
 
 Explicitly out of scope:
 
@@ -466,15 +480,17 @@ Batch 3: Independent Enhancements (can start any time, no blockers)
 │   └── Finish duplicate-import protection and attachment release gates
 └── NARUTO-04: Subscription Enhancements
     ├── Migration: add subscription_kind to finance_subscriptions
-    ├── Form: income/expense toggle, income defaults (SALARY category suggestion)
-    ├── Bulk edit: checkbox index, bulk_update action, single AuditOperation wrapper
-    ├── Rollback audit verification: spec file covering all mutation paths
+    ├── Built-in: localize/reconcile SALARY/SALARIO; add selectable OTHER parents
+    ├── Form: four paths, expandable OTHER children, positive cash-only income
+    ├── Bulk edit: desktop/PWA selection, atomic server mutation, existing audit operation
+    ├── Rollback audit verification: extend the existing adapter spec
     └── Specs: model + request + rollback adapter
 
 Batch 4: Integration & Reporting (after Batch 2 merges)
 ├── Update monthly analysis to route category/entity totals through line items
 │   when transaction is composite (affects NARUTO-02 + existing reports)
-├── Update income/expense classification for subscription kind (NARUTO-04)
+├── Verify income subscription installments appear on the income side without
+│   overriding monthly analysis' signed-amount classification (NARUTO-04)
 └── Update balance dashboard to reflect debit card transactions correctly (NARUTO-06)
 
 Batch 5: Fiscal Accuracy and Assisted Entry (after NARUTO-03)
