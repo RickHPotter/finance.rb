@@ -2,7 +2,7 @@
 
 ## Status
 
-Planning refresh — 2026-10-15. Product decisions are locked below; implementation and manual verification are pending.
+In progress — 2026-10-15. Product decisions are locked below. The salary/OTHER category foundation (Slice 1) is implemented and locally verified; subscription kind/forms, bulk edit, and rollback hardening remain pending.
 
 ## Goal
 

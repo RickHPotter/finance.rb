@@ -211,6 +211,33 @@ RSpec.describe Category, type: :model do
         expect(child.errors.of_kind?(:parent_category_id, :built_in_cannot_be_parent)).to be(true)
       end
 
+      it "permits custom children under the two subscription OTHER built-ins" do
+        expense_parent = user.categories.find_by!(category_name: "OTHER")
+        income_parent = user.categories.find_by!(category_name: "OTHER INCOME")
+
+        expect(create(:category, user:, category_name: "Rent", parent_category: expense_parent)).to be_persisted
+        expect(create(:category, user:, category_name: "Freelance", parent_category: income_parent)).to be_persisted
+        expect(expense_parent.reload).to be_subscription_other_parent
+        expect(income_parent.reload).to be_subscription_other_parent
+        expect(expense_parent.subtree_ids.size).to eq(2)
+      end
+
+      it "does not allow a built-in child under a subscription OTHER parent" do
+        parent = user.categories.find_by!(category_name: "OTHER INCOME")
+        child = build(:category, user:, category_name: "BUILTIN_CHILD", built_in: true, parent_category: parent)
+
+        expect(child).not_to be_valid
+        expect(child.errors.of_kind?(:parent_category_id, :built_in_cannot_have_parent)).to be(true)
+      end
+
+      it "localizes both salary category keys without renaming them" do
+        english_salary = user.categories.find_by!(category_name: "SALARY")
+        portuguese_salary = create(:category, user:, category_name: "SALARIO", built_in: true)
+
+        I18n.with_locale(:en) { expect([ english_salary.name, portuguese_salary.name ]).to eq(%w[SALARY SALARY]) }
+        I18n.with_locale(:"pt-BR") { expect([ english_salary.name, portuguese_salary.name ]).to eq(%w[SALÁRIO SALÁRIO]) }
+      end
+
       it "rejects assigning a parent to a built-in category" do
         built_in_cat = build(:category, user:, category_name: "BUILTIN_CHILD", built_in: true, parent_category: parent)
 

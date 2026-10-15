@@ -12,6 +12,8 @@ Done when the contract has no implementation-blocking ambiguity and the baseline
 
 ## Slice 1 — Salary/OTHER built-ins and data reconciliation
 
+Status: implemented and locally verified on 2026-10-15. The existing `SALARY`/`SALARIO` records for users 1 and 4 kept IDs 24 and 105; user 5 received `SALARIO`. All three received `OTHER` and `OTHER INCOME`. Focused category/user/migration/request specs passed (108 examples). This is not a claim about HMG/PROD data.
+
 - Add `salary` and `salario` built-in category translations in en and pt-BR; verify `Category#name` displays either stored key in the active locale. Add salary to the normal built-in category presentation (including colour/icon conventions where relevant).
 - Backfill existing users safely: mark their existing `SALARY` or `SALARIO` category built-in in place; create the locale-appropriate one only when neither exists. Preserve IDs, category transaction joins, colours and other metadata. Handle a user with both names explicitly rather than silently merging.
 - In the current three-user development data, this means: first user's `SALARY` becomes built-in, second user's `SALARIO` becomes built-in, and third user gets a new `SALARIO` built-in. Identify users by durable attributes or inspect their existing categories and locale; do not encode `.first/.second/.third` ordering in a migration.

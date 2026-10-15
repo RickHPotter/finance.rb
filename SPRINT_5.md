@@ -228,8 +228,10 @@ Explicitly out of scope for the current attachment and fiscal-import plan:
 
 ### NARUTO-04: Extend subscriptions with salary support and bulk operations
 
-Status: planning refreshed on 2026-10-15. The signed-total, cash-only income,
-immutable-kind, category-choice, and atomic bulk-edit decisions are locked. See the
+Status: in progress as of 2026-10-15. The salary/OTHER category foundation is implemented
+and locally verified; subscription kind/forms, bulk operations, and rollback hardening
+remain. The signed-total, cash-only income, immutable-kind, category-choice, and atomic
+bulk-edit decisions are locked. See the
 [NARUTO-04 product contract](docs/sprints/5-naruto/naruto-04/01-product-and-data-contract.md)
 and [implementation slices](docs/sprints/5-naruto/naruto-04/02-implementation-slices.md).
 

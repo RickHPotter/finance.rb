@@ -86,6 +86,15 @@ RSpec.describe "Categories", type: :request do
 
       expect(document.at_css("#add_subcategory_#{child.id}")).to be_nil
     end
+
+    it "offers an add-child action on both built-in OTHER parents" do
+      get categories_path
+
+      document = response.parsed_body
+      user.categories.where(category_name: [ "OTHER", "OTHER INCOME" ]).each do |parent|
+        expect(document.at_css("#add_subcategory_#{parent.id}")).to be_present
+      end
+    end
   end
 
   describe "[ #show ]" do
@@ -261,6 +270,14 @@ RSpec.describe "Categories", type: :request do
       expect(options).not_to include(child.name)
     end
 
+    it "offers both built-in OTHER families as parents without offering other built-ins" do
+      get new_category_path
+
+      option_ids = response.parsed_body.css("#category_parent_category_id option").pluck("value")
+      expect(option_ids).to include(*user.categories.where(category_name: [ "OTHER", "OTHER INCOME" ]).ids.map(&:to_s))
+      expect(option_ids).not_to include(user.categories.find_by!(category_name: "SUBSCRIPTION").id.to_s)
+    end
+
     it "pre-selects parent category when parent_category_id param is provided" do
       parent = create(:category, :random, user:, category_name: "HSH")
 
@@ -393,6 +410,25 @@ RSpec.describe "Categories", type: :request do
       child = user.categories.find_by!(category_name: "Labour")
       expect(child.parent_category).to eq(parent)
       expect(child.parent_category_id).to eq(parent.id)
+    end
+
+    it "creates a custom child under the OTHER INCOME built-in" do
+      parent = user.categories.find_by!(category_name: "OTHER INCOME")
+
+      expect do
+        post categories_path, params: {
+          category: {
+            category_name: "Freelance",
+            colour: "#123456",
+            text_colour_mode: "automatic",
+            active: true,
+            user_id: user.id,
+            parent_category_id: parent.id
+          }
+        }, headers: turbo_stream_headers
+      end.to change(Category, :count).by(1)
+
+      expect(user.categories.find_by!(category_name: "Freelance").parent_category_id).to eq(parent.id)
     end
 
     it "allows subcategories with the same name under different parents" do

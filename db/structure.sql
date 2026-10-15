@@ -4160,6 +4160,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261015120000'),
 ('20261014120000'),
 ('20261008120000'),
 ('20260928120000'),
