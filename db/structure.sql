@@ -1039,6 +1039,38 @@ ALTER SEQUENCE public.finance_subscriptions_id_seq OWNED BY public.finance_subsc
 
 
 --
+-- Name: fiscal_receipt_drafts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.fiscal_receipt_drafts (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: fiscal_receipt_drafts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.fiscal_receipt_drafts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: fiscal_receipt_drafts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.fiscal_receipt_drafts_id_seq OWNED BY public.fiscal_receipt_drafts.id;
+
+
+--
 -- Name: friendships; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1888,6 +1920,13 @@ ALTER TABLE ONLY public.finance_subscriptions ALTER COLUMN id SET DEFAULT nextva
 
 
 --
+-- Name: fiscal_receipt_drafts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fiscal_receipt_drafts ALTER COLUMN id SET DEFAULT nextval('public.fiscal_receipt_drafts_id_seq'::regclass);
+
+
+--
 -- Name: friendships id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2204,6 +2243,14 @@ ALTER TABLE ONLY public.exchanges
 
 ALTER TABLE ONLY public.finance_subscriptions
     ADD CONSTRAINT finance_subscriptions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: fiscal_receipt_drafts fiscal_receipt_drafts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fiscal_receipt_drafts
+    ADD CONSTRAINT fiscal_receipt_drafts_pkey PRIMARY KEY (id);
 
 
 --
@@ -3016,6 +3063,20 @@ CREATE INDEX index_finance_subscriptions_on_user_id ON public.finance_subscripti
 
 
 --
+-- Name: index_fiscal_receipt_drafts_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_fiscal_receipt_drafts_on_user_id ON public.fiscal_receipt_drafts USING btree (user_id);
+
+
+--
+-- Name: index_fiscal_receipt_drafts_on_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_fiscal_receipt_drafts_on_user_id_and_created_at ON public.fiscal_receipt_drafts USING btree (user_id, created_at);
+
+
+--
 -- Name: index_friendships_on_friend_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3677,6 +3738,14 @@ ALTER TABLE ONLY public.investments
 
 
 --
+-- Name: fiscal_receipt_drafts fk_rails_5a446b0c4b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fiscal_receipt_drafts
+    ADD CONSTRAINT fk_rails_5a446b0c4b FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: budgets fk_rails_5d5e7d2349; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4091,6 +4160,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261014120000'),
 ('20261008120000'),
 ('20260928120000'),
 ('20260925110000'),

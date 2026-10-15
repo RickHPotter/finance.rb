@@ -13,12 +13,13 @@ class Views::CardTransactions::Form < Views::Base
   include CacheHelper
   include ContextHelper
 
-  attr_reader :current_user, :card_transaction, :chain_context, :return_to
+  attr_reader :current_user, :card_transaction, :chain_context, :fiscal_receipt_draft, :return_to
 
-  def initialize(current_user:, card_transaction:, chain_context: nil, return_to: "/card_transactions")
+  def initialize(current_user:, card_transaction:, chain_context: nil, fiscal_receipt_draft: nil, return_to: "/card_transactions")
     @current_user = current_user
     @card_transaction = card_transaction
     @chain_context = chain_context
+    @fiscal_receipt_draft = fiscal_receipt_draft
     @return_to = return_to
 
     set_cards
@@ -51,7 +52,10 @@ class Views::CardTransactions::Form < Views::Base
         id: :transaction_form,
         class: "contents text-slate-100",
         data: {
-          controller: "reactive-form price-mask composite-transaction attachment-upload",
+          controller: "reactive-form price-mask composite-transaction attachment-upload fiscal-import",
+          fiscal_import_transaction_type_value: "card_transaction",
+          fiscal_import_pending_draft_value: fiscal_receipt_draft&.payload&.to_json,
+          fiscal_import_pending_draft_id_value: fiscal_receipt_draft&.id,
           composite_transaction_composite_value: card_transaction.composite?,
           reactive_form_preserve_installment_prices_value: card_transaction.persisted?,
           action: "submit->price-mask#removeMasks submit->attachment-upload#beforeSubmit",
@@ -70,6 +74,7 @@ class Views::CardTransactions::Form < Views::Base
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
         form.hidden_field :duplicate
+        hidden_field_tag :fiscal_receipt_draft_id, fiscal_receipt_draft&.id || params[:fiscal_receipt_draft_id]
         # Hidden split_purchase field so the tab controller can update it
         form.hidden_field :split_purchase, value: card_transaction.composite? ? "1" : "0"
         hidden_field_tag :return_to, return_to

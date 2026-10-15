@@ -37,10 +37,9 @@ class CardTransaction < ApplicationRecord
   validates :context, presence: true
   validates :description, :card_installments_count, presence: true
   validates :receipts,
-            content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
+            content_type: %w[application/json application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip text/html],
             size: { less_than_or_equal_to: 10.megabytes },
             limit: { max: 5 }
-  validate :validate_composite_line_items_count
   validate :validate_line_items_price_sum
 
   # @callbacks ................................................................
@@ -359,12 +358,6 @@ class CardTransaction < ApplicationRecord
 
     category_transactions.each(&:mark_for_destruction)
     entity_transactions.each(&:mark_for_destruction)
-  end
-
-  def validate_composite_line_items_count
-    return unless composite?
-
-    errors.add(:base, :composite_requires_at_least_two_items) if active_line_items.size < 2
   end
 
   def validate_line_items_price_sum

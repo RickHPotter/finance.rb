@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 class Views::CardTransactions::New < Views::Base
-  def initialize(current_user:, card_transaction:, chain_context: nil, return_to: "/card_transactions")
+  def initialize(current_user:, card_transaction:, chain_context: nil, fiscal_receipt_draft: nil, return_to: "/card_transactions")
     @current_user = current_user
     @card_transaction = card_transaction
     @chain_context = chain_context
+    @fiscal_receipt_draft = fiscal_receipt_draft
     @return_to = return_to
   end
 
@@ -20,6 +21,7 @@ class Views::CardTransactions::New < Views::Base
           current_user: @current_user,
           card_transaction: @card_transaction,
           chain_context: @chain_context,
+          fiscal_receipt_draft: @fiscal_receipt_draft,
           return_to: @return_to
         )
       end

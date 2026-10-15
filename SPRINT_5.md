@@ -10,6 +10,8 @@
     - [NARUTO-04: Extend subscriptions with salary support and bulk operations](#naruto-04-extend-subscriptions-with-salary-support-and-bulk-operations)
     - [NARUTO-05: Add pre-paid and debit card support](#naruto-05-add-pre-paid-and-debit-card-support)
     - [NARUTO-06: Consolidate card and account balance dashboard](#naruto-06-consolidate-card-and-account-balance-dashboard)
+    - [NARUTO-07: Harden fiscal import for NF-e and monetary accuracy](#naruto-07-harden-fiscal-import-for-nf-e-and-monetary-accuracy)
+    - [NARUTO-08: Read screenshots and photographed documents with OCR](#naruto-08-read-screenshots-and-photographed-documents-with-ocr)
   - [IMPLEMENTATION ROADMAP & BATCHES](#implementation-roadmap--batches)
   - [IDEAS](#ideas)
     - [Query language for advanced filtering](#query-language-for-advanced-filtering)
@@ -30,10 +32,11 @@ it. Naruto focuses on making the core financial record more expressive in four
 dimensions: categories gain structural depth through parent/child grouping; a single
 real-world purchase can be described as one transaction with multiple named line items;
 transactions can carry documentary evidence such as receipts, NF-e XML, and
-orçamentos, with a planned fiscal-receipt import into line items; and the financial
+orçamentos, with fiscal-receipt import into line items; and the financial
 instrument set expands to include recurring income
 (salary as subscription), pre-paid and debit cards, and a consolidated view of the
-user's full liquid position.
+user's full liquid position. Follow-up features harden NF-e imports and monetary
+accuracy, then add OCR-assisted entry from screenshots and photographed documents.
 
 None of these capabilities require reopening Sprint 4's exchange, rollback, or
 reference merge work. They compose cleanly on top of it.
@@ -92,7 +95,7 @@ References:
 Status: the original split-purchase scope has since been extended to cover per-line-item
 friend repayments and exchange notifications. The transaction breakdown and that
 friend-aware extension belong to NARUTO-02; NARUTO-03 only adds receipt/document
-handling and the planned fiscal-document import workflow that can prefill these line
+handling and the fiscal-document import workflow that can prefill these line
 items. The implementation history and current verification limits are recorded in the
 [NARUTO-02 implementation status](docs/sprints/5-naruto/naruto-02/02-implementation-slices.md).
 
@@ -113,14 +116,15 @@ Locked V1 direction:
   and `entity_transactions` rows through the same polymorphic join tables already used
   by `CashTransaction` and `CardTransaction`
 - parent transaction price must equal the sum of line item prices; validated on save
-- at least two line items are required to activate composite mode; the form presents a
-  "Split purchase" toggle
+- one or more active line items activate composite mode; zero line items keep the
+  transaction simple. The form presents a "Split Purchase" tab. This replaces the
+  earlier two-item minimum so a one-product fiscal receipt can retain its item row.
 - split purchase is available for exchange requests and `BORROW RETURN` transactions,
   which may allocate across multiple entities; it is unavailable for `EXCHANGE RETURN`
   projections and other system-managed transaction types
 - when a transaction is composite, the parent's own category/entity join records are
   deprecated; reporting and rollback route through line items
-- line item categories must be leaf categories (NARUTO-01 required)
+- a line item's category is optional; when set, it must be a leaf category
 - card installments carry only price and date; the breakdown lives on the parent
   transaction and does not propagate to installments
 - a rollback adapter `Audit::Rollback::Adapters::LineItem` is required; attaching
@@ -136,7 +140,7 @@ Locked V1 direction:
 
 Coverage:
 
-- model specs: price-sum validation, minimum-count validation, leaf-category
+- model specs: price-sum validation, one-item composite mode, optional leaf-category
   validation, cascade of audit versions
 - request specs: create composite cash transaction, create composite card transaction,
   reject mismatched price sum
@@ -157,10 +161,17 @@ Explicitly out of scope:
 
 ### NARUTO-03: Attach documents and import Brazilian fiscal receipts
 
-Status: receipt attachment support is implemented, with security and deployment
-verification still open. Fiscal receipt parsing and conversion into transaction line
-items is not implemented and remains required product work before NARUTO-03 can be
-called complete. See the [NARUTO-03 status and plans](docs/sprints/5-naruto/naruto-03/01-product-and-data-contract.md).
+Status: attachment support and the first fiscal-import workflow are implemented.
+Cash/card index pages open an import modal where authorized XML, Goiás signed QR,
+Paraná NFC-e key/QR, PDF text, or a readable image QR can prefill an unsaved
+transaction with line items. Imported uploads can be retained as transaction receipts;
+category/entity defaults can be applied to all rows and exceptions edited individually.
+Goiás key-only lookup remains unavailable because its public page requires a browser
+challenge. The supported cash/card import flows have been manually exercised. Duplicate
+fiscal-document protection remains a NARUTO-03 bug, and attachment security/deployment
+gates remain open. NF-e support and monetary reconciliation move to NARUTO-07; OCR of
+screenshots and documents moves to NARUTO-08. Broader state coverage is optional; see
+the [NARUTO-03 status and plans](docs/sprints/5-naruto/naruto-03/01-product-and-data-contract.md).
 
 Goal: allow any `CashTransaction`, `CardTransaction`, or `LineItem` to carry one or
 more file attachments as documentary evidence, and convert a supported Brazilian cupom
@@ -188,9 +199,13 @@ Locked V1 direction:
   attachment; deployed storage persistence, backup/restore, and remaining security
   failure cases are release gates before the feature is considered complete
 
-Fiscal document import is a planned NARUTO-03 slice and depends on NARUTO-02 for the
-transaction line-item form. Its scope and security questions are tracked separately
-from attachment hardening in `05-v3-brazilian-fiscal-import-plan.md`.
+Fiscal document import depends on NARUTO-02's transaction line-item form. The
+`naruto-03-v2` branch implements the first supported paths: uploaded authorized XML,
+Goiás signed QR URL, Paraná NFC-e key/QR, PDF text extraction, and image/camera QR
+scanning. These create a reviewable cash/card draft; a short cupom number alone is not
+a lookup key. Remaining work and exact state/source limitations are tracked in
+`05-v3-brazilian-fiscal-import-plan.md` (the V3 label is the existing document phase,
+not the branch name).
 
 Coverage:
 
@@ -208,8 +223,8 @@ References:
 Explicitly out of scope for the current attachment and fiscal-import plan:
 
 - bank statement PDF parsing
-- general-purpose OCR of unstructured receipt photos; QR scanning is only a way to
-  provide a supported fiscal URL
+- NF-e model 55 expansion and document-level monetary accuracy (NARUTO-07)
+- OCR of screenshots, photos, printed cupoms, NF-e, NFC-e, and orçamentos (NARUTO-08)
 
 ### NARUTO-04: Extend subscriptions with salary support and bulk operations
 
@@ -359,9 +374,59 @@ Explicitly out of scope:
 - investment and piggy bank balances (they have their own pages)
 - historical balance trend chart
 
+### NARUTO-07: Harden fiscal import for NF-e and monetary accuracy
+
+Status: planned. This extends NARUTO-03's supported NFC-e/cupom import; it does not
+reopen the completed manual-validation gate or absorb the NARUTO-03 duplicate-import bug.
+
+Goal: harden the existing basic authorized-XML parser for NF-e (model 55) documents
+and investigate the fiscal fields and document-level adjustments needed to represent
+NF-e and NFC-e transactions accurately. The current parser can accept a model-55
+`nfeProc` structurally, but only model-65 fixtures are covered and NF-e-specific
+accuracy is not verified. Start with supplied authorized XML; evaluate DANFE PDF and
+state-specific public consultation separately. A 44-digit
+key alone is not a promise of automatic XML or product-row retrieval: the official
+NF-e consultation has a browser challenge, and distribution of XML has separate
+authorization requirements.
+
+The analysis must inventory quantities, units, unit prices, product totals, discounts,
+freight, insurance, other charges, taxes, payments, and issuance/cancellation status;
+identify which fields belong on the transaction, each `LineItem`, or provenance-only
+metadata; and explain how item totals reconcile with the payable amount. Do not
+silently alter product prices or invent a balancing item. Present any discrepancy for
+review and obtain a product decision on an explicit adjustment representation before
+implementation. Preserve the original document and source/provenance metadata.
+
+Coverage: sanitized model-55 XML fixtures, malformed/unauthorized documents, item and
+document totals with discounts/charges, status and date handling, cash/card prefill,
+attachments, and rejection or review of unresolved differences.
+
+Reference: [NF-e and fiscal-accuracy development plan](docs/sprints/5-naruto/naruto-07/01-product-and-data-contract.md).
+
+### NARUTO-08: Read screenshots and photographed documents with OCR
+
+Status: planned; last feature in this sprint.
+
+Goal: speed up transaction creation from screenshots and photos, not only fiscal
+receipts. Support reviewable extraction from ordinary purchase screenshots,
+orçamentos, NF-e, NFC-e, and printed cupoms where no usable XML or online lookup is
+available. OCR is an assistive draft source, never an authoritative transaction save.
+
+Investigate a privacy-preserving, bounded OCR pipeline with confidence signals and
+clear review of uncertain descriptions, dates, totals, and line items. Reuse structured
+XML/QR/lookup data when available and compare it with OCR rather than silently choosing
+one source. In particular, faded cupom ink may defeat OCR while a QR code works—or
+damage the QR while printed text remains legible. Try both routes where possible and
+show the user which data was recovered and which still needs manual correction.
+
+Coverage: screenshots, clear/faded cupoms, unreadable QR, conflicting OCR/structured
+values, multi-item documents, privacy/security limits, and user correction before save.
+
+Reference: [OCR-assisted transaction entry development plan](docs/sprints/5-naruto/naruto-08/01-product-and-data-contract.md).
+
 ## IMPLEMENTATION ROADMAP & BATCHES
 
-The six tickets are grouped into four development batches based on their dependencies
+The eight tickets are grouped into five development batches based on their dependencies
 and risk profile. Batches 1 and 2 establish the foundational data model changes that
 subsequent batches build on. Batch 3 is fully independent and can start any time.
 
@@ -392,12 +457,13 @@ Batch 2: Transactional Depth (requires Batch 1)
     └── Specs: presenter + request
 
 Batch 3: Independent Enhancements (can start any time, no blockers)
-├── NARUTO-03: Transaction Attachments
+├── NARUTO-03: Transaction Attachments and NFC-e Import
 │   ├── has_many_attached :receipts on CashTransaction, CardTransaction, LineItem
 │   ├── File validators: content type + byte size
 │   ├── Upload UI: Stimulus attachment-upload-controller, direct upload, browser progress
 │   ├── Display: attachment list, paperclip badge on index rows, delete action
-│   └── Specs: model + request
+│   ├── Fiscal import: supported XML/QR sources, saved inbox, cash/card prefill
+│   └── Finish duplicate-import protection and attachment release gates
 └── NARUTO-04: Subscription Enhancements
     ├── Migration: add subscription_kind to finance_subscriptions
     ├── Form: income/expense toggle, income defaults (SALARY category suggestion)
@@ -410,6 +476,16 @@ Batch 4: Integration & Reporting (after Batch 2 merges)
 │   when transaction is composite (affects NARUTO-02 + existing reports)
 ├── Update income/expense classification for subscription kind (NARUTO-04)
 └── Update balance dashboard to reflect debit card transactions correctly (NARUTO-06)
+
+Batch 5: Fiscal Accuracy and Assisted Entry (after NARUTO-03)
+├── NARUTO-07: NF-e model 55 import and fiscal monetary-field analysis
+│   ├── Analyze source fields, status, and total reconciliation before schema decisions
+│   ├── Extend supplied authorized-XML parsing and reviewable cash/card prefill
+│   └── Test adjustments, provenance, and unresolved differences
+└── NARUTO-08: OCR-assisted entry for screenshots, cupoms, NF-e/NFC-e, and budgets
+    ├── Define local/privacy-safe extraction and uncertainty review
+    ├── Combine OCR with available XML/QR evidence, especially on faded cupoms
+    └── Keep the normal transaction form and user confirmation as the save gate
 ```
 
 ## IDEAS
@@ -444,9 +520,11 @@ is a credit card, cleanly separating pre-paid and debit instruments from billing
 logic and making the data model accurate before the balance dashboard reads it.
 `NARUTO-06` assembles the complete liquid-position picture: credit available, pre-paid
 spending, and bank balances in one context-scoped view with a user-defined cofrinho
-reserve.
+reserve. `NARUTO-07` extends fiscal import to NF-e while investigating the fields and
+adjustments required for accurate totals. `NARUTO-08` adds OCR-assisted drafts from
+screenshots and photographed documents, including a fallback for damaged cupoms.
 
-The sprint's schema changes are additive and migration-safe. All six tickets compose
+The sprint's proposed schema changes are additive and migration-safe. All eight tickets compose
 on the KAKASHI-08 audit and rollback foundation: `LineItem` gets its own adapter,
 `Subscription` rollback coverage is verified and extended, and `UserCard` rollback is
 updated for the new kind field. No existing financial safety rules, exchange semantics,

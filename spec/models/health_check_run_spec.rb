@@ -147,7 +147,7 @@ RSpec.describe HealthCheckRun, type: :model do
       unfiltered = build_run.tap(&:save!)
       connected = build_run(connected_user:).tap(&:save!)
 
-      User.where(id: connected_user.id).delete_all
+      connected_user.destroy!
 
       expect(described_class.where(id: connected.id)).not_to exist
       expect(described_class.where(id: unfiltered.id)).to exist

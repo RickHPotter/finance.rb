@@ -27,7 +27,7 @@ every slice.
 ### Goal
 Establish the `line_items` table, build the `LineItem` model with `CategoryTransactable`, `EntityTransactable`,
 and `FinancialAuditable`, establish associations on `CashTransaction` and `CardTransaction`, enforce model
-invariants (sign matching, leaf categories, price sum, minimum count), integrate with `Audit::OwnershipResolver`
+invariants (sign matching, optional leaf category, price sum), integrate with `Audit::OwnershipResolver`
 and `Audit::Rollback::Adapters::LineItem`, and add comprehensive unit/model/rollback specs.
 
 ### Detailed Steps
@@ -61,8 +61,7 @@ and `Audit::Rollback::Adapters::LineItem`, and add comprehensive unit/model/roll
    - Validations:
      - `validates :description, presence: true`
      - `validates :price, presence: true, numericality: { other_than: 0 }`
-     - `validates :category_id, presence: true`
-     - `validate :validate_leaf_category` (must not be a parent category)
+     - `validate :validate_leaf_category` (category is optional; when set, it cannot be a parent)
      - `validate :validate_price_sign_matches_parent` (price sign must match `transactable.price` sign)
 3. **Parent Models (`app/models/cash_transaction.rb` & `app/models/card_transaction.rb`)**:
    - Associations:
@@ -71,7 +70,8 @@ and `Audit::Rollback::Adapters::LineItem`, and add comprehensive unit/model/roll
    - Helpers:
      - `def composite?`: returns true when active line items (`reject(&:marked_for_destruction?)`) are present.
    - Validations:
-     - `validate :validate_composite_line_items_count` (if `composite?`, must have at least 2 line items).
+     - `composite?` is active with one or more non-destroyed line items. The former
+       two-item minimum was removed for one-product fiscal receipts.
      - `validate :validate_line_items_price_sum` (if `composite?`, sum of active line items' price must equal `price`).
    - Callbacks:
      - Before validation / save: when `composite?`, clear direct `category_transactions` and `entity_transactions` on the parent to prevent double-counting.
@@ -89,13 +89,13 @@ and `Audit::Rollback::Adapters::LineItem`, and add comprehensive unit/model/roll
    - `spec/factories/line_items.rb`:
      - Factory for `:line_item` associating with a cash or card transaction, a leaf category, and price.
    - `spec/models/line_item_spec.rb`:
-     - Test description presence, non-zero price, category presence.
+     - Test description and price presence, zero-priced promotional items, and validity with a blank category.
      - Test leaf category validation (reject parent category).
      - Test sign matching validation with parent transaction price.
      - Test virtual accessors `category_id` and `entity_id`.
    - `spec/models/cash_transaction_spec.rb` & `spec/models/card_transaction_spec.rb`:
      - Test `composite?` predicate.
-     - Test minimum line items count (>= 2).
+     - Test that one active line item activates composite mode and validates against the parent total.
      - Test price sum equality validation.
      - Test clearing of parent `category_transactions` and `entity_transactions` when composite.
    - `spec/services/audit/rollback/adapters/line_item_spec.rb`:

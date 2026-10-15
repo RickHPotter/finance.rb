@@ -27,6 +27,11 @@ class Views::CashTransactions::Index < Views::Base
                 render IndexSearchForm.new(url: cash_transactions_path, index_context:, mobile:)
               end
 
+              render Views::Transactions::FiscalImportModal.new(
+                modal_id: "cashFiscalImportModal",
+                transaction_type: "cash_transaction",
+                transaction_url: new_cash_transaction_path(return_to: index_context[:return_to])
+              )
               render PayMultipleModal.new(index_context:)
               render PartialPayMultipleModal.new(index_context:)
               render TransferMultipleModal.new(index_context:)
@@ -111,7 +116,19 @@ class Views::CashTransactions::Index < Views::Base
               render_budget_bulk_action_bar
             end
 
-            render Views::Shared::MobileFloatingNav.new(new_href: new_cash_transaction_path(return_to: index_context[:return_to]))
+            render Views::Shared::MobileFloatingNav.new(
+              new_href: new_cash_transaction_path(return_to: index_context[:return_to]),
+              modal_action: {
+                id: "cashFiscalImportModal",
+                label: I18n.t("fiscal_import.open"),
+                import_label: I18n.t("fiscal_import.import_now")
+              },
+              inbox_action: {
+                href: fiscal_receipt_drafts_path,
+                label: I18n.t("fiscal_import.inbox"),
+                use_saved_label: I18n.t("fiscal_import.use_saved")
+              }
+            )
           end
         end
       end

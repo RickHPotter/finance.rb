@@ -84,6 +84,7 @@ export default class extends Controller {
       "image/heic",
       "application/xml",
       "text/xml",
+      "application/json",
       "application/zip"
     ]
     const allowedExtensions = [".pdf", ".jpg", ".jpeg", ".png", ".heic", ".xml", ".zip"]

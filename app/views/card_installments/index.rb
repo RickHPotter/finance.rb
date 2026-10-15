@@ -293,7 +293,7 @@ class Views::CardInstallments::Index < Views::Base
     render Views::Entities::Popover.new(
       items:,
       mobile: true,
-      target_ids: card_transaction.entities.map(&:id),
+      target_ids: entities_for(card_transaction).map(&:entity_id),
       trigger_label: pluralise_model(Entity, items.count).upcase,
       variant: :card
     )
@@ -303,7 +303,7 @@ class Views::CardInstallments::Index < Views::Base
     render Views::Entities::Popover.new(
       items: entity_popover_items(card_transaction),
       mobile: false,
-      target_ids: card_transaction.entities.map(&:id),
+      target_ids: entities_for(card_transaction).map(&:entity_id),
       trigger_label: "",
       variant: :card
     )
@@ -338,7 +338,7 @@ class Views::CardInstallments::Index < Views::Base
       card_transaction.entity_transactions.includes(:entity).sort_by do |entity_transaction|
         [ entity_transaction.entity&.entity_name.to_s, entity_transaction.id.to_i ]
       end
-    end
+    end.uniq(&:entity_id)
   end
 
   def entity_popover_items(card_transaction)

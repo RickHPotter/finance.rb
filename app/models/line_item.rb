@@ -9,22 +9,18 @@ class LineItem < ApplicationRecord
 
   audits_financial_changes
 
-  # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :skip_category_presence_validation
-
   # @relationships ............................................................
   belongs_to :transactable, polymorphic: true, touch: true
   has_many_attached :receipts
 
   # @validations ..............................................................
   validates :description, presence: true
-  validates :price, presence: true, numericality: { other_than: 0 }
+  validates :price, presence: true, numericality: true
   validates :friend_notification_intent, inclusion: { in: %w[loan reimbursement] }, allow_blank: true
   validates :receipts,
-            content_type: %w[application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
+            content_type: %w[application/json application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],
             size: { less_than_or_equal_to: 10.megabytes },
             limit: { max: 5 }
-  validate :validate_category_presence
   validate :validate_leaf_category
   validate :validate_price_sign_matches_parent
   validate :validate_exchange_friend_notification_intent
@@ -126,22 +122,6 @@ class LineItem < ApplicationRecord
     return unless transactable.respond_to?(:notify_friends_for_line_item_change, true)
 
     transactable.send(:notify_friends_for_line_item_change, action)
-  end
-
-  def validate_category_presence
-    return if skip_category_presence_validation
-    return if category_id.blank? && non_payer_entity_allocation?
-
-    errors.add(:category_id, :blank) if category_id.blank?
-  end
-
-  def non_payer_entity_allocation?
-    allocations = entity_transactions.reject(&:marked_for_destruction?)
-    allocations.present? && allocations.all? do |entity_transaction|
-      entity_transaction.entity_id.present? &&
-        !entity_transaction.is_payer? &&
-        entity_transaction.exchanges.reject(&:marked_for_destruction?).empty?
-    end
   end
 
   def validate_leaf_category

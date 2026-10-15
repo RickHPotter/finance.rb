@@ -20,7 +20,11 @@ export default class extends Controller {
     "parentTotal",
     "allocatedSum",
     "differenceBadge",
-    "differenceLabel"
+    "differenceLabel",
+    "differenceStatus",
+    "bulkCategory",
+    "bulkEntity",
+    "bulkApplyButton"
   ]
 
   connect() {
@@ -133,6 +137,42 @@ export default class extends Controller {
     this.recalculate()
   }
 
+  applyBulkAllocations(event) {
+    event.preventDefault()
+
+    const categoryId = this.hasBulkCategoryTarget ? this.selectedValue(this.bulkCategoryTarget) : null
+    const entityId = this.hasBulkEntityTarget ? this.selectedValue(this.bulkEntityTarget) : null
+    if (!categoryId && !entityId) return
+
+    const rows = this.activeRows
+    rows.forEach(row => {
+      if (categoryId) this.selectRowValue(row, 'input[type="radio"][name$="[category_id]"]', categoryId)
+      if (entityId) this.selectRowValue(row, 'input[type="radio"][name$="[entity_id]"]', entityId)
+    })
+
+  }
+
+  bulkDefaultChanged() {
+    if (!this.hasBulkApplyButtonTarget) return
+
+    const hasDefault = (this.hasBulkCategoryTarget && this.selectedValue(this.bulkCategoryTarget)) ||
+      (this.hasBulkEntityTarget && this.selectedValue(this.bulkEntityTarget))
+    this.bulkApplyButtonTarget.disabled = !hasDefault
+  }
+
+  selectedValue(combobox) {
+    return combobox.querySelector("input[type='radio']:checked")?.value || null
+  }
+
+  selectRowValue(row, selector, value) {
+    const input = Array.from(row.querySelectorAll(selector)).find(option => option.value === value)
+    if (!input || input.checked) return
+
+    input.checked = true
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+    input.dispatchEvent(new Event("change", { bubbles: true }))
+  }
+
   syncRowSign() {
     const sign = this.parentSign
     this.itemPriceTargets.forEach(input => {
@@ -210,33 +250,39 @@ export default class extends Controller {
 
   updateDifferenceBadge(diff, parentCents, activeRowCount) {
     const badge = this.differenceBadgeTarget
+    const status = this.differenceStatusTarget
     const label = this.hasDifferenceLabelTarget ? this.differenceLabelTarget : null
     const balancedText = badge.dataset.balancedText || "Balanced"
-    const minItemsText = badge.dataset.minItemsText || "Min 2 items needed"
+    const minItemsText = badge.dataset.minItemsText || "Add a line item"
     const remainingText = badge.dataset.remainingText || "Remaining:"
     const overAllocatedText = badge.dataset.overAllocatedText || "Over by:"
 
-    badge.className = "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono"
+    badge.className = "font-graduate dark:font-mono"
+    status.className = "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
 
-    if (diff === 0 && activeRowCount >= 2 && parentCents !== 0) {
+    if (diff === 0 && activeRowCount >= 1 && parentCents !== 0) {
+      status.classList.add("bg-emerald-100", "text-emerald-800", "dark:bg-emerald-500/15", "dark:text-emerald-300")
       if (label) {
         label.textContent = ""
         label.classList.add("hidden")
       }
       badge.textContent = balancedText
-    } else if (diff === 0 && activeRowCount < 2) {
+    } else if (diff === 0 && activeRowCount < 1) {
+      status.classList.add("bg-gray-100", "text-gray-600", "dark:bg-slate-700", "dark:text-slate-300")
       if (label) {
         label.textContent = ""
         label.classList.add("hidden")
       }
       badge.textContent = minItemsText
     } else if ((parentCents >= 0 && diff > 0) || (parentCents < 0 && diff < 0)) {
+      status.classList.add("bg-red-100", "text-red-800", "dark:bg-red-500/15", "dark:text-red-300")
       if (label) {
         label.textContent = remainingText
         label.classList.remove("hidden")
       }
       badge.textContent = this.formatCurrency(Math.abs(diff))
     } else {
+      status.classList.add("bg-red-100", "text-red-800", "dark:bg-red-500/15", "dark:text-red-300")
       if (label) {
         label.textContent = overAllocatedText
         label.classList.remove("hidden")

@@ -11,6 +11,7 @@ class DirectUploadsController < ApplicationController
     application/xml
     text/xml
     application/zip
+    application/json
   ].freeze
 
   MAX_RECEIPT_SIZE = 10.megabytes

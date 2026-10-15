@@ -32,7 +32,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
       ) do
         summary_strip
 
-        div(class: "divide-y divide-gray-200 dark:divide-slate-700/40",
+        div(class: "flex flex-col gap-2 divide-y divide-gray-200 py-2 dark:divide-slate-700/40 md:block md:py-0",
             data: { composite_transaction_target: "itemsList" }) do
           render_existing_rows
         end
@@ -41,48 +41,67 @@ class Views::Transactions::FormLineItemsSection < Views::Base
       end
 
       render Views::Transactions::FormLineItemEntityModal.new(form:, transaction:)
+      bulk_defaults_modal
     end
   end
 
   def summary_strip
-    div(class: "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-gray-200 bg-gray-50 px-3 py-1.5 text-xs dark:border-slate-700/40 dark:bg-slate-800/30") do
-      div(class: "flex items-center gap-1.5") do
-        span(class: "text-gray-500 dark:text-slate-500") { I18n.t("transactions.composite.parent_total") }
-        span(class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
-             data: { composite_transaction_target: "parentTotal" }) { "R$ 0,00" }
+    div(class: "flex flex-col gap-2 border-b border-gray-200 bg-gray-50 px-2.5 py-2 text-xs " \
+               "dark:border-slate-700/40 dark:bg-slate-800/30 md:flex-row md:flex-wrap md:items-center md:gap-x-4 md:gap-y-1 md:px-3 md:py-1.5") do
+      div(class: "flex w-full items-center justify-around md:w-auto md:justify-start md:gap-x-3") do
+        div(class: "flex items-center gap-1.5") do
+          span(class: "text-gray-500 dark:text-slate-500") { I18n.t("transactions.composite.parent_total") }
+          span(class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
+               data: { composite_transaction_target: "parentTotal" }) { "R$ 0,00" }
+        end
+        div(class: "hidden text-gray-300 dark:text-slate-600 md:block") { "|" }
+        div(class: "flex items-center gap-1.5") do
+          span(class: "text-gray-500 dark:text-slate-500") { I18n.t("transactions.composite.allocated_sum") }
+          span(class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
+               data: { composite_transaction_target: "allocatedSum" }) { "R$ 0,00" }
+        end
       end
-      div(class: "text-gray-300 dark:text-slate-600") { "|" }
-      div(class: "flex items-center gap-1.5") do
-        span(class: "text-gray-500 dark:text-slate-500") { I18n.t("transactions.composite.allocated_sum") }
-        span(class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
-             data: { composite_transaction_target: "allocatedSum" }) { "R$ 0,00" }
-      end
-      div(class: "text-gray-300 dark:text-slate-600") { "|" }
-      div(class: "flex items-center gap-1.5") do
-        span(class: "text-gray-500 dark:text-slate-500",
-             data: { composite_transaction_target: "differenceLabel" }) { I18n.t("transactions.composite.remaining") }
+      div(class: "flex w-full justify-center md:w-auto md:justify-start") do
         span(
-          class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
-          data: {
-            composite_transaction_target: "differenceBadge",
-            balanced_text: I18n.t("transactions.composite.balanced"),
-            min_items_text: I18n.t("transactions.composite.min_items_needed"),
-            remaining_text: I18n.t("transactions.composite.remaining"),
-            over_allocated_text: I18n.t("transactions.composite.over_allocated")
-          }
-        ) { "R$ 0,00" }
-      end
-      div(class: "ml-auto") do
-        Button(
-          type: :button,
-          variant: :ghost,
-          size: :sm,
-          class: "gap-1 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 px-2 py-1 h-auto " \
-                 "dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800 cursor-pointer",
-          data: { action: "click->composite-transaction#addRow" }
+          class: "inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 " \
+                 "dark:bg-emerald-500/15 dark:text-emerald-300",
+          data: { composite_transaction_target: "differenceStatus" }
         ) do
-          cached_icon(:plus)
-          span { I18n.t("transactions.composite.add_item") }
+          span(data: { composite_transaction_target: "differenceLabel" }) { I18n.t("transactions.composite.remaining") }
+          span(
+            class: "font-graduate dark:font-mono",
+            data: {
+              composite_transaction_target: "differenceBadge",
+              balanced_text: I18n.t("transactions.composite.balanced"),
+              min_items_text: I18n.t("transactions.composite.min_items_needed"),
+              remaining_text: I18n.t("transactions.composite.remaining"),
+              over_allocated_text: I18n.t("transactions.composite.over_allocated")
+            }
+          ) { "R$ 0,00" }
+        end
+      end
+      div(class: "w-full md:ml-auto md:w-auto") do
+        div(class: "grid w-full grid-cols-2 gap-2 md:flex md:w-auto md:justify-end") do
+          Button(
+            type: :button,
+            variant: :ghost,
+            size: :sm,
+            class: split_purchase_action_button_class,
+            data: { modal_target: bulk_defaults_modal_id, modal_toggle: bulk_defaults_modal_id }
+          ) do
+            cached_icon(:cog)
+            span { I18n.t("transactions.composite.defaults_button") }
+          end
+          Button(
+            type: :button,
+            variant: :ghost,
+            size: :sm,
+            class: split_purchase_action_button_class,
+            data: { action: "click->composite-transaction#addRow" }
+          ) do
+            cached_icon(:plus)
+            span { I18n.t("transactions.composite.add_item") }
+          end
         end
       end
     end
@@ -97,6 +116,61 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         render_row(item_form, item, idx)
       end
     end
+  end
+
+  def bulk_defaults_modal
+    ModalShell(
+      id: bulk_defaults_modal_id,
+      title: I18n.t("transactions.composite.bulk_defaults"),
+      options: { content_class: "w-[calc(100vw-2rem)] max-w-lg text-slate-900 dark:text-slate-100" }
+    ) do
+      div(class: "space-y-4") do
+        p(class: "text-sm text-slate-600 dark:text-slate-400") do
+          I18n.t("transactions.composite.bulk_defaults_hint")
+        end
+
+        render Views::Shared::SingleSelectCombobox.new(
+          name: "line_item_bulk_category_id",
+          options: categories,
+          selected_value: nil,
+          placeholder: I18n.t("activerecord.attributes.line_item.category_id"),
+          input_data: { action: "change->ruby-ui--combobox#inputChanged change->composite-transaction#bulkDefaultChanged" },
+          combobox_data: { composite_transaction_target: "bulkCategory" }
+        )
+        render Views::Shared::SingleSelectCombobox.new(
+          name: "line_item_bulk_entity_id",
+          options: entities.map { |label, value| [ label, value, {} ] },
+          selected_value: nil,
+          placeholder: I18n.t("activerecord.attributes.line_item.entity_id"),
+          input_data: { action: "change->ruby-ui--combobox#inputChanged change->composite-transaction#bulkDefaultChanged" },
+          combobox_data: { composite_transaction_target: "bulkEntity" }
+        )
+
+        div(class: "flex justify-end") do
+          Button(
+            type: :button,
+            variant: :default,
+            disabled: true,
+            class: "whitespace-nowrap",
+            data: {
+              action: "click->composite-transaction#applyBulkAllocations",
+              modal_hide: bulk_defaults_modal_id,
+              composite_transaction_target: "bulkApplyButton"
+            }
+          ) { I18n.t("transactions.composite.apply_to_all") }
+        end
+      end
+    end
+  end
+
+  def bulk_defaults_modal_id
+    "lineItemBulkDefaultsModal"
+  end
+
+  def split_purchase_action_button_class
+    "h-auto w-full justify-center gap-1 whitespace-nowrap rounded-md border border-slate-300 px-2 py-1 text-xs text-gray-600 " \
+      "hover:border-slate-400 hover:bg-gray-100 hover:text-gray-900 dark:border-slate-600 dark:text-slate-400 " \
+      "dark:hover:text-slate-100 dark:hover:bg-slate-800 cursor-pointer md:w-36"
   end
 
   def render_initial_row
@@ -125,12 +199,12 @@ class Views::Transactions::FormLineItemsSection < Views::Base
       item_form.hidden_field :id if item.persisted?
       item_form.hidden_field :_destroy, value: (item.marked_for_destruction? ? "1" : "0")
 
-      div(class: "grid min-w-0 flex-1 grid-cols-1 items-center gap-2 #{row_grid_class}") do
-        div(class: "min-w-0") do
+      div(class: "grid min-w-0 w-full flex-1 grid-cols-2 items-center gap-2 md:w-auto #{row_grid_class}") do
+        div(class: "col-span-2 min-w-0 md:col-span-1") do
           item_form.text_field(
             :description,
             placeholder: I18n.t("activerecord.attributes.line_item.description"),
-            class: "#{input_class_without_icon} h-9 px-2.5 py-1.5 text-xs",
+            class: "#{input_class_without_icon} h-9 px-2.5 py-1.5 pr-10 text-xs md:pr-2.5",
             autocomplete: "off"
           )
         end
@@ -138,7 +212,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         div(class: "min-w-0") do
           item_form.text_field(
             :price,
-            value: (item.price.present? && item.price != 0 ? item.price : nil),
+            value: (item.price if item.price.present? && (item.price != 0 || item.description.present? || item.persisted?)),
             placeholder: I18n.t("activerecord.attributes.line_item.price"),
             inputmode: :numeric,
             class: "#{input_class_without_icon} h-9 px-2.5 py-1.5 text-xs font-graduate dark:font-mono sign-based",
@@ -154,7 +228,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
 
         line_item_exchange_intent(item, index) if transaction.is_a?(CashTransaction)
 
-        div(class: "combobox-shell min-w-0 plus-icon") do
+        div(class: "combobox-shell min-w-0 plus-icon #{category_mobile_span}") do
           render Views::Shared::SingleSelectCombobox.new(
             name: "#{form.object_name}[line_items_attributes][#{index}][category_id]",
             options: categories,
@@ -166,7 +240,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
           )
         end
 
-        div(class: "flex min-w-0") do
+        div(class: "col-span-2 flex min-w-0 md:col-span-1") do
           div(class: "combobox-shell user-icon min-w-0 flex-1") do
             render Views::Shared::SingleSelectCombobox.new(
               name: "#{form.object_name}[line_items_attributes][#{index}][entity_transactions_attributes][0][entity_id]",
@@ -204,7 +278,8 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         type: :button,
         variant: :ghost,
         size: :icon,
-        class: "shrink-0 h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:text-slate-500 dark:hover:text-red-400 dark:hover:bg-red-500/10",
+        class: "absolute right-2 top-2 z-10 h-8 w-8 shrink-0 text-gray-400 hover:text-red-500 hover:bg-red-50 " \
+               "dark:text-slate-500 dark:hover:text-red-400 dark:hover:bg-red-500/10 md:static md:z-auto",
         data: { action: "click->composite-transaction#removeRow" }
       ) do
         cached_icon(:destroy)
@@ -275,7 +350,13 @@ class Views::Transactions::FormLineItemsSection < Views::Base
   end
 
   def row_class(item)
-    "flex items-center gap-2 px-3 py-2 #{'hidden' if item.marked_for_destruction?}"
+    "relative flex flex-col items-stretch gap-2 px-2.5 pb-3 pt-1 last:pb-1 md:flex-row md:items-center md:gap-2 " \
+      "md:px-3 md:py-2 md:last:pb-2 " \
+      "#{'hidden' if item.marked_for_destruction?}"
+  end
+
+  def category_mobile_span
+    transaction.is_a?(CashTransaction) ? "col-span-2 md:col-span-1" : nil
   end
 
   def price_sign

@@ -40,7 +40,6 @@ class Audit::Rollback::Adapters::LineItem < Audit::Rollback::Adapters::Base
 
   def recreate_record!
     record = record_class.new(restore_attributes.merge("id" => item_id))
-    record.skip_category_presence_validation = true
     record.save!
   end
 end

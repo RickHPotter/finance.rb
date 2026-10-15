@@ -191,18 +191,60 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
       render Views::Shared::MonthYearSelector.new(current_user:, default_year:, years:, active_month_years:, count_by_month_year:) do
-        link_to new_cash_transaction_path(return_to:),
-                id: "new_cash_transaction",
-                class: index_new_button_class,
-                data: { turbo_frame: "_top", turbo_prefetch: false } do
-          span { action_message(:newa) }
-          span { pluralise_model(CashTransaction, 1) }
+        div(class: "flex items-center gap-2") do
+          div(class: "relative hidden md:block", data: { controller: "action-menu" }) do
+            button(
+              type: :button,
+              class: index_new_button_class,
+              aria: { expanded: "false", haspopup: "menu" },
+              data: { action: "click->action-menu#toggle", action_menu_target: "trigger" }
+            ) do
+              span { I18n.t("fiscal_import.open") }
+              span(class: "text-xs leading-none", aria: { hidden: true }) { "⌄" }
+            end
+            div(
+              class: "absolute left-0 top-full z-50 mt-2 min-w-52 rounded-lg border border-slate-200 bg-white p-1 shadow-xl " \
+                     "dark:border-slate-700 dark:bg-slate-900",
+              hidden: true,
+              role: "menu",
+              data: { action_menu_target: "menu" }
+            ) do
+              button(
+                type: :button,
+                class: action_menu_item_class,
+                role: "menuitem",
+                data: {
+                  action: "click->action-menu#close",
+                  modal_target: "cashFiscalImportModal",
+                  modal_toggle: "cashFiscalImportModal"
+                }
+              ) { I18n.t("fiscal_import.import_now") }
+              link_to fiscal_receipt_drafts_path,
+                      class: action_menu_item_class,
+                      role: "menuitem",
+                      data: { action: "click->action-menu#close", turbo_frame: "_top" } do
+                I18n.t("fiscal_import.use_saved")
+              end
+            end
+          end
+          link_to new_cash_transaction_path(return_to:),
+                  id: "new_cash_transaction",
+                  class: index_new_button_class,
+                  data: { turbo_frame: "_top", turbo_prefetch: false } do
+            span { action_message(:newa) }
+            span { pluralise_model(CashTransaction, 1) }
+          end
         end
       end
     end
   end
 
   private
+
+  def action_menu_item_class
+    "flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100 " \
+      "dark:text-slate-200 dark:hover:bg-slate-800"
+  end
 
   def exact_scope_inputs(scope, **filters)
     filters.each do |key, values|

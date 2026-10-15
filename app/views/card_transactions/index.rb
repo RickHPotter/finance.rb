@@ -29,6 +29,11 @@ class Views::CardTransactions::Index < Views::Base
                 render IndexSearchForm.new(url:, index_context:, mobile:)
               end
 
+              render Views::Transactions::FiscalImportModal.new(
+                modal_id: "cardFiscalImportModal",
+                transaction_type: "card_transaction",
+                transaction_url: new_card_transaction_path(user_card_id: user_card&.id, return_to: index_context[:return_to])
+              )
               render Views::Shared::AddToSubscriptionModal.new(
                 modal_id: "cardTransactionsAddToSubscriptionModal",
                 url: add_to_subscription_card_transactions_path,
@@ -70,7 +75,19 @@ class Views::CardTransactions::Index < Views::Base
               )
             end
 
-            render Views::Shared::MobileFloatingNav.new(new_href: new_card_transaction_path(user_card_id: user_card&.id, return_to: index_context[:return_to]))
+            render Views::Shared::MobileFloatingNav.new(
+              new_href: new_card_transaction_path(user_card_id: user_card&.id, return_to: index_context[:return_to]),
+              modal_action: {
+                id: "cardFiscalImportModal",
+                label: I18n.t("fiscal_import.open"),
+                import_label: I18n.t("fiscal_import.import_now")
+              },
+              inbox_action: {
+                href: fiscal_receipt_drafts_path,
+                label: I18n.t("fiscal_import.inbox"),
+                use_saved_label: I18n.t("fiscal_import.use_saved")
+              }
+            )
           end
         end
       end

@@ -136,6 +136,10 @@ RSpec.describe "CardTransactions", type: :request do
       expect(template.inner_html).to include("card_transaction[line_items_attributes][NEW_LINE_ITEM][description]")
       expect(template.inner_html).not_to include("friend_notification_intent")
       template_row = Nokogiri::HTML.fragment(template.inner_html)
+      row = template_row.at_css("[data-composite-transaction-target='row']")
+      row_grid = row.css("div.grid").first
+      expect(row["class"].split).to include("md:flex-row")
+      expect(row_grid["class"].split).to include("grid-cols-2", "md:grid-cols-[3fr_2fr_4fr_5fr]")
       expect(template_row.at_css("select[data-line-item-exchange-intent='input']")).to be_nil
       expect(document.css('[data-composite-entity-modal-target="content"]').size).to eq(1)
       expect(template.inner_html).to include(
@@ -1616,6 +1620,30 @@ RSpec.describe "CardTransactions", type: :request do
         expect(created_transaction.line_items.pluck(:price)).to contain_exactly(-4_000, -6_000)
         expect(created_transaction.line_items.map(&:category_id)).to contain_exactly(clothing_category.id, electronics_category.id)
         expect(created_transaction.category_transactions.count).to eq(0)
+      end
+
+      it "keeps a free line item when creating a split purchase" do
+        post card_transactions_path, params: {
+          card_transaction: {
+            description: "Card buy one get one free",
+            price: -1_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_card_id: user_card_one.id,
+            card_installments_attributes: [
+              { number: 1, price: -1_000, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year }
+            ],
+            line_items_attributes: [
+              { description: "Paid item", price: -1_000 },
+              { description: "Free item", price: 0 }
+            ]
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:see_other)
+        created_transaction = CardTransaction.find_by!(description: "Card buy one get one free")
+        expect(created_transaction.line_items.pluck(:description, :price)).to contain_exactly([ "Paid item", -1_000 ], [ "Free item", 0 ])
       end
     end
   end

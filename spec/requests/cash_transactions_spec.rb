@@ -126,6 +126,10 @@ RSpec.describe "CashTransactions", type: :request do
       expect(document.css("input[name='cash_transaction[line_items_attributes][0][category_id]'][value='#{exchange_category.id}']")).to be_present
       expect(template.inner_html).to include("cash_transaction[line_items_attributes][NEW_LINE_ITEM][friend_notification_intent]")
       template_row = Nokogiri::HTML.fragment(template.inner_html)
+      row = template_row.at_css("[data-composite-transaction-target='row']")
+      row_grid = row.css("div.grid").first
+      expect(row["class"].split).to include("md:flex-row")
+      expect(row_grid["class"].split).to include("grid-cols-2", "md:grid-cols-[3fr_2fr_2fr_4fr_5fr]")
       intent_select = template_row.at_css("select[data-line-item-exchange-intent='input']")
       expect(intent_select["disabled"]).to be_present
       expect(intent_select["class"]).to include("disabled:cursor-not-allowed", "disabled:bg-slate-100", "disabled:opacity-60")
@@ -2505,6 +2509,35 @@ RSpec.describe "CashTransactions", type: :request do
         expect(created_transaction.line_items.map(&:category_id)).to contain_exactly(grocery_category.id, supply_category.id)
       end
 
+      it "keeps a free line item when creating and editing a split purchase" do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Buy one get one free",
+            price: -1_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_bank_account_id: user_bank_account.id,
+            line_items_attributes: [
+              { description: "Paid item", price: -1_000 },
+              { description: "Free item", price: 0 }
+            ]
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:see_other)
+        created_transaction = CashTransaction.find_by!(description: "Buy one get one free")
+        expect(created_transaction.line_items.pluck(:description, :price)).to contain_exactly([ "Paid item", -1_000 ], [ "Free item", 0 ])
+
+        get edit_cash_transaction_path(created_transaction)
+
+        document = Nokogiri::HTML.fragment(response.body)
+        free_row = document.css("[data-composite-transaction-target~='row']").find do |row|
+          row.at_css("input[name$='[description]']")&.[]("value") == "Free item"
+        end
+        expect(free_row.at_css("input[name$='[price]']")["value"]).to eq("0")
+      end
+
       it "stores separate repayment plans for multiple line items assigned to one entity" do
         exchange_category = user.built_in_category("EXCHANGE")
         repayment_date = 1.month.from_now.to_date
@@ -2637,7 +2670,7 @@ RSpec.describe "CashTransactions", type: :request do
         expect(response).to have_http_status(:unprocessable_content)
       end
 
-      it "fails when only one line item is provided" do
+      it "creates a composite transaction with one line item" do
         expect do
           post cash_transactions_path, params: {
             cash_transaction: {
@@ -2652,9 +2685,10 @@ RSpec.describe "CashTransactions", type: :request do
               ]
             }
           }, headers: turbo_stream_headers
-        end.not_to change(CashTransaction, :count)
+        end.to change(CashTransaction, :count).by(1)
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:see_other)
+        expect(CashTransaction.last.line_items.pluck(:description, :price)).to eq([ [ "Single item", 10_000 ] ])
       end
     end
   end

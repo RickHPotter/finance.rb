@@ -182,12 +182,21 @@ class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
 
   def render_split_purchase_skeleton
     div(class: "overflow-hidden rounded-lg border border-gray-300 bg-white dark:border-slate-700/60 dark:bg-slate-900/30") do
-      div(class: "flex flex-wrap items-center gap-3 border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-slate-700/40 dark:bg-slate-800/30") do
-        3.times { Skeleton(class: "h-4 w-24 rounded-sm") }
-        Skeleton(class: "ml-auto h-7 w-24 rounded-md")
+      div(class: "flex flex-col gap-2 border-b border-gray-200 bg-gray-50 px-2.5 py-2 dark:border-slate-700/40 dark:bg-slate-800/30 " \
+                 "md:flex-row md:flex-wrap md:items-center md:gap-x-4 md:gap-y-1 md:px-3 md:py-1.5") do
+        div(class: "flex w-full items-center justify-around md:w-auto md:justify-start md:gap-x-3") do
+          2.times { Skeleton(class: "h-4 w-24 rounded-sm") }
+        end
+        div(class: "flex w-full justify-center md:w-auto md:justify-start") do
+          Skeleton(class: "h-6 w-28 rounded-full")
+        end
+        div(class: "flex w-full justify-start gap-1 md:ml-auto md:w-auto md:justify-end") do
+          Skeleton(class: "h-7 w-16 rounded-md")
+          Skeleton(class: "h-7 w-24 rounded-md")
+        end
       end
 
-      div(class: "divide-y divide-gray-200 dark:divide-slate-700/40") do
+      div(class: "flex flex-col gap-2 divide-y divide-gray-200 py-2 dark:divide-slate-700/40 md:block md:py-0") do
         split_line_item_count.times { render_split_line_item_skeleton }
       end
     end
@@ -198,7 +207,7 @@ class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
   end
 
   def render_split_line_item_skeleton
-    div(class: "flex items-center gap-2 px-3 py-2") do
+    div(class: "flex items-center gap-2 px-1 pb-3 pt-1 last:pb-1 md:px-3 md:py-2 md:last:pb-2") do
       div(class: "flex min-w-0 flex-1 flex-col items-center gap-2 md:flex-row") do
         Skeleton(class: "h-9 w-full rounded-md md:w-4/12")
         Skeleton(class: "h-9 w-full rounded-md md:w-2/12")

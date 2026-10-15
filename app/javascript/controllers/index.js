@@ -4,6 +4,9 @@
 
 import { application } from "./application"
 
+import ActionMenuController from "./action_menu_controller"
+application.register("action-menu", ActionMenuController)
+
 import AllocationMutationController from "./allocation_mutation_controller"
 application.register("allocation-mutation", AllocationMutationController)
 
@@ -86,6 +89,9 @@ application.register("exchange-lock", ExchangeLockController)
 
 import ExchangeStateSheetController from "./exchange_state_sheet_controller"
 application.register("exchange-state-sheet", ExchangeStateSheetController)
+
+import FiscalImportController from "./fiscal_import_controller"
+application.register("fiscal-import", FiscalImportController)
 
 import FormCollectionCarouselController from "./form_collection_carousel_controller"
 application.register("form-collection-carousel", FormCollectionCarouselController)

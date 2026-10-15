@@ -118,13 +118,14 @@ class Views::CardTransactions::FormControls < Views::Base
 
   def price_and_installments_controls
     positive = card_transaction.price.to_i.positive?
-    sign_bg_colour = positive ? "bg-green-300 dark:bg-green-400 dark:text-slate-950" : "bg-red-300 dark:bg-red-400 dark:text-slate-950"
+    sign_bg_colour = positive ? "bg-green-300 dark:bg-green-400" : "bg-red-300 dark:bg-red-400"
     sign = positive ? "+" : "-"
 
     div(class: "flex w-full lg:w-[24%] lg:flex-none gap-0 mb-3 lg:mb-0") do
       Button(
         size: :lg,
-        class: "h-10 w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
+        class: "h-10 w-1/12 #{sign_bg_colour} border border-gray-300 text-black font-graduate dark:border-slate-700 " \
+               "dark:text-slate-950 dark:font-mono lg:hidden",
         tabindex: -1,
         title: action_message(:toggle_sign),
         data: { action: "click->price-mask#toggleSign click->composite-transaction#recalculate", target: ".sign-based" }

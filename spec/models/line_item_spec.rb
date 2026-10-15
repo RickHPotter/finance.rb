@@ -91,27 +91,25 @@ RSpec.describe LineItem do
       expect(line_item.errors[:price]).to include("can't be blank")
     end
 
-    it "rejects zero price" do
+    it "allows a free item with zero price" do
       line_item = described_class.new(
         transactable: cash_transaction,
-        description: "Apples",
+        description: "Free apples",
         price: 0,
         category: leaf_category
       )
 
-      expect(line_item).not_to be_valid
-      expect(line_item.errors[:price]).to be_present
+      expect(line_item).to be_valid
     end
 
-    it "requires category" do
+    it "allows a blank category" do
       line_item = described_class.new(
         transactable: cash_transaction,
         description: "Apples",
         price: 50_00
       )
 
-      expect(line_item).not_to be_valid
-      expect(line_item.errors[:category_id]).to be_present
+      expect(line_item).to be_valid
     end
 
     it "allows a blank category for a non-payer entity allocation without exchanges" do
