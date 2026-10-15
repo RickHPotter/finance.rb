@@ -87,7 +87,8 @@ module Components
         input(
           type: "file",
           multiple: true,
-          accept: "application/pdf,image/jpeg,image/png,image/heic,application/xml,text/xml,application/zip,.pdf,.jpg,.jpeg,.png,.heic,.xml,.zip",
+          accept: "application/pdf,image/jpeg,image/png,image/heic,application/xml,text/xml,application/zip,application/json," \
+                  ".pdf,.jpg,.jpeg,.png,.heic,.xml,.zip,.json",
           class: "absolute inset-0 opacity-0 cursor-pointer w-full h-full",
           data: {
             attachment_upload_target: "input",

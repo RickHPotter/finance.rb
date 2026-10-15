@@ -5,12 +5,13 @@ class Views::Shared::MobileFloatingNav < Views::Base
 
   include CacheHelper
 
-  attr_reader :new_href, :new_data, :modal_action
+  attr_reader :new_href, :new_data, :modal_action, :inbox_action
 
-  def initialize(new_href:, new_data: {}, modal_action: nil)
+  def initialize(new_href:, new_data: {}, modal_action: nil, inbox_action: nil)
     @new_href = new_href
     @new_data = new_data
     @modal_action = modal_action
+    @inbox_action = inbox_action
   end
 
   def view_template
@@ -45,6 +46,17 @@ class Views::Shared::MobileFloatingNav < Views::Base
         end
       end
 
+      if inbox_action
+        link_to(
+          inbox_action.fetch(:href),
+          title: inbox_action.fetch(:label),
+          aria: { label: inbox_action.fetch(:label) },
+          class: "flex items-center justify-center fixed bottom-36 right-3 h-14 w-14 rounded-full bg-indigo-700 text-white shadow-lg " \
+                 "z-50 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400",
+          data: { turbo_frame: "_top" }
+        ) { cached_icon :paperclip }
+      end
+
       link_to(
         "#",
         class: nav_button_class,
@@ -59,7 +71,8 @@ class Views::Shared::MobileFloatingNav < Views::Base
   private
 
   def nav_button_class
-    "opacity-0 translate-y-2 pointer-events-none flex items-center justify-center fixed bottom-36 right-3
+    bottom = inbox_action ? "bottom-52" : "bottom-36"
+    "opacity-0 translate-y-2 pointer-events-none flex items-center justify-center fixed #{bottom} right-3
      h-12 w-12 bg-gray-300/95 text-black rounded-full shadow-lg z-50 transition-all duration-200".squish
   end
 

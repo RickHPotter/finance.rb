@@ -143,6 +143,12 @@ Rails.application.routes.draw do
   end
 
   resources :fiscal_receipt_imports, only: :create
+  resources :fiscal_receipt_drafts, only: %i[index create destroy] do
+    member do
+      get :cash_transaction
+      get :card_transaction
+    end
+  end
 
   resources :cash_installments, only: [] do
     member do

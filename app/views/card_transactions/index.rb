@@ -77,7 +77,8 @@ class Views::CardTransactions::Index < Views::Base
 
             render Views::Shared::MobileFloatingNav.new(
               new_href: new_card_transaction_path(user_card_id: user_card&.id, return_to: index_context[:return_to]),
-              modal_action: { id: "cardFiscalImportModal", label: I18n.t("fiscal_import.open") }
+              modal_action: { id: "cardFiscalImportModal", label: I18n.t("fiscal_import.open") },
+              inbox_action: { href: fiscal_receipt_drafts_path, label: I18n.t("fiscal_import.inbox") }
             )
           end
         end

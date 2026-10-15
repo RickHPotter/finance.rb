@@ -40,6 +40,9 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def new
     user_bank_account_id = params[:user_bank_account_id] || current_user.default_cash_transaction_user_bank_account
     @cash_transaction = current_context.cash_transactions.new(user: current_user, user_bank_account_id:, date: Time.zone.now)
+    if params[:fiscal_receipt_draft_id].present?
+      @fiscal_receipt_draft = current_user.fiscal_receipt_drafts.with_attached_source.find(params[:fiscal_receipt_draft_id])
+    end
     handle_params
     @chain_context = current_chain_context(mode: "create")
     set_return_to
@@ -48,6 +51,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       current_user:,
       cash_transaction: @cash_transaction,
       chain_context: @chain_context,
+      fiscal_receipt_draft: @fiscal_receipt_draft,
       return_to: @return_to
     )
   end
@@ -70,6 +74,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def create
     @cash_transaction = current_context.cash_transactions.new(assignable_cash_transaction_params.merge(user: current_user, imported: false))
+    attach_fiscal_receipt_draft_source
     apply_submitted_exchange_paid_states!
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
 
@@ -525,7 +530,16 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
     return render_update_form if params[:commit] == "Update"
 
-    saved = apply_source_message(target: @cash_transaction) { @cash_transaction.save }
+    saved =
+      if action_name == "create" && params[:fiscal_receipt_draft_id].present?
+        ActiveRecord::Base.transaction do
+          result = apply_source_message(target: @cash_transaction) { @cash_transaction.save }
+          consume_fiscal_receipt_draft if result
+          result
+        end
+      else
+        apply_source_message(target: @cash_transaction) { @cash_transaction.save }
+      end
     normalize_failed_cash_transaction_save!
     @chain_context = current_chain_context
     set_return_to
@@ -546,6 +560,19 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     redirect_to destination,
                 notice: notification_model(action_name == "create" ? :createda : :updateda, CashTransaction),
                 status: :see_other
+  end
+
+  def attach_fiscal_receipt_draft_source
+    return if params[:fiscal_receipt_draft_id].blank?
+
+    draft = current_user.fiscal_receipt_drafts.with_attached_source.find(params[:fiscal_receipt_draft_id])
+    @cash_transaction.receipts.attach(draft.source.blob) if draft.source.attached?
+  end
+
+  def consume_fiscal_receipt_draft
+    return if params[:fiscal_receipt_draft_id].blank?
+
+    current_user.fiscal_receipt_drafts.find_by(id: params[:fiscal_receipt_draft_id])&.destroy!
   end
 
   def render_save_failure

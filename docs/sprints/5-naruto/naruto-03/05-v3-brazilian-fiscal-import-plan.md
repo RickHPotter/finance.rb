@@ -2,9 +2,10 @@
 
 ## Status and ownership
 
-**First supported-source slice implemented; manual validation and planned fallbacks
-remain.** Authorized XML prefill, Goiás NFC-e signed-QR lookup, Paraná NFC-e key/QR
-lookup, PDF text-source extraction, and image/camera QR scanning are implemented.
+**First supported-source slice and persisted receipt inbox implemented; manual
+validation and planned fallbacks remain.** Authorized XML prefill, Goiás NFC-e
+signed-QR lookup, Paraná NFC-e key/QR lookup, PDF text-source extraction, image/camera
+QR scanning, and the cross-device inbox are implemented.
 The cash/card index pages launch the import modal. It defaults to Goiás, lets the user
 select Paraná, and provides bulk category/entity defaults with per-line-item edits.
 The file picker shows its selected filename and keeps Import file disabled until a
@@ -35,8 +36,9 @@ source file under the existing 10 MiB / attachment-count / MIME security contrac
 
 On final transaction save, attach the saved source artifact to the resulting cash/card
 transaction and consume the inbox item atomically. Explicit deletion removes the saved
-item and its source attachment. Enforce owner/context access on list, read, consume,
-and delete operations; never expose a public blob URL. A user can save multiple items
+item and its source attachment. Scope inbox operations to the owner; apply the user's
+current context only when creating the final transaction. Never expose a public blob
+URL. A user can save multiple items
 and process them independently. A failed transaction save must leave the inbox item
 available for correction/retry.
 
@@ -58,7 +60,8 @@ PDF may contain a QR code, printed key, and/or readable text. The existing 10 Mi
 per-file attachment limit applies; ZIP remains an attachment type, but importing its
 contents is not supported. The modal also offers live camera QR scanning; it scans for
 a QR code and is not OCR/photo text recognition. Successful file imports stage the
-original upload as a receipt attachment; key/URL-only lookup has no file to attach.
+original upload as a receipt attachment; key/URL-only lookup creates a generated JSON
+source manifest attachment.
 
 The access key is different from the short sequential `número do cupom`/`nNF` printed
 on some receipts. A short number alone is insufficient to identify a document across
@@ -172,7 +175,8 @@ and use receipts you are entitled to view. Check every imported amount before sa
    test the camera QR control; it scans QR codes only and does not perform OCR.
    A text PDF containing a Paraná key or a PR QR image should still work. The
    uploaded file is staged in Attachments after a successful import; wait for its
-   upload to finish before saving. A key-only lookup creates no attachment.
+   upload to finish before saving. A key/URL-only lookup attaches a generated JSON
+   manifest containing the normalized draft rather than remote SEFAZ HTML.
 4. Assign categories, review any total difference, and save through the ordinary
    transaction form. Also try a one-product receipt and a receipt with a document
    discount; the former is valid with one LineItem, while the latter must display the
@@ -236,25 +240,29 @@ disabled-until-selected Import file action, and bulk category/entity defaults. T
 plan remains incomplete pending manual validation, the agreed OCR/duplicate/reconciliation
 work, and the V2 attachment release gates.
 
-The saved receipt inbox is a newly agreed requirement and is not implemented. It is
-the persistence layer for phone capture and later desktop transaction entry; it does
-not replace or auto-save normal cash/card transactions.
+The saved receipt inbox has an initial implementation: phone imports can be saved
+without creating a financial transaction, and a user-owned inbox can reopen them in
+cash or card forms on another device. Manual validation is still required; follow-up
+hardening remains open below. The inbox does not replace or auto-save normal
+cash/card transactions.
 
 ### Slice 0 — Persisted receipt inbox and cross-device handoff
 
-- Add an owner-scoped `FiscalReceiptDraft` (or equivalently named) record to persist
-  normalized import data independently from financial transactions. Store its source
-  using a private Active Storage attachment; use the uploaded XML/PDF/photo when
-  present, and a generated JSON manifest for key/URL-only imports.
-- Add a localized “Save for later” action after a successful import, plus a responsive
-  inbox page/action that lists multiple pending receipts on desktop and mobile.
-- Allow opening an inbox item into the ordinary cash/card new-transaction form. Keep
-  existing immediate “Continue” behavior. On successful normal submission, attach the
-  source artifact to the transaction and consume the inbox item; on validation failure,
-  retain the item for retry.
-- Add authenticated ownership/context checks, safe deletion, and tests proving inbox
-  items do not appear in transaction totals, installments, audits, or reports.
-- Acceptance check: import several receipts on mobile, close/reopen the browser or
+Implemented on `naruto-03-v2`: persistence, localized save-for-later action, desktop
+and PWA inbox entry points, cash/card prefill, source transfer on successful save, and
+retention after validation failure have focused model/request/feature coverage.
+
+- Verify the implemented owner-scoped `FiscalReceiptDraft` persists normalized data
+  independently from financial transactions and stores its source as a private Active
+  Storage attachment.
+- Verify the localized “Save for later” action, responsive inbox entry points, and
+  multi-item desktop/mobile list. Keep immediate “Continue” behavior.
+- Verify opening an item prefills the ordinary cash/card form. On successful normal
+  submission, transfer the source artifact and consume the inbox item atomically; on
+  validation failure, retain the item for retry.
+- Maintain authenticated owner checks, safe deletion, and specs proving inbox items do
+  not appear in transaction totals, installments, or reports.
+- Manual acceptance: import several receipts on mobile, close/reopen the browser or
   switch devices, review each on desktop, save as cash/card transactions, and confirm
   each final transaction retains its original source attachment.
 
@@ -301,15 +309,15 @@ confirm this flow end-to-end for both transaction types.
 
 ### Slice 4 — Duplicate protection and persistence policy
 
-Partially complete: imported uploaded source files are staged as transaction receipt
-attachments; key/QR-only imports do not fabricate an attachment. Duplicate policy and
-protection are still undecided/unimplemented.
+Partially complete: imported uploaded source files and generated key/QR-only manifests
+are staged as receipt attachments, including through the saved receipt inbox. Duplicate
+policy and protection are still undecided/unimplemented.
 
 - Define whether fiscal identifiers are stored on the transaction or an import record.
 - Prevent accidental duplicate imports within the agreed user/context scope, while
   allowing an explicit intentional duplicate if the product decision permits it.
-- Avoid retaining or logging remote response bodies; only the user's uploaded file is
-  staged as an attachment.
+- Avoid retaining or logging remote response bodies; retain the user's uploaded file
+  or a local normalized JSON manifest only.
 
 ### Slice 5 — Verification and rollout
 

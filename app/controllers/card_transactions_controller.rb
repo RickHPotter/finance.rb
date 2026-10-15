@@ -53,6 +53,9 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def new
+    if params[:fiscal_receipt_draft_id].present?
+      @fiscal_receipt_draft = current_user.fiscal_receipt_drafts.with_attached_source.find(params[:fiscal_receipt_draft_id])
+    end
     @card_transaction = current_context.card_transactions.new(
       user: current_user,
       user_card_id: params[:user_card_id] || current_user.user_cards.active.order(:user_card_name).first.id,
@@ -67,6 +70,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       current_user:,
       card_transaction: @card_transaction,
       chain_context: @chain_context,
+      fiscal_receipt_draft: @fiscal_receipt_draft,
       return_to: @return_to
     )
   end
@@ -82,6 +86,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def create
     @card_transaction = current_context.card_transactions.new(assignable_card_transaction_params.merge(user: current_user, imported: false))
+    attach_fiscal_receipt_draft_source
 
     if finish_chain_without_save_requested?
       handle_chain_finish_without_save
@@ -160,7 +165,16 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def handle_save
     return render_local_update if params[:commit] == "Update"
 
-    saved = @card_transaction.save
+    saved =
+      if action_name == "create" && params[:fiscal_receipt_draft_id].present?
+        ActiveRecord::Base.transaction do
+          result = @card_transaction.save
+          consume_fiscal_receipt_draft if result
+          result
+        end
+      else
+        @card_transaction.save
+      end
     normalize_failed_card_transaction_save! unless saved
     @chain_context = current_chain_context
     set_return_to
@@ -201,6 +215,19 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     redirect_to handle_chain_save_success,
                 notice: notification_model(action_name == "create" ? :createda : :updateda, CardTransaction),
                 status: :see_other
+  end
+
+  def attach_fiscal_receipt_draft_source
+    return if params[:fiscal_receipt_draft_id].blank?
+
+    draft = current_user.fiscal_receipt_drafts.with_attached_source.find(params[:fiscal_receipt_draft_id])
+    @card_transaction.receipts.attach(draft.source.blob) if draft.source.attached?
+  end
+
+  def consume_fiscal_receipt_draft
+    return if params[:fiscal_receipt_draft_id].blank?
+
+    current_user.fiscal_receipt_drafts.find_by(id: params[:fiscal_receipt_draft_id])&.destroy!
   end
 
   def pay_in_advance

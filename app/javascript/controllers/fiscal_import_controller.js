@@ -6,14 +6,17 @@ import jsQR from "jsqr"
 const PENDING_DRAFT_KEY = "pendingFiscalReceiptImport"
 
 export default class extends Controller {
-  static targets = ["file", "fileName", "importButton", "source", "state", "button", "status", "cameraPanel", "video", "continueButton"]
+  static targets = ["file", "fileName", "importButton", "source", "state", "button", "status", "cameraPanel", "video", "continueButton", "saveDraftButton"]
   static values = {
     url: String,
+    draftsUrl: String,
     reviewMessage: String,
     messages: Object,
     transactionUrl: String,
     transactionType: String,
-    directUploadUrl: String
+    directUploadUrl: String,
+    pendingDraft: Object,
+    pendingDraftId: String
   }
 
   connect() {
@@ -180,6 +183,8 @@ export default class extends Controller {
         this.importedFile = file
         this.continueButtonTarget.hidden = false
         this.continueButtonTarget.disabled = false
+        this.saveDraftButtonTarget.hidden = false
+        this.saveDraftButtonTarget.disabled = false
         this.showStatus(this.reviewMessageValue.replace("%{count}", result.draft.items.length))
       } else {
         this.applyDraft(result.draft)
@@ -201,7 +206,7 @@ export default class extends Controller {
     this.showStatus(this.message("preparing"))
 
     try {
-      const receiptSignedId = this.importedFile ? await this.uploadReceipt(this.importedFile) : null
+      const receiptSignedId = await this.uploadReceipt(this.sourceFileForPendingDraft())
       sessionStorage.setItem(PENDING_DRAFT_KEY, JSON.stringify({
         transactionType: this.transactionTypeValue,
         draft: this.pendingDraft,
@@ -212,6 +217,51 @@ export default class extends Controller {
       this.continueButtonTarget.disabled = false
       this.showStatus(this.localizedError(error, "upload_failed"), true)
     }
+  }
+
+  async saveForLater() {
+    if (!this.pendingDraft || !this.hasDraftsUrlValue) return
+
+    this.saveDraftButtonTarget.disabled = true
+    this.showStatus(this.message("saving_draft"))
+
+    try {
+      const sourceSignedId = this.importedFile ? await this.uploadReceipt(this.importedFile) : null
+      const response = await fetch(this.draftsUrlValue, {
+        method: "POST",
+        headers: {
+          "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content || "",
+          Accept: "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ draft: this.pendingDraft, source_signed_id: sourceSignedId })
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || this.message("import_failed"))
+
+      this.showStatus(this.message("draft_saved"))
+      this.pendingDraft = null
+      this.importedFile = null
+      this.fileTarget.value = ""
+      this.fileChosen()
+      this.sourceTarget.value = ""
+      this.continueButtonTarget.hidden = true
+      this.saveDraftButtonTarget.hidden = true
+    } catch (error) {
+      this.saveDraftButtonTarget.disabled = false
+      this.showStatus(this.localizedError(error, "upload_failed"), true)
+    }
+  }
+
+  sourceFileForPendingDraft() {
+    if (this.importedFile) return this.importedFile
+
+    const manifest = {
+      format: "finance-fiscal-receipt-draft-v1",
+      saved_at: new Date().toISOString(),
+      draft: this.pendingDraft
+    }
+    return new File([JSON.stringify(manifest)], "fiscal-receipt-source.json", { type: "application/json" })
   }
 
   uploadReceipt(file) {
@@ -225,6 +275,17 @@ export default class extends Controller {
 
   applyPendingDraft() {
     if (!this.element.matches("#transaction_form")) return
+
+    if (this.hasPendingDraftValue && this.hasPendingDraftIdValue) {
+      try {
+        this.applyDraft(this.pendingDraftValue)
+        this.element.removeAttribute("data-fiscal-import-pending-draft-value")
+        this.element.removeAttribute("data-fiscal-import-pending-draft-id-value")
+      } catch (error) {
+        console.error("Could not apply the saved fiscal receipt draft", error)
+      }
+      return
+    }
 
     const serialized = sessionStorage.getItem(PENDING_DRAFT_KEY)
     if (!serialized || !this.hasTransactionTypeValue) return

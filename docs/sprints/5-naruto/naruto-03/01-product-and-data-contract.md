@@ -21,6 +21,9 @@ a private JSON source manifest rather than archiving remote SEFAZ HTML. Transfer
 source to the final transaction only when its normal save succeeds. See the V3 plan's
 “saved receipt inbox” requirement and Slice 0.
 
+The first persisted receipt-inbox workflow is implemented: a cupom can be saved on one
+device and opened later in either cash or card transaction form; the uploaded source or
+a generated JSON manifest becomes a transaction attachment only after successful save.
 Remaining work includes manual validation on both transaction types and supported
 source paths, attachment security/failure-path and deployed storage verification,
 duplicate-document handling, OCR for receipts without a usable QR/key/XML, and any
@@ -42,9 +45,8 @@ the homolog deployment must still be retried and observed healthy.
   Line items have a model-level attachment association only; their upload UI is deferred.
 - The accepted types are PDF (`application/pdf`), JPEG (`image/jpeg`), PNG (`image/png`),
   HEIC (`image/heic`), XML (`application/xml` or `text/xml`), and ZIP
-  (`application/zip`). Persisted fiscal receipt drafts may additionally carry a
-  generated JSON source manifest (`application/json`) for key/URL-only imports; JSON
-  is not an accepted user-upload type.
+  (`application/zip`). A saved key/URL-only fiscal receipt also generates a JSON source
+  manifest (`application/json`), which can be retained as a transaction receipt.
 - **Every attachment, including every picture, PDF, XML, and ZIP, is limited to 10 MiB.**
   Every host record is limited to five receipts. Both limits and the content-type
   allowlist are model validations on all three hosts. Client-side checks are feedback,

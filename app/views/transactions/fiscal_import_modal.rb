@@ -21,6 +21,7 @@ class Views::Transactions::FiscalImportModal < Views::Base
         content_data: {
           controller: "fiscal-import",
           fiscal_import_url_value: fiscal_receipt_imports_path,
+          fiscal_import_drafts_url_value: fiscal_receipt_drafts_path,
           fiscal_import_transaction_url_value: transaction_url,
           fiscal_import_transaction_type_value: transaction_type,
           fiscal_import_direct_upload_url_value: rails_direct_uploads_path,
@@ -38,6 +39,15 @@ class Views::Transactions::FiscalImportModal < Views::Base
         disabled: true,
         data: { action: "click->fiscal-import#continueToTransaction", fiscal_import_target: "continueButton" }
       ) { I18n.t("fiscal_import.continue") }
+
+      button(
+        type: :button,
+        class: "mt-2 w-full rounded-md border border-sky-700 px-4 py-2 text-sm font-semibold text-sky-800 hover:bg-sky-50 " \
+               "dark:text-sky-200 dark:hover:bg-slate-800",
+        hidden: true,
+        disabled: true,
+        data: { action: "click->fiscal-import#saveForLater", fiscal_import_target: "saveDraftButton" }
+      ) { I18n.t("fiscal_import.save_for_later") }
     end
   end
 end

@@ -42,4 +42,14 @@ RSpec.describe FiscalReceiptDraft, type: :model do
     expect(oversized_payload).not_to be_valid
     expect(oversized_payload.errors).to include(:payload)
   end
+
+  it "rejects imported rows without a description or positive integer amount" do
+    invalid_rows = described_class.new(
+      user:,
+      payload: payload.merge("items" => [ { "description" => "", "price_cents" => "1150" } ])
+    )
+
+    expect(invalid_rows).not_to be_valid
+    expect(invalid_rows.errors).to include(:payload)
+  end
 end

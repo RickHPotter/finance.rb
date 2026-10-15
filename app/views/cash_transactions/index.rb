@@ -118,7 +118,8 @@ class Views::CashTransactions::Index < Views::Base
 
             render Views::Shared::MobileFloatingNav.new(
               new_href: new_cash_transaction_path(return_to: index_context[:return_to]),
-              modal_action: { id: "cashFiscalImportModal", label: I18n.t("fiscal_import.open") }
+              modal_action: { id: "cashFiscalImportModal", label: I18n.t("fiscal_import.open") },
+              inbox_action: { href: fiscal_receipt_drafts_path, label: I18n.t("fiscal_import.inbox") }
             )
           end
         end

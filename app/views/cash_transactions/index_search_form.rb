@@ -204,6 +204,9 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
             class: index_new_button_class,
             data: { modal_target: "cashFiscalImportModal", modal_toggle: "cashFiscalImportModal" }
           ) { I18n.t("fiscal_import.open") }
+          link_to fiscal_receipt_drafts_path, class: index_new_button_class, data: { turbo_frame: "_top" } do
+            I18n.t("fiscal_import.inbox")
+          end
         end
       end
     end

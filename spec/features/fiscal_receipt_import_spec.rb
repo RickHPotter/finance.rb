@@ -54,6 +54,41 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(CardTransaction.where(description: "Mercado Exemplo")).not_to exist
   end
 
+  it "saves imported receipts to the cross-device inbox without creating a transaction" do
+    visit cash_transactions_path
+    click_button(I18n.t("fiscal_import.open"))
+    find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
+    click_button(I18n.t("fiscal_import.import_file"))
+    click_button(I18n.t("fiscal_import.save_for_later"))
+
+    expect(page).to have_css("[data-fiscal-import-target='status']", text: I18n.t("fiscal_import.messages.draft_saved"))
+    receipt_draft = user.fiscal_receipt_drafts.sole
+    expect(receipt_draft.fiscal_draft).to include("issuer" => "Mercado Exemplo", "total_cents" => 1975)
+    expect(receipt_draft.source.blob.filename.to_s).to eq("fiscal_receipt.xml")
+    expect(CashTransaction.where(description: "Mercado Exemplo")).not_to exist
+
+    visit fiscal_receipt_drafts_path
+    expect(page).to have_text("Mercado Exemplo")
+    expect(page).to have_link(I18n.t("fiscal_import.open_cash"))
+    expect(page).to have_link(I18n.t("fiscal_import.open_card"))
+
+    click_link(I18n.t("fiscal_import.open_cash"))
+    expect(page).to have_field("cash_transaction[description]", with: "Mercado Exemplo")
+    expect(page).to have_field("cash_transaction_date_date_input", with: "2026-10-14")
+    expect(page).to have_field("cash_transaction_date_time_input", with: "12:30")
+    expect(page).to have_field("fiscal_receipt_draft_id", with: receipt_draft.id.to_s, type: "hidden")
+    expect(user.fiscal_receipt_drafts).to contain_exactly(receipt_draft)
+    expect(CashTransaction.where(description: "Mercado Exemplo")).not_to exist
+
+    visit fiscal_receipt_drafts_path
+    create(:user_card, :random, user:)
+    click_link(I18n.t("fiscal_import.open_card"))
+    expect(page).to have_field("card_transaction[description]", with: "Mercado Exemplo")
+    expect(page).to have_field("card_transaction_date_date_input", with: "2026-10-14")
+    expect(page).to have_field("card_transaction_date_time_input", with: "12:30")
+    expect(page).to have_field("fiscal_receipt_draft_id", with: receipt_draft.id.to_s, type: "hidden")
+  end
+
   it "provides localized import status messages in desktop and PWA layouts" do
     [ [ "en", :en ], [ "pt-BR", :"pt-BR" ] ].each do |stored_locale, locale|
       user.profile.update!(locale: stored_locale)
@@ -97,7 +132,30 @@ RSpec.describe "Fiscal receipt import", type: :feature do
 
       expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 2)
       expect(page).to have_field("cash_transaction[price]", with: "-R$ 20.75")
+      expect(page).to have_field("cash_transaction[receipts][]", type: "hidden")
     end
+  end
+
+  it "attaches a generated source manifest when continuing from a key-only lookup" do
+    key = "41140978393592000146651000000000031222222235"
+    html = <<~HTML
+      <div id="u20">Mercado Exemplo</div>
+      <table id="tabResult"><tr><td><span class="txtTit2">Arroz</span></td><td class="txtTit3">Vl. Total 12,50</td></tr></table>
+      <div id="linhaTotal"><label>Valor a pagar R$:</label><span class="totalNumb">12,50</span></div>
+    HTML
+    stub_request(:get, %r{www\.fazenda\.pr\.gov\.br/nfce/qrcode}).to_return(status: 200, body: html)
+
+    visit cash_transactions_path
+    click_button(I18n.t("fiscal_import.open"))
+    select(I18n.t("fiscal_import.states.parana"), from: "fiscal_import_state")
+    find("[data-fiscal-import-target='source']").set(key)
+    click_button(I18n.t("fiscal_import.lookup"))
+    click_button(I18n.t("fiscal_import.continue"))
+
+    signed_id = find("input[name='cash_transaction[receipts][]']", visible: :all).value
+    blob = ActiveStorage::Blob.find_signed!(signed_id)
+    expect(blob.filename.to_s).to eq("fiscal-receipt-source.json")
+    expect(JSON.parse(blob.download)).to include("format" => "finance-fiscal-receipt-draft-v1")
   end
 
   def with_qr_png(value)
@@ -117,7 +175,8 @@ RSpec.describe "Fiscal receipt import", type: :feature do
       "button[data-modal-toggle='#{modal_id}'][class~='bottom-20'][class~='right-3'][class~='h-14'][class~='w-14']"
     )
     expect(page).to have_css("a[data-mobile-scroll-nav='plus'][class~='h-14'][class~='w-14']")
-    expect(page).to have_css("a[data-mobile-scroll-nav='top'][class~='bottom-36']", visible: :all)
-    expect(page).to have_css("a[data-mobile-scroll-nav='bottom'][class~='bottom-36']", visible: :all)
+    expect(page).to have_css("a[data-mobile-scroll-nav='top'][class~='bottom-52']", visible: :all)
+    expect(page).to have_css("a[data-mobile-scroll-nav='bottom'][class~='bottom-52']", visible: :all)
+    expect(page).to have_link(I18n.t("fiscal_import.inbox"), class: "bottom-36")
   end
 end
