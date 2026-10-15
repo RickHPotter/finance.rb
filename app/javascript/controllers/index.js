@@ -4,6 +4,9 @@
 
 import { application } from "./application"
 
+import ActionMenuController from "./action_menu_controller"
+application.register("action-menu", ActionMenuController)
+
 import AllocationMutationController from "./allocation_mutation_controller"
 application.register("allocation-mutation", AllocationMutationController)
 

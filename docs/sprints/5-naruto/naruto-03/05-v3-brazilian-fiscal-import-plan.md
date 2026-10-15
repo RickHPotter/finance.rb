@@ -240,6 +240,13 @@ disabled-until-selected Import file action, and bulk category/entity defaults. T
 plan remains incomplete pending manual validation, the agreed OCR/duplicate/reconciliation
 work, and the V2 attachment release gates.
 
+On desktop and PWA, the index-page import entry is a localized menu for importing now
+or opening saved receipts; the ordinary New Transaction action remains separate. The
+saved-receipt inbox uses the standard full-width index layout with responsive entries.
+Imported items open the regular cash/card Split Purchase form, whose mobile line-item
+spacing and balance summary are adapted for narrow screens without changing the desktop
+form behavior.
+
 The saved receipt inbox has an initial implementation: phone imports can be saved
 without creating a financial transaction, and a user-owned inbox can reopen them in
 cash or card forms on another device. Manual validation is still required; follow-up

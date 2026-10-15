@@ -15,9 +15,9 @@ RSpec.describe "Fiscal receipt import", type: :feature do
 
   it "prefills an unsaved cash split purchase from fiscal XML" do
     visit cash_transactions_path
-    expect(page).to have_css("div[class~='md:hidden'] button[data-modal-toggle='cashFiscalImportModal']")
+    expect(page).to have_css("div[class~='md:hidden'] [data-controller='action-menu'] button[aria-haspopup='menu']")
     expect_mobile_floating_nav_layout("cashFiscalImportModal")
-    click_button(I18n.t("fiscal_import.open"))
+    open_receipt_menu
     expect(page).to have_button(I18n.t("fiscal_import.import_file"), disabled: true)
     find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
     expect(page).to have_button(I18n.t("fiscal_import.import_file"), disabled: false)
@@ -25,6 +25,18 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     click_button(I18n.t("fiscal_import.continue"))
 
     expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 2)
+    separator_spacing = page.evaluate_script(<<~JS)
+      (() => {
+        const rows = [...document.querySelectorAll("[data-composite-transaction-target~='row']:not(.hidden)")]
+        const firstBottom = rows[0].getBoundingClientRect().bottom
+        return {
+          before: firstBottom - rows[0].querySelector(".grid").getBoundingClientRect().bottom,
+          after: rows[1].querySelector(".grid").getBoundingClientRect().top - firstBottom
+        }
+      })()
+    JS
+    expect(separator_spacing.fetch("before")).to be >= 11
+    expect((separator_spacing.fetch("before") - separator_spacing.fetch("after")).abs).to be <= 2
     expect(page).to have_field("cash_transaction[description]", with: "Mercado Exemplo")
     expect(page).to have_field("cash_transaction[price]", with: "-R$ 19.75")
     expect(page).to have_field("cash_transaction_date_date_input", with: "2026-10-14")
@@ -37,9 +49,9 @@ RSpec.describe "Fiscal receipt import", type: :feature do
   it "prefills an unsaved card split purchase from fiscal XML" do
     card = create(:user_card, :random, user:)
     visit card_transactions_path(user_card_id: card.id)
-    expect(page).to have_css("div[class~='md:hidden'] button[data-modal-toggle='cardFiscalImportModal']")
+    expect(page).to have_css("div[class~='md:hidden'] [data-controller='action-menu'] button[aria-haspopup='menu']")
     expect_mobile_floating_nav_layout("cardFiscalImportModal")
-    click_button(I18n.t("fiscal_import.open"))
+    open_receipt_menu
     find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
     expect(page).to have_button(I18n.t("fiscal_import.import_file"), disabled: false)
     click_button(I18n.t("fiscal_import.import_file"))
@@ -56,7 +68,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
 
   it "saves imported receipts to the cross-device inbox without creating a transaction" do
     visit cash_transactions_path
-    click_button(I18n.t("fiscal_import.open"))
+    open_receipt_menu
     find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
     click_button(I18n.t("fiscal_import.import_file"))
     click_button(I18n.t("fiscal_import.save_for_later"))
@@ -67,11 +79,18 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(receipt_draft.source.blob.filename.to_s).to eq("fiscal_receipt.xml")
     expect(CashTransaction.where(description: "Mercado Exemplo")).not_to exist
 
-    visit fiscal_receipt_drafts_path
+    visit cash_transactions_path
+    click_button(I18n.t("fiscal_import.open"))
+    click_link(I18n.t("fiscal_import.use_saved"))
     expect(page).to have_text("Mercado Exemplo")
+    expect(page).to have_text("R$ 19,75")
+    expect(page).to have_css("div[class~='lg:grid-cols-2']")
     expect(page).to have_link(I18n.t("fiscal_import.open_cash"))
     expect(page).to have_link(I18n.t("fiscal_import.open_card"))
 
+    page.driver.browser.manage.window.resize_to(1280, 844)
+    visit fiscal_receipt_drafts_path
+    expect(page).to have_css("div[class~='lg:grid-cols-2']")
     click_link(I18n.t("fiscal_import.open_cash"))
     expect(page).to have_field("cash_transaction[description]", with: "Mercado Exemplo")
     expect(page).to have_field("cash_transaction_date_date_input", with: "2026-10-14")
@@ -124,7 +143,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
 
     with_qr_png(qr_url) do |path|
       visit cash_transactions_path
-      click_button(I18n.t("fiscal_import.open"))
+      open_receipt_menu
       find("[data-fiscal-import-target='file']", visible: :all).attach_file(path)
       expect(page).to have_button(I18n.t("fiscal_import.import_file"), disabled: false)
       click_button(I18n.t("fiscal_import.import_file"))
@@ -146,7 +165,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     stub_request(:get, %r{www\.fazenda\.pr\.gov\.br/nfce/qrcode}).to_return(status: 200, body: html)
 
     visit cash_transactions_path
-    click_button(I18n.t("fiscal_import.open"))
+    open_receipt_menu
     select(I18n.t("fiscal_import.states.parana"), from: "fiscal_import_state")
     find("[data-fiscal-import-target='source']").set(key)
     click_button(I18n.t("fiscal_import.lookup"))
@@ -172,11 +191,18 @@ RSpec.describe "Fiscal receipt import", type: :feature do
 
   def expect_mobile_floating_nav_layout(modal_id)
     expect(page).to have_css(
-      "button[data-modal-toggle='#{modal_id}'][class~='bottom-20'][class~='right-3'][class~='h-14'][class~='w-14']"
+      "[data-controller='action-menu'][class~='bottom-20'][class~='right-3'] button[aria-haspopup='menu'][class~='h-14'][class~='w-14']"
     )
     expect(page).to have_css("a[data-mobile-scroll-nav='plus'][class~='h-14'][class~='w-14']")
     expect(page).to have_css("a[data-mobile-scroll-nav='top'][class~='bottom-52']", visible: :all)
     expect(page).to have_css("a[data-mobile-scroll-nav='bottom'][class~='bottom-52']", visible: :all)
-    expect(page).to have_link(I18n.t("fiscal_import.inbox"), class: "bottom-36")
+    expect(page).to have_css("[data-modal-toggle='#{modal_id}']", visible: :all)
+    expect(page).to have_css("[data-action-menu-target='menu']", visible: :all)
+  end
+
+  def open_receipt_menu
+    click_button(I18n.t("fiscal_import.open"))
+    expect(page).to have_link(I18n.t("fiscal_import.use_saved"))
+    click_button(I18n.t("fiscal_import.import_now"))
   end
 end

@@ -32,7 +32,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
       ) do
         summary_strip
 
-        div(class: "divide-y divide-gray-200 dark:divide-slate-700/40",
+        div(class: "flex flex-col gap-2 divide-y divide-gray-200 py-2 dark:divide-slate-700/40 md:block md:py-0",
             data: { composite_transaction_target: "itemsList" }) do
           render_existing_rows
         end
@@ -46,50 +46,57 @@ class Views::Transactions::FormLineItemsSection < Views::Base
   end
 
   def summary_strip
-    div(class: "flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs " \
-               "dark:border-slate-700/40 dark:bg-slate-800/30 md:gap-x-4 md:gap-y-1 md:px-3") do
-      div(class: "flex items-center gap-1.5") do
-        span(class: "text-gray-500 dark:text-slate-500") { I18n.t("transactions.composite.parent_total") }
-        span(class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
-             data: { composite_transaction_target: "parentTotal" }) { "R$ 0,00" }
+    div(class: "flex flex-col gap-2 border-b border-gray-200 bg-gray-50 px-2.5 py-2 text-xs " \
+               "dark:border-slate-700/40 dark:bg-slate-800/30 md:flex-row md:flex-wrap md:items-center md:gap-x-4 md:gap-y-1 md:px-3 md:py-1.5") do
+      div(class: "flex w-full items-center justify-around md:w-auto md:justify-start md:gap-x-3") do
+        div(class: "flex items-center gap-1.5") do
+          span(class: "text-gray-500 dark:text-slate-500") { I18n.t("transactions.composite.parent_total") }
+          span(class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
+               data: { composite_transaction_target: "parentTotal" }) { "R$ 0,00" }
+        end
+        div(class: "hidden text-gray-300 dark:text-slate-600 md:block") { "|" }
+        div(class: "flex items-center gap-1.5") do
+          span(class: "text-gray-500 dark:text-slate-500") { I18n.t("transactions.composite.allocated_sum") }
+          span(class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
+               data: { composite_transaction_target: "allocatedSum" }) { "R$ 0,00" }
+        end
       end
-      div(class: "hidden text-gray-300 dark:text-slate-600 md:block") { "|" }
-      div(class: "flex items-center gap-1.5") do
-        span(class: "text-gray-500 dark:text-slate-500") { I18n.t("transactions.composite.allocated_sum") }
-        span(class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
-             data: { composite_transaction_target: "allocatedSum" }) { "R$ 0,00" }
-      end
-      div(class: "hidden text-gray-300 dark:text-slate-600 md:block") { "|" }
-      div(class: "flex items-center gap-1.5") do
-        span(class: "text-gray-500 dark:text-slate-500",
-             data: { composite_transaction_target: "differenceLabel" }) { I18n.t("transactions.composite.remaining") }
+      div(class: "flex w-full justify-center md:w-auto md:justify-start") do
         span(
-          class: "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono",
-          data: {
-            composite_transaction_target: "differenceBadge",
-            balanced_text: I18n.t("transactions.composite.balanced"),
-            min_items_text: I18n.t("transactions.composite.min_items_needed"),
-            remaining_text: I18n.t("transactions.composite.remaining"),
-            over_allocated_text: I18n.t("transactions.composite.over_allocated")
-          }
-        ) { "R$ 0,00" }
+          class: "inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 " \
+                 "dark:bg-emerald-500/15 dark:text-emerald-300",
+          data: { composite_transaction_target: "differenceStatus" }
+        ) do
+          span(data: { composite_transaction_target: "differenceLabel" }) { I18n.t("transactions.composite.remaining") }
+          span(
+            class: "font-graduate dark:font-mono",
+            data: {
+              composite_transaction_target: "differenceBadge",
+              balanced_text: I18n.t("transactions.composite.balanced"),
+              min_items_text: I18n.t("transactions.composite.min_items_needed"),
+              remaining_text: I18n.t("transactions.composite.remaining"),
+              over_allocated_text: I18n.t("transactions.composite.over_allocated")
+            }
+          ) { "R$ 0,00" }
+        end
       end
-      div(class: "ml-auto w-full md:w-auto") do
-        div(class: "flex items-center justify-end gap-1") do
+      div(class: "w-full md:ml-auto md:w-auto") do
+        div(class: "grid w-full grid-cols-2 gap-2 md:flex md:w-auto md:justify-end") do
           Button(
             type: :button,
             variant: :ghost,
             size: :sm,
-            class: "px-2 py-1 h-auto text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 " \
-                   "dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800 cursor-pointer",
+            class: split_purchase_action_button_class,
             data: { modal_target: bulk_defaults_modal_id, modal_toggle: bulk_defaults_modal_id }
-          ) { I18n.t("transactions.composite.defaults_button") }
+          ) do
+            cached_icon(:cog)
+            span { I18n.t("transactions.composite.defaults_button") }
+          end
           Button(
             type: :button,
             variant: :ghost,
             size: :sm,
-            class: "gap-1 px-2 py-1 h-auto text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 " \
-                   "dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800 cursor-pointer",
+            class: split_purchase_action_button_class,
             data: { action: "click->composite-transaction#addRow" }
           ) do
             cached_icon(:plus)
@@ -158,6 +165,12 @@ class Views::Transactions::FormLineItemsSection < Views::Base
 
   def bulk_defaults_modal_id
     "lineItemBulkDefaultsModal"
+  end
+
+  def split_purchase_action_button_class
+    "h-auto w-full justify-center gap-1 whitespace-nowrap rounded-md border border-slate-300 px-2 py-1 text-xs text-gray-600 " \
+      "hover:border-slate-400 hover:bg-gray-100 hover:text-gray-900 dark:border-slate-600 dark:text-slate-400 " \
+      "dark:hover:text-slate-100 dark:hover:bg-slate-800 cursor-pointer md:w-36"
   end
 
   def render_initial_row
@@ -337,7 +350,8 @@ class Views::Transactions::FormLineItemsSection < Views::Base
   end
 
   def row_class(item)
-    "relative flex flex-col items-stretch gap-2 px-2.5 py-2 md:flex-row md:items-center md:gap-2 md:px-3 " \
+    "relative flex flex-col items-stretch gap-2 px-2.5 pb-3 pt-1 last:pb-1 md:flex-row md:items-center md:gap-2 " \
+      "md:px-3 md:py-2 md:last:pb-2 " \
       "#{'hidden' if item.marked_for_destruction?}"
   end
 

@@ -21,6 +21,7 @@ export default class extends Controller {
     "allocatedSum",
     "differenceBadge",
     "differenceLabel",
+    "differenceStatus",
     "bulkCategory",
     "bulkEntity",
     "bulkApplyButton"
@@ -249,33 +250,39 @@ export default class extends Controller {
 
   updateDifferenceBadge(diff, parentCents, activeRowCount) {
     const badge = this.differenceBadgeTarget
+    const status = this.differenceStatusTarget
     const label = this.hasDifferenceLabelTarget ? this.differenceLabelTarget : null
     const balancedText = badge.dataset.balancedText || "Balanced"
     const minItemsText = badge.dataset.minItemsText || "Add a line item"
     const remainingText = badge.dataset.remainingText || "Remaining:"
     const overAllocatedText = badge.dataset.overAllocatedText || "Over by:"
 
-    badge.className = "font-semibold text-gray-800 font-graduate dark:text-slate-200 dark:font-mono"
+    badge.className = "font-graduate dark:font-mono"
+    status.className = "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
 
     if (diff === 0 && activeRowCount >= 1 && parentCents !== 0) {
+      status.classList.add("bg-emerald-100", "text-emerald-800", "dark:bg-emerald-500/15", "dark:text-emerald-300")
       if (label) {
         label.textContent = ""
         label.classList.add("hidden")
       }
       badge.textContent = balancedText
     } else if (diff === 0 && activeRowCount < 1) {
+      status.classList.add("bg-gray-100", "text-gray-600", "dark:bg-slate-700", "dark:text-slate-300")
       if (label) {
         label.textContent = ""
         label.classList.add("hidden")
       }
       badge.textContent = minItemsText
     } else if ((parentCents >= 0 && diff > 0) || (parentCents < 0 && diff < 0)) {
+      status.classList.add("bg-red-100", "text-red-800", "dark:bg-red-500/15", "dark:text-red-300")
       if (label) {
         label.textContent = remainingText
         label.classList.remove("hidden")
       }
       badge.textContent = this.formatCurrency(Math.abs(diff))
     } else {
+      status.classList.add("bg-red-100", "text-red-800", "dark:bg-red-500/15", "dark:text-red-300")
       if (label) {
         label.textContent = overAllocatedText
         label.classList.remove("hidden")
