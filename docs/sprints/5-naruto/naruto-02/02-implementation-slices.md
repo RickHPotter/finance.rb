@@ -89,7 +89,7 @@ and `Audit::Rollback::Adapters::LineItem`, and add comprehensive unit/model/roll
    - `spec/factories/line_items.rb`:
      - Factory for `:line_item` associating with a cash or card transaction, a leaf category, and price.
    - `spec/models/line_item_spec.rb`:
-     - Test description presence, non-zero price, and validity with a blank category.
+     - Test description and price presence, zero-priced promotional items, and validity with a blank category.
      - Test leaf category validation (reject parent category).
      - Test sign matching validation with parent transaction price.
      - Test virtual accessors `category_id` and `entity_id`.

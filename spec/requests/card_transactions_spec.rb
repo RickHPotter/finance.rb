@@ -1621,6 +1621,30 @@ RSpec.describe "CardTransactions", type: :request do
         expect(created_transaction.line_items.map(&:category_id)).to contain_exactly(clothing_category.id, electronics_category.id)
         expect(created_transaction.category_transactions.count).to eq(0)
       end
+
+      it "keeps a free line item when creating a split purchase" do
+        post card_transactions_path, params: {
+          card_transaction: {
+            description: "Card buy one get one free",
+            price: -1_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_card_id: user_card_one.id,
+            card_installments_attributes: [
+              { number: 1, price: -1_000, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year }
+            ],
+            line_items_attributes: [
+              { description: "Paid item", price: -1_000 },
+              { description: "Free item", price: 0 }
+            ]
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:see_other)
+        created_transaction = CardTransaction.find_by!(description: "Card buy one get one free")
+        expect(created_transaction.line_items.pluck(:description, :price)).to contain_exactly([ "Paid item", -1_000 ], [ "Free item", 0 ])
+      end
     end
   end
 

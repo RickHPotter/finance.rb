@@ -64,7 +64,7 @@ module FiscalReceipts
       description = value_at(product, "xProd")
       amount = cents(value_at(product, "vProd")) - optional_cents(product, "vDesc") +
                optional_cents(product, "vFrete") + optional_cents(product, "vSeg") + optional_cents(product, "vOutro")
-      raise InvalidDocument, I18n.t("fiscal_import.messages.item_data_invalid") if description.blank? || !amount.positive?
+      raise InvalidDocument, I18n.t("fiscal_import.messages.item_data_invalid") if description.blank? || amount.negative?
 
       { description: description.first(255), price_cents: amount }
     end

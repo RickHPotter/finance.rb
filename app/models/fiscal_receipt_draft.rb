@@ -54,7 +54,7 @@ class FiscalReceiptDraft < ApplicationRecord
 
     items.all? do |item|
       item.is_a?(Hash) && item["description"].is_a?(String) && item["description"].present? &&
-        item["price_cents"].is_a?(Integer) && item["price_cents"].positive?
+        item["price_cents"].is_a?(Integer) && item["price_cents"] >= 0
     end
   end
 end

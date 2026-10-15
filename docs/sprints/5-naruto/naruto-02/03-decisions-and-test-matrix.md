@@ -13,8 +13,8 @@
 
 ### D4. How are line item prices validated against the parent transaction price?
 **Decision**:
-1. **Sign Matching**: Every line item price must share the same sign as `parent_transaction.price`. For card transactions (which are stored with negative prices for expenses), line item prices must be negative. For positive cash transactions, line items must be positive.
-2. **Non-Zero**: Line item prices cannot be 0.
+1. **Sign Matching**: Every non-zero line item price must share the same sign as `parent_transaction.price`. For card transactions (which are stored with negative prices for expenses), paid line item prices must be negative. For positive cash transactions, paid line items must be positive.
+2. **Free Items**: A line item may have price 0 (for example, a "buy one, get one free" product), but its price must be present.
 3. **Exact Sum**: The sum of active line item prices must equal `parent_transaction.price` exactly.
 
 ### D5. Is a category required on a line item, and can it be a parent?
@@ -73,7 +73,7 @@ categories, entities, and the transaction total before saving.
 | Layer | File Under Test | Test Description | Expected Result |
 |---|---|---|---|
 | **Model** | `LineItem` | Presence of `description` and `price`; category is optional | Invalid without required fields; valid with a blank category |
-| **Model** | `LineItem` | Non-zero price validation | Rejects price == 0 |
+| **Model** | `LineItem` | Free-item price validation | Accepts price == 0; rejects a missing price |
 | **Model** | `LineItem` | Sign matching validation | Rejects positive line item on negative transaction (and vice versa) |
 | **Model** | `LineItem` | Leaf category validation | Rejects category where `parent? == true` |
 | **Model** | `LineItem` | Virtual accessors `category_id=` and `entity_id=` | Synchronizes underlying join records |
@@ -92,4 +92,4 @@ categories, entities, and the transaction total before saving.
 | **Request** | `CardTransactionsController` | `POST /card_transactions` with line items | Creates composite card transaction; installments retain schedule |
 | **Request** | `CashTransactionsController` | `GET /cash_transactions/:id/duplicate` | Clones line items and allocations |
 | **Request/service** | Cash friend notification flow | Multiple items for one friend, same/mixed intents, price or intent changes, and item removal | Keeps source plans separate and reconciles counterpart records by friend/intent |
-| **Request** | Fiscal document import | Brazilian fiscal receipt becomes line-item draft values | Not implemented; tracked by NARUTO-03 V3 plan |
+| **Request** | Fiscal document import | Brazilian fiscal receipt becomes line-item draft values, including free products | Initial supported paths implemented; remaining work tracked by NARUTO-03 V3 plan |

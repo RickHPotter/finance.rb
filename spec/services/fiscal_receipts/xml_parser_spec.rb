@@ -39,6 +39,14 @@ RSpec.describe FiscalReceipts::XmlParser do
     expect(draft.difference_cents).to eq(25)
   end
 
+  it "keeps a fully discounted product as a free item" do
+    free_item = "<det nItem=\"3\"><prod><xProd>Free Feijao</xProd><vProd>8.25</vProd><vDesc>8.25</vDesc></prod></det>"
+    draft = described_class.new(xml.sub("<total>", "#{free_item}<total>")).call
+
+    expect(draft.items.last).to eq({ description: "Free Feijao", price_cents: 0 })
+    expect(draft.difference_cents).to eq(0)
+  end
+
   it "rejects XML with external entity declarations" do
     unsafe_xml = xml.sub("<nfeProc", '<!DOCTYPE nfeProc [<!ENTITY exploit SYSTEM "file:///etc/passwd">]><nfeProc')
 

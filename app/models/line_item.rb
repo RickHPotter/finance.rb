@@ -15,7 +15,7 @@ class LineItem < ApplicationRecord
 
   # @validations ..............................................................
   validates :description, presence: true
-  validates :price, presence: true, numericality: { other_than: 0 }
+  validates :price, presence: true, numericality: true
   validates :friend_notification_intent, inclusion: { in: %w[loan reimbursement] }, allow_blank: true
   validates :receipts,
             content_type: %w[application/json application/pdf image/jpeg image/png image/heic application/xml text/xml application/zip],

@@ -212,7 +212,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         div(class: "min-w-0") do
           item_form.text_field(
             :price,
-            value: (item.price.present? && item.price != 0 ? item.price : nil),
+            value: (item.price if item.price.present? && (item.price != 0 || item.description.present? || item.persisted?)),
             placeholder: I18n.t("activerecord.attributes.line_item.price"),
             inputmode: :numeric,
             class: "#{input_class_without_icon} h-9 px-2.5 py-1.5 text-xs font-graduate dark:font-mono sign-based",

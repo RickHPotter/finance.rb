@@ -33,6 +33,16 @@ RSpec.describe FiscalReceiptDraft, type: :model do
     expect(receipt_draft).to be_valid
   end
 
+  it "accepts a free product alongside a paid product" do
+    receipt_draft = described_class.new(
+      user:,
+      payload: payload.merge("items" => [ { "description" => "Arroz", "price_cents" => 1975 },
+                                          { "description" => "Free Arroz", "price_cents" => 0 } ])
+    )
+
+    expect(receipt_draft).to be_valid
+  end
+
   it "rejects non-object and oversized payloads" do
     invalid_payload = described_class.new(user:, payload: %w[not an object])
     oversized_payload = described_class.new(user:, payload: { "data" => "x" * 256.kilobytes })
