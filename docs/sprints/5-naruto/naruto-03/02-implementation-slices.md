@@ -5,10 +5,11 @@ Receipt attachments and the first Brazilian fiscal-import path are implemented. 
 import flow is launched from the desktop index action or the PWA floating action on
 cash/card index pages, supports authorized XML, Goiás
 signed QR, Paraná key/QR, PDF text, and image/camera QR inputs, and fills a reviewable
-unsaved draft. Manual validation, V2 deployment/security verification, OCR without a
-usable structured source, duplicate protection, and any agreed state expansion remain.
-NARUTO-03 is complete only when its required attachment gates and the agreed fiscal
-import acceptance criteria are satisfied.
+unsaved draft. The user reports manual cash/card import validation complete. V2
+deployment/security verification and duplicate protection remain here. NF-e-specific
+accuracy and reconciliation belong to NARUTO-07; OCR without a usable structured
+source belongs to NARUTO-08. State expansion is optional unless separately agreed.
+NARUTO-03 is complete only when its attachment gates and duplicate-import bug are resolved.
 
 ## Slice 1 — Attachment hosts and model limits
 
@@ -103,7 +104,7 @@ is still required.
 
 ## Slice 7 — Brazilian cupom-fiscal import to transaction line items
 
-The first user-facing slice is implemented; verification and fallback coverage remain.
+The first user-facing slice is implemented and user-tested; duplicate protection remains.
 The [V3 plan](05-v3-brazilian-fiscal-import-plan.md) defines the intended flow: read a
 supported fiscal XML, PDF/image, QR URL, or 44-digit access key; retrieve item details
 from an official consultation where feasible or extract a printed receipt locally;
@@ -120,10 +121,9 @@ until a file is selected. The modal also provides a camera QR scanner and contro
 apply category/entity defaults across imported rows before individual exceptions are
 edited. Categories may remain blank under the current NARUTO-02 contract.
 
-Still open: manual testing on cash and card flows—including the PWA floating action—
-with entitled/redacted examples for each supported source; printed-item OCR when
-there is no usable structured source;
-duplicate-document protection and its product policy; any additional state adapters;
-and total-adjustment reconciliation cases. Do not describe Goiás key-only lookup as
+Still open in NARUTO-03: duplicate-document protection and its product policy.
+Printed-item OCR when there is no usable structured source moves to NARUTO-08;
+NF-e model-55 hardening and total-adjustment reconciliation move to NARUTO-07.
+Additional state adapters require a separate scope decision. Do not describe Goiás key-only lookup as
 supported: it needs a complete signed QR URL or authorized XML. See the V3 plan for
 the source matrix and release checklist.

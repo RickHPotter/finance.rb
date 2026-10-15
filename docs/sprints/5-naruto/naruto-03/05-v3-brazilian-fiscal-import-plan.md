@@ -2,25 +2,26 @@
 
 ## Status and ownership
 
-**First supported-source slice and persisted receipt inbox implemented; manual
-validation and planned fallbacks remain.** Authorized XML prefill, Goiás NFC-e
+**First supported-source slice and persisted receipt inbox implemented; the user reports
+manual cash/card validation complete.** Authorized XML prefill, Goiás NFC-e
 signed-QR lookup, Paraná NFC-e key/QR lookup, PDF text-source extraction, image/camera
 QR scanning, and the cross-device inbox are implemented.
 The cash/card index pages launch the import modal. It defaults to Goiás, lets the user
 select Paraná, and provides bulk category/entity defaults with per-line-item edits.
 The file picker shows its selected filename and keeps Import file disabled until a
-file is selected. OCR for receipts without a usable structured source,
-duplicate-document protection, and agreed state expansion remain open. This workstream
+file is selected. Duplicate-document protection remains a NARUTO-03 bug. NF-e-specific
+accuracy and adjustment analysis move to NARUTO-07; screenshot/document OCR moves to
+NARUTO-08. Additional state expansion is optional. This workstream
 is distinct from V2 attachment security and deployment hardening. Fiscal data is
 translated into an unsaved draft using NARUTO-02's existing `LineItem` form and model;
 it does not change the ownership of composite-transaction behavior from NARUTO-02.
 The V3 label names the existing document/feature slice, not a required branch name.
 
-## New requirement — saved receipt inbox
+## Implemented requirement — saved receipt inbox
 
-The current import result lives in browser `sessionStorage` until the user submits a
-cash/card form. That is not enough for the intended phone-to-PC workflow. Add a
-server-persisted **receipt inbox**: a user can import a cupom on mobile, save it for
+An immediate import uses browser `sessionStorage` until the user submits a cash/card
+form. The server-persisted **receipt inbox** supports the phone-to-PC workflow: a
+user can import a cupom on mobile, save it for
 later, collect multiple receipts, then open each on desktop, choose cash or card,
 review/edit the prefilled transaction, and submit it normally. Saving an inbox item
 must not create a financial transaction or affect balances, installments, or reports.
@@ -29,14 +30,21 @@ Treat inbox items as fiscal-receipt drafts, not incomplete `CashTransaction` or
 `CardTransaction` rows. This avoids weakening normal transaction validations or
 letting incomplete records leak into financial queries. Each saved item stores the
 normalized import payload, owner, creation time, and original source attachment where
-available. Persist the exact uploaded XML/PDF/photo (including a camera-captured QR
-image); when the user supplied only a key/URL, preserve a small JSON source manifest
-with the identifier and parsed draft instead of retaining remote SEFAZ HTML. Keep the
-source file under the existing 10 MiB / attachment-count / MIME security contract.
+available. Persist the exact user-uploaded XML/PDF/photo. Retain a camera-captured QR
+image only when consultation produced no replacement evidence; when Goiás DANFE, detailed
+HTML, or JSON evidence exists, omit the camera image. For a key/URL-only source or an
+omitted camera image in the saved inbox, preserve a small JSON source manifest
+with the identifier and parsed draft. For Goiás QR imports, additionally preserve
+self-contained, script-free HTML snapshots of the official DANFE and detailed consultation
+views plus a structured JSON snapshot derived from the detailed page. The HTML files are
+readable offline but are not byte-for-byte SEFAZ responses. This JSON is evidence of
+the public consultation, not an authorized/signed fiscal XML. Keep each file under the existing 10 MiB and
+attachment-count security contract; HTML evidence must download rather than render
+inline.
 
-On final transaction save, attach the saved source artifact to the resulting cash/card
+On final transaction save, attach the saved source and any consultation evidence to the resulting cash/card
 transaction and consume the inbox item atomically. Explicit deletion removes the saved
-item and its source attachment. Scope inbox operations to the owner; apply the user's
+item and its attachments. Scope inbox operations to the owner; apply the user's
 current context only when creating the final transaction. Never expose a public blob
 URL. A user can save multiple items
 and process them independently. A failed transaction save must leave the inbox item
@@ -59,9 +67,10 @@ pasted QR-code URL, or a manually entered **44-digit fiscal access key**. An ima
 PDF may contain a QR code, printed key, and/or readable text. The existing 10 MiB
 per-file attachment limit applies; ZIP remains an attachment type, but importing its
 contents is not supported. The modal also offers live camera QR scanning; it scans for
-a QR code and is not OCR/photo text recognition. Successful file imports stage the
-original upload as a receipt attachment; key/URL-only lookup creates a generated JSON
-source manifest attachment.
+a QR code and is not OCR/photo text recognition. User-uploaded files are staged as
+receipt attachments. A camera-captured QR image is omitted when the backend generated
+Goiás DANFE, detailed HTML, or JSON evidence; otherwise it remains a fallback source.
+Key/URL-only lookup creates a generated JSON source manifest attachment.
 
 The access key is different from the short sequential `número do cupom`/`nNF` printed
 on some receipts. A short number alone is insufficient to identify a document across
@@ -75,9 +84,9 @@ Use the best available source in this order, subject to the supported-format mat
 2. Extract a QR URL or access key from an uploaded image/PDF, or accept it from the
    user. Query a supported official public consultation only if that state and entry
    path permit a reliable automated request that returns item details.
-3. If lookup is unavailable, blocked, or omits items, extract text from the uploaded
-   image/PDF with a bounded OCR/text-extraction path and present uncertain rows for
-   review. Never invent missing items or infer their prices from the document total.
+3. If lookup is unavailable, blocked, or omits items, explain the limitation and allow
+   manual entry. OCR of screenshots or printed receipt text is NARUTO-08, not a hidden
+   fallback in this feature. Never invent missing items or infer prices from the total.
 
 Direct requests to a SEFAZ public consultation are in scope where technically and
 operationally permitted. They are **not** assumed to be a universal API: NFC-e public
@@ -92,10 +101,10 @@ Current implementation and source limitations:
 
 | Input/path | Current behavior | Limitation / fallback |
 |---|---|---|
-| Authorized NFC-e/NF-e XML | Parses supported structured fiscal item and total fields locally into a draft. | Requires valid authorized XML; unsupported/malformed documents return a user-facing error. |
-| Goiás NFC-e signed QR URL | Looks up item rows through the official consultation when given the complete signed URL. | A bare GO key cannot be used because the public key-entry page has a browser challenge; provide the QR URL or XML. |
+| Authorized NFC-e/NF-e XML | The shared parser accepts a structurally valid authorized `nfeProc` and extracts basic item/total fields locally. | Model-65 examples are tested. Model-55 field accuracy and adjustment coverage need NARUTO-07 hardening; malformed documents return a user-facing error. |
+| Goiás NFC-e signed QR URL | Looks up item rows and preserves offline-readable DANFE/detail HTML snapshots plus derived JSON through the official consultation when given the complete QR URL. | A bare GO key cannot be used because the public key-entry page has a browser challenge; provide the QR URL or XML. Public consultation does not provide the original signed XML. |
 | Paraná NFC-e QR URL or 44-digit key | Extracts a PR key from the QR URL or accepts a validated 44-digit key, then retrieves item rows via the PR QR path. | State-specific; public consultation/layout changes can cause a safe lookup failure. |
-| PDF text | Extracts a GO QR URL or Paraná key from selectable text in the first three pages. | Scanned/image-only PDFs and PDFs without a supported URL/key need OCR, which is not implemented. |
+| PDF text | Extracts a GO QR URL or Paraná key from selectable text in the first three pages. | Scanned/image-only PDFs and PDFs without a supported URL/key need NARUTO-08 OCR. |
 | JPEG/PNG or camera | Scans a readable QR code and routes its URL/key through the matching supported adapter. | Does not read printed item text. HEIC decoding depends on browser support. No QR means the current importer cannot derive the items. |
 | Other states / NF-e key lookup | No generic all-state key lookup is provided. | `NFeDistribuicaoDFe` requires eligible interested-party credentials/certificate; key possession alone is insufficient. Additional state adapters require feasibility and security review. |
 
@@ -112,27 +121,27 @@ and a [publicly published GO NFC-e example](https://www.camara.leg.br/cota-parla
 
 ## Draft data contract
 
-Extract only values needed to create and review the draft:
+The implemented first slice extracts the values needed for a basic reviewable draft:
 
 - issuer name, fiscal document model/state, and identifier/access key, when present;
 - issue date/time and document total;
-- one draft line item per fiscal product/service row, with source description,
-  quantity/unit details where available, and a cent-precision line amount;
-- document-level discounts, freight, or other totals that explain a difference between
-  item amounts and the printed total.
+- one draft line item per fiscal product/service row, with source description and a
+  cent-precision line amount.
+
+The current draft does not retain quantity/unit and the full set of document-level
+adjustments as first-class fields. NARUTO-07 investigates these fields, their
+financial meaning, and the representation needed for accurate totals.
 
 The importer may suggest the transaction description, date, and total. It does not
 guess categories or entities. The user can apply category/entity defaults to all
 imported line items, then edit exceptions; categories may be left blank under the
 current NARUTO-02 contract. Entity allocation and cash friend-repayment details remain
 user-controlled. Keep source row order and show extraction confidence or an explicit
-review flag for any future OCR-derived rows.
+review flag for any NARUTO-08 OCR-derived rows.
 
-The imported item amounts should be reconciled against the fiscal total and the
-transaction's integer-cent total. Do not silently alter a product price to force a
-match. If document-level adjustments cannot be allocated unambiguously, preserve the
-item amounts, show the difference, and require the user to resolve it in the existing
-split-purchase form before submission.
+The existing split-purchase exact-sum validation prevents saving mismatched amounts.
+Do not silently alter product prices to force a match. Analysis of discounts, freight,
+other adjustments, and a fuller reconciliation UI belongs to NARUTO-07.
 
 A receipt with one product remains a one-LineItem composite transaction. NARUTO-02's
 former two-item minimum was removed for this case; zero active rows still mean a
@@ -158,11 +167,12 @@ simple transaction. Price-sum and line-item validations continue to apply.
 
 ## Manual-test handoff for the implemented slice
 
-The implemented paths are ready for manual development-environment testing. Start from
+The user reports the supported cash/card paths manually tested. Keep this as a repeatable
+regression checklist for future changes. Start from
 both `/cash_transactions` and `/card_transactions` index pages, open the import modal,
 and use receipts you are entitled to view. Check every imported amount before saving:
 
-1. Upload an authorized NFC-e/NF-e XML with at least one product and choose **Import
+1. Upload an authorized NFC-e XML with at least one product and choose **Import
    file**. The new transaction form should switch to Split Purchase and show one editable LineItem
    per product, the issuer as description, and the negative transaction total.
 2. Select Goiás, paste the **complete signed Goiás NFC-e QR URL**, then choose **Look up receipt**.
@@ -174,49 +184,48 @@ and use receipts you are entitled to view. Check every imported amount before sa
    with a readable Goiás QR code. The extracted URL should use the same GO lookup. Also
    test the camera QR control; it scans QR codes only and does not perform OCR.
    A text PDF containing a Paraná key or a PR QR image should still work. The
-   uploaded file is staged in Attachments after a successful import; wait for its
-   upload to finish before saving. A key/URL-only lookup attaches a generated JSON
-   manifest containing the normalized draft rather than remote SEFAZ HTML.
+   user-uploaded file is staged in Attachments after a successful import; wait for its
+   upload to finish before saving. A camera capture is skipped when Goiás evidence
+   exists. A key/URL-only lookup attaches a generated JSON manifest containing the
+   normalized draft, alongside any consultation evidence.
 4. Assign categories, review any total difference, and save through the ordinary
-   transaction form. Also try a one-product receipt and a receipt with a document
-   discount; the former is valid with one LineItem, while the latter must display the
-   difference for manual correction.
+   transaction form. A one-product receipt is valid with one LineItem. Adjustment-heavy
+   receipts need the NARUTO-07 investigation and should not be assumed to reconcile.
 
 Current limits: Goiás NFC-e lookup needs the complete signed QR URL; Paraná currently
-supports key-only lookup. XML parsing is local for supported authorized NF-e/NFC-e.
+supports key-only lookup. XML parsing is local for structurally supported authorized
+NF-e/NFC-e; model-55 accuracy is not yet verified.
 Image and camera import need a readable QR; PDF import needs selectable text containing
 a supported GO QR URL or PR key in the first three pages. There is no OCR fallback for
 printed item rows, scanned PDFs, or images without a QR. HEIC browser decoding depends
-on support in the user's browser. Duplicate-document warnings and additional state
-adapters remain pending. Lookup can fail if a state's public HTML changes or blocks the
+on support in the user's browser. Duplicate-document warnings remain pending; additional
+state adapters are optional. Lookup can fail if a state's public HTML changes or blocks the
 query; manual line-item entry remains the fallback.
 
 ## Completion checklist
 
-The first implementation is ready for manual testing, but the feature is not yet
-verified end to end. Remaining gates are:
+The user reports manual testing complete for the supported first slice. Remaining
+NARUTO-03 gates and deferred work are:
 
-- [ ] Manually test cash and card imports for XML, GO QR, PR key/QR, PDF text, and
-  image/camera QR; confirm one-item receipts, attachment retention, category/entity
-  defaults with per-row overrides, and ordinary form save behavior.
-- [ ] Verify discounts/other total adjustments and exact-sum behavior. The user must
-  see and resolve any mismatch; the importer must not silently rewrite item prices.
-- [ ] Decide and implement the planned printed-item OCR fallback, or explicitly defer
-  it and narrow the product promise to receipts with XML or a supported readable QR/key.
+- [x] User manually tested cash/card imports through the supported source and save flows.
 - [ ] Decide the duplicate-document policy and implement a warning/protection scoped
   to the agreed user/context behavior.
 - [ ] Finish V2 attachment security and durability gates in
   [the attachment plan](04-v2-development-plan.md), including a healthy homolog
   deployment and verified storage persistence/backup.
-- [ ] Run focused specs and CI after remaining implementation; choose any additional
-  state adapters separately rather than implying nationwide support.
+- [ ] Run focused specs and CI after the remaining NARUTO-03 implementation.
+
+Discount/total-adjustment and model-55 field analysis move to
+[NARUTO-07](../naruto-07/01-product-and-data-contract.md). Printed-text and screenshot
+OCR move to [NARUTO-08](../naruto-08/01-product-and-data-contract.md). Additional state
+adapters need a separate scope choice; do not imply nationwide support.
 
 ## Security and privacy constraints
 
 - Parse uploaded XML locally with a hardened XML parser configuration: disable external
   entities/DTD expansion and enforce byte, node, and processing limits. Bound PDF/image
-  decoding and OCR by file size, page count, pixel count, processing time, and output
-  length; reject active PDF content and unsafe file formats.
+  decoding by file size, page count, pixel count, processing time, and output length;
+  reject active PDF content and unsafe file formats. NARUTO-08 defines OCR limits.
 - A QR URL is untrusted input. Permit HTTPS only, use an explicit host/state allowlist,
   reject private, loopback, link-local, and metadata IP destinations, and revalidate
   every redirect/DNS resolution. Apply strict connection/read timeouts and response
@@ -236,9 +245,10 @@ Development on `naruto-03-v2` has implemented the first vertical slice: authoriz
 Goiás signed-QR lookup, Paraná key/QR lookup, PDF text extraction, image/camera QR
 scanning, and cash/card draft prefill. The import modal is launched from index pages;
 it includes state choice, a non-overflowing custom file picker with filename display,
-disabled-until-selected Import file action, and bulk category/entity defaults. This
-plan remains incomplete pending manual validation, the agreed OCR/duplicate/reconciliation
-work, and the V2 attachment release gates.
+disabled-until-selected Import file action, and bulk category/entity defaults. The
+user reports the supported flows manually tested. This plan remains incomplete for
+duplicate protection and the V2 attachment release gates; NF-e/reconciliation and
+OCR are separate NARUTO-07 and NARUTO-08 features.
 
 On desktop and PWA, the index-page import entry is a localized menu for importing now
 or opening saved receipts; the ordinary New Transaction action remains separate. The
@@ -249,8 +259,8 @@ form behavior.
 
 The saved receipt inbox has an initial implementation: phone imports can be saved
 without creating a financial transaction, and a user-owned inbox can reopen them in
-cash or card forms on another device. Manual validation is still required; follow-up
-hardening remains open below. The inbox does not replace or auto-save normal
+cash or card forms on another device. The user reports this flow manually exercised;
+follow-up security hardening remains open below. The inbox does not replace or auto-save normal
 cash/card transactions.
 
 ### Slice 0 — Persisted receipt inbox and cross-device handoff
@@ -269,24 +279,24 @@ retention after validation failure have focused model/request/feature coverage.
   validation failure, retain the item for retry.
 - Maintain authenticated owner checks, safe deletion, and specs proving inbox items do
   not appear in transaction totals, installments, or reports.
-- Manual acceptance: import several receipts on mobile, close/reopen the browser or
+- Manual regression: import several receipts on mobile, close/reopen the browser or
   switch devices, review each on desktop, save as cash/card transactions, and confirm
-  each final transaction retains its original source attachment.
+  each final transaction retains its source or generated evidence, as applicable.
 
 ### Slice 1 — Supported-source discovery and fixtures
 
 Partially complete: the first GO and PR source paths have been investigated and
 implemented, and the support limitations are documented above. Still needed are
-sanitized fixtures and broader failure/adjustment cases for reliable repeatable coverage.
+sanitized fixtures and broader failure cases for reliable repeatable coverage.
 
-- Build a support matrix for XML, PDF/image QR extraction, manual 44-digit key, and
-  OCR fallback by fiscal model, QR version, state, and consultation endpoint. Verify
+- Build a support matrix for XML, PDF/image QR extraction, and manual 44-digit key by
+  fiscal model, QR version, state, and consultation endpoint. Verify
   which official responses contain product rows and whether automation is permitted.
-- Gather sanitized, non-personal fixtures for successful, malformed, unsupported, and
-  adjustment-heavy receipts, including photographed/printed receipts and a key-only
+- Gather sanitized, non-personal fixtures for successful, malformed, and unsupported
+  receipts, including a photographed QR and a key-only
   case. Do not use live taxpayer documents in automated tests.
-- Lock the parser output schema, duplicate identifier, and behavior when the total
-  cannot be reconciled.
+- Lock the parser output schema and duplicate identifier. NARUTO-07 analyzes fiscal
+  adjustments and fuller reconciliation behavior.
 
 ### Slice 2 — Safe parsing and retrieval
 
@@ -306,8 +316,8 @@ limits, and lookup failures before treating retrieval as release-hardened.
 
 Implemented: the entry point is an import modal on the cash/card index pages; results
 prefill the ordinary transaction form without saving. The user can apply category and
-entity defaults to all line items, then change exceptions. Manual tests still need to
-confirm this flow end-to-end for both transaction types.
+entity defaults to all line items, then change exceptions. The user reports the cash
+and card flow manually tested.
 
 - Acceptance check: existing selectors, repayment modal, price masking, line-item
   add/remove, attachment handling, and validation feedback still work after prefill.
@@ -316,52 +326,50 @@ confirm this flow end-to-end for both transaction types.
 
 ### Slice 4 — Duplicate protection and persistence policy
 
-Partially complete: imported uploaded source files and generated key/QR-only manifests
-are staged as receipt attachments, including through the saved receipt inbox. Duplicate
-policy and protection are still undecided/unimplemented.
+Partially complete: imported uploaded source files, generated key/QR-only manifests,
+and Goiás consultation snapshots are staged as receipt attachments, including through
+the saved receipt inbox. Duplicate policy and protection are still undecided/unimplemented.
 
 - Define whether fiscal identifiers are stored on the transaction or an import record.
 - Prevent accidental duplicate imports within the agreed user/context scope, while
   allowing an explicit intentional duplicate if the product decision permits it.
-- Avoid retaining or logging remote response bodies; retain the user's uploaded file
-  or a local normalized JSON manifest only.
+- Never log remote response bodies. Retain the user's source or a local JSON manifest;
+  for Goiás, retain only the verified public DANFE/detail pages and derived JSON as
+  private, forced-download evidence. Do not mislabel derived JSON as signed XML.
 
 ### Slice 5 — Verification and rollout
 
-Still open: manual end-to-end testing across both transaction types and each supported
-source, OCR fallback policy/implementation, exact total-adjustment behavior, duplicate
-protection, and security edge cases.
+Still open here: duplicate protection and attachment/security edge cases. Manual
+end-to-end testing is reported complete; OCR and richer total adjustment behavior
+are tracked in NARUTO-08 and NARUTO-07 respectively.
 
-- Unit specs for sanitized XML, QR/key, PDF/image, OCR review flags, and monetary
-  conversion/reconciliation.
+- Unit specs for sanitized XML, QR/key, PDF/image, and current cent-precision conversion.
 - Service/request specs for key format/check digit, QR allowlist, malformed URLs,
   redirect attempts, private destinations, timeouts, oversized responses/files,
   unsupported state formats, CAPTCHA/missing-item fallbacks, and duplicate documents.
 - Form/request coverage for cash and card draft prefill, optional/blank categories,
   bulk defaults and overrides, edited items, total mismatch, user cancellation, and
   successful normal submission.
-- Manual test with a redacted receipt for each supported format/state.
+- Retain the user-completed manual source checks as a regression script for future changes.
 - Run focused specs, RuboCop, and `bin/ci`; release only after attachment V2 storage
   and security gates are also satisfied.
 
 ## Open decisions before implementation
 
-1. What exact coverage should OCR provide for printed cupom fiscal text when there is
-   no readable QR or XML, and which local OCR method meets quality/privacy/resource
-   limits? How should uncertain descriptions and prices be flagged?
-2. Should document-level adjustments create an explicit draft line item, or should the
-   user resolve the difference manually? Default safety behavior is to preserve the
-   visible mismatch and require user resolution.
-3. What duplicate policy should apply when the same fiscal identifier is imported
+1. What duplicate policy should apply when the same fiscal identifier is imported
    again in the same or another context?
-4. Which additional state formats should be prioritized after GO and PR, based on
+2. Which additional state formats should be prioritized after GO and PR, based on
    official item-bearing consultation paths and feasibility without CAPTCHA or
-   restricted credentials?
+   restricted credentials? This is optional expansion, not a NARUTO-03 closure gate.
+
+OCR coverage and review belong to [NARUTO-08](../naruto-08/01-product-and-data-contract.md).
+Document adjustments and NF-e field accuracy belong to
+[NARUTO-07](../naruto-07/01-product-and-data-contract.md).
 
 ## Explicitly out of scope
 
-- General OCR of arbitrary non-fiscal receipts or handwritten documents. OCR of a
-  supported printed cupom fiscal is part of this plan when structured lookup fails.
+- Screenshot/document OCR, including faded printed cupoms (NARUTO-08).
+- Model-55 NF-e hardening and expanded fiscal adjustment handling (NARUTO-07).
 - Bank-statement PDF parsing or automatic bank matching.
 - Automatic category/entity inference without an explicit user-confirmed rule.
 - Automatic transaction creation or silent submission.

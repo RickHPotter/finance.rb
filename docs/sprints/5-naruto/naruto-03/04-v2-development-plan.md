@@ -126,10 +126,10 @@ and the security cases pass in addition to CI.
 
 ## Separate required workstream: V3 fiscal import
 
-The cupom-fiscal-to-line-items feature is tracked in the
-[V3 Brazilian fiscal import plan](05-v3-brazilian-fiscal-import-plan.md). It is not a
-V2 attachment-hardening task, but it is required before NARUTO-03 can be called
-finished. General-purpose OCR, line-item receipt upload UI, attachment versioning, and
-document management remain outside the current V3 proposal. Any remote fiscal lookup
-must review issuer/recipient data and protect against unsafe URL fetching before
-implementation.
+The supported cupom-fiscal-to-line-items flow is tracked in the
+[V3 Brazilian fiscal import plan](05-v3-brazilian-fiscal-import-plan.md) and has been
+manually exercised by the user. Its remaining NARUTO-03 product bug is duplicate
+protection. NF-e-specific accuracy is NARUTO-07; screenshot/document OCR is NARUTO-08.
+Line-item receipt upload UI, attachment versioning, and document management remain
+outside this V2 plan. Any remote fiscal lookup must review issuer/recipient data and
+protect against unsafe URL fetching before implementation.

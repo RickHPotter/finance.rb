@@ -42,15 +42,14 @@
 | Direct upload | `spec/requests/attachments_spec.rb` covers anonymous and oversized rejection; authenticated controller validates allowlisted MIME and byte size before blob creation. | Unsupported-type request; cross-actor signed blob attach; inspect stored bytes/content type. |
 | Storage durability | Production and homolog now have separate named volumes at `/rails/storage`; the storage directories were empty at inspection. | Deploy with the mount, verify persistence across replacement, and exercise backup/restore. |
 | Production-style route boot | `config.active_storage.draw_routes = false` plus the early `ActiveStorage.draw_routes = false` prevents default routes from colliding with the authenticated receipt route; local homolog and production route commands boot. | Redeploy homolog and confirm container health and authenticated file/avatar flows. |
-| Fiscal receipt import | XML parser, Goiás signed-QR and Paraná key/QR adapters, PDF text-source extraction, image/camera QR scanning, index-page modal, cash/card draft prefill, and bulk category/entity defaults are implemented; service, request, and browser specs cover supported paths. | Manual-test the complete cash/card flow and the latest modal defaults/picker; cover missing-key/QR OCR, duplicate policy/protection, total-adjustment reconciliation, and any agreed additional states; see [V3 plan](05-v3-brazilian-fiscal-import-plan.md). |
+| Fiscal receipt import | XML parser, Goiás signed-QR and Paraná key/QR adapters, PDF text-source extraction, image/camera QR scanning, index-page modal, cash/card draft prefill, and bulk category/entity defaults are implemented; service, request, and browser specs cover supported paths. The user reports manual cash/card validation complete. | Fix duplicate policy/protection in NARUTO-03. NF-e/total-adjustment analysis is NARUTO-07; screenshot/document OCR is NARUTO-08. Additional states are optional; see [V3 plan](05-v3-brazilian-fiscal-import-plan.md). |
 
 ## Release gate
 
 The attachment baseline is implemented. V2 is complete only when the security and
 storage checks above pass, the homolog deployment is healthy, the attachment route is
 unambiguous, and `bin/ci` is green. The fiscal-import code is implemented for the
-documented source matrix, but the complete manual flow and remaining extraction,
-reconciliation, duplicate, and OCR acceptance criteria have not all been verified or
-implemented. NARUTO-03 remains open until the agreed fiscal-import criteria and V2
-attachment gates pass; broader state coverage should be tracked separately unless
-made an explicit release requirement.
+documented source matrix, and the user reports the manual import flow complete.
+NARUTO-03 remains open for duplicate protection and V2 attachment gates. Reconciliation
+and NF-e expansion are NARUTO-07; OCR is NARUTO-08. Broader state coverage should be
+tracked separately unless made an explicit release requirement.
