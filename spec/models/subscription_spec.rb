@@ -16,6 +16,7 @@ RSpec.describe Subscription, type: :model do
       end
 
       it { should define_enum_for(:status).with_values(active: "active", paused: "paused", finished: "finished").backed_by_column_of_type(:string) }
+      it { should define_enum_for(:subscription_kind).with_values(expense: "expense", income: "income").backed_by_column_of_type(:string) }
       it { should validate_numericality_of(:price) }
     end
 
@@ -51,6 +52,64 @@ RSpec.describe Subscription, type: :model do
         subscription = described_class.create!(user: create(:user, :random), description: "Gym membership")
 
         expect(subscription).to be_active
+        expect(subscription).to be_expense
+        expect(subscription.main_category.category_name).to eq("SUBSCRIPTION")
+      end
+    end
+
+    context "( main category and kind )" do
+      it "accepts income with the user's salary family and rejects cross-kind or foreign categories" do
+        subscription = build(:subscription)
+        salary = subscription.user.categories.find_by!(category_name: %w[SALARY SALARIO])
+        child = create(:category, :random, user: subscription.user, parent_category: salary)
+        subscription.subscription_kind = :income
+        subscription.main_category = child
+
+        expect(subscription).to be_valid
+
+        subscription.main_category = subscription.user.built_in_category("SUBSCRIPTION")
+        expect(subscription).not_to be_valid
+        expect(subscription.errors[:main_category]).to be_present
+
+        subscription.main_category = create(:user, :random).built_in_category("OTHER INCOME")
+        expect(subscription).not_to be_valid
+      end
+
+      it "does not permit changing kind after creation" do
+        subscription = create(:subscription)
+        subscription.subscription_kind = :income
+        subscription.main_category = subscription.user.built_in_category("OTHER INCOME")
+
+        expect(subscription).not_to be_valid
+        expect(subscription.errors[:subscription_kind]).to be_present
+      end
+
+      it "rejects linked or attached card transactions for income" do
+        subscription = create(:subscription, subscription_kind: :income,
+                                             main_category: subject.user.built_in_category("OTHER INCOME"), user: subject.user)
+        card_transaction = create(:card_transaction, user: subscription.user, user_card: create(:user_card, :random, user: subscription.user))
+
+        expect { subscription.attach_transactions!(card_transaction) }.to raise_error(ActiveRecord::RecordInvalid)
+        expect(card_transaction.reload.subscription_id).to be_nil
+      end
+
+      it "replaces only the managed main category on a same-kind switch" do
+        subscription = create(:subscription)
+        additional = create(:category, :random, user: subscription.user)
+        subscription.categories << additional
+        account = create(:user_bank_account, :random, user: subscription.user)
+        transaction = create(:cash_transaction, user: subscription.user, user_bank_account: account,
+                                                subscription:, date: Date.new(2026, 3, 14), price: -4900)
+        old_main = subscription.main_category
+        new_main = subscription.user.built_in_category("OTHER")
+
+        subscription.reload
+        subscription.update!(main_category: new_main)
+
+        expect(transaction.reload.category_ids).to contain_exactly(additional.id, new_main.id)
+        expect(transaction.category_ids).not_to include(old_main.id)
+        expect(transaction.price).to eq(-4900)
+        expect(subscription.reload.price).to eq(-4900)
       end
     end
 
@@ -259,19 +318,23 @@ end
 #  description             :string           not null
 #  price                   :integer          default(0), not null
 #  status                  :string           default("active"), not null, indexed
+#  subscription_kind       :string           default("expense"), not null
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
 #  context_id              :bigint           not null, indexed
+#  main_category_id        :bigint           not null, indexed
 #  user_id                 :bigint           not null, indexed
 #
 # Indexes
 #
-#  index_finance_subscriptions_on_context_id  (context_id)
-#  index_finance_subscriptions_on_status      (status)
-#  index_finance_subscriptions_on_user_id     (user_id)
+#  index_finance_subscriptions_on_context_id        (context_id)
+#  index_finance_subscriptions_on_main_category_id  (main_category_id)
+#  index_finance_subscriptions_on_status            (status)
+#  index_finance_subscriptions_on_user_id           (user_id)
 #
 # Foreign Keys
 #
 #  fk_rails_...  (context_id => contexts.id)
+#  fk_rails_...  (main_category_id => categories.id)
 #  fk_rails_...  (user_id => users.id)
 #

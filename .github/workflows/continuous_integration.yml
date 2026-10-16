@@ -60,8 +60,23 @@ jobs:
       - name: Set up database schema
         run: bin/rails db:prepare
 
+      - name: Install JavaScript dependencies
+        run: |
+          for attempt in 1 2 3; do
+            if yarn install --frozen-lockfile --non-interactive; then
+              break
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+
+            yarn cache clean
+            sleep 5
+          done
+
       - name: Precompile assets
-        run: bin/rails assets:precompile
+        run: SKIP_YARN_INSTALL=1 bin/rails assets:precompile
 
       - name: Run fast correctness specs
         run: COVERAGE=true COVERAGE_RESET=true COVERAGE_COMMAND_NAME=rspec-fast RSPEC_PROFILE_PATH=tmp/ci-rspec-fast.json bin/specs fast

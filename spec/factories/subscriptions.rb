@@ -27,19 +27,23 @@ end
 #  description             :string           not null
 #  price                   :integer          default(0), not null
 #  status                  :string           default("active"), not null, indexed
+#  subscription_kind       :string           default("expense"), not null
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
 #  context_id              :bigint           not null, indexed
+#  main_category_id        :bigint           not null, indexed
 #  user_id                 :bigint           not null, indexed
 #
 # Indexes
 #
-#  index_finance_subscriptions_on_context_id  (context_id)
-#  index_finance_subscriptions_on_status      (status)
-#  index_finance_subscriptions_on_user_id     (user_id)
+#  index_finance_subscriptions_on_context_id        (context_id)
+#  index_finance_subscriptions_on_main_category_id  (main_category_id)
+#  index_finance_subscriptions_on_status            (status)
+#  index_finance_subscriptions_on_user_id           (user_id)
 #
 # Foreign Keys
 #
 #  fk_rails_...  (context_id => contexts.id)
+#  fk_rails_...  (main_category_id => categories.id)
 #  fk_rails_...  (user_id => users.id)
 #

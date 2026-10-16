@@ -13,7 +13,12 @@ en:
         comment_placeholder: Notes about how this subscription behaves...
         price: Price
         status: Status
-        category_id: Category
+        category_id: Additional category
+        main_category_id: Main category
+        subscription_kind: Kind
+        kinds:
+          expense: Expense
+          income: Income
         entity_id: Entity
         user_id: User
         transactions_count: Transactions
@@ -34,6 +39,12 @@ en:
           every_6_months: Every 6 months
           yearly: Yearly
           every_2_years: Every 2 years
+    errors:
+      models:
+        subscription:
+          attributes:
+            subscription_kind:
+              readonly: cannot be changed after creation
 
 pt-BR:
   activerecord:
@@ -50,7 +61,12 @@ pt-BR:
         comment_placeholder: Observações sobre como essa assinatura funciona...
         price: Valor
         status: Status
-        category_id: Categoria
+        category_id: Categoria adicional
+        main_category_id: Categoria principal
+        subscription_kind: Tipo
+        kinds:
+          expense: Despesa
+          income: Receita
         entity_id: Entidade
         user_id: Usuário
         transactions_count: Transações
@@ -71,3 +87,9 @@ pt-BR:
           every_6_months: A cada 6 meses
           yearly: Anual
           every_2_years: A cada 2 anos
+    errors:
+      models:
+        subscription:
+          attributes:
+            subscription_kind:
+              readonly: não pode ser alterado após a criação

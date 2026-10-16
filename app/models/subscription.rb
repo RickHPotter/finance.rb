@@ -5,6 +5,7 @@ class Subscription < ApplicationRecord
   self.table_name = "finance_subscriptions"
 
   enum :status, { active: "active", paused: "paused", finished: "finished" }
+  enum :subscription_kind, { expense: "expense", income: "income" }, validate: true
 
   # @includes .................................................................
   include CategoryTransactable
@@ -17,6 +18,7 @@ class Subscription < ApplicationRecord
   # @relationships ............................................................
   belongs_to :user
   belongs_to :context, optional: false
+  belongs_to :main_category, class_name: "Category"
   has_many :cash_transactions, dependent: :restrict_with_exception, inverse_of: :subscription
   has_many :card_transactions, dependent: :restrict_with_exception, inverse_of: :subscription
   accepts_nested_attributes_for :cash_transactions, allow_destroy: true, reject_if: :all_blank
@@ -25,8 +27,12 @@ class Subscription < ApplicationRecord
   # @validations ..............................................................
   validates :context, presence: true
   validates :description, :status, presence: true
+  validates :main_category, presence: true
   validates :price, numericality: true
   validate :validate_linked_transactions
+  validate :validate_main_category
+  validate :validate_immutable_kind, on: :update
+  validate :validate_income_cash_only
 
   # @callbacks ................................................................
   before_validation :assign_default_context
@@ -58,14 +64,23 @@ class Subscription < ApplicationRecord
     Audit::BulkMutation.update_columns!(self, price: cash_transactions.sum(:price) + card_transactions.sum(:price))
   end
 
+  def main_category_family
+    main_category&.parent_category || main_category
+  end
+
   def can_be_destroyed?
     transactions_count.zero?
   end
 
   def attach_transactions!(transactions)
-    subscription_category = user&.built_in_category("SUBSCRIPTION")
+    subscription_category = main_category
 
     Array(transactions).each do |transaction|
+      if income? && transaction.is_a?(CardTransaction)
+        transaction.errors.add(:subscription, :invalid)
+        raise ActiveRecord::RecordInvalid, transaction
+      end
+
       sync_attached_transaction!(transaction, subscription_category:)
     end
 
@@ -91,10 +106,11 @@ class Subscription < ApplicationRecord
 
   def set_defaults
     self.status ||= :active
+    self.main_category = user&.built_in_category("SUBSCRIPTION") if main_category_id.nil? && main_category.nil?
   end
 
   def prepare_linked_transactions
-    subscription_category = user&.built_in_category("SUBSCRIPTION")
+    subscription_category = main_category
 
     mark_destroying_transactions_as_confirmed(cash_transactions)
     mark_destroying_transactions_as_confirmed(card_transactions)
@@ -166,14 +182,15 @@ class Subscription < ApplicationRecord
   end
 
   def subscription_allocation_changed?
-    association_ids_changed?(original_categories, category_transactions, :category_id) ||
+    will_save_change_to_main_category_id? ||
+      association_ids_changed?(original_categories, category_transactions, :category_id) ||
       association_ids_changed?(original_entities, entity_transactions, :entity_id)
   end
 
   def association_ids_changed?(original_ids, association_records, foreign_key)
-    return false if original_ids.blank?
+    return false if original_ids.nil?
 
-    Array(original_ids).map(&:to_i).sort != association_records.map(&foreign_key).compact.map(&:to_i).sort
+    Array(original_ids).map(&:to_i).sort != association_records.reject(&:marked_for_destruction?).filter_map(&foreign_key).map(&:to_i).sort
   end
 
   def sync_attached_transaction!(transaction, subscription_category:)
@@ -257,6 +274,26 @@ class Subscription < ApplicationRecord
     validate_card_transactions_safety
   end
 
+  def validate_main_category
+    return if main_category.blank? || user.blank?
+
+    errors.add(:main_category, :invalid) if main_category.user_id != user.id || !main_category.active?
+
+    family_name = main_category_family&.category_name
+    expected_kind = family_name.in?([ "SALARY", "SALARIO", "OTHER INCOME" ]) ? "income" : "expense"
+    errors.add(:main_category, :invalid) unless family_name.in?(Category::SUBSCRIPTION_FAMILY_PARENT_NAMES) && subscription_kind == expected_kind
+  end
+
+  def validate_immutable_kind
+    errors.add(:subscription_kind, :readonly) if will_save_change_to_subscription_kind?
+  end
+
+  def validate_income_cash_only
+    return unless income?
+
+    errors.add(:card_transactions, :invalid) if card_transactions.reject(&:marked_for_destruction?).any? || card_transactions_count.positive?
+  end
+
   def validate_card_transactions_presence
     card_transactions.reject(&:marked_for_destruction?).each do |transaction|
       next if transaction.user_card_id.present?
@@ -301,19 +338,23 @@ end
 #  description             :string           not null
 #  price                   :integer          default(0), not null
 #  status                  :string           default("active"), not null, indexed
+#  subscription_kind       :string           default("expense"), not null
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
 #  context_id              :bigint           not null, indexed
+#  main_category_id        :bigint           not null, indexed
 #  user_id                 :bigint           not null, indexed
 #
 # Indexes
 #
-#  index_finance_subscriptions_on_context_id  (context_id)
-#  index_finance_subscriptions_on_status      (status)
-#  index_finance_subscriptions_on_user_id     (user_id)
+#  index_finance_subscriptions_on_context_id        (context_id)
+#  index_finance_subscriptions_on_main_category_id  (main_category_id)
+#  index_finance_subscriptions_on_status            (status)
+#  index_finance_subscriptions_on_user_id           (user_id)
 #
 # Foreign Keys
 #
 #  fk_rails_...  (context_id => contexts.id)
+#  fk_rails_...  (main_category_id => categories.id)
 #  fk_rails_...  (user_id => users.id)
 #

@@ -12,7 +12,8 @@ class Views::Subscriptions::FormSubmissionSkeleton < Views::Base
         Skeleton(class: "h-24 w-full rounded-lg")
       end
 
-      div(class: "mb-6 grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-2") do
+      div(class: "mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-2") do
+        Skeleton(class: "h-10 w-full rounded-md")
         Skeleton(class: "h-10 w-full rounded-md")
         Skeleton(class: "h-10 w-full rounded-md")
         Skeleton(class: "h-10 w-full rounded-md")

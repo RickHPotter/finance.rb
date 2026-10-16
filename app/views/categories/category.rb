@@ -88,7 +88,7 @@ class Views::Categories::Category < Views::Base
 
       div(class: "flex items-center justify-center px-2 py-3") do
         div(class: "flex items-center justify-end gap-1") do
-          if !category.built_in? && !category.subcategory?
+          if category_can_have_subcategories?
             link_to(
               new_category_path(parent_category_id: category.id, return_to:),
               id: "add_subcategory_#{category.id}",
@@ -201,7 +201,7 @@ class Views::Categories::Category < Views::Base
         end
 
         div(class: "mt-4 flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-3 dark:border-slate-700") do
-          if !category.built_in? && !category.subcategory?
+          if category_can_have_subcategories?
             Button(
               link: new_category_path(parent_category_id: category.id, return_to:),
               variant: :outline,
@@ -298,6 +298,10 @@ class Views::Categories::Category < Views::Base
 
   def merge_source?
     category.active? && !category.built_in?
+  end
+
+  def category_can_have_subcategories?
+    !category.subcategory? && (!category.built_in? || category.subscription_family_parent?)
   end
 
   def merge_preview_frame_id

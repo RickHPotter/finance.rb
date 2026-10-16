@@ -29,13 +29,13 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
       div(class: "grid grid-cols-1 gap-3 md:grid-cols-2", data: { controller: "price-mask", subscription_transactions_target: "modal" }) do
         div(class: "md:col-span-2 flex gap-4") do
           label(class: "flex items-center gap-2") do
-            radio_button_tag :subscription_transaction_type, :cash, false,
+            radio_button_tag :subscription_transaction_type, :cash, true,
                              data: { action: "subscription-transactions#changeType", subscription_transactions_target: "typeInput" }
             span { CashTransaction.model_name.human }
           end
 
-          label(class: "flex items-center gap-2") do
-            radio_button_tag :subscription_transaction_type, :card, true,
+          label(class: "flex items-center gap-2", data: { subscription_transactions_target: "cardTypeOption" }) do
+            radio_button_tag :subscription_transaction_type, :card, false,
                              data: { action: "subscription-transactions#changeType", subscription_transactions_target: "typeInput" }
             span { CardTransaction.model_name.human }
           end
