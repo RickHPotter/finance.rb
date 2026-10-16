@@ -5,7 +5,7 @@ class SubscriptionsController < ApplicationController
   include ContextHelper
 
   before_action :set_subscription, only: %i[show edit update destroy transition]
-  before_action :set_categories, :set_entities, only: %i[new create edit update]
+  before_action :set_all_categories, :set_entities, only: %i[new create edit update]
   before_action :set_subscription_tabs
 
   def index
@@ -121,7 +121,7 @@ class SubscriptionsController < ApplicationController
   def subscriptions_scope
     build_index_context if @index_context.blank?
 
-    scope = current_context.subscriptions.includes(:categories, :entities).left_outer_joins(:categories, :entities)
+    scope = current_context.subscriptions.includes(:main_category, :categories, :entities).left_outer_joins(:categories, :entities)
     scope = scope.where(id: @index_context[:id]) if @index_context[:id].present?
     scope = scope.where(status: @index_context[:status]) if @index_context[:status].present?
     scope = scope.where(categories: { id: @index_context[:category_id] }) if @index_context[:category_id].present?
@@ -178,7 +178,7 @@ class SubscriptionsController < ApplicationController
     return {} if params[:subscription].blank?
 
     params.require(:subscription).permit(
-      :description, :comment, :price, :status, :user_id, :category_id, :entity_id,
+      :description, :comment, :price, :status, :user_id, :category_id, :entity_id, :main_category_id, :subscription_kind,
       cash_transactions_attributes: %i[id date price paid user_bank_account_id _destroy],
       card_transactions_attributes: %i[id date month year price paid user_card_id _destroy]
     )

@@ -543,6 +543,20 @@ RSpec.describe "Subscriptions", type: :request do
   end
 
   describe "[ #new ]" do
+    it "offers the four localized main families independently of the additional category" do
+      get new_subscription_path
+
+      document = Nokogiri::HTML.parse(response.body)
+      main_options = document.css('input[name="subscription[main_category_id]"]')
+      expect(main_options.map { |option| option["value"] }).to include(
+        user.built_in_category("SUBSCRIPTION").id.to_s,
+        user.built_in_category("OTHER").id.to_s,
+        user.built_in_category("OTHER INCOME").id.to_s
+      )
+      expect(document.css('input[name="subscription[category_id]"]')).to be_present
+      expect(document.at_css('input[name="subscription[subscription_kind]"]')["value"]).to eq("expense")
+    end
+
     it "renders the ruby ui comboboxes" do
       get new_subscription_path
 
@@ -565,6 +579,52 @@ RSpec.describe "Subscriptions", type: :request do
   end
 
   describe "[ #create ]" do
+    it "creates an income cash subscription with its selected main and independent additional category" do
+      main = user.built_in_category("OTHER INCOME")
+
+      post subscriptions_path, params: {
+        subscription: {
+          description: "Monthly wage", subscription_kind: "income", main_category_id: main.id, category_id: category.id,
+          cash_transactions_attributes: {
+            "0" => { date: Date.new(2026, 3, 14), price: 4900, user_bank_account_id: user_bank_account.id }
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      subscription = Subscription.order(:id).last
+      expect(subscription).to be_income
+      expect(subscription.main_category).to eq(main)
+      expect(subscription.categories).to contain_exactly(category)
+      expect(subscription.cash_transactions.first.category_ids).to contain_exactly(main.id, category.id)
+      expect(subscription.price).to eq(4900)
+    end
+
+    it "rejects an income subscription with a card row" do
+      expect do
+        post subscriptions_path, params: {
+          subscription: {
+            description: "Cashback", subscription_kind: "income", main_category_id: user.built_in_category("OTHER INCOME").id,
+            card_transactions_attributes: { "0" => { date: Date.new(2026, 3, 15), price: 100, user_card_id: user_card.id } }
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(Subscription, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "rejects a foreign main category instead of silently replacing it with the default" do
+      foreign_category = create(:user, :random).built_in_category("OTHER")
+
+      expect do
+        post subscriptions_path, params: {
+          subscription: { description: "Invalid category", main_category_id: foreign_category.id }
+        }, headers: turbo_stream_headers
+      end.not_to change(Subscription, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
     it "creates a subscription with linked cash and card transactions" do
       expect do
         post subscriptions_path, params: {
@@ -702,6 +762,37 @@ RSpec.describe "Subscriptions", type: :request do
   end
 
   describe "[ #update ]" do
+    it "switches the expense main category without losing the additional allocation or changing price" do
+      subscription = create(:subscription, user:)
+      subscription.categories << category
+      transaction = create(:cash_transaction, user:, subscription:, user_bank_account:, price: -4900)
+      old_main = subscription.main_category
+      new_main = user.built_in_category("OTHER")
+
+      patch subscription_path(subscription), params: {
+        subscription: { description: subscription.description, main_category_id: new_main.id, category_id: category.id }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      expect(subscription.reload.main_category).to eq(new_main)
+      expect(transaction.reload.category_ids).to contain_exactly(new_main.id, category.id)
+      expect(transaction.category_ids).not_to include(old_main.id)
+      expect(transaction.price).to eq(-4900)
+    end
+
+    it "rejects a persisted kind change even when main category is changed with it" do
+      subscription = create(:subscription, user:)
+
+      patch subscription_path(subscription), params: {
+        subscription: { description: subscription.description, subscription_kind: "income",
+                        main_category_id: user.built_in_category("OTHER INCOME").id }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(subscription.reload).to be_expense
+      expect(subscription.main_category.category_name).to eq("SUBSCRIPTION")
+    end
+
     it "updates the subscription and manages linked transactions from the same form" do
       subscription = create(:subscription, user:, description: "Netflix", comment: "Family plan")
       subscription.categories << category

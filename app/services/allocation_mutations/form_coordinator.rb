@@ -83,7 +83,7 @@ class AllocationMutations::FormCoordinator
     return if subscription.blank?
     return unless subscription_managed_allocation?(subscription)
 
-    subscription_category_id = owner.user.built_in_category("SUBSCRIPTION")&.id
+    subscription_category_id = subscription.main_category_id
     required_category_ids = [ *subscription.category_ids, subscription_category_id ].compact.uniq
     required_entity_ids = subscription.entity_ids
     return if (required_category_ids - active_category_ids).empty? && (required_entity_ids - active_entity_ids).empty?
@@ -92,7 +92,7 @@ class AllocationMutations::FormCoordinator
   end
 
   def subscription_managed_allocation?(subscription)
-    subscription_category_id = owner.user.built_in_category("SUBSCRIPTION")&.id
+    subscription_category_id = subscription.main_category_id
     persisted_categories = CategoryTransaction.where(transactable: owner).pluck(:category_id)
     persisted_entities = persisted_entity_ids.values
 

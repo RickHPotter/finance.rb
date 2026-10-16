@@ -27,6 +27,8 @@ Tests: category/user model specs, data backfill tests for both existing names/mi
 
 ## Slice 2 — Kind data and forms
 
+Status: implemented locally on 2026-10-16. The migration backfills existing subscriptions to their user's `SUBSCRIPTION` main category without changing optional additional-category joins. Focused model/request/concern/allocation specs passed (83 examples), Ruby style passed, and the JavaScript bundle built. Manual desktop/PWA interaction and the broader CI suite remain for final verification.
+
 The old single category input is the **additional** category and must remain so. Existing subscriptions with BILL, LEISURE, PRODUCTIVITY, etc. keep those joins; backfill their new main-category FK to built-in `SUBSCRIPTION` without reparenting or rewriting history.
 
 - Add `subscription_kind` with expense default and `main_category_id` FK/backfill. Keep existing category joins as the optional additional category. New records require an owned main category; the form/API accept at most one additional category but do not impose income/expense rules on it. Audit and rollback must capture main-category changes.

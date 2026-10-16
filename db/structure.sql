@@ -1015,7 +1015,10 @@ CREATE TABLE public.finance_subscriptions (
     updated_at timestamp(6) without time zone NOT NULL,
     cash_transactions_count integer DEFAULT 0 NOT NULL,
     card_transactions_count integer DEFAULT 0 NOT NULL,
-    context_id bigint NOT NULL
+    context_id bigint NOT NULL,
+    subscription_kind character varying DEFAULT 'expense'::character varying NOT NULL,
+    main_category_id bigint NOT NULL,
+    CONSTRAINT finance_subscriptions_kind_values CHECK (((subscription_kind)::text = ANY ((ARRAY['expense'::character varying, 'income'::character varying])::text[])))
 );
 
 
@@ -3049,6 +3052,13 @@ CREATE INDEX index_finance_subscriptions_on_context_id ON public.finance_subscri
 
 
 --
+-- Name: index_finance_subscriptions_on_main_category_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_finance_subscriptions_on_main_category_id ON public.finance_subscriptions USING btree (main_category_id);
+
+
+--
 -- Name: index_finance_subscriptions_on_status; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3794,6 +3804,14 @@ ALTER TABLE ONLY public.entities
 
 
 --
+-- Name: finance_subscriptions fk_rails_78f80a5b3a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.finance_subscriptions
+    ADD CONSTRAINT fk_rails_78f80a5b3a FOREIGN KEY (main_category_id) REFERENCES public.categories(id);
+
+
+--
 -- Name: cards fk_rails_7a40ccfa76; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4160,6 +4178,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261016120000'),
 ('20261015120000'),
 ('20261014120000'),
 ('20261008120000'),

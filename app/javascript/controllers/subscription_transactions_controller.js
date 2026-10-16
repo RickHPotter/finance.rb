@@ -7,7 +7,7 @@ export default class extends Controller {
   static targets = [
     "template", "target", "typeInput", "intervalInput", "startMonthYearInput", "endMonthYearInput",
     "startDateInput", "endDateInput", "cashAccountInput", "cardInput", "cashAccountWrapper", "cardWrapper",
-    "priceInput", "transactionPriceInput", "totalPriceInput", "totalPriceDisplay", "nextButton"
+    "priceInput", "transactionPriceInput", "totalPriceInput", "totalPriceDisplay", "nextButton", "kindInput", "cardTypeOption"
   ]
 
   connect() {
@@ -21,6 +21,7 @@ export default class extends Controller {
     this.sortRows()
     this.recalculatePrice()
     this.refreshNextButton()
+    this.refreshKindControls()
   }
 
   disconnect() {
@@ -37,6 +38,34 @@ export default class extends Controller {
     this.applyDefaultType()
     this.populateDefaults()
     this.showModal()
+  }
+
+  mainCategoryChanged(event) {
+    if (!this.hasKindInputTarget) return
+
+    this.kindInputTarget.value = event.currentTarget.dataset.kind || "expense"
+    this.refreshKindControls()
+  }
+
+  refreshKindControls() {
+    const income = this.hasKindInputTarget && this.kindInputTarget.value === "income"
+    if (this.hasCardTypeOptionTarget) this.cardTypeOptionTarget.classList.toggle("hidden", income)
+
+    if (income && this.selectedType === "card") {
+      const cashInput = this.typeInputTargets.find((input) => input.value === "cash")
+      if (cashInput) cashInput.checked = true
+      this.changeType()
+    }
+
+    if (!this.modalElement || !this.hasPriceInputTarget) return
+
+    const priceMaskElement = this.priceInputTarget.closest('[data-controller~="price-mask"]')
+    const priceMaskController = priceMaskElement && this.application.getControllerForElementAndIdentifier(priceMaskElement, "price-mask")
+    const currentValue = parseInt(this.unmaskedPriceValue || "0", 10) || 0
+    if (currentValue === 0) {
+      this.priceInputTarget.dataset.sign = income ? "+" : "-"
+      priceMaskController?.setSignForInput(this.priceInputTarget, this.priceInputTarget.dataset.sign)
+    }
   }
 
   openNextModal(event) {
@@ -182,7 +211,7 @@ export default class extends Controller {
 
   applyDefaultType() {
     const latestType = this.latestOverallType()
-    const desiredType = latestType || "card"
+    const desiredType = this.income ? "cash" : (latestType || "card")
     const input = this.typeInputTargets.find((candidate) => candidate.value === desiredType)
     if (input) input.checked = true
     this.changeType()
@@ -190,7 +219,7 @@ export default class extends Controller {
 
   applyEmptyDefaults() {
     if (!this.typeInputTargets.some((input) => input.checked)) {
-      const defaultInput = this.typeInputTargets.find((input) => input.value === "card")
+      const defaultInput = this.typeInputTargets.find((input) => input.value === (this.income ? "cash" : "card"))
       if (defaultInput) defaultInput.checked = true
     }
 
@@ -333,6 +362,10 @@ export default class extends Controller {
 
   get selectedType() {
     return this.typeInputTargets.find((input) => input.checked)?.value || "card"
+  }
+
+  get income() {
+    return this.hasKindInputTarget && this.kindInputTarget.value === "income"
   }
 
   get selectedCardOption() {

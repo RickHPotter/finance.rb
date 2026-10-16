@@ -59,6 +59,7 @@ class Views::Subscriptions::Show < Views::Base
       end
 
       div(class: "mt-4 grid gap-3 border-t border-slate-200 pt-4 dark:border-slate-700 xl:grid-cols-2") do
+        allocation_group(model_attribute(Subscription, :main_category_id), [ subscription.main_category ].compact, :category)
         allocation_group(model_attribute(Subscription, :category_id), subscription.categories, :category)
         allocation_group(model_attribute(Subscription, :entity_id), subscription.entities, :entity)
       end

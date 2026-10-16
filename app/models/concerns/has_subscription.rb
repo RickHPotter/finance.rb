@@ -13,6 +13,7 @@ module HasSubscription
 
     # @callbacks ..............................................................
     before_validation :clear_subscription_without_subscription_category
+    validate :validate_income_subscription_card
     before_destroy :remember_subscription_id, prepend: true
     after_commit :update_subscription_price_cache
   end
@@ -34,6 +35,7 @@ module HasSubscription
 
   def clear_subscription_without_subscription_category
     return if subscription_id.blank?
+    return if subscription_allocation_sync
     return unless subscription_category_link_removed?
     return if will_save_change_to_subscription_id?
 
@@ -45,7 +47,7 @@ module HasSubscription
     return false unless respond_to?(:original_categories)
     return false if original_categories.blank?
 
-    subscription_category_id = user&.built_in_category("SUBSCRIPTION")&.id
+    subscription_category_id = subscription&.main_category_id || user&.built_in_category("SUBSCRIPTION")&.id
     return false if subscription_category_id.blank?
 
     original_categories.include?(subscription_category_id) && !effective_category_ids.include?(subscription_category_id)
@@ -53,5 +55,9 @@ module HasSubscription
 
   def effective_category_ids
     category_transactions.reject(&:marked_for_destruction?).filter_map(&:category_id).uniq
+  end
+
+  def validate_income_subscription_card
+    errors.add(:subscription, :invalid) if is_a?(CardTransaction) && subscription&.income?
   end
 end

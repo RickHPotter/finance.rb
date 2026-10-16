@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress — 2026-10-16. The salary/OTHER category foundation is implemented and locally verified; this contract now distinguishes a subscription's **main** category from its optional **additional** category. Subscription kind/forms, bulk edit, and rollback hardening remain pending.
+In progress — 2026-10-16. The salary/OTHER foundation and kind/main-category form slice are implemented and locally verified. Bulk edit, rollback hardening, and manual end-to-end verification remain pending.
 
 ## Goal
 
@@ -14,7 +14,7 @@ This is a subscription grouping workflow, not a scheduler. Users still create, a
 
 - `Subscription` uses `finance_subscriptions`; `status` is already a string-backed enum (`active`, `paused`, `finished`). It owns linked cash/card transactions and category/entity allocation joins.
 - `Subscription#refresh_price!` derives `price` from the **signed sum** of linked cash/card transaction prices. The form's Stimulus controller also sums signed row prices. The column is skipped by financial auditing and recalculated on rollback. The previous proposal to store every subscription price as positive conflicts with this implementation.
-- The transaction-creation modal currently defaults to **card** and a **negative** price. The linked-transaction sync copies subscription description, comment, category/entity allocations, and an automatic built-in `SUBSCRIPTION` category to transactions and syncs their installments. That automatic category is today's implicit **main category**; the category shown in the subscription form is an **additional category** (e.g. Netflix has main SUBSCRIPTION and additional LEISURE). Changing either can mutate linked transaction allocations; it is not just a label edit.
+- Before Slice 2, the transaction-creation modal defaulted to **card** and a **negative** price. The linked-transaction sync copied subscription description, comment, category/entity allocations, and an automatic built-in `SUBSCRIPTION` category to transactions and synced their installments. That automatic category was the implicit **main category**; the pre-existing category field remains an **additional category** (e.g. Netflix has main SUBSCRIPTION and additional LEISURE). Changing either can mutate linked transaction allocations; it is not just a label edit.
 - Subscription category/entity associations may hold multiple records even though the form exposes a single additional-category selection. NARUTO-04 keeps the extra category optional and limited to one through the form/API; it does not reinterpret existing arbitrary categories as main categories. Direct `update_all` would bypass sync and audit paths.
 - Monthly analysis classifies **installment price sign**, not subscription kind. The kind should describe an intended direction and UI grouping; it must not reclassify a real negative transaction as income.
 - Slice 1 added and localized `SALARY`/`SALARIO`, `OTHER`, and `OTHER INCOME` built-ins, preserving existing salary category IDs. `Category#name` translates either salary key. `SUBSCRIPTION`, salary, and both OTHER categories are the four **main-category families**; each can have custom children, and each parent remains directly selectable.

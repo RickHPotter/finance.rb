@@ -42,7 +42,10 @@ class Views::Subscriptions::Subscription < Views::Base
       end
 
       div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700 dark:text-slate-300") do
-        render_desktop_categories
+        div(class: "flex flex-col items-center gap-1") do
+          span(class: "font-semibold", title: model_attribute(Subscription, :main_category_id)) { subscription.main_category&.hierarchical_name }
+          render_desktop_categories
+        end
       end
 
       render_desktop_entities
@@ -99,8 +102,12 @@ class Views::Subscriptions::Subscription < Views::Base
           mobile_metric(icon: :money, label: model_attribute(Subscription, :price), value: from_cent_based_to_float(subscription.price, "R$"))
         end
 
-        if subscription.categories.any? || subscription.entities.any?
+        if subscription.main_category || subscription.categories.any? || subscription.entities.any?
           div(class: "grid grid-cols-2 gap-3") do
+            if subscription.main_category
+              mobile_metric(icon: :category, label: model_attribute(Subscription, :main_category_id),
+                            value: subscription.main_category&.hierarchical_name)
+            end
             render_mobile_categories if subscription.categories.any?
             render_mobile_entities if subscription.entities.any?
           end
