@@ -53,6 +53,7 @@ class Views::Subscriptions::Show < Views::Base
     section_card(I18n.t("dashboards.sections.summary")) do
       div(class: "grid gap-3 sm:grid-cols-2 xl:grid-cols-4") do
         dashboard_stat(I18n.t("dashboards.subscriptions.derived_total"), money(derived_total), emphasis: true)
+        dashboard_stat(model_attribute(Subscription, :subscription_kind), model_attribute(Subscription, "kinds.#{subscription.subscription_kind}"))
         dashboard_stat(model_attribute(Subscription, :status), status_label)
         linked_count_stat(I18n.t("dashboards.subscriptions.cash_count"), cash_transactions.size, cash_index_path)
         linked_count_stat(I18n.t("dashboards.subscriptions.card_count"), card_transactions.size, card_index_path)

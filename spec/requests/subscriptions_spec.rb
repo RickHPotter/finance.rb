@@ -144,6 +144,17 @@ RSpec.describe "Subscriptions", type: :request do
   end
 
   describe "[ #show ]" do
+    it "labels the subscription kind on index and show" do
+      subscription = create(:subscription, user:, subscription_kind: :income,
+                                           main_category: user.built_in_category("OTHER INCOME"))
+
+      get subscriptions_path
+      expect(response.body).to include(I18n.t("activerecord.attributes.subscription.kinds.income"))
+
+      get subscription_path(subscription)
+      expect(response.body).to include(I18n.t("activerecord.attributes.subscription.kinds.income"))
+    end
+
     it "renders derived live totals, allocations, and disjoint open and paid transaction histories without writes" do
       subscription = create(:subscription, user:, context: user.main_context, description: "House services", comment: "Shared utilities", status: :paused)
       subscription.categories << category
