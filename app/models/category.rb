@@ -2,7 +2,7 @@
 
 class Category < ApplicationRecord
   COLOUR_HEX_PATTERN = /\A#[0-9a-f]{6}\z/
-  SUBSCRIPTION_OTHER_PARENT_NAMES = [ "OTHER", "OTHER INCOME" ].freeze
+  SUBSCRIPTION_FAMILY_PARENT_NAMES = [ "SUBSCRIPTION", "SALARY", "SALARIO", "OTHER", "OTHER INCOME" ].freeze
 
   # @extends ..................................................................
   # @includes .................................................................
@@ -67,8 +67,8 @@ class Category < ApplicationRecord
     built_in
   end
 
-  def subscription_other_parent?
-    built_in? && parent_category_id.nil? && category_name.in?(SUBSCRIPTION_OTHER_PARENT_NAMES)
+  def subscription_family_parent?
+    built_in? && parent_category_id.nil? && category_name.in?(SUBSCRIPTION_FAMILY_PARENT_NAMES)
   end
 
   def hex_colour
@@ -226,7 +226,7 @@ class Category < ApplicationRecord
   def validate_built_in_hierarchy
     if built_in? && parent_category_id.present?
       errors.add(:parent_category_id, :built_in_cannot_have_parent)
-    elsif parent_category&.built_in? && !parent_category.subscription_other_parent?
+    elsif parent_category&.built_in? && !parent_category.subscription_family_parent?
       errors.add(:parent_category_id, :built_in_cannot_be_parent)
     end
   end

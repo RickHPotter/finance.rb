@@ -129,6 +129,12 @@ while two children under different parents can each be named `"SUPPLIES"`.
   - `errors.add(:parent_category_id, :built_in_cannot_have_parent)` if `built_in? && parent_category_id.present?`.
   - `errors.add(:parent_category_id, :built_in_cannot_be_parent)` if `parent_category&.built_in?`.
 
+NARUTO-04 later adds a scoped exception to this V1 rule: `SUBSCRIPTION`, the user's
+`SALARY`/`SALARIO`, `OTHER`, and `OTHER INCOME` built-ins remain top-level but may be
+parents of custom children. They and their children are directly selectable; all
+other built-ins still cannot be parents, and no built-in can be a child. See the
+[NARUTO-04 contract](../naruto-04/01-product-and-data-contract.md).
+
 ### 4. Direct Transactions Permitted on All Categories
 - Both parent categories and child categories are eligible to receive `CategoryTransaction` records.
 - Standalone transactions or broad niche items can be assigned directly to the parent (e.g. `"HSH"` or `"ASSETS"`).
@@ -165,6 +171,7 @@ while two children under different parents can each be named `"SUPPLIES"`.
 - **Parent Selector**:
   - Optional dropdown / select field: `"Group / Parent Category"` (`parent_category_id`).
   - Options list: Top-level custom categories belonging to `current_user` (`where(parent_category_id: nil, built_in: false)`), excluding `category.id` (self).
+  - NARUTO-04 extends this list with the four subscription-family built-ins named above; unrelated built-ins remain excluded.
   - Blank option: `"None (Standalone / Top-Level Category)"`.
   - If the category already has subcategories, the parent selector is disabled with an informative note: `"This category has subcategories and cannot have a parent."`
   - If the category has existing transactions, selecting a parent or adding children is allowed.

@@ -70,8 +70,9 @@ Locked V1 direction:
 - filtering by a parent category encompasses the parent's transactions plus all its subcategories'
   transactions (`category.subtree_ids`); filtering by a child category selects only that child
 - deactivating a parent cascades to deactivate all its children
-- built-in system categories (EXCHANGE, PIGGY BANK, CARD PAYMENT, SUBSCRIPTION, etc.)
-  remain flat; no hierarchy is introduced for them
+- built-in system categories were flat in NARUTO-01; NARUTO-04 later makes only its
+  four subscription-family built-ins eligible as directly selectable parents of
+  custom children, while unrelated built-ins remain flat
 - the `FinancialAuditable` skip list on `Category` requires no change; the new
   foreign key column carries no financial counter
 
@@ -228,8 +229,9 @@ Explicitly out of scope for the current attachment and fiscal-import plan:
 
 ### NARUTO-04: Extend subscriptions with salary support and bulk operations
 
-Status: in progress as of 2026-10-15. The salary/OTHER category foundation is implemented
-and locally verified; subscription kind/forms, bulk operations, and rollback hardening
+Status: in progress as of 2026-10-16. The salary/OTHER category foundation is implemented
+and locally verified; all four main-category families now allow custom children.
+Subscription kind/forms, bulk operations, and rollback hardening
 remain. The signed-total, cash-only income, immutable-kind, category-choice, and atomic
 bulk-edit decisions are locked. See the
 [NARUTO-04 product contract](docs/sprints/5-naruto/naruto-04/01-product-and-data-contract.md)
@@ -247,28 +249,32 @@ confirms the existing adapter covers every mutation path before new paths are ad
 
 Current direction:
 
-- add `subscription_kind varchar NOT NULL DEFAULT 'expense'` to `finance_subscriptions`
-  with string-backed enum values `expense` and `income`
+- add `subscription_kind varchar NOT NULL DEFAULT 'expense'` and `main_category_id`
+  to `finance_subscriptions`; existing records backfill main `SUBSCRIPTION` while their
+  current category join remains the optional **additional** category
 - preserve signed cash/card transaction and installment prices; `Subscription#price`
   remains the derived signed sum, not an always-positive amount
 - monthly analysis continues to classify actual installment signs; kind describes
   recurring intent and must not invert or double-count cash flow
 - add localized salary built-ins, preserving existing `SALARY`/`SALARIO` category IDs
   and allocations and creating a locale-appropriate category only where missing
-- add built-in parent categories `OTHER` and `OTHER INCOME`; both are directly
-  selectable, even without children, and permit user-created children without adding
-  general category income/expense flags or changing ordinary parent selectability
+- add built-in parent categories `OTHER` and `OTHER INCOME`; `SUBSCRIPTION`, salary,
+  and both OTHER parents are directly selectable and permit user-created children,
+  without adding general category income/expense flags
 - the create/edit form offers SUBSCRIPTION (Expense), SALARY (Income), OTHER (Expense),
-  and OTHER (Income), with the latter two showing their children as expandable choices
+  and OTHER (Income) as **main-category families**, each showing its custom children;
+  the existing category input remains one optional **additional** category of any kind
 - new income cash entries default positive; income subscriptions are cash-only and
   kind cannot change after creation, while same-kind category changes can update
   linked transaction allocations
-- the selected SALARY, OTHER parent, or OTHER child category replaces automatic
-  `SUBSCRIPTION` tagging on linked transactions; that tag remains for the first path
+- the selected main category replaces automatic `SUBSCRIPTION` tagging on linked
+  transactions; selecting a child attaches that child only, plus any additional
+  category (e.g. Netflix: main SUBSCRIPTION, additional LEISURE)
 - bulk edit: selection on desktop rows and PWA cards, with localized actions when one
   or more subscriptions are selected
-- supported bulk fields: `status`, `category`, `entity`
-- bulk category/entity actions replace allocations with an explicit clear action;
+- supported bulk fields: `status`, **additional category**, `entity`; bulk does not
+  change main category or kind
+- bulk additional-category/entity actions replace allocations with an explicit clear action;
   invalid mixed-state status transitions reject the entire selection
 - all selected records update atomically through existing validation/sync paths, with
   one request-scoped audit operation and one operation-level rollback action; no
@@ -481,9 +487,9 @@ Batch 3: Independent Enhancements (can start any time, no blockers)
 │   ├── Fiscal import: supported XML/QR sources, saved inbox, cash/card prefill
 │   └── Finish duplicate-import protection and attachment release gates
 └── NARUTO-04: Subscription Enhancements
-    ├── Migration: add subscription_kind to finance_subscriptions
-    ├── Built-in: localize/reconcile SALARY/SALARIO; add selectable OTHER parents
-    ├── Form: four paths, expandable OTHER children, positive cash-only income
+    ├── Migration: add subscription_kind and main_category_id to finance_subscriptions
+    ├── Built-in: localize/reconcile SALARY/SALARIO; four family parents allow children
+    ├── Form: four main families + optional additional category, positive cash-only income
     ├── Bulk edit: desktop/PWA selection, atomic server mutation, existing audit operation
     ├── Rollback audit verification: extend the existing adapter spec
     └── Specs: model + request + rollback adapter

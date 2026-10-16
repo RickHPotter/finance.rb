@@ -301,7 +301,7 @@ class Views::Categories::Category < Views::Base
   end
 
   def category_can_have_subcategories?
-    !category.subcategory? && (!category.built_in? || category.subscription_other_parent?)
+    !category.subcategory? && (!category.built_in? || category.subscription_family_parent?)
   end
 
   def merge_preview_frame_id

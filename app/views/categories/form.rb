@@ -123,7 +123,7 @@ class Views::Categories::Form < Views::Base
 
   def parent_category_options
     scope = current_user.categories.top_level.active
-                        .where("built_in = false OR category_name IN (?)", Category::SUBSCRIPTION_OTHER_PARENT_NAMES)
+                        .where("built_in = false OR category_name IN (?)", Category::SUBSCRIPTION_FAMILY_PARENT_NAMES)
                         .order(:category_name)
     scope = scope.where.not(id: category.id) if category.persisted?
     scope.map { |cat| [ cat.name, cat.id ] }

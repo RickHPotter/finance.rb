@@ -1,52 +1,54 @@
 # NARUTO-04 — Implementation slices and acceptance matrix
 
-This plan starts after the product decisions in [the contract](01-product-and-data-contract.md) are resolved. Each slice should be implemented, tested, and committed separately. Do not begin bulk mutation before the kind/sign contract is stable.
+The product contract is locked. Each remaining slice should be implemented, tested, and committed separately. Do not begin bulk mutation before the main/additional-category and kind contracts are stable.
 
 ## Slice 0 — Baseline and decisions
 
 - The product decisions are locked in the contract. Align the NARUTO-04 summary in `SPRINT_5.md` before implementation.
-- Capture baseline specs for current signed derived totals, linked cash/card sync, lifecycle transitions, and adapter rollback. Confirm no migration or UI code has already landed on this branch.
+- Capture baseline specs for current signed derived totals, linked cash/card sync, lifecycle transitions, and adapter rollback. Slice 1's category migration/UI has already landed; do not repeat it.
 - Trace subscription-linked transaction attach/detach flows and allocation restrictions before changing callback behavior.
 
 Done when the contract has no implementation-blocking ambiguity and the baseline specs pass.
 
 ## Slice 1 — Salary/OTHER built-ins and data reconciliation
 
-Status: implemented and locally verified on 2026-10-15. The existing `SALARY`/`SALARIO` records for users 1 and 4 kept IDs 24 and 105; user 5 received `SALARIO`. All three received `OTHER` and `OTHER INCOME`. Focused category/user/migration/request specs passed (108 examples). This is not a claim about HMG/PROD data.
+Status: salary/OTHER built-ins and the first hierarchy exception were implemented and locally verified on 2026-10-15. The existing `SALARY`/`SALARIO` records for users 1 and 4 kept IDs 24 and 105; user 5 received `SALARIO`. All three received `OTHER` and `OTHER INCOME`. Focused category/user/migration/request specs passed (108 examples). On 2026-10-16 the hierarchy exception was extended to `SUBSCRIPTION` and `SALARY`/`SALARIO` after the main/additional-category clarification; the focused category model/request suite passed (71 examples). This is not a claim about HMG/PROD data.
 
 - Add `salary` and `salario` built-in category translations in en and pt-BR; verify `Category#name` displays either stored key in the active locale. Add salary to the normal built-in category presentation (including colour/icon conventions where relevant).
 - Backfill existing users safely: mark their existing `SALARY` or `SALARIO` category built-in in place; create the locale-appropriate one only when neither exists. Preserve IDs, category transaction joins, colours and other metadata. Handle a user with both names explicitly rather than silently merging.
 - In the current three-user development data, this means: first user's `SALARY` becomes built-in, second user's `SALARIO` becomes built-in, and third user gets a new `SALARIO` built-in. Identify users by durable attributes or inspect their existing categories and locale; do not encode `.first/.second/.third` ordering in a migration.
 - Add the appropriate built-in for new users through `User#create_built_ins` (English `SALARY`; pt-BR `SALARIO`). Make the reconciliation idempotent and safe across HMG/PROD datasets that may not have exactly three users.
-- Add real localized `OTHER` (Expense) and `OTHER INCOME` (Income) built-ins for existing and new users. Reconcile same-name top-level categories in place, preserving any direct allocations. Add a narrow exception to the built-in hierarchy validation so users can add custom children under these two parents, without allowing children under unrelated built-ins or allowing built-in children. The Category form must offer these parents; ordinary NARUTO-01 parent behavior stays unchanged.
-- Keep both OTHER parents directly selectable, even when childless, on subscriptions and ordinary transaction forms. Keep parent-subtree filtering so queries on the parent include direct and child allocations. Do not add general income/expense flags to categories.
+- Add real localized `OTHER` (Expense) and `OTHER INCOME` (Income) built-ins for existing and new users. Reconcile same-name top-level categories in place, preserving any direct allocations. Permit custom children under **all four** subscription-family built-ins (`SUBSCRIPTION`, locale-appropriate salary, `OTHER`, `OTHER INCOME`), but not under unrelated built-ins and never built-in children. The Category form must offer these parents; ordinary NARUTO-01 parent behavior stays unchanged.
+- Keep all four parents directly selectable, even when childless, on subscriptions and ordinary transaction forms. Keep parent-subtree filtering so queries on the parent include direct and child allocations. Do not add general income/expense flags to categories.
 
-Acceptance: existing category links are unchanged; no duplicate salary category is created; all three development users have the intended salary category; en/pt-BR display changes with locale while stored names stay stable; repeat run makes no further changes; new users get the right built-ins; OTHER parents and their custom children are both selectable.
+Acceptance: existing category links are unchanged; no duplicate salary category is created; all three development users have the intended salary category; en/pt-BR display changes with locale while stored names stay stable; repeat run makes no further changes; new users get the right built-ins; all four family parents and their custom children are selectable.
 
 Tests: category/user model specs, data backfill tests for both existing names/missing/both-name cases, translation checks, existing allocation preservation, direct OTHER allocation, permitted OTHER children, forbidden children under other built-ins, childless-parent selection, and parent-subtree filters.
 
 ## Slice 2 — Kind data and forms
 
-- Add the `subscription_kind` migration with expense default, string enum, model validation, factory trait, and schema annotations.
-- Add a localized four-path choice to create/edit: SUBSCRIPTION (Expense), SALARY (Income), OTHER (Expense), OTHER (Income). The two OTHER paths expose their existing children and must stay expandable as users add children, without editing the form's hard-coded options. The income/expense kind and selected category must be saved together and validated together. Show kind/family on desktop/PWA index and show.
+The old single category input is the **additional** category and must remain so. Existing subscriptions with BILL, LEISURE, PRODUCTIVITY, etc. keep those joins; backfill their new main-category FK to built-in `SUBSCRIPTION` without reparenting or rewriting history.
+
+- Add `subscription_kind` with expense default and `main_category_id` FK/backfill. Keep existing category joins as the optional additional category. New records require an owned main category; the form/API accept at most one additional category but do not impose income/expense rules on it. Audit and rollback must capture main-category changes.
+- Add a localized main-category selector grouped into SUBSCRIPTION (Expense), SALARY (Income), OTHER (Expense), OTHER (Income). Each group offers its parent and current custom children; child options appear automatically as users create them. The selected main category and kind must be saved and validated together. Show main and additional categories distinctly on desktop/PWA index and show.
 - Make new linked transaction defaults match kind: positive cash for income, negative cash/card for expense. Income is cash-only: hide card creation and reject card-linked income server-side, including nested attributes and attach flows. Preserve explicit sign changes only if they remain valid for the chosen kind.
-- Make the selected category replace automatic `SUBSCRIPTION` tagging on linked transactions, except for the SUBSCRIPTION (Expense) path. Both OTHER parents and their children can be selected. A same-kind switch from OTHER to one of its children updates existing linked allocations through the audited sync path, subject to financial-safety checks. Do not manufacture a general category-direction constraint.
+- Make the main category replace automatic `SUBSCRIPTION` tagging on linked transactions; attach the selected **child only** if a child is chosen, plus the optional additional category. A same-kind switch (for example, OTHER → Rent or SUBSCRIPTION → SUBSCRIPTION/Leisure) updates only the managed main allocation through the audited sync path and leaves the additional allocation in place. Update `HasSubscription` and `AllocationMutations::FormCoordinator` to recognize the actual main category rather than hard-coded `SUBSCRIPTION`.
 - Block changing kind after creation, even with no linked transactions; reject cross-kind category choices. Keep the derived `price` signed. Never rewrite existing linked prices as an incidental result of a form edit.
 
-Acceptance: all four paths are displayed and localized; newly added OTHER children appear in the correct path; childless OTHER can be selected; new income records can create a positive cash transaction with positive installment; income card entries fail on the server; all persisted kind changes fail; same-kind category changes update linked allocations without changing prices; salary built-in works in either locale; en/pt-BR and desktop/PWA are covered.
+Acceptance: all four main families are displayed and localized; newly added children appear in the correct path; every parent is directly selectable; Netflix-style main SUBSCRIPTION plus additional LEISURE is preserved; a child chosen as main is attached without its parent; new income cash works; income card entries fail server-side; persisted kind changes fail; same-kind main changes update linked allocations without changing prices or the additional category; en/pt-BR and desktop/PWA are covered.
 
-Tests: migration/model, request create/update/authorization, immutable kind, category-family compatibility, linked cash/card transaction and installment specs, attach-flow rejection for income cards, same-kind category replacement and rollback, feature flow for all four options and dynamic children, monthly-analysis regression for positive/negative installment classification.
+Tests: migration/model, request create/update/authorization, immutable kind, main-category family and ownership, additional-category independence, linked cash/card transaction and installment specs, attach-flow rejection for income cards, same-kind main-category replacement and rollback, feature flow for all four options and dynamic children, monthly-analysis regression for positive/negative installment classification.
 
 ## Slice 3 — Bulk edit server contract
 
 - Add a strict endpoint and mutation service for explicit selected IDs, one allowlisted action/value, context/owner validation, and an upper selection bound.
 - Use one database transaction and the request's existing audit operation. For status, reuse `Logic::Subscriptions::LifecycleTransition` or an equivalent validated shared transition path. For allocations, use the same safe model/association mutation path as single edits.
-- Reject the entire set if one row is invalid, stale, foreign, uses an incompatible category family, or conflicts with linked financial history. Category/entity actions replace allocations; clearing either is an explicit action. Return localized actionable errors.
+- Reject the entire set if one row is invalid, stale, foreign, or conflicts with linked financial history. Additional-category/entity actions replace allocations; clearing either is an explicit action. Additional category may be any owned category and must not change main category or kind. Return localized actionable errors.
 - Tag the operation with scalar metadata if useful; do not invent an `operation_kind` column.
 
 Acceptance: a successful batch creates one operation with versions for all changed rows; one invalid row causes zero changes; other-context and foreign IDs are never mutated; no-op and duplicate-ID requests behave predictably; linked transaction allocations and audit versions stay consistent.
 
-Tests: request/service specs for all actions, authorization, atomicity, mixed-state rejection, empty/oversized selection, explicit clear and replacement semantics, category-family compatibility, and linked cash/card allocation effects.
+Tests: request/service specs for all actions, authorization, atomicity, mixed-state rejection, empty/oversized selection, explicit clear and replacement semantics, unrestricted additional category, unchanged main category/kind, and linked cash/card allocation effects.
 
 ## Slice 4 — Desktop/PWA bulk controls
 

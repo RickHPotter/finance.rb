@@ -87,11 +87,11 @@ RSpec.describe "Categories", type: :request do
       expect(document.at_css("#add_subcategory_#{child.id}")).to be_nil
     end
 
-    it "offers an add-child action on both built-in OTHER parents" do
+    it "offers an add-child action on subscription family built-ins" do
       get categories_path
 
       document = response.parsed_body
-      user.categories.where(category_name: [ "OTHER", "OTHER INCOME" ]).each do |parent|
+      user.categories.where(category_name: [ "SUBSCRIPTION", "SALARY", "OTHER", "OTHER INCOME" ]).each do |parent|
         expect(document.at_css("#add_subcategory_#{parent.id}")).to be_present
       end
     end
@@ -270,12 +270,12 @@ RSpec.describe "Categories", type: :request do
       expect(options).not_to include(child.name)
     end
 
-    it "offers both built-in OTHER families as parents without offering other built-ins" do
+    it "offers subscription family built-ins as parents without offering unrelated built-ins" do
       get new_category_path
 
       option_ids = response.parsed_body.css("#category_parent_category_id option").pluck("value")
-      expect(option_ids).to include(*user.categories.where(category_name: [ "OTHER", "OTHER INCOME" ]).ids.map(&:to_s))
-      expect(option_ids).not_to include(user.categories.find_by!(category_name: "SUBSCRIPTION").id.to_s)
+      expect(option_ids).to include(*user.categories.where(category_name: [ "SUBSCRIPTION", "SALARY", "OTHER", "OTHER INCOME" ]).ids.map(&:to_s))
+      expect(option_ids).not_to include(user.categories.find_by!(category_name: "EXCHANGE").id.to_s)
     end
 
     it "pre-selects parent category when parent_category_id param is provided" do

@@ -211,14 +211,18 @@ RSpec.describe Category, type: :model do
         expect(child.errors.of_kind?(:parent_category_id, :built_in_cannot_be_parent)).to be(true)
       end
 
-      it "permits custom children under the two subscription OTHER built-ins" do
+      it "permits custom children under all subscription family built-ins" do
         expense_parent = user.categories.find_by!(category_name: "OTHER")
         income_parent = user.categories.find_by!(category_name: "OTHER INCOME")
+        subscription_parent = user.categories.find_by!(category_name: "SUBSCRIPTION")
+        salary_parent = user.categories.find_by!(category_name: "SALARY")
 
         expect(create(:category, user:, category_name: "Rent", parent_category: expense_parent)).to be_persisted
         expect(create(:category, user:, category_name: "Freelance", parent_category: income_parent)).to be_persisted
-        expect(expense_parent.reload).to be_subscription_other_parent
-        expect(income_parent.reload).to be_subscription_other_parent
+        expect(create(:category, user:, category_name: "Leisure", parent_category: subscription_parent)).to be_persisted
+        expect(create(:category, user:, category_name: "Bonus", parent_category: salary_parent)).to be_persisted
+        expect(expense_parent.reload).to be_subscription_family_parent
+        expect(income_parent.reload).to be_subscription_family_parent
         expect(expense_parent.subtree_ids.size).to eq(2)
       end
 
