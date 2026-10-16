@@ -188,9 +188,9 @@ class Subscription < ApplicationRecord
   end
 
   def association_ids_changed?(original_ids, association_records, foreign_key)
-    return false if original_ids.blank?
+    return false if original_ids.nil?
 
-    Array(original_ids).map(&:to_i).sort != association_records.map(&foreign_key).compact.map(&:to_i).sort
+    Array(original_ids).map(&:to_i).sort != association_records.reject(&:marked_for_destruction?).filter_map(&foreign_key).map(&:to_i).sort
   end
 
   def sync_attached_transaction!(transaction, subscription_category:)

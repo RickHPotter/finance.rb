@@ -298,6 +298,12 @@ en:
           settled: "Settled"
     subscriptions:
       derived_total: "Derived live total"
+      bulk:
+        success: "Selected subscriptions updated."
+        invalid_selection: "Select between 1 and 100 subscriptions from this context."
+        invalid_action: "Choose a supported bulk action."
+        invalid_value: "Choose a valid value for this action."
+        conflict: "No subscriptions were changed. One selection conflicts with its current state or financial history."
       cash_count: "Cash transactions"
       card_count: "Card transactions"
       open: "Open transactions"
@@ -814,6 +820,12 @@ pt-BR:
           settled: "Liquidado"
     subscriptions:
       derived_total: "Total atual calculado"
+      bulk:
+        success: "Assinaturas selecionadas atualizadas."
+        invalid_selection: "Selecione entre 1 e 100 assinaturas deste contexto."
+        invalid_action: "Escolha uma ação em lote válida."
+        invalid_value: "Escolha um valor válido para esta ação."
+        conflict: "Nenhuma assinatura foi alterada. Uma seleção conflita com seu estado atual ou histórico financeiro."
       cash_count: "Movimentações em dinheiro"
       card_count: "Movimentações no cartão"
       open: "Movimentações em aberto"

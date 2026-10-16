@@ -75,6 +75,22 @@ class SubscriptionsController < ApplicationController
     redirect_to @return_to, alert: I18n.t("dashboards.subscriptions.lifecycle.invalid"), status: :see_other
   end
 
+  def bulk_update
+    set_return_to
+    Logic::Subscriptions::BulkUpdate.call(
+      scope: current_context.subscriptions,
+      user: current_user,
+      ids: params[:subscription_ids],
+      action: params[:bulk_action],
+      value: params[:bulk_value]
+    )
+    redirect_to @return_to, notice: I18n.t("dashboards.subscriptions.bulk.success"), status: :see_other
+  rescue Logic::Subscriptions::BulkUpdate::InvalidSelection => e
+    redirect_to @return_to, alert: I18n.t("dashboards.subscriptions.bulk.#{e.message}"), status: :see_other
+  rescue Logic::Subscriptions::LifecycleTransition::InvalidTransition, ActiveRecord::RecordInvalid
+    redirect_to @return_to, alert: I18n.t("dashboards.subscriptions.bulk.conflict"), status: :see_other
+  end
+
   private
 
   def render_top_level(view)

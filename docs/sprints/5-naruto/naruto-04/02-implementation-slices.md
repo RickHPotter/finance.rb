@@ -43,6 +43,8 @@ Tests: migration/model, request create/update/authorization, immutable kind, mai
 
 ## Slice 3 — Bulk edit server contract
 
+Status: implemented locally on 2026-10-16. The collection endpoint accepts only explicit IDs (maximum 100) and allowlisted status/additional-category/entity actions. It loads through the current context, locks the selected rows, uses the lifecycle transition for status, and mutates allocations through the subscription model in one transaction and one request audit operation. The linked-allocation regression test exposed and fixed a pre-existing empty-to-populated association sync gap. Focused request and subscription specs passed; the index controls and full rollback verification remain in Slices 4–5.
+
 - Add a strict endpoint and mutation service for explicit selected IDs, one allowlisted action/value, context/owner validation, and an upper selection bound.
 - Use one database transaction and the request's existing audit operation. For status, reuse `Logic::Subscriptions::LifecycleTransition` or an equivalent validated shared transition path. For allocations, use the same safe model/association mutation path as single edits.
 - Reject the entire set if one row is invalid, stale, foreign, or conflicts with linked financial history. Additional-category/entity actions replace allocations; clearing either is an explicit action. Additional category may be any owned category and must not change main category or kind. Return localized actionable errors.
