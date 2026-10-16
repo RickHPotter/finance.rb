@@ -300,6 +300,16 @@ en:
       derived_total: "Derived live total"
       bulk:
         success: "Selected subscriptions updated."
+        selected: "selected"
+        select: "Select"
+        apply: "Apply"
+        clear_selection: "Clear selection"
+        actions:
+          status: "Change status"
+          replace_category: "Set additional category"
+          clear_category: "Clear additional category"
+          replace_entity: "Set entity"
+          clear_entity: "Clear entity"
         invalid_selection: "Select between 1 and 100 subscriptions from this context."
         invalid_action: "Choose a supported bulk action."
         invalid_value: "Choose a valid value for this action."
@@ -822,6 +832,16 @@ pt-BR:
       derived_total: "Total atual calculado"
       bulk:
         success: "Assinaturas selecionadas atualizadas."
+        selected: "selecionadas"
+        select: "Selecionar"
+        apply: "Aplicar"
+        clear_selection: "Limpar seleção"
+        actions:
+          status: "Alterar situação"
+          replace_category: "Definir categoria adicional"
+          clear_category: "Limpar categoria adicional"
+          replace_entity: "Definir entidade"
+          clear_entity: "Limpar entidade"
         invalid_selection: "Selecione entre 1 e 100 assinaturas deste contexto."
         invalid_action: "Escolha uma ação em lote válida."
         invalid_value: "Escolha um valor válido para esta ação."

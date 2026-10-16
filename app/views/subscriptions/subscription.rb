@@ -23,17 +23,27 @@ class Views::Subscriptions::Subscription < Views::Base
 
   private
 
+  def selection_checkbox
+    input(type: :checkbox, name: "subscription_ids[]", value: subscription.id, form: "subscription_bulk_form",
+          aria: { label: "#{I18n.t('dashboards.subscriptions.bulk.select')} #{subscription.description}" },
+          class: "size-4 shrink-0 accent-blue-600",
+          data: { action: "change->subscription-bulk#selectionChanged", subscription_bulk_target: "checkbox" })
+  end
+
   def desktop_row
     div(
       class: desktop_row_class,
       data: { id: subscription.id, datatable_target: :row }
     ) do
       div(class: "col-span-3 px-3 py-3") do
-        link_to subscription.description,
-                subscription_path(subscription, return_to:),
-                id: "show_subscription_#{subscription.id}",
-                class: "font-lekton text-base font-semibold text-slate-900 no-underline hover:underline dark:text-slate-100",
-                data: { turbo_frame: "_top", turbo_prefetch: false }
+        div(class: "flex items-center gap-2") do
+          selection_checkbox
+          link_to subscription.description,
+                  subscription_path(subscription, return_to:),
+                  id: "show_subscription_#{subscription.id}",
+                  class: "font-lekton text-base font-semibold text-slate-900 no-underline hover:underline dark:text-slate-100",
+                  data: { turbo_frame: "_top", turbo_prefetch: false }
+        end
         p(class: "truncate text-sm text-slate-500 dark:text-slate-400") { subscription.comment.presence }
       end
 
@@ -85,6 +95,7 @@ class Views::Subscriptions::Subscription < Views::Base
       end
 
       div(class: "border-b border-slate-200 bg-sky-50/70 px-4 py-5 text-center dark:border-slate-700 dark:bg-slate-800/70") do
+        div(class: "absolute left-3 top-3 z-10") { selection_checkbox }
         link_to(
           subscription.description,
           subscription_path(subscription, return_to:),

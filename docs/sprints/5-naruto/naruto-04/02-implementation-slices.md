@@ -56,6 +56,8 @@ Tests: request/service specs for all actions, authorization, atomicity, mixed-st
 
 ## Slice 4 — Desktop/PWA bulk controls
 
+Status: implemented locally on 2026-10-16. Desktop rows and mobile cards have explicit selection checkboxes tied to a single localized action bar. Selection clears with filters/navigation because it is held only in the current rendered index; the submission carries the filtered return path. Request specs cover both user-agent layouts and the return destination; a browser feature spec covers selection, apply, and clear at desktop/narrow widths. Manual PWA and light/dark review remain in final verification.
+
 - Add selection controls and a localized action bar to both subscription index presentations. Give mobile cards usable selection affordances without obscuring existing edit links.
 - Maintain selection through ordinary index interaction only as far as it remains visible and explicit; clear it on filter/context changes rather than accidentally acting on hidden rows.
 - Keep the user's index destination and filters after success/failure. Use normal Turbo navigation first; add stream-based row replacement only if behavior is equivalent and tested for both layouts.

@@ -12,6 +12,7 @@ class SubscriptionsController < ApplicationController
     build_index_context
     @subscriptions = subscriptions_scope
     @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || subscription_navigation_return_param(request.fullpath)
+    @index_context[:bulk_return_to] = request.fullpath
 
     render_top_level Views::Subscriptions::Index.new(subscriptions: @subscriptions, index_context: @index_context, mobile: @mobile)
   end

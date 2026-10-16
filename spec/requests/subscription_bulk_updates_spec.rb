@@ -9,6 +9,20 @@ RSpec.describe "Subscription bulk updates", type: :request do
 
   before { sign_in user }
 
+  it "renders an explicit selection control and one bulk form on desktop and PWA" do
+    subscription = first
+
+    [ {}, { "HTTP_USER_AGENT" => "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)" } ].each do |request_headers|
+      get subscriptions_path, headers: request_headers
+      document = Nokogiri::HTML.parse(response.body)
+
+      expect(response).to have_http_status(:success)
+      expect(document.css("form#subscription_bulk_form").size).to eq(1)
+      expect(document.at_css("input[name='subscription_ids[]'][value='#{subscription.id}']")&.[]("form")).to eq("subscription_bulk_form")
+      expect(document.at_css("select[name='bulk_action']")).to be_present
+    end
+  end
+
   def bulk_update(ids:, action:, value: nil)
     patch bulk_update_subscriptions_path, params: { subscription_ids: ids, bulk_action: action, bulk_value: value }
   end
@@ -23,6 +37,16 @@ RSpec.describe "Subscription bulk updates", type: :request do
     operation = AuditOperation.order(:created_at, :id).last
     expect(operation.metadata["subscription_bulk_edit"]).to eq("status")
     expect(operation.audit_versions.where(item_subtype: "Subscription").pluck(:item_id)).to match_array(ids)
+  end
+
+  it "returns to the filtered index after a bulk update" do
+    destination = subscriptions_path(search_term: "rent")
+
+    patch bulk_update_subscriptions_path, params: {
+      subscription_ids: [ first.id ], bulk_action: "status", bulk_value: "pause", return_to: destination
+    }
+
+    expect(response).to redirect_to(destination)
   end
 
   it "rejects the entire batch if a lifecycle event is invalid for one row" do
