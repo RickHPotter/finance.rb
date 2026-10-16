@@ -68,6 +68,8 @@ Tests: feature coverage for desktop and mobile layouts, plus request coverage fo
 
 ## Slice 5 — Rollback hardening
 
+Status: implemented locally on 2026-10-16. Rollback specs now cover income create/destroy, a main plus additional category switch with linked cash allocations, a two-subscription bulk operation, and a later-mutation conflict. Replacing category/entity through associations now destroys the old audited join rather than silently deleting it, and subscription scalar rollback bypasses ordinary linked-sync callbacks because the operation restores its audited dependencies explicitly. The focused subscription, allocation, and rollback suite passed (101 examples). The full CI fast suite passed (2,312 examples); CI overall failed on one cash-navigation feature example that passed when rerun alone. Manual review remains.
+
 - Extend `spec/services/audit/rollback/subscription_adapter_spec.rb` for kind, create, update, destroy, allocation sync, and operation-level bulk rollback.
 - Fix adapter/dependency/recalculation gaps discovered by those tests without weakening preview checks.
 - Verify an intervening mutation, linked later dependency, or paid-history conflict prevents partial restoration.

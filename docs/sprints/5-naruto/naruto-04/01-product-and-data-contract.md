@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress — 2026-10-16. The salary/OTHER foundation and kind/main-category form slice are implemented and locally verified. Bulk edit, rollback hardening, and manual end-to-end verification remain pending.
+Implementation complete, verification pending — 2026-10-16. The salary/OTHER foundation, kind/main-category forms, bulk edit, and rollback hardening are implemented and locally verified with focused specs. Full CI and manual desktop/PWA financial-history flows remain before declaring NARUTO-04 done.
 
 ## Goal
 

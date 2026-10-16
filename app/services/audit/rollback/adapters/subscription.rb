@@ -19,6 +19,12 @@ class Audit::Rollback::Adapters::Subscription < Audit::Rollback::Adapters::Base
 
   private
 
+  def update_record!
+    raise ActiveRecord::RecordNotFound, "Subscription #{item_id} is missing" unless live_record
+
+    Audit::BulkMutation.update_columns!(live_record, restore_attributes)
+  end
+
   def ignored_attributes
     DERIVED_ATTRIBUTES
   end

@@ -229,11 +229,11 @@ Explicitly out of scope for the current attachment and fiscal-import plan:
 
 ### NARUTO-04: Extend subscriptions with salary support and bulk operations
 
-Status: in progress as of 2026-10-16. The salary/OTHER category foundation is implemented
-and locally verified; all four main-category families now allow custom children.
-Subscription kind/forms, bulk operations, and rollback hardening
-remain. The signed-total, cash-only income, immutable-kind, category-choice, and atomic
-bulk-edit decisions are locked. See the
+Status: implementation complete, verification pending as of 2026-10-16. The salary/OTHER
+families, subscription kind/main-category forms, atomic bulk operations, and rollback
+hardening are implemented with focused specs. Full CI and manual desktop/PWA flows
+remain before this feature is done. The signed-total, cash-only income, immutable-kind,
+category-choice, and atomic bulk-edit decisions are locked. See the
 [NARUTO-04 product contract](docs/sprints/5-naruto/naruto-04/01-product-and-data-contract.md)
 and [implementation slices](docs/sprints/5-naruto/naruto-04/02-implementation-slices.md).
 
@@ -241,8 +241,8 @@ Goal: extend the existing `Subscription` (`finance_subscriptions`) model with th
 improvements: salary as a first-class subscription kind, bulk status and allocation
 changes, and verified rollback audit coverage.
 
-Currently subscriptions can already contain positive or negative linked transactions,
-but have no explicit income/expense kind. Salary, freelance retainers, and rental income
+Before NARUTO-04, subscriptions could already contain positive or negative linked transactions,
+but had no explicit income/expense kind. Salary, freelance retainers, and rental income
 belong in the same recurring workflow and need that distinction. Bulk edit allows pausing
 or finishing a set of subscriptions in one audited action. Rollback audit verification
 confirms the existing adapter covers every mutation path before new paths are added.
