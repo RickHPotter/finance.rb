@@ -128,7 +128,7 @@ class Views::Categories::Category < Views::Base
   def mobile_row
     presentation = CategoryColours::Presentation.for(category)
 
-    div(class: "mx-2 rounded-lg shadow-sm overflow-hidden my-3 dark:bg-slate-900 dark:text-slate-100", data: { id: category.id, datatable_target: :row }) do
+    div(class: "rounded-lg shadow-sm overflow-hidden my-3 dark:bg-slate-900 dark:text-slate-100", data: { id: category.id, datatable_target: :row }) do
       div(class: "rounded-sm border p-4 whitespace-nowrap shadow-md", style: presentation.inline_style) do
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
@@ -200,47 +200,56 @@ class Views::Categories::Category < Views::Base
           end
         end
 
-        div(class: "mt-4 flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-3 dark:border-slate-700") do
-          if category_can_have_subcategories?
+        div(class: "mt-4 border-t border-slate-200 pt-3 dark:border-slate-700") do
+          div(class: "grid grid-cols-2 gap-2", data: { category_action_row: "transactions" }) do
             Button(
-              link: new_category_path(parent_category_id: category.id, return_to:),
+              link: search_card_transactions_path(card_transaction: { category_id: category.id }, all_month_years: true),
               variant: :outline,
-              class: "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-slate-800",
+              class: "h-auto min-h-10 min-w-0 w-full whitespace-normal border-slate-300 px-2 py-2 text-center leading-tight " \
+                     "text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
               data: { turbo_frame: "_top", turbo_prefetch: false }
             ) do
-              span(class: "inline-flex items-center gap-2") do
-                cached_icon(:plus)
-                plain I18n.t("categories.actions.add_subcategory")
+              span(class: "inline-flex min-w-0 items-center justify-center gap-2") do
+                cached_icon(:jump_to)
+                plain pluralise_model(CardTransaction, 2)
+              end
+            end
+
+            Button(
+              link: cash_transactions_path(cash_transaction: { category_id: category.id }, all_month_years: true, mobile: true),
+              variant: :outline,
+              class: "h-auto min-h-10 min-w-0 w-full whitespace-normal border-slate-300 px-2 py-2 text-center leading-tight " \
+                     "text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
+              data: { turbo_frame: "_top", turbo_prefetch: false }
+            ) do
+              span(class: "inline-flex min-w-0 items-center justify-center gap-2") do
+                cached_icon(:jump_to)
+                plain pluralise_model(CashTransaction, 2)
               end
             end
           end
 
-          Button(
-            link: search_card_transactions_path(card_transaction: { category_id: category.id }, all_month_years: true),
-            variant: :outline,
-            class: "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
-            data: { turbo_frame: "_top", turbo_prefetch: false }
-          ) do
-            span(class: "inline-flex items-center gap-2") do
-              cached_icon(:jump_to)
-              plain pluralise_model(CardTransaction, 2)
-            end
-          end
+          if category_can_have_subcategories? || merge_source?
+            div(class: "mt-2 flex flex-col gap-2", data: { category_action_row: "primary" }) do
+              if category_can_have_subcategories?
+                Button(
+                  link: new_category_path(parent_category_id: category.id, return_to:),
+                  variant: :outline,
+                  class: "w-full justify-start border-emerald-300 text-left text-emerald-700 hover:bg-emerald-50 " \
+                         "dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-slate-800",
+                  data: { turbo_frame: "_top", turbo_prefetch: false }
+                ) do
+                  span(class: "inline-flex items-center gap-2 text-left") do
+                    cached_icon(:plus)
+                    plain I18n.t("categories.actions.add_subcategory")
+                  end
+                end
+              end
 
-          Button(
-            link: cash_transactions_path(cash_transaction: { category_id: category.id }, all_month_years: true, mobile: true),
-            variant: :outline,
-            class: "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
-            data: { turbo_frame: "_top", turbo_prefetch: false }
-          ) do
-            span(class: "inline-flex items-center gap-2") do
-              cached_icon(:jump_to)
-              plain pluralise_model(CashTransaction, 2)
+              merge_trigger(mobile: true) if merge_source?
             end
           end
         end
-
-        div(class: "mt-3 flex justify-end") { merge_trigger(mobile: true) } if merge_source?
       end
     end
   end
@@ -287,7 +296,7 @@ class Views::Categories::Category < Views::Base
       title: I18n.t("category_merges.preview.title"),
       aria: { label: I18n.t("category_merges.preview.title") },
       form: {
-        class: "inline-flex",
+        class: mobile ? "w-full" : "inline-flex",
         data: { turbo_frame: merge_preview_frame_id }
       }
     ) do
@@ -327,7 +336,7 @@ class Views::Categories::Category < Views::Base
   end
 
   def mobile_merge_button_class
-    "inline-flex items-center justify-center rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 " \
+    "inline-flex w-full items-center justify-start rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-left text-sm font-semibold text-amber-800 " \
       "shadow-sm transition hover:border-amber-500 hover:bg-amber-500 hover:text-white dark:border-amber-700 dark:bg-slate-900 " \
       "dark:text-amber-300 dark:hover:border-amber-500 dark:hover:bg-slate-800 [&_svg]:size-4"
   end

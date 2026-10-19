@@ -20,6 +20,28 @@ RSpec.describe "Categories", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "puts transaction links above left-aligned colourful actions only on mobile cards" do
+      category = create(:category, :random, user:)
+
+      get categories_path, headers: { "HTTP_USER_AGENT" => "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)" }
+
+      card = response.parsed_body.at_css("[data-id='#{category.id}']")
+      primary = card.at_css("[data-category-action-row='primary']")
+      transactions = card.at_css("[data-category-action-row='transactions']")
+      expect(card.css("[data-category-action-row]").map { |row| row["data-category-action-row"] }).to eq(%w[transactions primary])
+      expect(primary.at_css("a[href='#{new_category_path(parent_category_id: category.id)}']")).to be_present
+      expect(primary.at_css("#merge_category_#{category.id}")).to be_present
+      expect(primary["class"].split).to include("flex-col")
+      expect(primary.at_css("a")["class"].split).to include("text-left")
+      expect(primary.at_css("button")["class"].split).to include("text-left")
+      expect(transactions.css("a").size).to eq(2)
+      expect(transactions["class"].split).to include("grid-cols-2")
+
+      get categories_path
+
+      expect(response.parsed_body.at_css("[data-category-action-row]")).to be_nil
+    end
+
     it "finds categories with normalized text" do
       category = create(:category, user:, category_name: "CRÍSTIAN   PENS")
 
