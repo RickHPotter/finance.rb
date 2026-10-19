@@ -12,8 +12,9 @@ RSpec.describe "Subscription bulk edit", type: :feature do
     visit subscriptions_path
     expect(page).to have_css("#subscription_bulk_form", visible: :hidden)
 
-    find("input[name='subscription_ids[]'][value='#{subscription.id}']").check
+    find("input[name='subscription_ids[]'][value='#{subscription.id}']").find(:xpath, "..").click
     expect(page).to have_css("#subscription_bulk_form", visible: true)
+    expect(page).to have_css("[data-id='#{subscription.id}'].ring-2")
     find("#subscription_bulk_form select[name='bulk_value']:not([disabled])").select("Pause")
     click_button(I18n.t("dashboards.subscriptions.bulk.apply"))
 
@@ -26,10 +27,11 @@ RSpec.describe "Subscription bulk edit", type: :feature do
     page.driver.browser.manage.window.resize_to(390, 844)
     visit subscriptions_path
 
-    find("input[name='subscription_ids[]'][value='#{subscription.id}']").check
+    find("input[name='subscription_ids[]'][value='#{subscription.id}']").find(:xpath, "..").click
     expect(page).to have_css("#subscription_bulk_form", visible: true)
     click_button(I18n.t("dashboards.subscriptions.bulk.clear_selection"))
     expect(page).to have_css("#subscription_bulk_form", visible: :hidden)
+    expect(page).to have_no_css("[data-id='#{subscription.id}'].ring-2")
   ensure
     page.driver.browser.manage.window.resize_to(original_size.width, original_size.height) if original_size
   end

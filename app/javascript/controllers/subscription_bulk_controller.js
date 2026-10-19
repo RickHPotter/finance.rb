@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["bar", "checkbox", "count", "action", "statusValue", "categoryValue", "entityValue"]
+  static targets = ["bar", "checkbox", "row", "count", "action", "statusValue", "categoryValue", "entityValue"]
 
   connect() {
     this.selectionChanged()
@@ -13,6 +13,13 @@ export default class extends Controller {
     this.countTarget.textContent = selected
     this.barTarget.classList.toggle("hidden", selected === 0)
     this.barTarget.classList.toggle("flex", selected > 0)
+    this.rowTargets.forEach((row) => {
+      const checked = row.querySelector("[data-subscription-bulk-target='checkbox']")?.checked || false
+      row.classList.toggle("ring-2", checked)
+      row.classList.toggle("ring-inset", checked)
+      row.classList.toggle("ring-blue-600", checked)
+      row.classList.toggle("z-10", checked)
+    })
   }
 
   clear() {

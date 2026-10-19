@@ -121,8 +121,11 @@ class Views::Subscriptions::Form < Views::Base
   private
 
   def main_category_options
-    family_names = [ "SUBSCRIPTION", current_user.built_in_category("SALARY") ? "SALARY" : "SALARIO", "OTHER", "OTHER INCOME" ]
     categories = current_user.categories.active.includes(:parent_category, :subcategories).to_a
+    preferred_salary_name = current_user.locale == "pt-BR" ? "SALARIO" : "SALARY"
+    salary_parent = categories.find { |category| category.parent_category_id.nil? && category.category_name == preferred_salary_name } ||
+                    categories.find { |category| category.parent_category_id.nil? && category.category_name.in?(%w[SALARY SALARIO]) }
+    family_names = [ "SUBSCRIPTION", salary_parent&.category_name, "OTHER", "OTHER INCOME" ].compact
 
     family_names.flat_map do |name|
       parent = categories.find { |category| category.category_name == name && category.parent_category_id.nil? }

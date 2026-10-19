@@ -117,46 +117,57 @@ class Views::Subscriptions::Index < Views::Base
 
   def bulk_action_bar
     form_with(url: bulk_update_subscriptions_path, method: :patch, id: "subscription_bulk_form",
-              class: "mb-3 hidden flex-wrap items-center gap-2 rounded-lg border border-slate-300 bg-white p-3 text-sm shadow-sm " \
-                     "dark:border-slate-700 dark:bg-slate-900",
+              class: "fixed inset-x-3 bottom-20 z-[60] hidden max-h-[70vh] flex-col gap-3 overflow-y-auto rounded-2xl border " \
+                     "border-slate-300 bg-white/95 px-4 py-4 text-sm shadow-2xl backdrop-blur md:inset-x-auto md:bottom-6 " \
+                     "md:left-1/2 md:max-w-[calc(100vw-3rem)] md:-translate-x-1/2 md:px-6 dark:border-slate-700 " \
+                     "dark:bg-slate-900/95 dark:shadow-slate-950",
               data: { subscription_bulk_target: "bar" }) do |form|
       form.hidden_field :return_to, value: index_context[:bulk_return_to]
-      span(class: "font-semibold text-slate-800 dark:text-slate-100", data: { subscription_bulk_target: "count" }) { "0" }
-      span(class: "text-slate-600 dark:text-slate-300") { I18n.t("dashboards.subscriptions.bulk.selected") }
-
-      select(name: "bulk_action", class: bulk_select_class,
-             data: { action: "change->subscription-bulk#changeAction", subscription_bulk_target: "action" }) do
-        bulk_actions.each { |label, value| option(value:) { label } }
+      div(class: "text-center text-base font-semibold text-slate-800 dark:text-slate-100") do
+        span(data: { subscription_bulk_target: "count" }) { "0" }
+        plain " "
+        plain I18n.t("dashboards.subscriptions.bulk.selected")
       end
 
-      select(name: "bulk_value", class: bulk_select_class,
-             data: { subscription_bulk_target: "statusValue" }) do
-        %w[pause resume finish reopen].each do |event|
-          option(value: event) { I18n.t("dashboards.subscriptions.lifecycle.actions.#{event}") }
+      div(class: "grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-3") do
+        select(name: "bulk_action", class: bulk_select_class,
+               data: { action: "change->subscription-bulk#changeAction", subscription_bulk_target: "action" }) do
+          bulk_actions.each { |label, value| option(value:) { label } }
         end
-      end
 
-      select(name: "bulk_value", class: "#{bulk_select_class} hidden", disabled: true,
-             data: { subscription_bulk_target: "categoryValue" }) do
-        option(value: "") { model_attribute(Subscription, :category_id) }
-        index_context[:current_user].categories.active.includes(:parent_category).order(:category_name).each do |category|
-          option(value: category.id) { category.hierarchical_name }
+        select(name: "bulk_value", class: bulk_select_class,
+               data: { subscription_bulk_target: "statusValue" }) do
+          %w[pause resume finish reopen].each do |event|
+            option(value: event) { I18n.t("dashboards.subscriptions.lifecycle.actions.#{event}") }
+          end
         end
-      end
 
-      select(name: "bulk_value", class: "#{bulk_select_class} hidden", disabled: true,
-             data: { subscription_bulk_target: "entityValue" }) do
-        option(value: "") { model_attribute(Subscription, :entity_id) }
-        index_context[:current_user].entities.active.order(:entity_name).each do |entity|
-          option(value: entity.id) { entity.name }
+        select(name: "bulk_value", class: "#{bulk_select_class} hidden", disabled: true,
+               data: { subscription_bulk_target: "categoryValue" }) do
+          option(value: "") { model_attribute(Subscription, :category_id) }
+          index_context[:current_user].categories.active.includes(:parent_category).order(:category_name).each do |category|
+            option(value: category.id) { category.hierarchical_name }
+          end
         end
-      end
 
-      button(type: :submit, class: "rounded-md bg-blue-600 px-3 py-2 font-semibold text-white hover:bg-blue-700") do
-        I18n.t("dashboards.subscriptions.bulk.apply")
+        select(name: "bulk_value", class: "#{bulk_select_class} hidden", disabled: true,
+               data: { subscription_bulk_target: "entityValue" }) do
+          option(value: "") { model_attribute(Subscription, :entity_id) }
+          index_context[:current_user].entities.active.order(:entity_name).each do |entity|
+            option(value: entity.id) { entity.name }
+          end
+        end
+
+        button(type: :submit, class: "rounded-md bg-blue-600 px-4 py-2 font-semibold text-white transition-colors " \
+                                     "hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300") do
+          I18n.t("dashboards.subscriptions.bulk.apply")
+        end
+        button(type: :button, class: "rounded-md border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 " \
+                                     "transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 " \
+                                     "focus-visible:ring-blue-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 " \
+                                     "dark:hover:bg-slate-700",
+               data: { action: "subscription-bulk#clear" }) { I18n.t("dashboards.subscriptions.bulk.clear_selection") }
       end
-      button(type: :button, class: "rounded-md border border-slate-300 px-3 py-2 text-slate-700 dark:border-slate-600 dark:text-slate-200",
-             data: { action: "subscription-bulk#clear" }) { I18n.t("dashboards.subscriptions.bulk.clear_selection") }
     end
   end
 
@@ -167,6 +178,7 @@ class Views::Subscriptions::Index < Views::Base
   end
 
   def bulk_select_class
-    "min-w-36 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+    "col-span-2 min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 sm:min-w-36 " \
+      "dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
   end
 end

@@ -554,6 +554,19 @@ RSpec.describe "Subscriptions", type: :request do
   end
 
   describe "[ #new ]" do
+    it "uses an existing Portuguese salary category without creating a duplicate" do
+      user.update!(locale: "pt-BR")
+      salary = user.categories.find_by!(category_name: "SALARY")
+      salary.update!(category_name: "SALARIO", colour: "#fcff33")
+
+      expect { get new_subscription_path }.not_to(change { user.categories.count })
+
+      options = Nokogiri::HTML.parse(response.body).css('input[name="subscription[main_category_id]"]')
+      expect(options.map { |option| option["value"] }).to include(salary.id.to_s)
+      expect(user.categories.where(category_name: "SALARY")).not_to exist
+      expect(salary.reload.colour).to eq("#fcff33")
+    end
+
     it "offers the four localized main families independently of the additional category" do
       get new_subscription_path
 

@@ -63,3 +63,24 @@ RSpec.describe FiscalReceiptDraft, type: :model do
     expect(invalid_rows.errors).to include(:payload)
   end
 end
+
+# == Schema Information
+#
+# Table name: fiscal_receipt_drafts
+# Database name: primary
+#
+#  id         :bigint           not null, primary key
+#  payload    :jsonb            not null
+#  created_at :datetime         not null, indexed => [user_id]
+#  updated_at :datetime         not null
+#  user_id    :bigint           not null, indexed, indexed => [created_at]
+#
+# Indexes
+#
+#  index_fiscal_receipt_drafts_on_user_id                 (user_id)
+#  index_fiscal_receipt_drafts_on_user_id_and_created_at  (user_id,created_at)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (user_id => users.id)
+#

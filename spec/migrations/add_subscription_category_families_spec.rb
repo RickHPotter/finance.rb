@@ -28,6 +28,18 @@ RSpec.describe AddSubscriptionCategoryFamilies do
     expect(user.categories.where(category_name: [ "OTHER", "OTHER INCOME" ], built_in: true).count).to eq(2)
   end
 
+  it "preserves an existing Portuguese salary category and its original colour" do
+    user = create(:user, :random, locale: "pt-BR")
+    salary = user.categories.find_by!(category_name: "SALARIO")
+    salary.update!(built_in: false, colour: "#fcff33")
+
+    described_class.new.up
+
+    expect(salary.reload).to be_built_in
+    expect(salary.colour).to eq("#fcff33")
+    expect(user.categories.where(category_name: %w[SALARY SALARIO], parent_category_id: nil).pluck(:id)).to eq([ salary.id ])
+  end
+
   it "stops for a user who has both salary keys instead of merging them" do
     user = create(:user, :random)
     create(:category, user:, category_name: "SALARIO")

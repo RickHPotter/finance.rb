@@ -24,18 +24,26 @@ class Views::Subscriptions::Subscription < Views::Base
   private
 
   def selection_checkbox
-    input(type: :checkbox, name: "subscription_ids[]", value: subscription.id, form: "subscription_bulk_form",
-          aria: { label: "#{I18n.t('dashboards.subscriptions.bulk.select')} #{subscription.description}" },
-          class: "size-4 shrink-0 accent-blue-600",
-          data: { action: "change->subscription-bulk#selectionChanged", subscription_bulk_target: "checkbox" })
+    label(class: "group inline-flex shrink-0 cursor-pointer items-center justify-center") do
+      input(type: :checkbox, name: "subscription_ids[]", value: subscription.id, form: "subscription_bulk_form",
+            aria: { label: "#{I18n.t('dashboards.subscriptions.bulk.select')} #{subscription.description}" },
+            class: "peer sr-only",
+            data: { action: "change->subscription-bulk#selectionChanged", subscription_bulk_target: "checkbox" })
+      span(class: "flex size-5 items-center justify-center rounded-full border border-zinc-700 bg-white text-transparent shadow-sm transition-all " \
+                  "peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white peer-focus-visible:ring-2 " \
+                  "peer-focus-visible:ring-blue-300 dark:border-slate-300 dark:bg-slate-950 dark:peer-checked:border-cyan-300 " \
+                  "dark:peer-checked:bg-cyan-400 dark:peer-checked:text-slate-950 dark:peer-focus-visible:ring-cyan-300/60") do
+        span(class: "text-2xs font-bold") { "✓" }
+      end
+    end
   end
 
   def desktop_row
     div(
       class: desktop_row_class,
-      data: { id: subscription.id, datatable_target: :row }
+      data: { id: subscription.id, datatable_target: :row, subscription_bulk_target: :row }
     ) do
-      div(class: "col-span-3 px-3 py-3") do
+      div(class: "col-span-3 flex flex-col justify-center px-3 py-3") do
         div(class: "flex items-center gap-2") do
           selection_checkbox
           link_to subscription.description,
@@ -90,7 +98,7 @@ class Views::Subscriptions::Subscription < Views::Base
 
   def mobile_card
     div(class: "relative my-4 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
-        data: { id: subscription.id, datatable_target: :row }) do
+        data: { id: subscription.id, datatable_target: :row, subscription_bulk_target: :row }) do
       div(class: "absolute right-3 top-3 z-10") do
         status_badge
       end
