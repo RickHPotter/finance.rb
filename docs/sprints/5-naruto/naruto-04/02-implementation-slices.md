@@ -27,7 +27,7 @@ Tests: category/user model specs, data backfill tests for both existing names/mi
 
 ## Slice 2 — Kind data and forms
 
-Status: implemented locally on 2026-10-16. The migration backfills existing subscriptions to their user's `SUBSCRIPTION` main category without changing optional additional-category joins. Focused model/request/concern/allocation specs passed (83 examples), Ruby style passed, and the JavaScript bundle built. Manual desktop/PWA interaction and the broader CI suite remain for final verification.
+Status: implemented locally on 2026-10-16. The migration backfills existing subscriptions to their user's `SUBSCRIPTION` main category without changing optional additional-category joins. Focused model/request/concern/allocation specs passed (83 examples), Ruby style passed, and the JavaScript bundle built. Manual testing began on 2026-10-19; the broader acceptance matrix and CI remain for final verification.
 
 The old single category input is the **additional** category and must remain so. Existing subscriptions with BILL, LEISURE, PRODUCTIVITY, etc. keep those joins; backfill their new main-category FK to built-in `SUBSCRIPTION` without reparenting or rewriting history.
 
@@ -56,7 +56,7 @@ Tests: request/service specs for all actions, authorization, atomicity, mixed-st
 
 ## Slice 4 — Desktop/PWA bulk controls
 
-Status: implemented locally on 2026-10-16. Desktop rows and mobile cards have explicit selection checkboxes tied to a single localized action bar. Selection clears with filters/navigation because it is held only in the current rendered index; the submission carries the filtered return path. Request specs cover both user-agent layouts and the return destination; a browser feature spec covers selection, apply, and clear at desktop/narrow widths. Manual PWA and light/dark review remain in final verification.
+Status: implemented locally on 2026-10-16. Desktop rows and mobile cards have explicit selection checkboxes tied to a single localized action bar. Selection clears with filters/navigation because it is held only in the current rendered index; the submission carries the filtered return path. Request specs cover both user-agent layouts and the return destination; a browser feature spec covers selection, apply, and clear at desktop/narrow widths. The selection controls were restyled to match the Card Transactions index; manual testing and related PWA index styling review are passing so far, while the full light/dark and keyboard acceptance check remains.
 
 - Add selection controls and a localized action bar to both subscription index presentations. Give mobile cards usable selection affordances without obscuring existing edit links.
 - Maintain selection through ordinary index interaction only as far as it remains visible and explicit; clear it on filter/context changes rather than accidentally acting on hidden rows.
@@ -68,7 +68,7 @@ Tests: feature coverage for desktop and mobile layouts, plus request coverage fo
 
 ## Slice 5 — Rollback hardening
 
-Status: implemented locally on 2026-10-16. Rollback specs now cover income create/destroy, a main plus additional category switch with linked cash allocations, a two-subscription bulk operation, and a later-mutation conflict. Replacing category/entity through associations now destroys the old audited join rather than silently deleting it, and subscription scalar rollback bypasses ordinary linked-sync callbacks because the operation restores its audited dependencies explicitly. The focused subscription, allocation, and rollback suite passed (101 examples). The full CI fast suite passed (2,312 examples); CI overall failed on one cash-navigation feature example that passed when rerun alone. Manual review remains.
+Status: implemented locally on 2026-10-16. Rollback specs now cover income create/destroy, a main plus additional category switch with linked cash allocations, a two-subscription bulk operation, and a later-mutation conflict. Replacing category/entity through associations now destroys the old audited join rather than silently deleting it, and subscription scalar rollback bypasses ordinary linked-sync callbacks because the operation restores its audited dependencies explicitly. The focused subscription, allocation, and rollback suite passed (101 examples). The full CI fast suite passed (2,312 examples); CI overall failed on one cash-navigation feature example that passed when rerun alone. Manual rollback and paid-history verification remain.
 
 - Extend `spec/services/audit/rollback/subscription_adapter_spec.rb` for kind, create, update, destroy, allocation sync, and operation-level bulk rollback.
 - Fix adapter/dependency/recalculation gaps discovered by those tests without weakening preview checks.
@@ -78,6 +78,7 @@ Acceptance: bulk apply restores all affected records and dependencies atomically
 
 ## Final verification and manual test
 
+- Progress as of 2026-10-19: user-reported manual testing is passing so far. An income subscription and its linked cash transactions exposed the form creating a second `SALARY` category instead of using Gigi's existing yellow `SALARIO`. That lookup was corrected, the affected development records were reconciled to the original `SALARIO` ID, and the focused regression suite passed (47 examples). The PWA index card width/action layout and subscription selection styling have also been reviewed and adjusted; focused layout and bulk-selection specs pass.
 - Run focused model, request, service, and feature specs; `bin/rubocop -A`; relevant JS build. Then run `bin/ci` before merge.
 - Manually create subscriptions through all four choices, create an OTHER child and confirm it appears, add a recurring cash row, inspect index/show/monthly analysis, bulk-edit a mix of subscriptions, preview/undo the bulk operation, and verify paid-history protection.
 - Record any remaining limitation in this contract and in `SPRINT_5.md`; do not call NARUTO-04 complete on code/specs alone if the manual flows remain untested.

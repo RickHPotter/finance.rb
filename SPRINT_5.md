@@ -229,11 +229,14 @@ Explicitly out of scope for the current attachment and fiscal-import plan:
 
 ### NARUTO-04: Extend subscriptions with salary support and bulk operations
 
-Status: implementation complete, verification pending as of 2026-10-16. The salary/OTHER
-families, subscription kind/main-category forms, atomic bulk operations, and rollback
-hardening are implemented with focused specs. Full CI and manual desktop/PWA flows
-remain before this feature is done. The signed-total, cash-only income, immutable-kind,
-category-choice, and atomic bulk-edit decisions are locked. See the
+Status: implementation complete, manual verification underway as of 2026-10-19. The
+salary/OTHER families, subscription kind/main-category forms, atomic bulk operations,
+and rollback hardening are implemented with focused specs. Manual testing has passed
+so far, including the SALARIO income-subscription flow after fixing an accidental
+duplicate-category lookup and the PWA index styling review. Full CI and the remaining
+manual acceptance flows are still required before this feature is done. The signed-total,
+cash-only income, immutable-kind, category-choice, and atomic bulk-edit decisions are
+locked. See the
 [NARUTO-04 product contract](docs/sprints/5-naruto/naruto-04/01-product-and-data-contract.md)
 and [implementation slices](docs/sprints/5-naruto/naruto-04/02-implementation-slices.md).
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation complete, verification pending — 2026-10-16. The salary/OTHER foundation, kind/main-category forms, bulk edit, and rollback hardening are implemented and locally verified with focused specs. Full CI and manual desktop/PWA financial-history flows remain before declaring NARUTO-04 done.
+Implementation complete, manual verification underway — 2026-10-19. The salary/OTHER foundation, kind/main-category forms, bulk edit, and rollback hardening are implemented and locally verified with focused specs. The user reports that manual testing has passed so far; the SALARIO income-subscription flow exposed a duplicate-category lookup, which was fixed and retested, and the PWA index layout review has passed. Full CI and the remaining desktop/PWA financial-history acceptance flows are still required before declaring NARUTO-04 done.
 
 ## Goal
 
