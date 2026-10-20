@@ -12,6 +12,8 @@ Done when the baseline specs pass and every creation path is inventoried.
 
 ## Slice 1 — Card kinds and safe schema
 
+Status: implemented locally on 2026-10-20. The migration preserves existing cards as credit, adds the bank-account FK and kind constraint, and makes credit-only fields nullable. Model and request validation covers debit ownership and used-card kind locking. Focused user-card specs passed (35 examples); broader CI remains for final verification.
+
 - Add the string-backed `card_kind` enum, database default `credit`, value constraint, and nullable owned bank-account FK. Make credit-only fields, including `min_spend`, nullable for noncredit cards.
 - Conditional model validation for credit cycle/limit fields, required owned bank account for debit, and blank association for other kinds. Make `card_kind` immutable after any transaction or reference exists in any context. Keep unused-card edits possible. Avoid a model callback that silently deletes dependency records.
 - Ensure existing cards remain `credit` and their financial fields and links are unchanged. Include migration checks and rollback-safe behavior for a missing or foreign bank account.

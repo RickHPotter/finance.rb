@@ -307,7 +307,7 @@ Explicitly out of scope:
 
 ### NARUTO-05: Add pre-paid and debit card support
 
-Status: planning (contract refreshed 2026-10-19); implementation and manual testing have not started.
+Status: in development (contract refreshed 2026-10-19); Slice 1 has passed focused tests, but transaction and UI slices and manual testing remain.
 
 Goal: introduce a `card_kind` enum on `UserCard` so not every card is assumed to be a
 credit card with a billing cycle. This covers VA (Vale Alimentação) and VR (Vale

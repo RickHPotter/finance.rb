@@ -1611,17 +1611,20 @@ ALTER SEQUENCE public.user_bank_accounts_id_seq OWNED BY public.user_bank_accoun
 CREATE TABLE public.user_cards (
     id bigint NOT NULL,
     user_card_name character varying NOT NULL,
-    days_until_due_date integer NOT NULL,
-    due_date_day integer DEFAULT 1 NOT NULL,
-    min_spend integer NOT NULL,
-    credit_limit integer NOT NULL,
+    days_until_due_date integer,
+    due_date_day integer,
+    min_spend integer,
+    credit_limit integer,
     active boolean DEFAULT true NOT NULL,
     card_transactions_count integer DEFAULT 0 NOT NULL,
     card_transactions_total integer DEFAULT 0 NOT NULL,
     user_id bigint NOT NULL,
     card_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    card_kind character varying DEFAULT 'credit'::character varying NOT NULL,
+    user_bank_account_id bigint,
+    CONSTRAINT user_cards_card_kind_values CHECK (((card_kind)::text = ANY ((ARRAY['credit'::character varying, 'prepaid'::character varying, 'debit'::character varying])::text[])))
 );
 
 
@@ -3465,6 +3468,13 @@ CREATE UNIQUE INDEX index_user_cards_on_on_composite_key ON public.user_cards US
 
 
 --
+-- Name: index_user_cards_on_user_bank_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_user_cards_on_user_bank_account_id ON public.user_cards USING btree (user_bank_account_id);
+
+
+--
 -- Name: index_user_cards_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4084,6 +4094,14 @@ ALTER TABLE ONLY public.message_actions
 
 
 --
+-- Name: user_cards fk_rails_e193a9fe52; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_cards
+    ADD CONSTRAINT fk_rails_e193a9fe52 FOREIGN KEY (user_bank_account_id) REFERENCES public.user_bank_accounts(id);
+
+
+--
 -- Name: friendships fk_rails_e3733b59b7; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4178,6 +4196,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261020120000'),
 ('20261016120000'),
 ('20261015120000'),
 ('20261014120000'),

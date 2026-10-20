@@ -230,6 +230,31 @@ RSpec.describe "UserCards", type: :request do
         }, headers: turbo_stream_headers
       end.to change(UserCard, :count).by(1)
     end
+
+    it "creates an inactive prepaid card without credit billing fields" do
+      expect do
+        post user_cards_path, params: {
+          user_card: { user_card_name: "Food card", card_id: card.id, card_kind: "prepaid", active: false, user_id: user.id }
+        }
+      end.to change(UserCard, :count).by(1)
+
+      created_card = UserCard.order(:id).last
+      expect(created_card).to be_prepaid
+      expect(created_card.attributes.values_at("due_date_day", "days_until_due_date", "min_spend", "credit_limit")).to all(be_nil)
+    end
+
+    it "rejects a debit card linked to another user's bank account" do
+      foreign_account = create(:user_bank_account, :random)
+
+      expect do
+        post user_cards_path, params: {
+          user_card: { user_card_name: "Debit card", card_id: card.id, card_kind: "debit", active: false,
+                       user_bank_account_id: foreign_account.id, user_id: foreign_account.user_id }
+        }
+      end.not_to change(UserCard, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
   end
 
   describe "[ #update ]" do
