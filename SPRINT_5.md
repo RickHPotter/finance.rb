@@ -305,7 +305,7 @@ Explicitly out of scope:
 
 ### NARUTO-05: Add pre-paid and debit card support
 
-Status: in development (2026-10-20). Slices 1–4 are implemented locally and have passed their focused checks; the first full CI run exposed a feature-test viewport leak and an overlapping-test database deadlock. Both affected suites pass when rerun after the viewport fix. A final combined CI pass and manual testing remain.
+Status: ready for manual testing (2026-10-20). Slices 1–4 are committed and the final `bin/ci` run passed end to end: 2,349 fast, 49 feature, 141 operational, and 27 JavaScript tests; style and security checks passed. Manual credit/prepaid/debit acceptance remains before calling NARUTO-05 done. No HMG/PROD claim.
 
 Goal: introduce a `card_kind` enum on `UserCard` so not every card is assumed to be a
 credit card with a billing cycle. This covers VA (Vale Alimentação) and VR (Vale
