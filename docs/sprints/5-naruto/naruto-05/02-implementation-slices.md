@@ -37,6 +37,8 @@ Tests: model, request, and service specs for each kind, direct endpoint abuse, 2
 
 ## Slice 3 — Card and purchase UI
 
+Status: implemented locally on 2026-10-20. Localized card-kind selection, conditional credit/debit fields, noncredit card list/show treatment, one-installment purchase forms, and credit-only advance-payment actions are in place. The JavaScript bundle built, 109 focused request/browser examples passed, and Ruby style passed. Light/dark manual review and the broader financial/read-path matrix remain.
+
 - Localize kind names and validation messages. Add responsive kind selector and conditional credit/debit fields to card new/edit; keep the new form's default `credit`. Show kind on card index/show; show bank-account association only for debit and a clear spending-only notice for prepaid.
 - Make card transaction new/edit react when card kind/date changes. Noncredit gets a single-installment presentation and purchase period; no billing reference/closing date controls or invisible refresh that calls the reference endpoint. Credit layout and behavior must remain intact.
 - Disable or omit credit-only reference, invoice, limit, and payment actions for noncredit on desktop/PWA; reject direct requests too. Keep index filters, return paths, and keyboard/touch interaction intact.

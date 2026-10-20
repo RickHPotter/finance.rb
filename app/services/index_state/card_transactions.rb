@@ -177,6 +177,8 @@ module IndexState
     end
 
     def default_active_month_years_for(today:, max_date:)
+      return [ max_date.strftime("%Y%m").to_i ] if resolved_user_card&.prepaid? || resolved_user_card&.debit?
+
       if resolved_user_card && max_date > today
         [ resolved_reference_date(today:, max_date:).strftime("%Y%m").to_i ]
       else

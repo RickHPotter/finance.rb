@@ -22,7 +22,7 @@ class Views::CardTransactions::MonthYear < Views::Base
     @return_to = options[:return_to]
     current_context = options.fetch(:current_context)
 
-    return unless user_card
+    return unless user_card&.credit?
 
     @payment_window = Logic::CardAdvancePaymentWindow.new(user_card:, context: current_context, month:, year:)
   end
@@ -108,6 +108,6 @@ class Views::CardTransactions::MonthYear < Views::Base
   end
 
   def pay_in_advance_available?
-    user_card_id.present? && card_installments.any? && !card_installments.first.cash_transaction.paid? && payment_window&.available?
+    user_card_id.present? && card_installments.any? && !card_installments.first.cash_transaction&.paid? && payment_window&.available?
   end
 end
