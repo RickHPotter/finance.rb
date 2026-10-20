@@ -4,6 +4,26 @@ require "rails_helper"
 
 RSpec.describe Logic::ContextCloneService do
   describe "#call" do
+    it "clones a prepaid purchase without introducing a bill or cash projection" do
+      user = create(:user, :random)
+      source_context = create(:context, user:, name: "Prepaid source")
+      user_card = create(:user_card, :random, user:, card_kind: "prepaid")
+      purchase_date = Time.zone.today - 1.day
+      purchase = CardTransaction.new(user:, context: source_context, user_card:, date: purchase_date,
+                                     description: "Prepaid lunch", price: -1_000)
+      purchase.card_installments.first.price = -1_000
+      purchase.build_month_year
+      purchase.save!
+
+      cloned_context = described_class.new(source_context:, name: "Prepaid clone").call
+      clone = cloned_context.card_transactions.find_by!(description: "Prepaid lunch")
+
+      expect(cloned_context.references).to be_empty
+      expect(cloned_context.cash_transactions).to be_empty
+      expect(clone.attributes.values_at("month", "year")).to eq([ purchase_date.month, purchase_date.year ])
+      expect(clone.card_installments.pluck(:cash_transaction_id)).to eq([ nil ])
+    end
+
     it "accepts an explicit scenario key for the cloned context" do
       user = create(:user)
       source_context = create(:context, user:, name: "Scenario")

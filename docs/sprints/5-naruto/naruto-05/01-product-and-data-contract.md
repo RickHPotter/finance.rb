@@ -2,7 +2,7 @@
 
 ## Status and intent
 
-Planning, refreshed 2026-10-19. No NARUTO-05 implementation has started. This is the contract for a credit-card-safe V1, not a claim that noncredit card balances already work. Implement and verify the [slices](02-implementation-slices.md) separately.
+Implementation in progress since 2026-10-20. This is the contract for a credit-card-safe V1, not a claim that noncredit card balances work or that manual testing has passed. Track verification in the [slices](02-implementation-slices.md).
 
 An existing `UserCard` is a credit card: buying with it selects a billing `Reference` and `CardInstallment` projects an invoice-like `CashTransaction`. A VA/VR, gift, transport, or debit card has no credit bill. NARUTO-05 adds `credit`, `prepaid`, and `debit` kinds without changing historical credit behavior.
 
@@ -33,6 +33,7 @@ The debit bank account is descriptive routing data in this slice, **not** a seco
 - No noncredit `CardInstallment` may attach to or create the invoice-style `CashTransaction`. Keep `cash_transaction_id` null. The existing `CashTransactable` callbacks must be skipped for noncredit installments, not merely the reference lookup. Do not remove unrelated ordinary cash transactions or weaken paid-history safeguards for credit.
 - A noncredit `CardTransaction` and its one installment use the **purchase date's** month/year as their tracking period, not a credit reference month. Their date and amount remain visible in card index/search/reporting. Document how context and card filters partition them; they must never enter credit invoice totals or credit-limit calculations.
 - Enforce one installment at the model/request boundary, including nested attributes and updates. A disabled UI control is insufficient. A credit transaction can still have its existing multi-installment schedule. Reject switching a transaction between credit and noncredit cards when existing installment, reference, projected-cash, paid-history, or exchange links cannot be migrated safely; do not silently drop linked records.
+- Card-bound exchanges require a credit billing cycle. Reject them on prepaid/debit transactions with a localized validation message; standalone exchanges remain available. The form must not offer a misleading card-bound option for noncredit cards.
 - Audit card-kind and bank-account routing changes. Rollback preview/apply must preserve the kind lock, dependency checks, and recalculation behavior. A rollback must not recreate a noncredit invoice or reference.
 
 ## UI and API contract

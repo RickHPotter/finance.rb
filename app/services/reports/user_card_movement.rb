@@ -142,8 +142,6 @@ module Reports
       rows.map do |row|
         transaction = row.transaction
         installment = row.installment
-        reference = references_by_period[[ installment.year, installment.month ]]
-
         {
           identity: { installment_type: row.installment_type, installment_id: row.installment_id },
           transaction_id: row.transaction_id,
@@ -154,12 +152,9 @@ module Reports
           purchase_date: transaction.date.to_date.iso8601,
           installment_date: installment.date.to_date.iso8601,
           installment_number: installment.number,
-          billing_period: format("%<year>04d-%<month>02d", year: installment.year, month: installment.month),
-          invoice: reference_payload(reference, installment),
-          generated_payment: { cash_transaction_id: installment.cash_transaction_id },
           advance: { active: advance?(transaction), cash_transaction_id: transaction.advance_cash_transaction_id },
           path: exact_source_path(row)
-        }
+        }.merge(period_metadata(installment))
       end
     end
 
@@ -177,6 +172,22 @@ module Reports
         closing_date: reference&.reference_closing_date&.iso8601,
         due_date: reference&.reference_date&.iso8601
       }
+    end
+
+    def period_metadata(installment)
+      if user_card.credit?
+        reference = references_by_period[[ installment.year, installment.month ]]
+        {
+          billing_period: period_for(installment), purchase_period: nil,
+          invoice: reference_payload(reference, installment), generated_payment: { cash_transaction_id: installment.cash_transaction_id }
+        }
+      else
+        { billing_period: nil, purchase_period: period_for(installment), invoice: nil, generated_payment: nil }
+      end
+    end
+
+    def period_for(installment)
+      format("%<year>04d-%<month>02d", year: installment.year, month: installment.month)
     end
 
     def references_by_period

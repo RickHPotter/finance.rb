@@ -54,6 +54,13 @@ RSpec.describe Reference, type: :model do
   end
 
   describe "[ business logic ]" do
+    it "rejects a billing reference for a prepaid card" do
+      subject.user_card = create(:user_card, :random, card_kind: "prepaid")
+
+      expect(subject).not_to be_valid
+      expect(subject.errors[:user_card]).to be_present
+    end
+
     it "defaults context to the user_card user's main context" do
       reference = described_class.new(
         user_card:,

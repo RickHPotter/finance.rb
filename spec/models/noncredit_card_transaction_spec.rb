@@ -66,4 +66,34 @@ RSpec.describe "Noncredit card transactions", type: :model do
     expect(transaction.errors[:user_card]).to be_present
     expect(Reference.count).to eq(reference_count)
   end
+
+  it "rejects credit-bill advance categories on prepaid cards" do
+    transaction = purchase(user_card: noncredit_card("prepaid"), date: Time.zone.today)
+    transaction.categories << user.built_in_category("CARD ADVANCE")
+
+    expect(transaction).not_to be_valid
+    expect(transaction.errors[:base]).to be_present
+  end
+
+  it "rejects another user's card before creating a reference" do
+    foreign_card = create(:user_card, :random, card_kind: "prepaid")
+    transaction = purchase(user_card: foreign_card, date: Time.zone.today)
+
+    expect(transaction).not_to be_valid
+    expect(transaction.errors[:user_card]).to be_present
+    expect(foreign_card.references).to be_empty
+  end
+
+  it "rejects card-bound exchanges but permits standalone exchanges on prepaid purchases" do
+    transaction = purchase(user_card: noncredit_card("prepaid"), date: Time.zone.today)
+    entity_transaction = transaction.entity_transactions.build(entity: create(:entity, :random, user:), price: -1000, is_payer: true)
+    exchange = entity_transaction.exchanges.build(number: 1, exchange_type: "monetary", bound_type: "card_bound",
+                                                  date: transaction.date, month: transaction.month, year: transaction.year, price: -1000)
+
+    expect(exchange).not_to be_valid
+    expect(exchange.errors[:bound_type]).to be_present
+
+    exchange.bound_type = "standalone"
+    expect(exchange).to be_valid
+  end
 end

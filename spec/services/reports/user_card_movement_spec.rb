@@ -117,6 +117,20 @@ RSpec.describe Reports::UserCardMovement do
     expect(exact_query.dig("card_transaction", "card_installment_ids")).to eq([ advance.card_installments.sole.id.to_s ])
   end
 
+  it "reports prepaid spending by purchase period without pretending it has an invoice" do
+    prepaid_card = create(:user_card, :random, user:, card_kind: "prepaid")
+    transaction = CardTransaction.new(user:, context:, user_card: prepaid_card, description: "Lunch", date: Date.new(2026, 7, 3), price: -1000)
+    transaction.card_installments.first.price = -1000
+    transaction.save!
+
+    payload = described_class.new(context:, user_card: prepaid_card, query_state:).call
+
+    expect(payload[:summary]).to include(net_cents: -1000)
+    expect(payload[:details].sole).to include(
+      purchase_period: "2026-07", billing_period: nil, invoice: nil, generated_payment: nil
+    )
+  end
+
   it "applies installment paid state and direction without writing projections or audit history" do
     transaction = create_transaction(
       description: "Read-only report",

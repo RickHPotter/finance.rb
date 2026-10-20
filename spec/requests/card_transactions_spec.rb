@@ -65,6 +65,14 @@ RSpec.describe "CardTransactions", type: :request do
   before { sign_in user }
 
   describe "[ #new ]" do
+    it "does not expose another user's card through the purchase form" do
+      foreign_card = create(:user_card, :random, card_kind: "prepaid")
+
+      get new_card_transaction_path(user_card_id: foreign_card.id)
+
+      expect(response).to have_http_status(:not_found)
+    end
+
     it "renders a prepaid purchase form without a billing reference" do
       prepaid_card = create(:user_card, user:, card:, card_kind: "prepaid")
 
