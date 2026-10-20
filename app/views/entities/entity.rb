@@ -115,7 +115,7 @@ class Views::Entities::Entity < Views::Base
   end
 
   def mobile_row
-    div(class: "mx-2 rounded-lg bg-slate-100 shadow-sm overflow-hidden my-3 dark:bg-slate-900 dark:text-slate-100",
+    div(class: "rounded-lg bg-slate-100 shadow-sm overflow-hidden my-3 dark:bg-slate-900 dark:text-slate-100",
         data: { id: entity.id, datatable_target: :row }) do
       div(class: "p-4 bg-linear-to-r from-slate-700 via-slate-400 to-white") do
         div(class: "flex items-center justify-between") do
@@ -175,14 +175,16 @@ class Views::Entities::Entity < Views::Base
           end
         end
 
-        div(class: "mt-4 flex justify-end gap-2 border-t border-slate-200 pt-3 dark:border-slate-700") do
+        div(class: "mt-4 grid grid-cols-2 gap-2 border-t border-slate-200 pt-3 dark:border-slate-700",
+            data: { mobile_action_row: "transactions" }) do
           Button(
             link: search_card_transactions_path(card_transaction: { entity_id: entity.id }, all_month_years: true),
             variant: :outline,
-            class: "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
+            class: "h-auto min-h-10 min-w-0 w-full whitespace-normal border-slate-300 px-2 py-2 text-center leading-tight " \
+                   "text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
             data: { turbo_frame: "_top", turbo_prefetch: false }
           ) do
-            span(class: "inline-flex items-center gap-2") do
+            span(class: "inline-flex min-w-0 items-center justify-center gap-2") do
               cached_icon(:jump_to)
               plain pluralise_model(CardTransaction, 2)
             end
@@ -191,17 +193,18 @@ class Views::Entities::Entity < Views::Base
           Button(
             link: cash_transactions_path(cash_transaction: { entity_id: entity.id }, all_month_years: true),
             variant: :outline,
-            class: "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
+            class: "h-auto min-h-10 min-w-0 w-full whitespace-normal border-slate-300 px-2 py-2 text-center leading-tight " \
+                   "text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
             data: { turbo_frame: "_top", turbo_prefetch: false }
           ) do
-            span(class: "inline-flex items-center gap-2") do
+            span(class: "inline-flex min-w-0 items-center justify-center gap-2") do
               cached_icon(:jump_to)
               plain pluralise_model(CashTransaction, 2)
             end
           end
         end
 
-        div(class: "mt-3 flex justify-end") { merge_trigger(mobile: true) } if merge_source?
+        div(class: "mt-2", data: { mobile_action_row: "primary" }) { merge_trigger(mobile: true) } if merge_source?
       end
     end
   end
@@ -218,7 +221,7 @@ class Views::Entities::Entity < Views::Base
       title: I18n.t("entity_merges.preview.title"),
       aria: { label: I18n.t("entity_merges.preview.title") },
       form: {
-        class: "inline-flex",
+        class: mobile ? "w-full" : "inline-flex",
         data: { turbo_frame: merge_preview_frame_id }
       }
     ) do
@@ -254,7 +257,7 @@ class Views::Entities::Entity < Views::Base
   end
 
   def mobile_merge_button_class
-    "inline-flex items-center justify-center rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 " \
+    "inline-flex w-full items-center justify-start rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-left text-sm font-semibold text-amber-800 " \
       "shadow-sm transition hover:border-amber-500 hover:bg-amber-500 hover:text-white dark:border-amber-700 dark:bg-slate-900 " \
       "dark:text-amber-300 dark:hover:border-amber-500 dark:hover:bg-slate-800 [&_svg]:size-4"
   end

@@ -20,6 +20,28 @@ RSpec.describe "Categories", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "puts transaction links above left-aligned colourful actions only on mobile cards" do
+      category = create(:category, :random, user:)
+
+      get categories_path, headers: { "HTTP_USER_AGENT" => "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)" }
+
+      card = response.parsed_body.at_css("[data-id='#{category.id}']")
+      primary = card.at_css("[data-category-action-row='primary']")
+      transactions = card.at_css("[data-category-action-row='transactions']")
+      expect(card.css("[data-category-action-row]").map { |row| row["data-category-action-row"] }).to eq(%w[transactions primary])
+      expect(primary.at_css("a[href='#{new_category_path(parent_category_id: category.id)}']")).to be_present
+      expect(primary.at_css("#merge_category_#{category.id}")).to be_present
+      expect(primary["class"].split).to include("flex-col")
+      expect(primary.at_css("a")["class"].split).to include("text-left")
+      expect(primary.at_css("button")["class"].split).to include("text-left")
+      expect(transactions.css("a").size).to eq(2)
+      expect(transactions["class"].split).to include("grid-cols-2")
+
+      get categories_path
+
+      expect(response.parsed_body.at_css("[data-category-action-row]")).to be_nil
+    end
+
     it "finds categories with normalized text" do
       category = create(:category, user:, category_name: "CRÍSTIAN   PENS")
 
@@ -85,6 +107,15 @@ RSpec.describe "Categories", type: :request do
       expect(child_badge.at_css("[data-category-child-badge='true']")).to be_present
 
       expect(document.at_css("#add_subcategory_#{child.id}")).to be_nil
+    end
+
+    it "offers an add-child action on subscription family built-ins" do
+      get categories_path
+
+      document = response.parsed_body
+      user.categories.where(category_name: [ "SUBSCRIPTION", "SALARY", "OTHER", "OTHER INCOME" ]).each do |parent|
+        expect(document.at_css("#add_subcategory_#{parent.id}")).to be_present
+      end
     end
   end
 
@@ -261,6 +292,14 @@ RSpec.describe "Categories", type: :request do
       expect(options).not_to include(child.name)
     end
 
+    it "offers subscription family built-ins as parents without offering unrelated built-ins" do
+      get new_category_path
+
+      option_ids = response.parsed_body.css("#category_parent_category_id option").pluck("value")
+      expect(option_ids).to include(*user.categories.where(category_name: [ "SUBSCRIPTION", "SALARY", "OTHER", "OTHER INCOME" ]).ids.map(&:to_s))
+      expect(option_ids).not_to include(user.categories.find_by!(category_name: "EXCHANGE").id.to_s)
+    end
+
     it "pre-selects parent category when parent_category_id param is provided" do
       parent = create(:category, :random, user:, category_name: "HSH")
 
@@ -393,6 +432,25 @@ RSpec.describe "Categories", type: :request do
       child = user.categories.find_by!(category_name: "Labour")
       expect(child.parent_category).to eq(parent)
       expect(child.parent_category_id).to eq(parent.id)
+    end
+
+    it "creates a custom child under the OTHER INCOME built-in" do
+      parent = user.categories.find_by!(category_name: "OTHER INCOME")
+
+      expect do
+        post categories_path, params: {
+          category: {
+            category_name: "Freelance",
+            colour: "#123456",
+            text_colour_mode: "automatic",
+            active: true,
+            user_id: user.id,
+            parent_category_id: parent.id
+          }
+        }, headers: turbo_stream_headers
+      end.to change(Category, :count).by(1)
+
+      expect(user.categories.find_by!(category_name: "Freelance").parent_category_id).to eq(parent.id)
     end
 
     it "allows subcategories with the same name under different parents" do

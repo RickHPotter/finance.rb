@@ -109,7 +109,7 @@ class Views::UserCards::UserCard < Views::Base
     brand_name = user_card.card.card_name
     brand_and_name = brand_name == user_card.user_card_name ? brand_name : "#{brand_name} - #{user_card.user_card_name}"
 
-    div(class: "mx-2 rounded-lg bg-slate-100 shadow-sm overflow-hidden my-3 dark:bg-slate-900 dark:text-slate-100",
+    div(class: "rounded-lg bg-slate-100 shadow-sm overflow-hidden my-3 dark:bg-slate-900 dark:text-slate-100",
         data: { id: user_card.id, datatable_target: :row }) do
       div(class: "p-4 bg-linear-to-r from-blue-500 to-blue-700") do
         div(class: "flex items-center justify-between") do
@@ -168,14 +168,16 @@ class Views::UserCards::UserCard < Views::Base
           end
         end
 
-        div(class: "mt-4 flex justify-end border-t border-slate-200 pt-3 dark:border-slate-700") do
+        div(class: "mt-4 grid grid-cols-1 gap-2 border-t border-slate-200 pt-3 dark:border-slate-700",
+            data: { mobile_action_row: "transactions" }) do
           Button(
             link: card_transactions_path(user_card_id: user_card.id),
             variant: :outline,
-            class: "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
+            class: "h-auto min-h-10 min-w-0 w-full whitespace-normal border-slate-300 px-2 py-2 text-center leading-tight " \
+                   "text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
             data: { turbo_frame: "_top", turbo_prefetch: false }
           ) do
-            span(class: "inline-flex items-center gap-2") do
+            span(class: "inline-flex min-w-0 items-center justify-center gap-2") do
               cached_icon(:jump_to)
               plain pluralise_model(CardTransaction, 2)
             end

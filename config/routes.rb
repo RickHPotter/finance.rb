@@ -192,6 +192,7 @@ Rails.application.routes.draw do
 
   resources :subscriptions do
     patch :transition, on: :member
+    patch :bulk_update, on: :collection
   end
   post "allocation_mutations/preview", to: "allocation_mutation_previews#create", as: :preview_allocation_mutations
   post "allocation_mutations/apply", to: "allocation_mutations#create", as: :apply_allocation_mutations

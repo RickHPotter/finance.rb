@@ -204,6 +204,9 @@ application.register("ruby-ui--time-picker", RubyUi__TimePickerController)
 import ShowSectionCardController from "./show_section_card_controller"
 application.register("show-section-card", ShowSectionCardController)
 
+import SubscriptionBulkController from "./subscription_bulk_controller"
+application.register("subscription-bulk", SubscriptionBulkController)
+
 import SubscriptionTransactionsController from "./subscription_transactions_controller"
 application.register("subscription-transactions", SubscriptionTransactionsController)
 

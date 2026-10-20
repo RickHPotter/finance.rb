@@ -66,6 +66,10 @@ en:
         piggy_bank: Piggy Bank
         piggy_bank_return: Piggy Bank Return
         subscription: Subscription
+        salary: Salary
+        salario: Salary
+        other: Other
+        other_income: Other Income
     errors:
       models:
         category:
@@ -150,6 +154,10 @@ pt-BR:
         piggy_bank: Cofrinho
         piggy_bank_return: Retorno do Cofrinho
         subscription: Assinatura
+        salary: Salário
+        salario: Salário
+        other: Outros Gastos
+        other_income: Outras Receitas
     errors:
       models:
         category:

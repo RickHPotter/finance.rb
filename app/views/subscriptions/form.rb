@@ -17,7 +17,7 @@ class Views::Subscriptions::Form < Views::Base
     @subscription = subscription
     @return_to = return_to
 
-    set_categories
+    set_all_categories
     set_entities
     set_user_cards
     set_user_bank_accounts
@@ -31,6 +31,8 @@ class Views::Subscriptions::Form < Views::Base
                   data: { action: "input->subscription-transactions#recalculatePrice" }) do |form|
           div(class: "flex flex-1 flex-col") do
             form.hidden_field :user_id, value: current_user.id
+            form.hidden_field :subscription_kind, value: subscription.subscription_kind,
+                                                  data: { subscription_transactions_target: "kindInput" }
             hidden_field_tag :return_to, return_to
             form.hidden_field :price, value: subscription.price, data: { subscription_transactions_target: "totalPriceInput" }
 
@@ -41,8 +43,18 @@ class Views::Subscriptions::Form < Views::Base
               autofocus_target: :description
             )
 
-            div(class: "mb-6 w-full lg:flex lg:gap-2") do
-              div(id: "subscription_category_combobox", class: "combobox-shell mb-3 w-full plus-icon lg:mb-0 lg:w-1/3") do
+            div(class: "mb-6 grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-2") do
+              div(id: "subscription_main_category_combobox", class: "combobox-shell w-full category-icon") do
+                render Views::Shared::SingleSelectCombobox.new(
+                  name: "subscription[main_category_id]",
+                  options: main_category_options,
+                  selected_value: subscription.main_category_id || current_user.built_in_category("SUBSCRIPTION")&.id,
+                  placeholder: model_attribute(subscription, :main_category_id),
+                  input_data: { action: "change->subscription-transactions#mainCategoryChanged" }
+                )
+              end
+
+              div(id: "subscription_category_combobox", class: "combobox-shell w-full plus-icon") do
                 render Views::Shared::SingleSelectCombobox.new(
                   name: "subscription[category_id]",
                   options: @categories,
@@ -52,7 +64,7 @@ class Views::Subscriptions::Form < Views::Base
                 )
               end
 
-              div(id: "subscription_entity_combobox", class: "combobox-shell mb-3 w-full user-icon lg:mb-0 lg:w-1/3") do
+              div(id: "subscription_entity_combobox", class: "combobox-shell w-full user-icon") do
                 render Views::Shared::SingleSelectCombobox.new(
                   name: "subscription[entity_id]",
                   options: @entities,
@@ -62,7 +74,7 @@ class Views::Subscriptions::Form < Views::Base
                 )
               end
 
-              div(id: "subscription_status_combobox", class: "combobox-shell w-full status-icon lg:w-1/3") do
+              div(id: "subscription_status_combobox", class: "combobox-shell w-full status-icon") do
                 render Views::Shared::SingleSelectCombobox.new(
                   name: "subscription[status]",
                   options: Subscription.statuses.keys.map { |status| [ model_attribute(Subscription, "statuses.#{status}"), status ] },
@@ -107,6 +119,25 @@ class Views::Subscriptions::Form < Views::Base
   end
 
   private
+
+  def main_category_options
+    categories = current_user.categories.active.includes(:parent_category, :subcategories).to_a
+    preferred_salary_name = current_user.locale == "pt-BR" ? "SALARIO" : "SALARY"
+    salary_parent = categories.find { |category| category.parent_category_id.nil? && category.category_name == preferred_salary_name } ||
+                    categories.find { |category| category.parent_category_id.nil? && category.category_name.in?(%w[SALARY SALARIO]) }
+    family_names = [ "SUBSCRIPTION", salary_parent&.category_name, "OTHER", "OTHER INCOME" ].compact
+
+    family_names.flat_map do |name|
+      parent = categories.find { |category| category.category_name == name && category.parent_category_id.nil? }
+      next [] unless parent
+
+      kind = name.in?([ "SALARY", "SALARIO", "OTHER INCOME" ]) ? "income" : "expense"
+      label = "#{parent.name} (#{model_attribute(Subscription, "kinds.#{kind}")})"
+      [ [ label, parent.id, { kind: } ] ] + parent.subcategories.select(&:active?).sort_by(&:name).map do |child|
+        [ "#{label} → #{child.name}", child.id, { kind: } ]
+      end
+    end
+  end
 
   def transactions_section(form:)
     section(id: "subscription_transactions", class: "flex flex-1 flex-col") do

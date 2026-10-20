@@ -41,12 +41,22 @@ RSpec.describe User, type: :model do
           "CARD INSTALLMENT",
           "INVESTMENT",
           "SUBSCRIPTION",
+          "SALARY",
+          "OTHER",
+          "OTHER INCOME",
           "EXCHANGE",
           "EXCHANGE RETURN",
           "BORROW RETURN",
           "FAILED LEND/BORROW RETURN"
         ]
         expect(subject.categories.built_in.pluck(:category_name)).to include(*built_in_categories)
+      end
+
+      it "creates the Portuguese salary built-in for a pt-BR user" do
+        user = create(:user, :random, locale: "pt-BR")
+
+        expect(user.categories.built_in.pluck(:category_name)).to include("SALARIO", "OTHER", "OTHER INCOME")
+        expect(user.categories.where(category_name: "SALARY")).not_to exist
       end
 
       it "creates a built-in MOI entity on create" do

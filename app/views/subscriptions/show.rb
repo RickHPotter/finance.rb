@@ -53,12 +53,14 @@ class Views::Subscriptions::Show < Views::Base
     section_card(I18n.t("dashboards.sections.summary")) do
       div(class: "grid gap-3 sm:grid-cols-2 xl:grid-cols-4") do
         dashboard_stat(I18n.t("dashboards.subscriptions.derived_total"), money(derived_total), emphasis: true)
+        dashboard_stat(model_attribute(Subscription, :subscription_kind), model_attribute(Subscription, "kinds.#{subscription.subscription_kind}"))
         dashboard_stat(model_attribute(Subscription, :status), status_label)
         linked_count_stat(I18n.t("dashboards.subscriptions.cash_count"), cash_transactions.size, cash_index_path)
         linked_count_stat(I18n.t("dashboards.subscriptions.card_count"), card_transactions.size, card_index_path)
       end
 
       div(class: "mt-4 grid gap-3 border-t border-slate-200 pt-4 dark:border-slate-700 xl:grid-cols-2") do
+        allocation_group(model_attribute(Subscription, :main_category_id), [ subscription.main_category ].compact, :category)
         allocation_group(model_attribute(Subscription, :category_id), subscription.categories, :category)
         allocation_group(model_attribute(Subscription, :entity_id), subscription.entities, :entity)
       end

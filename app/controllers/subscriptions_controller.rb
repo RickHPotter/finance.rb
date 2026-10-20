@@ -5,13 +5,14 @@ class SubscriptionsController < ApplicationController
   include ContextHelper
 
   before_action :set_subscription, only: %i[show edit update destroy transition]
-  before_action :set_categories, :set_entities, only: %i[new create edit update]
+  before_action :set_all_categories, :set_entities, only: %i[new create edit update]
   before_action :set_subscription_tabs
 
   def index
     build_index_context
     @subscriptions = subscriptions_scope
     @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || subscription_navigation_return_param(request.fullpath)
+    @index_context[:bulk_return_to] = request.fullpath
 
     render_top_level Views::Subscriptions::Index.new(subscriptions: @subscriptions, index_context: @index_context, mobile: @mobile)
   end
@@ -75,6 +76,22 @@ class SubscriptionsController < ApplicationController
     redirect_to @return_to, alert: I18n.t("dashboards.subscriptions.lifecycle.invalid"), status: :see_other
   end
 
+  def bulk_update
+    set_return_to
+    Logic::Subscriptions::BulkUpdate.call(
+      scope: current_context.subscriptions,
+      user: current_user,
+      ids: params[:subscription_ids],
+      action: params[:bulk_action],
+      value: params[:bulk_value]
+    )
+    redirect_to @return_to, notice: I18n.t("dashboards.subscriptions.bulk.success"), status: :see_other
+  rescue Logic::Subscriptions::BulkUpdate::InvalidSelection => e
+    redirect_to @return_to, alert: I18n.t("dashboards.subscriptions.bulk.#{e.message}"), status: :see_other
+  rescue Logic::Subscriptions::LifecycleTransition::InvalidTransition, ActiveRecord::RecordInvalid
+    redirect_to @return_to, alert: I18n.t("dashboards.subscriptions.bulk.conflict"), status: :see_other
+  end
+
   private
 
   def render_top_level(view)
@@ -121,7 +138,7 @@ class SubscriptionsController < ApplicationController
   def subscriptions_scope
     build_index_context if @index_context.blank?
 
-    scope = current_context.subscriptions.includes(:categories, :entities).left_outer_joins(:categories, :entities)
+    scope = current_context.subscriptions.includes(:main_category, :categories, :entities).left_outer_joins(:categories, :entities)
     scope = scope.where(id: @index_context[:id]) if @index_context[:id].present?
     scope = scope.where(status: @index_context[:status]) if @index_context[:status].present?
     scope = scope.where(categories: { id: @index_context[:category_id] }) if @index_context[:category_id].present?
@@ -178,7 +195,7 @@ class SubscriptionsController < ApplicationController
     return {} if params[:subscription].blank?
 
     params.require(:subscription).permit(
-      :description, :comment, :price, :status, :user_id, :category_id, :entity_id,
+      :description, :comment, :price, :status, :user_id, :category_id, :entity_id, :main_category_id, :subscription_kind,
       cash_transactions_attributes: %i[id date price paid user_bank_account_id _destroy],
       card_transactions_attributes: %i[id date month year price paid user_card_id _destroy]
     )

@@ -10,7 +10,7 @@ module EntityTransactable
 
     # @relationships ...........................................................
     has_many :entity_transactions, as: :transactable, dependent: :destroy
-    has_many :entities, -> { order(:entity_name) }, through: :entity_transactions
+    has_many :entities, -> { order(:entity_name) }, through: :entity_transactions, dependent: :destroy
     accepts_nested_attributes_for :entity_transactions, allow_destroy: true, reject_if: :all_blank
 
     # @callbacks ..............................................................
