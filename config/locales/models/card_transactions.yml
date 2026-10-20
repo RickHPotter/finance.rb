@@ -51,6 +51,7 @@ en:
         month: Month
         year: Year
         reference_month_year: Reference Month/Year
+        purchase_month_year: Purchase Month/Year
         card_installment: Installment
         installments_count: Installments Count
         card_installments_count: Installments Count
@@ -73,6 +74,9 @@ en:
         confirm_payment: Confirm Payment
         duplicate: Duplicate
         card_advance_description: CARD BILL PAYMENT
+  card_transactions:
+    installments_and_invoices: Installments and Invoices
+    purchase_installment: Purchase Installment
 
 pt-BR:
   activerecord:
@@ -127,6 +131,7 @@ pt-BR:
         month: Mês
         year: Ano
         reference_month_year: Referência Mês/Ano
+        purchase_month_year: Mês/Ano da Compra
         card_installment: Parcela
         installments_count: Quantidade de Parcelas
         card_installments_count: Quantidade de Parcelas
@@ -149,3 +154,6 @@ pt-BR:
         confirm_payment: Confirmar Pagamento
         duplicate: Duplicar
         card_advance_description: PAGAMENTO FATURA
+  card_transactions:
+    installments_and_invoices: Parcelas e Faturas
+    purchase_installment: Parcela da Compra

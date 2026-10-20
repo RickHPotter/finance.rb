@@ -65,6 +65,38 @@ RSpec.describe "CardTransactions", type: :request do
   before { sign_in user }
 
   describe "[ #new ]" do
+    it "renders a prepaid purchase form without a billing reference" do
+      prepaid_card = create(:user_card, user:, card:, card_kind: "prepaid")
+
+      get new_card_transaction_path(user_card_id: prepaid_card.id)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('name="card_installments_count"')
+      expect(response.body).to include("disabled")
+    end
+
+    it "renders a prepaid purchase in the card index and detail page without an invoice action" do
+      prepaid_card = create(:user_card, user:, card:, card_kind: "prepaid")
+      transaction = CardTransaction.new(user:, context: user.main_context, user_card: prepaid_card,
+                                        description: "Planned lunch", date: 1.month.from_now, price: -1000)
+      transaction.card_installments.first.price = -1000
+      transaction.save!
+
+      get card_transactions_path(user_card_id: prepaid_card.id, all_month_years: true)
+      expect(response).to have_http_status(:success)
+
+      get month_year_card_transactions_path, params: {
+        month_year: transaction.date.strftime("%Y%m"), card_transaction: { user_card_id: prepaid_card.id }
+      }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Planned lunch")
+
+      get card_transaction_path(transaction)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("card_transactions.purchase_installment"))
+      expect(response.body).not_to include(I18n.t("card_transactions.installments_and_invoices"))
+    end
+
     it "renders RubyUI comboboxes and split datetime input for user card, category, and entity selection" do
       user_card_one
 

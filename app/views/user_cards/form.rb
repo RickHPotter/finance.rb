@@ -28,7 +28,7 @@ class Views::UserCards::Form < Views::Base
         url: form_url,
         id: :form,
         class: "contents text-black dark:text-slate-100",
-        data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" }
+        data: { controller: "reactive-form price-mask card-kind-form", action: "submit->price-mask#removeMasks" }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
         hidden_field_tag :return_to, return_to
@@ -40,6 +40,18 @@ class Views::UserCards::Form < Views::Base
             autofocus: true,
             autocomplete: :off,
             data: { controller: "blinking-placeholder", text: model_attribute(user_card, :user_card_name) }
+          )
+        end
+
+        div(class: "mb-3 w-full lg:w-4/12") do
+          bold_label(form, :card_kind)
+          form.select(
+            :card_kind,
+            UserCard.card_kinds.keys.map { |kind| [ model_attribute(UserCard, "card_kinds.#{kind}"), kind ] },
+            {},
+            class: outdoor_input_class,
+            disabled: user_card.persisted? && (user_card.card_transactions.exists? || user_card.references.exists?),
+            data: { card_kind_form_target: "kind", action: "change->card-kind-form#change" }
           )
         end
 
@@ -55,7 +67,7 @@ class Views::UserCards::Form < Views::Base
             )
           end
 
-          div(class: "w-full lg:w-3/12 mb-2") do
+          div(class: "w-full lg:w-3/12 mb-2 #{'hidden' unless user_card.credit?}", data: { card_kind_form_target: "creditField" }) do
             bold_label(form, :current_closing_date)
 
             TextField(
@@ -63,11 +75,11 @@ class Views::UserCards::Form < Views::Base
               type: :date, svg: :calendar, class: "font-graduate",
               min: (Date.current.prev_month.beginning_of_month - 15.days).strftime("%Y-%m-%d"),
               max: (Date.current.next_month.end_of_month + 15.days).strftime("%Y-%m-%d"),
-              value: user_card.new_record? ? Date.current : user_card.calculate_reference_date(Date.current) - user_card.days_until_due_date
+              value: user_card.new_record? || !user_card.credit? ? Date.current : user_card.calculate_reference_date(Date.current) - user_card.days_until_due_date
             )
           end
 
-          div(class: "w-full lg:w-3/12 mb-2") do
+          div(class: "w-full lg:w-3/12 mb-2 #{'hidden' unless user_card.credit?}", data: { card_kind_form_target: "creditField" }) do
             bold_label(form, :current_due_date)
 
             TextField(
@@ -75,11 +87,11 @@ class Views::UserCards::Form < Views::Base
               type: :date, svg: :calendar, class: "font-graduate",
               min: (Date.current.prev_month.beginning_of_month - 15.days).strftime("%Y-%m-%d"),
               max: (Date.current.next_month.end_of_month + 15.days).strftime("%Y-%m-%d"),
-              value: user_card.new_record? ? Date.current + 7.days : user_card.calculate_reference_date(Date.current)
+              value: user_card.new_record? || !user_card.credit? ? Date.current + 7.days : user_card.calculate_reference_date(Date.current)
             )
           end
 
-          div(class: "w-full lg:w-2/12 mb-2") do
+          div(class: "w-full lg:w-2/12 mb-2 #{'hidden' unless user_card.credit?}", data: { card_kind_form_target: "creditField" }) do
             bold_label(form, :min_spend)
             TextField(
               form, :min_spend,
@@ -88,7 +100,7 @@ class Views::UserCards::Form < Views::Base
             )
           end
 
-          div(class: "w-full lg:w-2/12 mb-2") do
+          div(class: "w-full lg:w-2/12 mb-2 #{'hidden' unless user_card.credit?}", data: { card_kind_form_target: "creditField" }) do
             bold_label(form, :credit_limit)
 
             TextField(
@@ -97,6 +109,17 @@ class Views::UserCards::Form < Views::Base
               data: { controller: "input-select", price_mask_target: :input, action: "click->input-select#select input->price-mask#applyMask" }
             )
           end
+        end
+
+        div(class: "mb-3 w-full lg:w-4/12 #{'hidden' unless user_card.debit?}", data: { card_kind_form_target: "debitField" }) do
+          bold_label(form, :user_bank_account)
+          form.select(
+            :user_bank_account_id,
+            current_user.user_bank_accounts.order(:user_bank_account_name).map { |account| [ account.pretty_label, account.id ] },
+            { include_blank: model_attribute(UserCard, :select_bank_account) },
+            class: outdoor_input_class,
+            data: { card_kind_form_target: "bankAccount" }
+          )
         end
 
         bold_label(form, :active)

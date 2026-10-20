@@ -169,7 +169,8 @@ class Views::CardTransactions::FormControls < Views::Base
           type: :number,
           svg: :number,
           min: 1, max: 72,
-          value: [ card_transaction.card_installments.size, card_transaction.card_installments_count, 1 ].max,
+          value: card_transaction.user_card.credit? ? [ card_transaction.card_installments.size, card_transaction.card_installments_count, 1 ].max : 1,
+          disabled: !card_transaction.user_card.credit?,
           class: "h-10 py-2 font-graduate dark:font-mono",
           data: {
             controller: "input-select",

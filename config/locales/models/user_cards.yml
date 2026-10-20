@@ -9,7 +9,13 @@ en:
         id: ID
         user_card_name: User Card Name
         card_kind: Card Type
+        card_kinds:
+          credit: Credit
+          prepaid: Prepaid
+          debit: Debit
         user_bank_account: Bank Account
+        select_bank_account: Select a bank account
+        prepaid_spending_only: Prepaid tracking
         days_until_due_date: Days Until Due Date
         current_closing_date: Closing Date
         current_due_date: Due Date
@@ -34,19 +40,27 @@ en:
           attributes:
             card_kind:
               cannot_change_after_use: cannot change after the card has transactions or billing references
+  user_cards:
+    prepaid_spending_only: Spending recorded; remaining balance and top-ups are not tracked yet.
 
 pt-BR:
   activerecord:
     models:
       user_card:
-        one: Cartão de Crédito
-        other: Cartões de Crédito
+        one: Cartão
+        other: Cartões
     attributes:
       user_card:
         id: ID
         user_card_name: Nome do Cartão
         card_kind: Tipo de Cartão
+        card_kinds:
+          credit: Crédito
+          prepaid: Pré-pago
+          debit: Débito
         user_bank_account: Conta Bancária
+        select_bank_account: Selecione uma conta bancária
+        prepaid_spending_only: Acompanhamento pré-pago
         days_until_due_date: Dias Até o Vencimento
         current_closing_date: Data de Fechamento
         current_due_date: Data de Vencimento
@@ -71,3 +85,5 @@ pt-BR:
           attributes:
             card_kind:
               cannot_change_after_use: não pode ser alterado após o cartão ter movimentações ou faturas
+  user_cards:
+    prepaid_spending_only: Gastos registrados; saldo restante e recargas ainda não são acompanhados.

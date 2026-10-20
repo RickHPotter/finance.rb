@@ -42,7 +42,11 @@ class Views::CardTransactions::Form < Views::Base
   end
 
   def view_template
-    user_card_date = card_transaction.user_card.calculate_reference_date(card_transaction.date).to_datetime
+    user_card_date = if card_transaction.user_card.credit?
+                       card_transaction.user_card.calculate_reference_date(card_transaction.date).to_datetime
+                     else
+                       card_transaction.date.to_datetime
+                     end
     autofocus_target = which_target_to_autofocus(card_transaction)
     receipts_upload = Components::TransactionReceiptsUpload.new(transaction: card_transaction, form: nil)
 

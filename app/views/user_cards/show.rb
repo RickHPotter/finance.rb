@@ -21,7 +21,7 @@ class Views::UserCards::Show < Views::Base
 
         div(class: "mt-6 space-y-4") do
           summary_grid
-          references_section
+          references_section if user_card.credit?
           movement_section
           categories_section
           entities_section
@@ -40,6 +40,9 @@ class Views::UserCards::Show < Views::Base
 
         div(class: "mt-3 flex flex-wrap items-center gap-2") do
           status_badge
+          span(class: "rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-900 dark:bg-sky-900 dark:text-sky-100") do
+            model_attribute(UserCard, "card_kinds.#{user_card.card_kind}")
+          end
           card_badge
           bank_badge
         end
@@ -63,10 +66,16 @@ class Views::UserCards::Show < Views::Base
                        user_card.active? ? model_attribute(UserCard, "statuses.active") : model_attribute(UserCard, "statuses.inactive"))
         dashboard_stat(model_attribute(UserCard, :card_id), user_card.card&.card_name || "-")
         dashboard_stat("Bank", user_card.card&.bank&.bank_name || "-")
-        dashboard_stat(model_attribute(UserCard, :current_closing_date), localized_date(current_closing_date))
-        dashboard_stat(model_attribute(UserCard, :current_due_date), localized_date(current_due_date))
-        dashboard_stat(model_attribute(UserCard, :min_spend), money(user_card.min_spend), emphasis: true)
-        dashboard_stat(model_attribute(UserCard, :credit_limit), money(user_card.credit_limit), emphasis: true)
+        if user_card.credit?
+          dashboard_stat(model_attribute(UserCard, :current_closing_date), localized_date(current_closing_date))
+          dashboard_stat(model_attribute(UserCard, :current_due_date), localized_date(current_due_date))
+          dashboard_stat(model_attribute(UserCard, :min_spend), money(user_card.min_spend), emphasis: true)
+          dashboard_stat(model_attribute(UserCard, :credit_limit), money(user_card.credit_limit), emphasis: true)
+        elsif user_card.debit?
+          dashboard_stat(model_attribute(UserCard, :user_bank_account), user_card.user_bank_account&.pretty_label || "-")
+        else
+          dashboard_stat(model_attribute(UserCard, :prepaid_spending_only), I18n.t("user_cards.prepaid_spending_only"))
+        end
         dashboard_stat(model_attribute(UserCard, :created_at), localized_date(user_card.created_at))
       end
     end

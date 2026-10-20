@@ -224,6 +224,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def pay_in_advance
     @user_card = current_user.user_cards.find_by(id: card_transaction_params[:user_card_id])
+    return render_card_advance_failure(I18n.t("card_advance.invalid_payment_window")) unless @user_card&.credit?
+
     payment_window = card_advance_payment_window
     payment_date = parsed_card_advance_date
 
