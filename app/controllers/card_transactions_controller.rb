@@ -96,16 +96,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     @card_transaction.build_month_year if @card_transaction.user_card_id
     prune_exchange_entity_transactions_without_exchanges!
 
-    first_installment = @card_transaction.card_installments.first
-    @card_transaction.card_installments.each_with_index do |ci, index|
-      # next if ci.paid
-
-      ref_date = Date.new(first_installment.year, first_installment.month, 1) + index.months
-
-      ci.date  = @card_transaction.date + index.months
-      ci.year  = ref_date.year
-      ci.month = ref_date.month
-    end
+    assign_card_installment_dates
 
     handle_save
   end
@@ -288,6 +279,18 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   private
+
+  def assign_card_installment_dates
+    first_installment = @card_transaction.card_installments.first
+    @card_transaction.card_installments.each_with_index do |installment, index|
+      installment_date = @card_transaction.date + index.months
+      reference_date = Date.new(first_installment.year, first_installment.month, 1) + index.months if @card_transaction.user_card.credit?
+
+      installment.date = installment_date
+      installment.year = reference_date&.year || installment_date.year
+      installment.month = reference_date&.month || installment_date.month
+    end
+  end
 
   def receipt_upload_param_key
     :card_transaction

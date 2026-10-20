@@ -24,6 +24,10 @@ en:
               piggy_bank_cash_only: "Piggy Bank categories are available only for cash transactions."
             price:
               line_items_sum_mismatch: "does not match line items total (difference: %{difference})"
+            card_installments:
+              noncredit_single_installment: "must contain exactly one purchase installment for prepaid and debit cards"
+            user_card:
+              cross_kind_change: "cannot change between credit and prepaid/debit on an existing transaction"
     attributes:
       card_transaction:
         self: Card Transaction
@@ -96,6 +100,10 @@ pt-BR:
               piggy_bank_cash_only: "Categorias de cofrinho estão disponíveis apenas para movimentações."
             price:
               line_items_sum_mismatch: "não corresponde ao total dos itens (diferença: %{difference})"
+            card_installments:
+              noncredit_single_installment: "deve conter exatamente uma parcela de compra para cartões pré-pagos e de débito"
+            user_card:
+              cross_kind_change: "não pode mudar entre crédito e pré-pago/débito em uma transação existente"
     attributes:
       card_transaction:
         self: Transação

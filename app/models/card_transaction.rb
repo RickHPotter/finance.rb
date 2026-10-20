@@ -17,6 +17,7 @@ class CardTransaction < ApplicationRecord
   include Budgetable
   include FriendNotifiable
   include PiggyBankCategorizable
+  include NoncreditCardTransaction
 
   audits_financial_changes skip: %i[card_installments_count]
 
@@ -135,6 +136,12 @@ class CardTransaction < ApplicationRecord
   def build_month_year
     return if user_card_id.nil?
     return if imported
+    return if cross_kind_card_change?
+
+    if user_card&.prepaid? || user_card&.debit?
+      assign_noncredit_period
+      return
+    end
 
     sync_first_installment_reference = new_record? && incomplete_installment_schedule?(card_installments.first)
     attach_reference if year.nil? && month.nil?
@@ -326,26 +333,22 @@ class CardTransaction < ApplicationRecord
       .find_each(&:sync_projection_after_parent_card_change!)
   end
 
-  def update_month_year
-    return if destroyed? || subscription_id.present?
-
-    cash_transaction = card_installments.order(:year, :month, :date).first.cash_transaction
-    self.year        = cash_transaction.date.year
-    self.month       = cash_transaction.date.month
-  end
-
   def update_cash_balance
     Logic::RecalculateBalancesService.new(user:, context:, year:, month:).call and return if destroyed?
 
     card_payment_transaction = card_installments.order(:date).first&.cash_transaction
     exchange_cash_transaction = entity_transactions.map(&:exchanges).flatten.min_by(&:date)&.cash_transaction
     min_date = [ card_payment_transaction&.date, exchange_cash_transaction&.date ].compact_blank.min
+    return if min_date.blank?
+
     Logic::RecalculateBalancesService.new(user:, context:, year: min_date.year, month: min_date.month).call
   end
 
   def update_associations_total
-    if destroyed?
+    if destroyed? && user_card&.credit?
       CashTransaction.new(categories: user.categories.where(category_name: "CARD PAYMENT"), entities: user.entities.where(entity_name: user_card.user_card_name))
+    elsif destroyed?
+      nil
     else
       card_installments.first.cash_transaction
     end => cash_transaction
