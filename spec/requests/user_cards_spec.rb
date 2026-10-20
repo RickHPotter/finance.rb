@@ -452,6 +452,16 @@ RSpec.describe "UserCards", type: :request do
   end
 
   describe "[ #reference_date ]" do
+    it "does not create a billing reference for a prepaid card" do
+      user_card = create(:user_card, user:, card:, card_kind: "prepaid")
+
+      expect do
+        get reference_date_user_card_path(user_card), params: { year: 2026, month: 3 }
+      end.not_to change(Reference, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
     it "returns the reference date as json" do
       user_card = create(:user_card, user:, card:)
 

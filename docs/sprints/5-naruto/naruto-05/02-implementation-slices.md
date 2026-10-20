@@ -24,6 +24,8 @@ Tests: migration and `UserCard` model/request specs, including an existing-card 
 
 ## Slice 2 — Noncredit transaction engine
 
+Status: core persistence implemented locally on 2026-10-20. Prepaid/debit purchases use purchase month/year, a single installment, no Reference or invoice cash projection, and no debit-bank balance mutation. Direct reference-date requests are rejected for noncredit cards; cross-kind edits fail before creating a target Reference. Focused card/user-card model and request suites passed (167 examples). Fiscal, exchange, import, and read-path integration still need the later slices and final matrix; this is not manual-test readiness.
+
 - Branch transaction period calculation: credit uses reference month/year; prepaid/debit use purchase month/year. Guard every direct reference helper call and the direct reference-date endpoint. Preserve existing credit date/billing calculations.
 - Keep one `CardInstallment` for each noncredit purchase. Future-dated purchases start unpaid and require explicit confirmation later; today/past purchases use the existing date-based default. Reject additional nested installments on create/update; do not rely on the form count. Ensure noncredit installments skip `CashTransactable` projection callbacks and keep `cash_transaction_id` null. Do not delete credit projections.
 - Revisit card-switch, duplicate, subscription, advance, split-purchase, fiscal import/draft, exchange/card-bound, context-clone, import, and background paths. Where conversion would corrupt linked history, return a clear validation error rather than partially changing records. Recalculate only the totals that apply to noncredit card spending.

@@ -69,6 +69,8 @@ class UserCardsController < ApplicationController
   end
 
   def reference_date
+    return head :unprocessable_content unless @user_card.credit?
+
     date = Date.new(params[:year].to_i, params[:month].to_i)
     reference = @user_card.references.find_by(context: current_context, year: params[:year].to_i, month: params[:month].to_i)
     reference ||= @user_card.find_or_create_reference_for(date, context: current_context)

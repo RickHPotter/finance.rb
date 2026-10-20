@@ -16,6 +16,7 @@ class CardInstallment < Installment
 
   # @validations ..............................................................
   validates :card_installments_count, presence: true
+  validate :validate_noncredit_sibling_installments
 
   # @callbacks ................................................................
   before_validation :set_installment_type, :set_paid, on: :create
@@ -84,6 +85,10 @@ class CardInstallment < Installment
 
   protected
 
+  def skip_cash_transaction_projection?
+    user_card&.prepaid? || user_card&.debit?
+  end
+
   # Generates a `category_transactions` for the associated `cash_transaction` that mounts up the card invoice.
   #
   # @return [Hash] The generated attributes.
@@ -111,6 +116,13 @@ class CardInstallment < Installment
   # @private_instance_methods .................................................
 
   private
+
+  def validate_noncredit_sibling_installments
+    return if user_card&.credit? || user_card.blank?
+    return if number.to_i == 1 && (card_transaction_id.blank? || !card_transaction.card_installments.where.not(id:).exists?)
+
+    errors.add(:base, :noncredit_single_installment)
+  end
 
   def set_installment_type
     self.installment_type = :CardInstallment

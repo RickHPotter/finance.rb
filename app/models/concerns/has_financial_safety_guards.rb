@@ -102,6 +102,8 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
   end
 
   def card_paid_invoice_cycle_rewrite_attempted?
+    return false unless user_card&.credit?
+
     installments.any? do |installment|
       next false unless installment.persisted? && installment.changed?
       next false unless card_installment_projection_target_changed?(installment)
