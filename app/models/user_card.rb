@@ -11,9 +11,12 @@ class UserCard < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :current_closing_date, :current_due_date
 
+  enum :card_kind, { credit: "credit", prepaid: "prepaid", debit: "debit" }, default: :credit, validate: true
+
   # @relationships ............................................................
   belongs_to :user
   belongs_to :card
+  belongs_to :user_bank_account, optional: true
 
   has_many :card_transactions
   has_many :card_installments, through: :card_transactions
@@ -26,12 +29,18 @@ class UserCard < ApplicationRecord
   has_many :references, dependent: :destroy
 
   # @validations ..............................................................
-  validates :user_card_name, :due_date_day, :days_until_due_date, :min_spend, :credit_limit, presence: true
+  validates :user_card_name, presence: true
+  validates :due_date_day, :days_until_due_date, :min_spend, :credit_limit, presence: true, if: :credit?
+  validates :user_bank_account, presence: true, if: :debit?
+  validates :user_bank_account, absence: true, unless: :debit?
   validates :user_card_name, uniqueness: { scope: %i[user_id card_id] }
+  validate :bank_account_belongs_to_user
+  validate :prevent_used_card_kind_change, on: :update
 
   # @callbacks ................................................................
   before_validation :set_user_card_name, on: :create
-  after_update :update_references_and_payments, if: :payment_date_settings_changed?
+  before_validation :clear_credit_only_fields, unless: :credit?
+  after_update :update_references_and_payments, if: -> { credit? && payment_date_settings_changed? }
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -59,6 +68,8 @@ class UserCard < ApplicationRecord
   end
 
   def find_or_create_reference_for(date, context: user.main_context)
+    raise ArgumentError, "Billing references require a credit card" unless credit?
+
     reference_date = calculate_reference_date(date)
     reference = references.find_by(context:, month: reference_date.month, year: reference_date.year)
     return reference if reference.present?
@@ -73,6 +84,8 @@ class UserCard < ApplicationRecord
   end
 
   def calculate_reference_date(transaction_date)
+    raise ArgumentError, "Billing dates require a credit card" unless credit?
+
     due_date = transaction_date.change(day: due_date_day)
     due_date += 1.month if transaction_date >= due_date
     closing_date = due_date - days_until_due_date.days
@@ -94,6 +107,26 @@ class UserCard < ApplicationRecord
   #
   def set_user_card_name
     self.user_card_name ||= card.card_name
+  end
+
+  def clear_credit_only_fields
+    self.due_date_day = nil
+    self.days_until_due_date = nil
+    self.min_spend = nil
+    self.credit_limit = nil
+  end
+
+  def bank_account_belongs_to_user
+    return if user_bank_account.blank? || user_bank_account.user_id == user_id
+
+    errors.add(:user_bank_account, :invalid)
+  end
+
+  def prevent_used_card_kind_change
+    return unless will_save_change_to_card_kind?
+    return unless card_transactions.exists? || references.exists?
+
+    errors.add(:card_kind, :cannot_change_after_use)
   end
 
   # @private_instance_methods .................................................
@@ -163,21 +196,28 @@ end
 #
 #  id                      :bigint           not null, primary key
 #  active                  :boolean          default(TRUE), not null
+#  card_kind               :string           default("credit"), not null
 #  card_transactions_count :integer          default(0), not null
 #  card_transactions_total :integer          default(0), not null
-#  credit_limit            :integer          not null
-#  days_until_due_date     :integer          not null
-#  due_date_day            :integer          default(1), not null
-#  min_spend               :integer          not null
+#  credit_limit            :integer
+#  days_until_due_date     :integer
+#  due_date_day            :integer
+#  min_spend               :integer
 #  user_card_name          :string           not null, uniquely indexed => [user_id, card_id]
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
 #  card_id                 :bigint           not null, indexed, uniquely indexed => [user_id, user_card_name]
+#  user_bank_account_id    :bigint           indexed
 #  user_id                 :bigint           not null, uniquely indexed => [card_id, user_card_name], indexed
 #
 # Indexes
 #
-#  index_user_cards_on_card_id           (card_id)
-#  index_user_cards_on_on_composite_key  (user_id,card_id,user_card_name) UNIQUE
-#  index_user_cards_on_user_id           (user_id)
+#  index_user_cards_on_card_id               (card_id)
+#  index_user_cards_on_on_composite_key      (user_id,card_id,user_card_name) UNIQUE
+#  index_user_cards_on_user_bank_account_id  (user_bank_account_id)
+#  index_user_cards_on_user_id               (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
 #

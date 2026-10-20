@@ -166,8 +166,8 @@ class UserCardsController < ApplicationController
 
     ret_params.permit(
       :user_card_name, :due_date_day, :days_until_due_date, :min_spend, :credit_limit, :active, :user_id, :card_id,
-      :current_closing_date, :current_due_date
-    )
+      :current_closing_date, :current_due_date, :card_kind, :user_bank_account_id
+    ).merge(user_id: current_user.id)
   end
 
   def search_params

@@ -8,6 +8,8 @@ en:
       user_card:
         id: ID
         user_card_name: User Card Name
+        card_kind: Card Type
+        user_bank_account: Bank Account
         days_until_due_date: Days Until Due Date
         current_closing_date: Closing Date
         current_due_date: Due Date
@@ -26,6 +28,12 @@ en:
         statuses:
           active: Active
           inactive: Inactive
+    errors:
+      models:
+        user_card:
+          attributes:
+            card_kind:
+              cannot_change_after_use: cannot change after the card has transactions or billing references
 
 pt-BR:
   activerecord:
@@ -37,6 +45,8 @@ pt-BR:
       user_card:
         id: ID
         user_card_name: Nome do Cartão
+        card_kind: Tipo de Cartão
+        user_bank_account: Conta Bancária
         days_until_due_date: Dias Até o Vencimento
         current_closing_date: Data de Fechamento
         current_due_date: Data de Vencimento
@@ -55,3 +65,9 @@ pt-BR:
         statuses:
           active: Ativo
           inactive: Inativo
+    errors:
+      models:
+        user_card:
+          attributes:
+            card_kind:
+              cannot_change_after_use: não pode ser alterado após o cartão ter movimentações ou faturas
