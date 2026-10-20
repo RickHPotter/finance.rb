@@ -307,6 +307,8 @@ Explicitly out of scope:
 
 ### NARUTO-05: Add pre-paid and debit card support
 
+Status: planning (contract refreshed 2026-10-19); implementation and manual testing have not started.
+
 Goal: introduce a `card_kind` enum on `UserCard` so not every card is assumed to be a
 credit card with a billing cycle. This covers VA (Vale Alimentação) and VR (Vale
 Refeição) benefit cards, debit cards, gift cards, transport cards, and any pre-loaded
@@ -324,17 +326,25 @@ Locked V1 direction:
   `credit` with no data migration required
 - `days_until_due_date`, `due_date_day`, and `credit_limit` become nullable; validated
   as required only `if: :credit?`
+- `min_spend` is also credit-only: nullable and nil for prepaid/debit, required for credit
 - `find_or_create_reference_for` and `calculate_reference_date` are guarded with
   `if: credit?`; all call sites must guard before calling
 - `prepaid` and `debit` cards do not generate `Reference` records or invoice cash
-  transactions; `CardInstallment` records are still created to track payment timing
+  transactions; each purchase has exactly one `CardInstallment` tracking purchase
+  date/month/year, and the invoice-cash projection callbacks must be bypassed
 - add `user_bank_account_id bigint` (nullable, FK referencing `user_bank_accounts`) to
-  `user_cards` for the `debit` variant; this column links the debit card to the bank
-  account it draws from and is used by NARUTO-06
+  `user_cards` for the `debit` variant; require an account owned by the same user for
+  debit, but do not deduct from its balance or create a linked cash transaction in V1
+- block changing a card's kind once it has any transaction or Reference in any
+  context; existing credit cards remain credit and keep their billing history
 - the card form gains a "Card type" selector (Credit / Pre-paid / Debit) that shows or
   hides billing-cycle fields based on selection; debit shows a bank account selector
 - `Audit::Rollback::Adapters::UserCard` is updated to handle `card_kind` without
   breaking existing credit card rollbacks
+
+Future-dated prepaid/debit purchases are planned entries: they start unpaid and need
+explicit confirmation to become paid; passing their date does not auto-complete them.
+Today/past purchases keep the existing date-based paid default.
 
 Coverage:
 
@@ -346,6 +356,7 @@ Coverage:
 References:
 
 - [product and data contract](docs/sprints/5-naruto/naruto-05/01-product-and-data-contract.md)
+- [implementation slices and acceptance matrix](docs/sprints/5-naruto/naruto-05/02-implementation-slices.md)
 
 Explicitly out of scope:
 
@@ -355,9 +366,10 @@ Explicitly out of scope:
 
 ### NARUTO-06: Consolidate card and account balance dashboard
 
-Goal: present a single Balance Dashboard that answers "how much money do I effectively
-have, and how much credit is available?" in one screen, grouping all active credit
-cards, pre-paid cards, and bank accounts under their respective sections.
+Goal: present recorded bank balances, available credit, and pre-paid spending in one
+screen, grouping active credit cards, pre-paid cards, and bank accounts under their
+respective sections. V1 cannot answer exact liquid funds: pre-paid remaining value
+and debit purchases' bank-balance effects are not yet reconciled.
 
 Locked V1 direction:
 
@@ -370,13 +382,15 @@ Locked V1 direction:
 - `UserCard#net_available_credit(context:)`: `credit_limit - used_credit - cofrinho_reserve_cents.to_i`
 - `Logic::BalanceDashboard` presenter assembles all three sections for the current
   context and computes portfolio totals
-- portfolio totals: total net credit available (sum of all credit cards' net available),
-  total bank balance (sum of all active bank account balances), and combined liquid
-  position (clearly labelled; available credit is not owned money)
+- portfolio totals: total net credit available (sum of all credit cards' net available)
+  and recorded bank balance (sum of active bank-account balances); any combined
+  credit-plus-bank indicator must not be called liquid funds or owned money
 - V1 scopes the dashboard to `current_context` only; an all-context aggregate toggle
   is deferred
 - pre-paid cards show spending total only in V1; top-up tracking is deferred until the
   top-up recording convention is defined in NARUTO-05 V2
+- bank balances do not yet incorporate NARUTO-05 debit-card purchases; establish a
+  posting/reconciliation policy before presenting them as an exact liquid position
 - `GET /balance` route, `BalanceController#index`, Phlex view `Views::Balance::Index`
 - the `cofrinho_reserve_cents` field is editable from the user card edit form with a
   currency-masked input
@@ -551,9 +565,10 @@ bulk operations, and verified rollback coverage so salary and subscriptions live
 the same domain without ambiguity. `NARUTO-05` removes the assumption that every card
 is a credit card, cleanly separating pre-paid and debit instruments from billing cycle
 logic and making the data model accurate before the balance dashboard reads it.
-`NARUTO-06` assembles the complete liquid-position picture: credit available, pre-paid
-spending, and bank balances in one context-scoped view with a user-defined cofrinho
-reserve. `NARUTO-07` extends fiscal import to NF-e while investigating the fields and
+`NARUTO-06` assembles a context-scoped overview of credit available, pre-paid
+spending, and recorded bank balances with a user-defined cofrinho reserve; it is not
+an exact liquid-position calculation until top-ups and debit posting are designed.
+`NARUTO-07` extends fiscal import to NF-e while investigating the fields and
 adjustments required for accurate totals. `NARUTO-08` adds OCR-assisted drafts from
 screenshots and photographed documents, including a fallback for damaged cupoms.
 
