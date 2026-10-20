@@ -10,6 +10,7 @@ RSpec.describe "Cash transaction Turbo navigation", type: :feature do
   let(:transaction_date) { 1.month.from_now.to_date }
 
   before do
+    page.driver.browser.manage.window.resize_to(1280, 844)
     bank_account
     category
     entity

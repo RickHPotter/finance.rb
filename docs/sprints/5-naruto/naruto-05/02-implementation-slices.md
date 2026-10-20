@@ -1,6 +1,6 @@
 # NARUTO-05 — Implementation slices and acceptance matrix
 
-The product decisions are locked in the [product contract](01-product-and-data-contract.md). Complete, verify, and commit one slice at a time. This plan is not an implementation status report.
+The product decisions are locked in the [product contract](01-product-and-data-contract.md). Complete, verify, and commit one slice at a time. Status notes below track local implementation and verification, not manual acceptance.
 
 ## Slice 0 — Baseline and dependency map
 
@@ -12,7 +12,7 @@ Done when the baseline specs pass and every creation path is inventoried.
 
 ## Slice 1 — Card kinds and safe schema
 
-Status: implemented locally on 2026-10-20. The migration preserves existing cards as credit, adds the bank-account FK and kind constraint, and makes credit-only fields nullable. Model and request validation covers debit ownership and used-card kind locking. Focused user-card specs passed (35 examples); broader CI remains for final verification.
+Status: implemented and committed on 2026-10-20 (`3082fab7`). The migration preserves existing cards as credit, adds the bank-account FK and kind constraint, and makes credit-only fields nullable. Model and request validation covers debit ownership and used-card kind locking. Focused user-card specs passed (35 examples); broader CI remains for final verification.
 
 - Add the string-backed `card_kind` enum, database default `credit`, value constraint, and nullable owned bank-account FK. Make credit-only fields, including `min_spend`, nullable for noncredit cards.
 - Conditional model validation for credit cycle/limit fields, required owned bank account for debit, and blank association for other kinds. Make `card_kind` immutable after any transaction or reference exists in any context. Keep unused-card edits possible. Avoid a model callback that silently deletes dependency records.
@@ -24,7 +24,7 @@ Tests: migration and `UserCard` model/request specs, including an existing-card 
 
 ## Slice 2 — Noncredit transaction engine
 
-Status: core persistence implemented locally on 2026-10-20. Prepaid/debit purchases use purchase month/year, a single installment, no Reference or invoice cash projection, and no debit-bank balance mutation. Direct reference-date requests are rejected for noncredit cards; cross-kind edits fail before creating a target Reference. Focused card/user-card model and request suites passed (167 examples). Fiscal, exchange, import, and read-path integration still need the later slices and final matrix; this is not manual-test readiness.
+Status: core persistence committed on 2026-10-20 (`7158af85`). Prepaid/debit purchases use purchase month/year, a single installment, no Reference or invoice cash projection, and no debit-bank balance mutation. Direct reference-date requests are rejected for noncredit cards; cross-kind edits fail before creating a target Reference. Focused card/user-card model and request suites passed (167 examples). Fiscal, exchange, import, and read-path integration still need the later slices and final matrix; this is not manual-test readiness.
 
 - Branch transaction period calculation: credit uses reference month/year; prepaid/debit use purchase month/year. Guard every direct reference helper call and the direct reference-date endpoint. Preserve existing credit date/billing calculations.
 - Keep one `CardInstallment` for each noncredit purchase. Future-dated purchases start unpaid and require explicit confirmation later; today/past purchases use the existing date-based default. Reject additional nested installments on create/update; do not rely on the form count. Ensure noncredit installments skip `CashTransactable` projection callbacks and keep `cash_transaction_id` null. Do not delete credit projections.
@@ -37,7 +37,7 @@ Tests: model, request, and service specs for each kind, direct endpoint abuse, 2
 
 ## Slice 3 — Card and purchase UI
 
-Status: implemented locally on 2026-10-20. Localized card-kind selection, conditional credit/debit fields, noncredit card list/show treatment, one-installment purchase forms, and credit-only advance-payment actions are in place. The JavaScript bundle built, 109 focused request/browser examples passed, and Ruby style passed. Light/dark manual review and the broader financial/read-path matrix remain.
+Status: committed on 2026-10-20 (`f16af5cb`). Localized card-kind selection, conditional credit/debit fields, noncredit card list/show treatment, one-installment purchase forms, and credit-only advance-payment actions are in place. The JavaScript bundle built, 109 focused request/browser examples passed, and Ruby style passed. Light/dark manual review and the broader financial/read-path matrix remain.
 
 - Localize kind names and validation messages. Add responsive kind selector and conditional credit/debit fields to card new/edit; keep the new form's default `credit`. Show kind on card index/show; show bank-account association only for debit and a clear spending-only notice for prepaid.
 - Make card transaction new/edit react when card kind/date changes. Noncredit gets a single-installment presentation and purchase period; no billing reference/closing date controls or invisible refresh that calls the reference endpoint. Credit layout and behavior must remain intact.
@@ -48,6 +48,8 @@ Acceptance: all three kinds can be created from desktop/PWA; invalid fields are 
 Tests: feature/request coverage of both layouts, kind switching before save, bank-account selection, one installment, no reference request, localization, and credit UI regression.
 
 ## Slice 4 — Read models, financial safety, and rollback
+
+Status: implemented on 2026-10-20, pending this slice's commit. The report distinguishes purchase period from credit billing period; direct references and card-bound exchanges are rejected for noncredit cards; bank-account deletion, card selection, context cloning, and rollback have targeted safety coverage. Focused checks passed. The full fast suite passed (2,349 examples); after a viewport-contamination fix, the feature suite passed (49 examples), and the operational suite passed sequentially (141 examples). The first combined CI run was red because of the viewport failure and a test-database deadlock caused by overlapping test invocations; final combined CI rerun remains. No manual acceptance is claimed.
 
 - Review user-card totals, card transaction indexes, monthly analysis, charts, reports, filters, search, unpaid-invoice queries, payment actions, and NARUTO-06 input assumptions. Explicitly distinguish recorded prepaid/debit spending from prepaid remaining value or a bank balance. Credit available-limit calculations must filter to credit cards.
 - Extend audit/rollback adapter dependency and preview tests for card kind and bank-account changes, transaction create/update/destroy, and noncredit installment history. Recheck paid-history protection and operation atomicity. Ensure undo of noncredit operations cannot reintroduce a Reference or invoice projection.

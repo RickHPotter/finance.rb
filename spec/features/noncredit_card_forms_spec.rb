@@ -6,8 +6,13 @@ RSpec.describe "Noncredit card forms", type: :feature do
   let(:user) { create(:user, :random) }
 
   before do
+    @original_window_size = page.driver.browser.manage.window.size
     create(:user_bank_account, :random, user:)
     sign_in user
+  end
+
+  after do
+    page.driver.browser.manage.window.resize_to(@original_window_size.width, @original_window_size.height)
   end
 
   it "switches credit fields for prepaid and bank account fields for debit" do

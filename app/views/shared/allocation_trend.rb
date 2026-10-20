@@ -199,7 +199,8 @@ class Views::Shared::AllocationTrend < Views::Base
       income outcome net cash card no_sources error current_account_balance first_recorded latest_recorded no_recorded_balance recorded_on
     ].index_with { |key| translate(key, default: key.to_s.humanize) }
     detail_labels = %i[
-      purchase_date installment_date billing_period closing_date due_date installment paid pending advance generated_payment invoice unavailable view_source
+      purchase_date installment_date billing_period purchase_period closing_date due_date installment paid pending advance generated_payment invoice
+      unavailable view_source
     ].index_with { |key| translate("details.#{key}", default: key.to_s.humanize) }
 
     labels.merge(detail_labels).merge(

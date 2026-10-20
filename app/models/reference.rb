@@ -19,6 +19,7 @@ class Reference < ApplicationRecord
   validates :month, :year, :reference_date, presence: true
   validates :user_card_id, uniqueness: { scope: %i[context_id month year] }
   validates :reference_date, uniqueness: { scope: %i[context_id user_card_id] }
+  validate :credit_card_only
 
   # @callbacks ................................................................
   before_validation :assign_default_context
@@ -39,6 +40,10 @@ class Reference < ApplicationRecord
   # @protected_instance_methods ...............................................
 
   protected
+
+  def credit_card_only
+    errors.add(:user_card, :credit_only) if user_card.present? && !user_card.credit?
+  end
 
   def assign_default_context
     self.context ||= user_card&.user&.ensure_main_context!

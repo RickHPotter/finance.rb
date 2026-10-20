@@ -5,10 +5,19 @@ module NoncreditCardTransaction
 
   included do
     validate :validate_noncredit_installments
+    validate :prevent_noncredit_card_advance
+    validate :card_belongs_to_user
     validate :prevent_cross_kind_card_change, on: :update
   end
 
   private
+
+  def card_period_buildable?
+    return false if user_card_id.nil? || user_card.nil? || imported || cross_kind_card_change?
+    return false if !user_card.credit? && user_card.user_id != user_id
+
+    true
+  end
 
   def update_month_year
     return if destroyed? || subscription_id.present?
@@ -46,6 +55,18 @@ module NoncreditCardTransaction
     return if active_installments.one? && active_installments.first.number.to_i == 1
 
     errors.add(:card_installments, :noncredit_single_installment)
+  end
+
+  def prevent_noncredit_card_advance
+    return if user_card&.credit? || !card_advance_category?
+
+    errors.add(:base, :noncredit_card_advance)
+  end
+
+  def card_belongs_to_user
+    return if user_card.blank? || user_card.credit? || user_card.user_id == user_id
+
+    errors.add(:user_card, :invalid)
   end
 
   def prevent_cross_kind_card_change

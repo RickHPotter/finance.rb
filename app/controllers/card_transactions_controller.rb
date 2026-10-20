@@ -5,6 +5,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   include ReceiptUploadAuthorization
 
   before_action :set_card_transaction, only: %i[show edit update destroy]
+  before_action :validate_selected_user_card, only: %i[new create update]
   before_action :set_card_tabs, except: :index
 
   def index
@@ -281,6 +282,11 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   private
+
+  def validate_selected_user_card
+    user_card_id = params[:user_card_id].presence || params.dig(:card_transaction, :user_card_id).presence
+    current_user.user_cards.find(user_card_id) if user_card_id.present?
+  end
 
   def assign_card_installment_dates
     first_installment = @card_transaction.card_installments.first

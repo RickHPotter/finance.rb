@@ -286,14 +286,22 @@ export default class extends Controller {
     metadata.className = "mt-3 grid gap-2 text-xs sm:grid-cols-2 xl:grid-cols-3"
     metadata.append(
       this.metadataItem("purchase_date", this.formatDate(detail.purchase_date)),
-      this.metadataItem("installment_date", this.formatDate(detail.installment_date)),
-      this.metadataItem("billing_period", this.formatPeriod(detail.billing_period)),
-      this.metadataItem("closing_date", this.optionalDate(detail.invoice?.closing_date)),
-      this.metadataItem("due_date", this.optionalDate(detail.invoice?.due_date)),
+      this.metadataItem("installment_date", this.formatDate(detail.installment_date))
+    )
+    if (detail.billing_period) {
+      metadata.append(
+        this.metadataItem("billing_period", this.formatPeriod(detail.billing_period)),
+        this.metadataItem("closing_date", this.optionalDate(detail.invoice?.closing_date)),
+        this.metadataItem("due_date", this.optionalDate(detail.invoice?.due_date)),
+        this.metadataItem("invoice", this.identityLabel("Reference", detail.invoice?.reference_id)),
+        this.metadataItem("generated_payment", this.identityLabel("CashTransaction", detail.generated_payment?.cash_transaction_id))
+      )
+    } else if (detail.purchase_period) {
+      metadata.append(this.metadataItem("purchase_period", this.formatPeriod(detail.purchase_period)))
+    }
+    metadata.append(
       this.metadataItem("installment", `#${detail.installment_number}`),
-      this.metadataItem(detail.paid ? "paid" : "pending", `#${detail.identity.installment_id}`),
-      this.metadataItem("invoice", this.identityLabel("Reference", detail.invoice?.reference_id)),
-      this.metadataItem("generated_payment", this.identityLabel("CashTransaction", detail.generated_payment?.cash_transaction_id))
+      this.metadataItem(detail.paid ? "paid" : "pending", `#${detail.identity.installment_id}`)
     )
     if (detail.advance?.active) {
       metadata.appendChild(this.metadataItem("advance", this.identityLabel("CashTransaction", detail.advance.cash_transaction_id)))

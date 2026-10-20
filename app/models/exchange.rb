@@ -20,6 +20,7 @@ class Exchange < ApplicationRecord
 
   # @validations ..............................................................
   validates :exchange_type, :number, presence: true
+  validate :card_bound_requires_credit_card
 
   # @callbacks ................................................................
   # @scopes ...................................................................
@@ -88,6 +89,15 @@ class Exchange < ApplicationRecord
   # @private_instance_methods .................................................
 
   private
+
+  def card_bound_requires_credit_card
+    return unless card_bound?
+
+    owner = transactable
+    return unless owner.respond_to?(:user_card) && owner.user_card.present? && !owner.user_card.credit?
+
+    errors.add(:bound_type, :credit_only)
+  end
 
   def preserve_existing_timestamp_for_minute_value?(value)
     persisted? &&

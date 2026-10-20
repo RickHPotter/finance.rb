@@ -134,9 +134,7 @@ class CardTransaction < ApplicationRecord
   # @return [void].
   #
   def build_month_year
-    return if user_card_id.nil?
-    return if imported
-    return if cross_kind_card_change?
+    return unless card_period_buildable?
 
     if user_card&.prepaid? || user_card&.debit?
       assign_noncredit_period
