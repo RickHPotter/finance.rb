@@ -2,7 +2,7 @@
 
 ## Status and intent
 
-Implementation in progress since 2026-10-20. This is the contract for a credit-card-safe V1, not a claim that noncredit card balances work or that manual testing has passed. Track verification in the [slices](02-implementation-slices.md).
+V1 implementation is ready for manual testing as of 2026-10-20. This is the contract for a credit-card-safe V1, not a claim that noncredit card balances work or that manual testing has passed. Track verification in the [slices](02-implementation-slices.md).
 
 An existing `UserCard` is a credit card: buying with it selects a billing `Reference` and `CardInstallment` projects an invoice-like `CashTransaction`. A VA/VR, gift, transport, or debit card has no credit bill. NARUTO-05 adds `credit`, `prepaid`, and `debit` kinds without changing historical credit behavior.
 
