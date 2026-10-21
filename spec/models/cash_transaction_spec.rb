@@ -323,7 +323,9 @@ RSpec.describe CashTransaction, type: :model do
       expect(subject.exchange_return?).to be(true)
     end
 
-    it "requires source exchange transactions to declare a friend notification intent" do
+    it "requires source exchange transactions with a friend entity to declare a notification intent" do
+      friend_user = create(:user, :random)
+      friend_entity = create(:entity, user: subject.user, entity_name: "FRIEND", entity_user: friend_user)
       transaction = build(
         :cash_transaction,
         :random,
@@ -332,9 +334,25 @@ RSpec.describe CashTransaction, type: :model do
         user_bank_account: subject.user_bank_account,
         category_transactions_attributes: [ { category_id: subject.user.built_in_category("EXCHANGE").id } ]
       )
+      transaction.entity_transactions.build(entity: friend_entity, price: transaction.price, is_payer: true)
 
       expect(transaction).not_to be_valid
       expect(transaction.errors[:friend_notification_intent]).to be_present
+    end
+
+    it "allows a source exchange for a non-friend entity without notification intent" do
+      transaction = build(
+        :cash_transaction,
+        :random,
+        user: subject.user,
+        context: subject.user.main_context,
+        user_bank_account: subject.user_bank_account,
+        category_transactions_attributes: [ { category_id: subject.user.built_in_category("EXCHANGE").id } ]
+      )
+      transaction.entity_transactions.build(entity: create(:entity, :random, user: subject.user), price: transaction.price, is_payer: true)
+
+      expect(transaction).to be_valid
+      expect(transaction.errors[:friend_notification_intent]).to be_empty
     end
 
     it "rejects persisted friend notification intent outside source exchange transactions" do

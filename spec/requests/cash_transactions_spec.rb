@@ -53,6 +53,20 @@ RSpec.describe "CashTransactions", type: :request do
   end
 
   describe "[ #new ]" do
+    it "exposes only friend entities for conditional exchange intent visibility" do
+      friend_user = create(:user, :random)
+      friend_entity = create(:entity, user:, entity_name: "FRIEND", entity_user: friend_user)
+      nonfriend_entity = entity
+
+      get new_cash_transaction_path
+
+      document = Nokogiri::HTML.fragment(response.body)
+      form = document.at_css("#transaction_form")
+      friend_ids = JSON.parse(form["data-reactive-form-friend-entity-ids-value"])
+      expect(friend_ids).to include(friend_entity.id)
+      expect(friend_ids).not_to include(nonfriend_entity.id)
+    end
+
     it "renders RubyUI comboboxes and split datetime input for bank account, category, and entity selection" do
       get new_cash_transaction_path
 
@@ -1889,6 +1903,38 @@ RSpec.describe "CashTransactions", type: :request do
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include(CashTransaction.human_attribute_name(:friend_notification_intent))
+    end
+
+    it "creates a source exchange for a non-friend entity without notification intent" do
+      exchange_category = user.built_in_category("EXCHANGE")
+
+      expect do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Local lend request",
+            price: 2_000,
+            date: Date.new(2026, 4, 27),
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            category_transactions_attributes: [ { category_id: exchange_category.id } ],
+            cash_installments_attributes: [
+              { number: 1, date: Date.new(2026, 4, 27), month: 4, year: 2026, price: 2_000, paid: false }
+            ],
+            entity_transactions_attributes: [
+              { entity_id: entity.id, is_payer: true, price: -2_000, price_to_be_returned: -2_000,
+                exchanges_attributes: [
+                  { number: 1, exchange_type: "monetary", bound_type: "standalone", price: -2_000,
+                    date: Date.new(2026, 4, 28), month: 4, year: 2026 }
+                ] }
+            ]
+          }
+        }, headers: turbo_stream_headers
+      end.to change(CashTransaction, :count)
+
+      expect(response).to have_http_status(:see_other)
+      transaction = user.cash_transactions.find_by!(description: "Local lend request")
+      expect(transaction.friend_notification_intent).to be_nil
+      expect(transaction.entity_transactions.first.exchanges.count).to eq(1)
     end
 
     it "passes reimbursement intent through to exchange notifications with the correct payload shape" do
