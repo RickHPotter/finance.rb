@@ -42,6 +42,7 @@ class Views::CashTransactions::Form < Views::Base
                   fiscal_import_pending_draft_id_value: fiscal_receipt_draft&.id,
                   composite_transaction_composite_value: cash_transaction.composite?,
                   reactive_form_type_value: "CashTransaction",
+                  reactive_form_friend_entity_ids_value: current_user.entities.active.where.not(friendship_id: nil).pluck(:id),
                   reactive_form_preserve_installment_prices_value: cash_transaction.persisted?,
                   action: "submit->price-mask#removeMasks submit->attachment-upload#beforeSubmit",
                   attachment_upload_model_name_value: cash_transaction.model_name.param_key,
