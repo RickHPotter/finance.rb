@@ -7,7 +7,12 @@ class Audit::Rollback::Adapters::UserCard < Audit::Rollback::Adapters::RoutingRe
   RECALCULATIONS = %w[user_card_totals reference_payment_dates cash_balance].freeze
 
   def support_issues
-    Card.exists?(id: historical_state["card_id"]) ? [] : [ issue(:missing_routing_catalog, record_type: "Card") ]
+    issues = Card.exists?(id: historical_state["card_id"]) ? [] : [ issue(:missing_routing_catalog, record_type: "Card") ]
+    return issues if historical_state["user_bank_account_id"].blank?
+
+    account = UserBankAccount.find_by(id: historical_state["user_bank_account_id"], user_id: historical_state["user_id"])
+    issues << issue(:missing_routing_catalog, record_type: "UserBankAccount") if account.blank?
+    issues
   end
 
   def recalculations

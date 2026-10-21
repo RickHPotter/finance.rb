@@ -5,7 +5,7 @@ import { _applyMask, _removeMask } from "../utils/mask.js"
 
 // Connects to data-controller="reactive-form"
 export default class extends Controller {
-  static values = { preserveInstallmentPrices: Boolean, quickJump: Boolean, type: String }
+  static values = { preserveInstallmentPrices: Boolean, quickJump: Boolean, type: String, friendEntityIds: Array }
   static targets = [
     "dateInput", "priceInput",
     "closingDateDay", "daysUntilDueDate",
@@ -500,6 +500,7 @@ export default class extends Controller {
 
     wrapper.style.display = "none"
     wrapper.querySelector("input[name*='_destroy']").value = "true"
+    this.syncExchangeIntentVisibility()
   }
 
   // search
@@ -850,7 +851,13 @@ export default class extends Controller {
       return input?.value === exchangeCategoryId && destroyInput?.value !== "true" && wrapper.checkVisibility()
     })
     const splitPurchase = this.element.querySelector("input[name$='[split_purchase]']")?.value === "1"
-    const isExchange = hasExchangeCategory && !splitPurchase
+    const hasFriendEntity = this.entityWrapperTargets.some((wrapper) => {
+      const input = wrapper.querySelector(".entities_entity_id")
+      const destroyInput = wrapper.querySelector("input[name*='_destroy']")
+
+      return this.friendEntityIdsValue.includes(Number(input?.value)) && destroyInput?.value !== "true" && wrapper.checkVisibility()
+    })
+    const isExchange = hasExchangeCategory && hasFriendEntity && !splitPurchase
 
     this.exchangeIntentWrapperTarget.classList.toggle("hidden", !isExchange)
 
@@ -908,6 +915,7 @@ export default class extends Controller {
 
     newWrapper.querySelector(".entities_entity_id").value = value
     newWrapper.querySelectorAll(".entities_entity_name").forEach((element) => { element.textContent = text })
+    this.syncExchangeIntentVisibility()
 
     const avatarImage = document.createElement("img")
     avatarImage.src = this.entityIcons[value]

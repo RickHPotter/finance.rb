@@ -5,6 +5,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   include ReceiptUploadAuthorization
 
   before_action :set_card_transaction, only: %i[show edit update destroy]
+  before_action :validate_selected_user_card, only: %i[new create update]
   before_action :set_card_tabs, except: :index
 
   def index
@@ -96,16 +97,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     @card_transaction.build_month_year if @card_transaction.user_card_id
     prune_exchange_entity_transactions_without_exchanges!
 
-    first_installment = @card_transaction.card_installments.first
-    @card_transaction.card_installments.each_with_index do |ci, index|
-      # next if ci.paid
-
-      ref_date = Date.new(first_installment.year, first_installment.month, 1) + index.months
-
-      ci.date  = @card_transaction.date + index.months
-      ci.year  = ref_date.year
-      ci.month = ref_date.month
-    end
+    assign_card_installment_dates
 
     handle_save
   end
@@ -233,6 +225,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def pay_in_advance
     @user_card = current_user.user_cards.find_by(id: card_transaction_params[:user_card_id])
+    return render_card_advance_failure(I18n.t("card_advance.invalid_payment_window")) unless @user_card&.credit?
+
     payment_window = card_advance_payment_window
     payment_date = parsed_card_advance_date
 
@@ -288,6 +282,23 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   private
+
+  def validate_selected_user_card
+    user_card_id = params[:user_card_id].presence || params.dig(:card_transaction, :user_card_id).presence
+    current_user.user_cards.find(user_card_id) if user_card_id.present?
+  end
+
+  def assign_card_installment_dates
+    first_installment = @card_transaction.card_installments.first
+    @card_transaction.card_installments.each_with_index do |installment, index|
+      installment_date = @card_transaction.date + index.months
+      reference_date = Date.new(first_installment.year, first_installment.month, 1) + index.months if @card_transaction.user_card.credit?
+
+      installment.date = installment_date
+      installment.year = reference_date&.year || installment_date.year
+      installment.month = reference_date&.month || installment_date.month
+    end
+  end
 
   def receipt_upload_param_key
     :card_transaction

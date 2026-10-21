@@ -8,6 +8,8 @@ en:
       models:
         exchange:
           attributes:
+            bound_type:
+              credit_only: "requires a credit card with a billing cycle"
             base:
               paid_history_locked: "Paid history is locked. Edit only future unpaid installments after the latest paid date."
               destroy_locked_after_payment: "Exchanges with mirrored paid history cannot be deleted."
@@ -39,6 +41,8 @@ pt-BR:
       models:
         exchange:
           attributes:
+            bound_type:
+              credit_only: "exige um cartão de crédito com ciclo de fatura"
             base:
               paid_history_locked: "O histórico pago está travado. Edite apenas parcelas futuras e pendentes após a última data paga."
               destroy_locked_after_payment: "Trocas com histórico pago espelhado não podem ser apagadas."

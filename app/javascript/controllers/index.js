@@ -46,6 +46,9 @@ application.register("budget-value-helper", BudgetValueHelperController)
 import CalculatorController from "./calculator_controller"
 application.register("calculator", CalculatorController)
 
+import CardKindFormController from "./card_kind_form_controller"
+application.register("card-kind-form", CardKindFormController)
+
 import CategoryColourPreviewController from "./category_colour_preview_controller"
 application.register("category-colour-preview", CategoryColourPreviewController)
 

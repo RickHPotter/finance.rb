@@ -25,7 +25,7 @@ class Audit::Rollback::Adapters::UserBankAccount < Audit::Rollback::Adapters::Ro
   end
 
   def dependent_types
-    %w[CashTransaction Investment]
+    %w[CashTransaction Investment UserCard]
   end
 
   def routing_foreign_key
@@ -35,7 +35,8 @@ class Audit::Rollback::Adapters::UserBankAccount < Audit::Rollback::Adapters::Ro
   def live_dependent_identities
     [
       *CashTransaction.where(user_bank_account_id: item_id).ids.map { |id| [ "CashTransaction", id ] },
-      *Investment.where(user_bank_account_id: item_id).ids.map { |id| [ "Investment", id ] }
+      *Investment.where(user_bank_account_id: item_id).ids.map { |id| [ "Investment", id ] },
+      *UserCard.where(user_bank_account_id: item_id).ids.map { |id| [ "UserCard", id ] }
     ]
   end
 

@@ -11,6 +11,19 @@ RSpec.describe "UserCards", type: :request do
   before { sign_in user }
 
   describe "[ #index ]" do
+    it "shows prepaid and debit cards without fictional billing dates" do
+      prepaid = create(:user_card, user:, card:, card_kind: "prepaid", user_card_name: "Food")
+      debit = create(:user_card, user:, card:, card_kind: "debit", user_bank_account:, user_card_name: "Debit")
+
+      get user_cards_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Food", "Debit")
+      expect(response.body).not_to include("undefined method")
+      expect(prepaid.reload.due_date_day).to be_nil
+      expect(debit.reload.due_date_day).to be_nil
+    end
+
     it "renders successfully" do
       get user_cards_path
 
@@ -28,6 +41,25 @@ RSpec.describe "UserCards", type: :request do
   end
 
   describe "[ #show ]" do
+    it "shows prepaid spending without a billing reference section" do
+      prepaid = create(:user_card, user:, card:, card_kind: "prepaid")
+
+      get user_card_path(prepaid)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("user_cards.prepaid_spending_only"))
+    end
+
+    it "renders a debit card edit form with its bank account and no billing date error" do
+      debit = create(:user_card, user:, card:, card_kind: "debit", user_bank_account:)
+
+      get edit_user_card_path(debit)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="reactive-form price-mask card-kind-form"')
+      expect(response.body).to include('name="user_card[user_bank_account_id]"')
+    end
+
     it "renders a restorable lazy movement report with context-scoped references and allocations" do
       user_card = create(:user_card, user:, card:)
       scenario_context = create(:context, user:, name: "Scenario Card", source_context: user.main_context)
@@ -230,6 +262,43 @@ RSpec.describe "UserCards", type: :request do
         }, headers: turbo_stream_headers
       end.to change(UserCard, :count).by(1)
     end
+
+    it "creates an inactive prepaid card without credit billing fields" do
+      expect do
+        post user_cards_path, params: {
+          user_card: { user_card_name: "Food card", card_id: card.id, card_kind: "prepaid", active: false, user_id: user.id }
+        }
+      end.to change(UserCard, :count).by(1)
+
+      created_card = UserCard.order(:id).last
+      expect(created_card).to be_prepaid
+      expect(created_card.attributes.values_at("due_date_day", "days_until_due_date", "min_spend", "credit_limit")).to all(be_nil)
+    end
+
+    it "redirects a new active prepaid card to its purchase form" do
+      post user_cards_path, params: {
+        user_card: { user_card_name: "Lunch VA", card_id: card.id, card_kind: "prepaid", active: true }
+      }
+
+      created_card = UserCard.order(:id).last
+      expect(response).to redirect_to(new_card_transaction_path(user_card_id: created_card.id))
+
+      follow_redirect!
+      expect(response).to have_http_status(:success)
+    end
+
+    it "rejects a debit card linked to another user's bank account" do
+      foreign_account = create(:user_bank_account, :random)
+
+      expect do
+        post user_cards_path, params: {
+          user_card: { user_card_name: "Debit card", card_id: card.id, card_kind: "debit", active: false,
+                       user_bank_account_id: foreign_account.id, user_id: foreign_account.user_id }
+        }
+      end.not_to change(UserCard, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
   end
 
   describe "[ #update ]" do
@@ -427,6 +496,16 @@ RSpec.describe "UserCards", type: :request do
   end
 
   describe "[ #reference_date ]" do
+    it "does not create a billing reference for a prepaid card" do
+      user_card = create(:user_card, user:, card:, card_kind: "prepaid")
+
+      expect do
+        get reference_date_user_card_path(user_card), params: { year: 2026, month: 3 }
+      end.not_to change(Reference, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
     it "returns the reference date as json" do
       user_card = create(:user_card, user:, card:)
 

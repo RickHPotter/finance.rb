@@ -69,6 +69,8 @@ class UserCardsController < ApplicationController
   end
 
   def reference_date
+    return head :unprocessable_content unless @user_card.credit?
+
     date = Date.new(params[:year].to_i, params[:month].to_i)
     reference = @user_card.references.find_by(context: current_context, year: params[:year].to_i, month: params[:month].to_i)
     reference ||= @user_card.find_or_create_reference_for(date, context: current_context)
@@ -166,8 +168,8 @@ class UserCardsController < ApplicationController
 
     ret_params.permit(
       :user_card_name, :due_date_day, :days_until_due_date, :min_spend, :credit_limit, :active, :user_id, :card_id,
-      :current_closing_date, :current_due_date
-    )
+      :current_closing_date, :current_due_date, :card_kind, :user_bank_account_id
+    ).merge(user_id: current_user.id)
   end
 
   def search_params

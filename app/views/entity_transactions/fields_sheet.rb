@@ -21,7 +21,7 @@ module Views
         positive = transactable.price.to_i.positive?
         sign = positive ? "-" : "+"
 
-        default_bound_type = submitted_bound_type || inferred_bound_type
+        default_bound_type = noncredit_card? ? :standalone : (submitted_bound_type || inferred_bound_type)
 
         SheetContent(
           side: :middle,
@@ -164,7 +164,7 @@ module Views
                   end
                 end
 
-                if transactable.is_a? CardTransaction
+                if transactable.is_a?(CardTransaction) && transactable.user_card&.credit?
                   div do
                     bold_label(form, :bound_type, "entity_transaction_bound_type_#{form.index}")
 
@@ -453,6 +453,10 @@ module Views
         else
           :card_bound
         end
+      end
+
+      def noncredit_card?
+        transactable.is_a?(CardTransaction) && transactable.user_card.present? && !transactable.user_card.credit?
       end
     end
   end

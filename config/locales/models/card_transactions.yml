@@ -22,8 +22,13 @@ en:
               mixed_exchange_and_piggy_bank_categories: "Exchange and Piggy Bank categories cannot be combined."
               mixed_piggy_bank_categories: "Piggy Bank and Piggy Bank Return cannot be combined."
               piggy_bank_cash_only: "Piggy Bank categories are available only for cash transactions."
+              noncredit_card_advance: "Card bill payments are available only for credit cards."
             price:
               line_items_sum_mismatch: "does not match line items total (difference: %{difference})"
+            card_installments:
+              noncredit_single_installment: "must contain exactly one purchase installment for prepaid and debit cards"
+            user_card:
+              cross_kind_change: "cannot change between credit and prepaid/debit on an existing transaction"
     attributes:
       card_transaction:
         self: Card Transaction
@@ -47,6 +52,7 @@ en:
         month: Month
         year: Year
         reference_month_year: Reference Month/Year
+        purchase_month_year: Purchase Month/Year
         card_installment: Installment
         installments_count: Installments Count
         card_installments_count: Installments Count
@@ -69,6 +75,9 @@ en:
         confirm_payment: Confirm Payment
         duplicate: Duplicate
         card_advance_description: CARD BILL PAYMENT
+  card_transactions:
+    installments_and_invoices: Installments and Invoices
+    purchase_installment: Purchase Installment
 
 pt-BR:
   activerecord:
@@ -94,8 +103,13 @@ pt-BR:
               mixed_exchange_and_piggy_bank_categories: "Categorias de troca e cofrinho não podem ser combinadas."
               mixed_piggy_bank_categories: "Cofrinho e Retorno do Cofrinho não podem ser combinados."
               piggy_bank_cash_only: "Categorias de cofrinho estão disponíveis apenas para movimentações."
+              noncredit_card_advance: "Pagamentos de fatura estão disponíveis apenas para cartões de crédito."
             price:
               line_items_sum_mismatch: "não corresponde ao total dos itens (diferença: %{difference})"
+            card_installments:
+              noncredit_single_installment: "deve conter exatamente uma parcela de compra para cartões pré-pagos e de débito"
+            user_card:
+              cross_kind_change: "não pode mudar entre crédito e pré-pago/débito em uma transação existente"
     attributes:
       card_transaction:
         self: Transação
@@ -119,6 +133,7 @@ pt-BR:
         month: Mês
         year: Ano
         reference_month_year: Referência Mês/Ano
+        purchase_month_year: Mês/Ano da Compra
         card_installment: Parcela
         installments_count: Quantidade de Parcelas
         card_installments_count: Quantidade de Parcelas
@@ -141,3 +156,6 @@ pt-BR:
         confirm_payment: Confirmar Pagamento
         duplicate: Duplicar
         card_advance_description: PAGAMENTO FATURA
+  card_transactions:
+    installments_and_invoices: Parcelas e Faturas
+    purchase_installment: Parcela da Compra
