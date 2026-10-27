@@ -1018,7 +1018,7 @@ CREATE TABLE public.finance_subscriptions (
     context_id bigint NOT NULL,
     subscription_kind character varying DEFAULT 'expense'::character varying NOT NULL,
     main_category_id bigint NOT NULL,
-    CONSTRAINT finance_subscriptions_kind_values CHECK (((subscription_kind)::text = ANY ((ARRAY['expense'::character varying, 'income'::character varying])::text[])))
+    CONSTRAINT finance_subscriptions_kind_values CHECK (((subscription_kind)::text = ANY (ARRAY[('expense'::character varying)::text, ('income'::character varying)::text])))
 );
 
 
