@@ -69,6 +69,8 @@ class UserCardsController < ApplicationController
   end
 
   def reference_date
+    return head :unprocessable_content unless @user_card.credit?
+
     date = Date.new(params[:year].to_i, params[:month].to_i)
     reference = @user_card.references.find_by(context: current_context, year: params[:year].to_i, month: params[:month].to_i)
     reference ||= @user_card.find_or_create_reference_for(date, context: current_context)
@@ -122,7 +124,8 @@ class UserCardsController < ApplicationController
   def build_index_context
     @index_context = {
       search_term: search_params[:search_term],
-      status: Array(filter_params[:status]).compact_blank
+      status: Array(filter_params[:status]).compact_blank,
+      card_kind: filter_params[:card_kind].presence_in(UserCard.card_kinds.keys)
     }
   end
 
@@ -131,6 +134,7 @@ class UserCardsController < ApplicationController
 
     scope = current_user.user_cards.includes(:card).left_outer_joins(:card)
     scope = scope.where(active: status_values) if @index_context[:status].present?
+    scope = scope.where(card_kind: @index_context[:card_kind]) if @index_context[:card_kind].present?
 
     scope = Search::NormalizedText.apply(scope, @index_context[:search_term], "user_cards.user_card_name", "cards.card_name")
 
@@ -164,10 +168,19 @@ class UserCardsController < ApplicationController
       ret_params[:days_until_due_date] = ret_params[:current_due_date] - ret_params[:current_closing_date]
     end
 
-    ret_params.permit(
+    permitted = ret_params.permit(
       :user_card_name, :due_date_day, :days_until_due_date, :min_spend, :credit_limit, :active, :user_id, :card_id,
-      :current_closing_date, :current_due_date
-    )
+      :current_closing_date, :current_due_date, :card_kind, :user_bank_account_id
+    ).merge(user_id: current_user.id)
+    clear_omitted_bank_account(permitted)
+    permitted
+  end
+
+  def clear_omitted_bank_account(permitted)
+    return unless action_name == "update" && @user_card.debit? && permitted[:card_kind].present?
+    return if permitted[:card_kind] == "debit" || permitted.key?(:user_bank_account_id)
+
+    permitted[:user_bank_account_id] = nil
   end
 
   def search_params
@@ -177,6 +190,6 @@ class UserCardsController < ApplicationController
   def filter_params
     return {} if params[:user_card].blank?
 
-    params.require(:user_card).permit(status: [])
+    params.require(:user_card).permit(:card_kind, status: [])
   end
 end

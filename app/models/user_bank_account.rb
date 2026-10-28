@@ -13,6 +13,7 @@ class UserBankAccount < ApplicationRecord
   belongs_to :user
   belongs_to :bank
 
+  has_many :user_cards, dependent: :restrict_with_error
   has_many :cash_transactions, dependent: :destroy
   has_many :investments, dependent: :destroy
 

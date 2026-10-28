@@ -8,7 +8,9 @@ Planning — 2026-09-21. Not yet started.
 
 ## Goal
 
-Present a single **Balance Dashboard** that answers, in real time:
+Present a single **Balance Dashboard** that shows the recorded positions in one place.
+V1 does not calculate exact liquid funds because NARUTO-05 does not record prepaid
+top-ups or post debit purchases to bank-account balances. The longer-term question is:
 
 > *"How much money do I effectively have, and how much of my credit is available?"*
 
@@ -17,10 +19,10 @@ This includes:
 1. **Credit card balances** — for each credit `UserCard`: credit limit, current used
    amount (sum of unpaid installments for the current billing period), cofrinho
    (guaranteed minimum limit / piggy-bank reserve), and net available credit.
-2. **Pre-paid card balances** — current recorded balance (sum of top-ups minus spending).
-   *(No external API; user-recorded only, NARUTO-05 scope.)*
-3. **Bank account / debit balances** — current balance of each `UserBankAccount`
-   (already stored as `user_bank_accounts.balance`).
+2. **Pre-paid card spending** — V1 shows recorded spending only. A remaining balance
+   requires a separately designed top-up convention; NARUTO-05 V1 does not supply one.
+3. **Recorded bank-account balances** — each `UserBankAccount.balance`; these do not
+   yet incorporate NARUTO-05 debit-card spending.
 
 ---
 
@@ -42,7 +44,7 @@ This includes:
 | **Used credit** | Sum of unpaid `CardInstallment.price` for the card's current and future open billing periods |
 | **Cofrinho / piggy reserve** | A user-defined reserve amount set aside inside the credit limit that the user does not intend to spend (guaranteed limit buffer) |
 | **Net available credit** | `credit_limit - used_credit - cofrinho_reserve` |
-| **Pre-paid balance** | Running tally of top-up credits minus spending on a pre-paid card (user-recorded, no bank API) |
+| **Pre-paid spending** | Recorded purchases on a pre-paid card; not a remaining balance |
 | **Bank balance** | `user_bank_accounts.balance` (manually updated or updated via future import) |
 
 ---
@@ -80,19 +82,19 @@ used_credit = user_card.card_installments
 This already maps to the existing `card_installments` data. For performance, a
 `UserCard#used_credit(context:)` instance method wraps this query.
 
-### Pre-paid card balance
+### Pre-paid card spending (V1) and balance (future)
 
-No new column for this sprint. Pre-paid balance is computed as:
+No remaining-balance calculation is valid in V1. Show recorded spending only. A
+future top-up feature may support a balance calculation such as:
 
 ```
 pre-paid balance = (sum of top-up cash_transactions tagged to the card as incoming)
                  - (sum of card_transactions.price on that card)
 ```
 
-This requires a convention: a cash transaction credited to a pre-paid card is recorded
-as a cash transaction on the linked bank account with the pre-paid `UserCard` referenced
-in metadata, OR as a dedicated "top-up" `CardTransaction` with negative price (refund
-direction). The exact convention will be defined in NARUTO-05 and referenced here.
+That formula requires a top-up convention that is **not** defined in NARUTO-05 V1. Do not
+assume a linked bank account or a negative card purchase represents a reload; those
+options need their own accounting and double-counting review before implementation.
 
 For V1: **show spending total only**; top-up tracking is deferred to NARUTO-05 v2.
 
@@ -122,7 +124,7 @@ For V1: **show spending total only**; top-up tracking is deferred to NARUTO-05 v
 ├──────────────────┴──────────────────┴───────────────────┤
 │  Total net credit available: R$ 5 900                   │
 │  Total bank balance:         R$ 11 300                  │
-│  Combined liquid position:   R$ 17 200                  │
+│  Bank + available credit*:   R$ 17 200                  │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -146,11 +148,13 @@ net_available   = credit_limit - used_credit - cofrinho_reserve_cents.to_i
 ```
 total_net_credit   = sum(net_available) for all active credit user_cards
 total_bank_balance = sum(balance) for all active user_bank_accounts
-combined_liquid    = total_net_credit + total_bank_balance
+combined_capacity = total_net_credit + total_bank_balance
 ```
 
-*Note*: `combined_liquid` is an optimistic maximum — it conflates available credit
-(not money you own) with actual cash. The dashboard will label these clearly.
+*Note*: `combined_capacity` is an optional indicator, **not liquid funds**: available
+credit is not owned money, prepaid remaining value is unknown, and recorded bank
+balances have not been reconciled with debit purchases. Label and explain it clearly
+if shown; do not use it for a “money I have” headline.
 
 ---
 
@@ -196,8 +200,8 @@ combined_liquid    = total_net_credit + total_bank_balance
    request time may be slow. Should `used_credit` be stored as a counter cache on
    `user_cards`? Proposal: **compute at request time for V1**; add counter cache if
    profiling reveals a problem.
-3. **Pre-paid balance convention** — see NARUTO-05 open question on top-up recording.
-   This ticket's V1 shows only spending totals, deferring true balance until NARUTO-05
-   defines the top-up recording convention.
+3. **Pre-paid balance convention** — NARUTO-05 V1 deliberately records spending
+   without top-ups. This ticket's V1 shows spending totals only; true remaining
+   balance needs a later, separately reviewed top-up contract.
 4. **Cofrinho name in UI** — use "Reserve" in English, "Cofrinho" in pt-BR as the
    label. Already consistent with existing piggy bank / cofrinho terminology in the app.

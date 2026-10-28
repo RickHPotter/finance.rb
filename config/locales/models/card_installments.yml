@@ -9,6 +9,8 @@ en:
         card_installment:
           attributes:
             base:
+              noncredit_single_installment: "Prepaid and debit purchases must have exactly one installment."
+              noncredit_cash_transaction: "Prepaid and debit purchases cannot be linked to a card invoice."
               paid_history_locked: "This transaction is tied to a paid card invoice and cannot be changed."
               paid_amount_correction_confirmation_required: "This paid card installment amount correction requires explicit confirmation."
               same_cycle_history_correction_confirmation_required: "This paid card installment keeps the same ref month/year and requires explicit confirmation."
@@ -46,6 +48,8 @@ pt-BR:
         card_installment:
           attributes:
             base:
+              noncredit_single_installment: "Compras pré-pagas e de débito devem ter exatamente uma parcela."
+              noncredit_cash_transaction: "Compras pré-pagas e de débito não podem ser vinculadas a uma fatura de cartão."
               paid_history_locked: "Essa transação está vinculada a uma fatura de cartão já paga e não pode ser alterada."
               paid_amount_correction_confirmation_required: "Esta correção de valor em uma parcela de cartão já paga exige confirmação explícita."
               same_cycle_history_correction_confirmation_required: "Esta parcela de cartão paga mantém o mesmo ref mês/ano e exige confirmação explícita."

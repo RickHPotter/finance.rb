@@ -20,11 +20,19 @@ RSpec.describe UserBankAccount, type: :model do
 
     context "( associations )" do
       bt_models = %i[user bank]
-      hm_models = %i[cash_transactions investments]
+      hm_models = %i[cash_transactions investments user_cards]
 
       bt_models.each { |model| it { should belong_to(model) } }
       hm_models.each { |model| it { should have_many(model) } }
     end
+  end
+
+  it "cannot be removed while a debit card points to it" do
+    account = create(:user_bank_account, :random)
+    create(:user_card, :random, user: account.user, card_kind: "debit", user_bank_account: account)
+
+    expect(account.destroy).to be(false)
+    expect(account.errors).to be_present
   end
 end
 

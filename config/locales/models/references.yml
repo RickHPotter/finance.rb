@@ -20,6 +20,8 @@ en:
       models:
         reference:
           attributes:
+            user_card:
+              credit_only: must be a credit card for billing references
             merge_mode:
               reallocation_blocked: cannot reallocate paid, locked, stale, or invalid invoice history
               apply_failed: could not complete the merge; no changes were saved (see the server log for the exact error)
@@ -76,6 +78,8 @@ pt-BR:
       models:
         reference:
           attributes:
+            user_card:
+              credit_only: deve ser um cartão de crédito para referências de fatura
             merge_mode:
               reallocation_blocked: não pode realocar um histórico de faturas pago, bloqueado, desatualizado ou inválido
               apply_failed: não concluiu a mesclagem; nenhuma alteração foi salva (consulte o log do servidor para ver o erro exato)

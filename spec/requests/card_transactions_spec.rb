@@ -65,6 +65,46 @@ RSpec.describe "CardTransactions", type: :request do
   before { sign_in user }
 
   describe "[ #new ]" do
+    it "does not expose another user's card through the purchase form" do
+      foreign_card = create(:user_card, :random, card_kind: "prepaid")
+
+      get new_card_transaction_path(user_card_id: foreign_card.id)
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "renders a prepaid purchase form without a billing reference" do
+      prepaid_card = create(:user_card, user:, card:, card_kind: "prepaid")
+
+      get new_card_transaction_path(user_card_id: prepaid_card.id)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('name="card_installments_count"')
+      expect(response.body).to include("disabled")
+    end
+
+    it "renders a prepaid purchase in the card index and detail page without an invoice action" do
+      prepaid_card = create(:user_card, user:, card:, card_kind: "prepaid")
+      transaction = CardTransaction.new(user:, context: user.main_context, user_card: prepaid_card,
+                                        description: "Planned lunch", date: 1.month.from_now, price: -1000)
+      transaction.card_installments.first.price = -1000
+      transaction.save!
+
+      get card_transactions_path(user_card_id: prepaid_card.id, all_month_years: true)
+      expect(response).to have_http_status(:success)
+
+      get month_year_card_transactions_path, params: {
+        month_year: transaction.date.strftime("%Y%m"), card_transaction: { user_card_id: prepaid_card.id }
+      }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Planned lunch")
+
+      get card_transaction_path(transaction)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("card_transactions.purchase_installment"))
+      expect(response.body).not_to include(I18n.t("card_transactions.installments_and_invoices"))
+    end
+
     it "renders RubyUI comboboxes and split datetime input for user card, category, and entity selection" do
       user_card_one
 
@@ -673,6 +713,50 @@ RSpec.describe "CardTransactions", type: :request do
   end
 
   describe "[ #create ]" do
+    it "creates a prepaid purchase without a billing reference or invoice cash transaction" do
+      prepaid_card = create(:user_card, user:, card:, card_kind: "prepaid", user_card_name: "VA")
+      purchase_date = Time.zone.today
+
+      expect do
+        post card_transactions_path, params: {
+          card_transaction: {
+            user_card_id: prepaid_card.id,
+            date: purchase_date,
+            description: "Lunch",
+            price: -1000,
+            card_installments_attributes: [ { number: 1, date: purchase_date, price: -1000 } ]
+          }
+        }
+      end.to change(CardTransaction, :count).by(1)
+
+      transaction = CardTransaction.order(:id).last
+      expect(transaction.card_installments.count).to eq(1)
+      expect(transaction.card_installments.first.cash_transaction_id).to be_nil
+      expect(prepaid_card.references).to be_empty
+    end
+
+    it "records a debit purchase without deducting from its bank account" do
+      bank_account = create(:user_bank_account, :random, user:, bank:)
+      debit_card = create(:user_card, user:, card:, card_kind: "debit", user_bank_account: bank_account)
+      starting_balance = bank_account.balance
+
+      expect do
+        post card_transactions_path, params: {
+          card_transaction: {
+            user_card_id: debit_card.id,
+            date: Time.zone.today,
+            description: "Groceries",
+            price: -2000,
+            card_installments_attributes: [ { number: 1, date: Time.zone.today, price: -2000 } ]
+          }
+        }
+      end.to change(CardTransaction, :count).by(1)
+
+      expect(bank_account.reload.balance).to eq(starting_balance)
+      expect(debit_card.references).to be_empty
+      expect(debit_card.card_installments.first.cash_transaction_id).to be_nil
+    end
+
     it "returns a regular submission to the selected user card" do
       post card_transactions_path,
            params: card_transaction.params.merge(return_to: card_transactions_path),

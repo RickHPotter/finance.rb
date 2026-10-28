@@ -1,186 +1,61 @@
-# NARUTO-05 — Pre-paid / Debit Card Support: Product and Data Contract
+# NARUTO-05 — Prepaid cards: product and data contract
 
-## Status
+## Scope update
 
-Planning — 2026-09-21. Not yet started.
+Debit is deferred from the user-facing V1: the new-card form offers credit and prepaid only. Existing debit cards remain visible and editable, and their existing backend behavior remains in place for compatibility; direct API/model creation is not disabled. That behavior does not check or deduct the linked bank balance and is not supported as complete debit functionality. Future debit work must establish available-balance checks and deduction/reconciliation. The debit details below describe the retained implementation, not a V1 acceptance requirement.
 
----
+The user has exercised a prepaid purchase and confirmed that it does not change the bank balance. Broader manual acceptance remains outstanding.
 
-## Goal
+## Status and intent
 
-Introduce a `user_card` variant that **does not generate credit-card billing cycles**
-(no `Reference` records, no invoice cash transaction generation). This covers:
+V1 implementation is ready for manual testing as of 2026-10-20. This is the contract for a credit-card-safe V1, not a claim that noncredit card balances work or that manual testing has passed. Track verification in the [slices](02-implementation-slices.md).
 
-- **VA / VR cards** (Vale Alimentação / Vale Refeição): pre-loaded, no bill, no due date.
-- **Debit cards**: spending debits a bank account directly; no billing reference needed.
-- **Other pre-paid cards**: gift cards, transport cards, any card where spending is
-  direct-debit or pre-loaded.
+An existing `UserCard` is a credit card: buying with it selects a billing `Reference` and `CardInstallment` projects an invoice-like `CashTransaction`. A VA/VR, gift, transport, or debit card has no credit bill. NARUTO-05 adds `credit`, `prepaid`, and `debit` kinds without changing historical credit behavior.
 
----
+## Locked V1 decisions
 
-## Non-Goals
-
-- Actual bank account balance deduction (that is a `UserBankAccount.balance` concern,
-  tracked separately in NARUTO-06)
-- Automatic card top-up / reload modelling
-- Foreign currency pre-paid cards
-- Multi-account debit routing
-
----
-
-## Current State
-
-`UserCard` requires `days_until_due_date`, `due_date_day`, and `credit_limit`. All
-three are mandatory. The `find_or_create_reference_for` and `calculate_reference_date`
-methods assume a billing-cycle structure. The rollback adapter (`Audit::Rollback::Adapters::UserCard`)
-and audit concern both exist.
-
-`CardTransaction` requires a `user_card_id`. There is no concept of a "no-bill" card;
-every `UserCard` is assumed to be a credit card with a billing reference.
-
----
-
-## Proposed Data Model Change
-
-Add a `card_kind` string-backed enum column to `user_cards`:
-
-```sql
-ALTER TABLE user_cards
-  ADD COLUMN card_kind varchar NOT NULL DEFAULT 'credit';
-```
-
-Values:
-
-| Value | Meaning |
-|---|---|
-| `credit` | Existing credit card behaviour — billing references, invoices, due dates |
-| `prepaid` | No billing cycle; spending is direct (VA/VR, gift cards, transport) |
-| `debit` | No billing cycle; spending linked to a `user_bank_account` |
-
-### Behavioural differences by kind
-
-| Feature | `credit` | `prepaid` | `debit` |
+| Concern | Credit | Prepaid | Debit |
 |---|---|---|---|
-| Requires `due_date_day` | ✅ Yes | ❌ No (optional / nil) | ❌ No |
-| Requires `days_until_due_date` | ✅ Yes | ❌ No | ❌ No |
-| Requires `credit_limit` | ✅ Yes (spending cap) | ❌ No (balance-based) | ❌ No |
-| Generates `Reference` records | ✅ Yes | ❌ No | ❌ No |
-| Generates invoice cash transaction | ✅ Yes | ❌ No | ❌ No |
-| Can be linked to `UserBankAccount` | — | Optional (for balance tracking) | Required |
-| Appears in consolidated balance | Credit side | Pre-paid side | Debit / bank side |
+| Billing `Reference` and closing/due dates | Existing behavior | None | None |
+| Invoice-like cash projection from an installment | Existing behavior | None | None |
+| Installments per purchase | Existing behavior | Exactly one | Exactly one |
+| Minimum spend | Required as today | Not applicable (`nil`) | Not applicable (`nil`) |
+| Bank account association | None | None in V1 | Required, owned by the same user |
+| Bank balance mutation on purchase | Existing invoice flow | None | None in V1 |
+| Card kind changes once used | Blocked | Blocked | Blocked |
 
-### Nullable billing fields
+“Used” means the card has any `CardTransaction` or `Reference`, including records in another context. A new or unused card may change kind after its target-kind fields validate. Do not silently convert a historical credit card's invoices or delete its references. All existing cards migrate to `credit` without rewriting transactions.
 
-`days_until_due_date`, `due_date_day`, and `credit_limit` are currently `NOT NULL`.
-They must become nullable for non-credit cards:
+The debit bank account is descriptive routing data in this slice, **not** a second posting. Saving a debit purchase creates only the card transaction and its single installment; it does not create a linked ordinary cash transaction or deduct from `UserBankAccount.balance`. Do not label the resulting bank balance as including debit purchases. NARUTO-06 must design the reconciliation/deduction policy before using that association for totals.
 
-```sql
-ALTER TABLE user_cards
-  ALTER COLUMN days_until_due_date DROP NOT NULL,
-  ALTER COLUMN due_date_day DROP NOT NULL,
-  ALTER COLUMN credit_limit DROP NOT NULL;
-```
+`min_spend` is credit-only. A prepaid/debit purchase dated in the future is a planned entry and starts unpaid; one dated today or earlier follows the existing date-based paid default. Passing the future purchase date must **not** silently mark a planned purchase paid: the user confirms it through the existing paid-state action. This avoids treating a forecast as a completed purchase. The one-installment rule applies to planned purchases too.
 
-Or alternatively, keep them NOT NULL with a default of `0` for non-credit cards
-(simpler migration, but semantically inaccurate). Preferred: **nullable**.
+## Data and invariants
 
-### `debit` kind and bank account linkage
+- Add string-backed `user_cards.card_kind`, non-null with database default `credit`, constrained to `credit`, `prepaid`, `debit`. Keep the Ruby enum string-backed. Credit is the default for old rows and for omitted form/API values.
+- Add nullable `user_cards.user_bank_account_id` FK. Require it only for debit; reject a foreign-user account. A prepaid or credit card must not retain a stale bank-account association when switching kind. Check user ownership server-side; the form is not a security boundary.
+- Allow `due_date_day`, `days_until_due_date`, `credit_limit`, and `min_spend` to be null for noncredit cards. Credit still validates them and valid billing-day/range semantics. Preserve actual stored values on old credit cards. Noncredit cards clear these fields to `nil`, never sentinel zeroes; the existing `min_spend` database constraint and model validation must change accordingly.
+- No `Reference` may be created for a noncredit card, including via create, edit, duplication, nested installments, date/user-card refresh, subscription links, exchange/card-bound flows, and internal services. The model's reference/date helpers should reject unsupported use clearly rather than return a misleading billing date. Guard every caller.
+- No noncredit `CardInstallment` may attach to or create the invoice-style `CashTransaction`. Keep `cash_transaction_id` null. The existing `CashTransactable` callbacks must be skipped for noncredit installments, not merely the reference lookup. Do not remove unrelated ordinary cash transactions or weaken paid-history safeguards for credit.
+- A noncredit `CardTransaction` and its one installment use the **purchase date's** month/year as their tracking period, not a credit reference month. Their date and amount remain visible in card index/search/reporting. Document how context and card filters partition them; they must never enter credit invoice totals or credit-limit calculations.
+- Enforce one installment at the model/request boundary, including nested attributes and updates. A disabled UI control is insufficient. A credit transaction can still have its existing multi-installment schedule. Reject switching a transaction between credit and noncredit cards when existing installment, reference, projected-cash, paid-history, or exchange links cannot be migrated safely; do not silently drop linked records.
+- Card-bound exchanges require a credit billing cycle. Reject them on prepaid/debit transactions with a localized validation message; standalone exchanges remain available. The form must not offer a misleading card-bound option for noncredit cards.
+- Audit card-kind and bank-account routing changes. Rollback preview/apply must preserve the kind lock, dependency checks, and recalculation behavior. A rollback must not recreate a noncredit invoice or reference.
 
-Add an optional `user_bank_account_id` FK to `user_cards` for the `debit` variant:
+## UI and API contract
 
-```sql
-ALTER TABLE user_cards
-  ADD COLUMN user_bank_account_id bigint REFERENCES user_bank_accounts(id);
-```
+The new-card form offers localized Credit and Prepaid choices. Credit keeps billing, limit, and existing card-specific fields. Prepaid hides billing and bank-account fields. Existing debit cards retain their bank-account field. Edit/show/index clearly identify kind. Show a truthful “spending recorded; balance/top-ups not tracked yet” treatment for prepaid; do not present spent amount as remaining balance. Credit-only reference dates, unpaid invoices, limit, and payment actions must be hidden or unavailable for noncredit cards, including direct endpoints.
 
-This is used by NARUTO-06 to calculate the consolidated debit balance.
+Card transaction forms accept any active card but adapt to kind. For prepaid/debit, render one installment and no invoice/reference picker, closing date, or billing refresh. Changing card or date updates the visible date/period without calling credit reference helpers. Desktop and PWA must agree. The transaction list remains filterable by card/context and displays the noncredit purchase date and paid state truthfully; a future planned entry must remain visibly unpaid until confirmed, not auto-complete when its date arrives. Existing credit screens retain their current behavior. Server responses for invalid kind/account/installment combinations are localized and actionable.
 
----
+The `UserCardsController#reference_date` endpoint must not create a reference for a noncredit card, even when called directly. Other APIs, background jobs, imports, context cloning, and rollback must observe the same invariant. Never rely solely on hiding an option in the browser.
 
-## Behaviour Changes
+## Scope boundary and follow-on
 
-### Transaction recording
+V1 records spending, not a prepaid purse balance. Top-ups, reloads, refunds against stored value, and an authoritative remaining balance need their own convention in NARUTO-05 V2 or later. Debit bank balance deduction/reconciliation is deferred to NARUTO-06; do not double count a card purchase and a separately entered bank transaction meanwhile. Foreign currencies, multi-account debit routing, and Open Finance remain out of scope.
 
-- For `prepaid` and `debit` cards, `CardTransaction` creation **skips** reference
-  creation (`find_or_create_reference_for` is not called).
-- `CardInstallment` records are still created (installments still track payment timing),
-  but they are not attached to an invoice / `Reference`.
-- The "mark paid" workflow for prepaid/debit installments is simplified: no invoice
-  cash transaction exists to close.
+The NARUTO-06 contract must continue to call this a spending total until a separate top-up contract exists; it cannot infer remaining prepaid value from these purchases alone.
 
-### Validation changes in `UserCard`
+## Acceptance boundary
 
-```ruby
-validates :due_date_day, :days_until_due_date, :credit_limit,
-          presence: true,
-          if: :credit?
-```
-
-### `Reference` creation guard
-
-`find_or_create_reference_for` raises or returns nil for non-credit cards. All call
-sites must guard `if user_card.credit?`.
-
-### Rollback adapter
-
-`Audit::Rollback::Adapters::UserCard` must handle the new `card_kind` field without
-breaking existing credit card rollbacks.
-
----
-
-## UI Direction
-
-### User card form
-
-- Add a "Card type" radio / select: Credit / Pre-paid / Debit.
-- Show/hide billing-cycle fields based on selection.
-- For debit: show bank account selector.
-- For pre-paid: no additional required fields.
-
-### Transaction form
-
-- No change to the user-facing flow; the card selector shows all cards regardless of kind.
-- Backend silently skips reference creation for non-credit cards.
-
-### Index / dashboard
-
-- In the card list, a badge indicates the kind (`credit`, `prepaid`, `debit`).
-- Consolidated balance (NARUTO-06) groups by kind.
-
----
-
-## Implementation Slices
-
-### Slice 1 — Migration and model changes
-- Add `card_kind` column and nullable billing columns migration.
-- Add `user_bank_account_id` FK migration.
-- Update `UserCard` validations with `if: :credit?` guards.
-- Update `find_or_create_reference_for` to no-op for non-credit.
-- Update `calculate_reference_date` similarly.
-
-### Slice 2 — Transaction flow updates
-- Guard reference creation in `CardTransactionsController` / relevant service.
-- Ensure `CardInstallment` creation still works without a reference.
-- Update "mark paid" flow for non-credit cards.
-
-### Slice 3 — Form and UI
-- Card form kind toggle.
-- Conditional billing fields.
-- Debit bank account selector.
-
-### Slice 4 — Rollback adapter and specs
-- Update `Audit::Rollback::Adapters::UserCard`.
-- Model specs for kind-conditional validations.
-- Request specs: create prepaid card, create debit card, create transaction on each.
-
----
-
-## Open Questions
-
-1. **Existing cards**: the migration sets `card_kind DEFAULT 'credit'`, so all
-   existing user cards remain credit cards. No data migration needed.
-2. **VA / VR balance**: pre-paid card balances are not tracked in the app; the user
-   only records spending. Balance tracking is out of scope for this ticket.
-3. **Debit card installments**: does a debit card purchase make sense with N
-   installments? Technically unusual but not blocked. Proposal: allow it but do not
-   enforce single-installment on debit.
+Call NARUTO-05 ready for manual testing only after every slice's focused specs, relevant feature specs, JS build, RuboCop, and CI checks pass, or any environment-only failure is explicitly recorded. Manual test credit regression, prepaid creation and editing, one-installment rejection, no references/invoice projections, dates/paid state, both screen sizes, context/index/report behavior, and rollback. Existing debit records should remain accessible. A local pass is not a claim about HMG or PROD.

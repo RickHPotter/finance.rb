@@ -59,24 +59,19 @@ class Views::Categories::Form < Views::Base
         div(class: "w-full mb-6") do
           bold_label(form, :parent_category_id, "category_parent_category_id")
 
-          div(class: "mt-1") do
+          div(id: "category_parent_category_combobox", class: "combobox-shell plus-icon mt-1") do
+            render Views::Shared::SingleSelectCombobox.new(
+              name: "category[parent_category_id]",
+              options: category.parent? ? [] : parent_category_options,
+              selected_value: category.parent_category_id,
+              placeholder: I18n.t("categories.form.none_parent"),
+              include_blank: true,
+              disabled: category.parent?
+            )
             if category.parent?
-              form.select(
-                :parent_category_id,
-                [],
-                { include_blank: I18n.t("categories.form.none_parent") },
-                { id: "category_parent_category_id", class: "#{input_class_without_icon} px-3 py-2 opacity-60 cursor-not-allowed", disabled: true }
-              )
               p(class: "mt-1 text-xs text-amber-600 dark:text-amber-400 font-medium") do
                 plain I18n.t("categories.form.has_subcategories_hint")
               end
-            else
-              form.select(
-                :parent_category_id,
-                parent_category_options,
-                { include_blank: I18n.t("categories.form.none_parent"), selected: category.parent_category_id },
-                { id: "category_parent_category_id", class: "#{input_class_without_icon} px-3 py-2" }
-              )
             end
           end
         end

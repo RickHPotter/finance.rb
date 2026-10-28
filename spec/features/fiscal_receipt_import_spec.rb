@@ -8,9 +8,14 @@ RSpec.describe "Fiscal receipt import", type: :feature do
   let(:user) { create(:user, :random) }
 
   before do
+    @original_window_size = page.driver.browser.manage.window.size
     page.driver.browser.manage.window.resize_to(390, 844)
     create(:user_bank_account, :random, user:)
     sign_in user
+  end
+
+  after do
+    page.driver.browser.manage.window.resize_to(@original_window_size.width, @original_window_size.height)
   end
 
   it "prefills an unsaved cash split purchase from fiscal XML" do

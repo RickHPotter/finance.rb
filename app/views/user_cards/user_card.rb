@@ -40,6 +40,7 @@ class Views::UserCards::UserCard < Views::Base
                 data: { turbo_frame: "_top", turbo_prefetch: false } do
           brand_and_name
         end
+        kind_badge
       end
 
       div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300") do
@@ -66,18 +67,20 @@ class Views::UserCards::UserCard < Views::Base
       end
 
       div(class: "flex items-center justify-center px-2 py-3 text-lg whitespace-nowrap ml-auto pr-2 border-r border-black dark:border-slate-700") do
-        span(class: "current_closing_date") { I18n.l(Date.current.change(day: user_card.due_date_day) - user_card.days_until_due_date, format: :shorter) }
+        span(class: "current_closing_date") do
+          user_card.credit? ? I18n.l(Date.current.change(day: user_card.due_date_day) - user_card.days_until_due_date, format: :shorter) : "-"
+        end
       end
 
       div(class: "flex items-center justify-center px-2 py-3 text-lg whitespace-nowrap mr-auto") do
         span(class: "current_due_date") do
-          I18n.l(Date.current.change(day: user_card.due_date_day), format: :shorter)
+          user_card.credit? ? I18n.l(Date.current.change(day: user_card.due_date_day), format: :shorter) : "-"
         end
       end
 
       div(class: "flex items-center justify-center px-2 py-3 font-lekton text-lg whitespace-nowrap ml-auto") do
         span do
-          from_cent_based_to_float(user_card.credit_limit, "R$")
+          user_card.credit? ? from_cent_based_to_float(user_card.credit_limit, "R$") : "-"
         end
       end
 
@@ -120,6 +123,7 @@ class Views::UserCards::UserCard < Views::Base
                                                                            data: { turbo_frame: "_top", turbo_prefetch: false })
           end
           status_badge
+          kind_badge
         end
       end
 
@@ -148,24 +152,30 @@ class Views::UserCards::UserCard < Views::Base
           end
         end
 
-        div(class: "grid grid-cols-2 gap-4 my-2") do
-          div(class: "space-y-1") do
-            div(class: "flex items-center space-x-2") do
-              cached_icon :calendar
-              span(class: "text-sm font-medium text-slate-500 dark:text-slate-400") { model_attribute(UserCard, :current_closing_date) }
+        if user_card.credit?
+          div(class: "grid grid-cols-2 gap-4 my-2") do
+            div(class: "space-y-1") do
+              div(class: "flex items-center space-x-2") do
+                cached_icon :calendar
+                span(class: "text-sm font-medium text-slate-500 dark:text-slate-400") { model_attribute(UserCard, :current_closing_date) }
+              end
+
+              div(class: "flex items-center") { span { I18n.l(Date.current.change(day: user_card.due_date_day) - user_card.days_until_due_date, format: :short) } }
             end
 
-            div(class: "flex items-center") { span { I18n.l(Date.current.change(day: user_card.due_date_day) - user_card.days_until_due_date, format: :short) } }
-          end
+            div(class: "space-y-1") do
+              div(class: "flex items-center space-x-2") do
+                cached_icon :calendar
+                span(class: "text-sm font-medium text-slate-500 dark:text-slate-400") { model_attribute(UserCard, :current_due_date) }
+              end
 
-          div(class: "space-y-1") do
-            div(class: "flex items-center space-x-2") do
-              cached_icon :calendar
-              span(class: "text-sm font-medium text-slate-500 dark:text-slate-400") { model_attribute(UserCard, :current_due_date) }
+              div(class: "flex items-center") { span { I18n.l(Date.current.change(day: user_card.due_date_day), format: :short) } }
             end
-
-            div(class: "flex items-center") { span { I18n.l(Date.current.change(day: user_card.due_date_day), format: :short) } }
           end
+        elsif user_card.debit?
+          p(class: "text-sm text-slate-600 dark:text-slate-300") { user_card.user_bank_account&.pretty_label.to_s }
+        else
+          p(class: "text-sm text-slate-600 dark:text-slate-300") { I18n.t("user_cards.prepaid_spending_only") }
         end
 
         div(class: "mt-4 grid grid-cols-1 gap-2 border-t border-slate-200 pt-3 dark:border-slate-700",
@@ -204,6 +214,12 @@ class Views::UserCards::UserCard < Views::Base
 
     span(class: "rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide #{colour}") do
       model_attribute(UserCard, "statuses.#{user_card.active? ? :active : :inactive}")
+    end
+  end
+
+  def kind_badge
+    span(class: "rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-900 dark:bg-sky-900 dark:text-sky-100") do
+      model_attribute(UserCard, "card_kinds.#{user_card.card_kind}")
     end
   end
 end

@@ -28,7 +28,7 @@ class Views::UserCards::Form < Views::Base
         url: form_url,
         id: :form,
         class: "contents text-black dark:text-slate-100",
-        data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" }
+        data: { controller: "reactive-form price-mask card-kind-form", action: "submit->price-mask#removeMasks" }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
         hidden_field_tag :return_to, return_to
@@ -43,8 +43,8 @@ class Views::UserCards::Form < Views::Base
           )
         end
 
-        div(class: "lg:flex lg:gap-2 w-full mb-3") do
-          div(id: "user_card_card_combobox", class: "combobox-shell w-full lg:w-3/12 mb-2 wallet-icon") do
+        div(class: "grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2") do
+          div(id: "user_card_card_combobox", class: "combobox-shell w-full wallet-icon") do
             bold_label(form, :card_id, "user_card_card_id")
 
             render Views::Shared::SingleSelectCombobox.new(
@@ -55,7 +55,34 @@ class Views::UserCards::Form < Views::Base
             )
           end
 
-          div(class: "w-full lg:w-3/12 mb-2") do
+          div(class: "combobox-shell w-full status-icon", data: { card_kind_form_target: "kind" }) do
+            bold_label(form, :card_kind)
+            render Views::Shared::SingleSelectCombobox.new(
+              name: "user_card[card_kind]",
+              options: available_card_kinds.map { |kind| [ model_attribute(UserCard, "card_kinds.#{kind}"), kind ] },
+              selected_value: user_card.card_kind,
+              placeholder: model_attribute(UserCard, :card_kind),
+              disabled: user_card.persisted? && (user_card.card_transactions.exists? || user_card.references.exists?),
+              input_data: { action: "change->ruby-ui--combobox#inputChanged change->card-kind-form#change" }
+            )
+          end
+        end
+
+        div(class: "grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2") do
+          div(class: "combobox-shell bank-icon #{'hidden' unless user_card.debit?}", data: { card_kind_form_target: "debitField bankAccount" }) do
+            bold_label(form, :user_bank_account)
+            render Views::Shared::SingleSelectCombobox.new(
+              name: "user_card[user_bank_account_id]",
+              options: current_user.user_bank_accounts.order(:user_bank_account_name).map { |account| [ account.pretty_label, account.id ] },
+              selected_value: user_card.user_bank_account_id,
+              placeholder: model_attribute(UserCard, :select_bank_account),
+              include_blank: true
+            )
+          end
+        end
+
+        div(class: "grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2 lg:grid-cols-4") do
+          div(class: ("hidden" unless user_card.credit?).to_s, data: { card_kind_form_target: "creditField" }) do
             bold_label(form, :current_closing_date)
 
             TextField(
@@ -63,11 +90,11 @@ class Views::UserCards::Form < Views::Base
               type: :date, svg: :calendar, class: "font-graduate",
               min: (Date.current.prev_month.beginning_of_month - 15.days).strftime("%Y-%m-%d"),
               max: (Date.current.next_month.end_of_month + 15.days).strftime("%Y-%m-%d"),
-              value: user_card.new_record? ? Date.current : user_card.calculate_reference_date(Date.current) - user_card.days_until_due_date
+              value: user_card.new_record? || !user_card.credit? ? Date.current : user_card.calculate_reference_date(Date.current) - user_card.days_until_due_date
             )
           end
 
-          div(class: "w-full lg:w-3/12 mb-2") do
+          div(class: ("hidden" unless user_card.credit?).to_s, data: { card_kind_form_target: "creditField" }) do
             bold_label(form, :current_due_date)
 
             TextField(
@@ -75,11 +102,11 @@ class Views::UserCards::Form < Views::Base
               type: :date, svg: :calendar, class: "font-graduate",
               min: (Date.current.prev_month.beginning_of_month - 15.days).strftime("%Y-%m-%d"),
               max: (Date.current.next_month.end_of_month + 15.days).strftime("%Y-%m-%d"),
-              value: user_card.new_record? ? Date.current + 7.days : user_card.calculate_reference_date(Date.current)
+              value: user_card.new_record? || !user_card.credit? ? Date.current + 7.days : user_card.calculate_reference_date(Date.current)
             )
           end
 
-          div(class: "w-full lg:w-2/12 mb-2") do
+          div(class: ("hidden" unless user_card.credit?).to_s, data: { card_kind_form_target: "creditField" }) do
             bold_label(form, :min_spend)
             TextField(
               form, :min_spend,
@@ -88,7 +115,7 @@ class Views::UserCards::Form < Views::Base
             )
           end
 
-          div(class: "w-full lg:w-2/12 mb-2") do
+          div(class: ("hidden" unless user_card.credit?).to_s, data: { card_kind_form_target: "creditField" }) do
             bold_label(form, :credit_limit)
 
             TextField(
@@ -184,6 +211,12 @@ class Views::UserCards::Form < Views::Base
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
       end
     end
+  end
+
+  def available_card_kinds
+    kinds = %w[credit prepaid]
+    kinds << "debit" if user_card.persisted? && user_card.debit?
+    kinds
   end
 
   def reference_return_options

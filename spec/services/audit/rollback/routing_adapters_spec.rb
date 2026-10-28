@@ -46,6 +46,50 @@ RSpec.describe "Audit rollback routing adapters" do
     expect(account.reload.user_bank_account_name).to eq(original_name)
   end
 
+  it "restores an unused card's kind and debit bank-account link" do
+    user_card = PaperTrail.request(enabled: false) { create(:user_card, :random, user:, card_kind: "prepaid") }
+    account = PaperTrail.request(enabled: false) { create(:user_bank_account, :random, user:) }
+    operation = audited_operation { user_card.update!(card_kind: "debit", user_bank_account: account) }
+
+    preview, result = apply(operation)
+
+    expect(preview).to have_attributes(state: "previewable")
+    expect(result).to have_attributes(status: "applied")
+    expect(user_card.reload).to be_prepaid
+    expect(user_card.user_bank_account_id).to be_nil
+  end
+
+  it "conflicts before removing a bank account referenced by a debit card" do
+    account = nil
+    operation = audited_operation { account = create(:user_bank_account, :random, user:) }
+    PaperTrail.request(enabled: false) do
+      create(:user_card, :random, user:, card_kind: "debit", user_bank_account: account)
+    end
+
+    preview = Audit::Rollback::Preview.new(operation:, actor: admin)
+
+    expect(preview).to have_attributes(state: "conflicted")
+    expect(preview.rows.find { |row| row.record_type == "UserBankAccount" }.conflicts.map(&:code)).to include("later_dependencies")
+  end
+
+  it "undoes a prepaid purchase without creating an invoice or billing reference" do
+    user_card = PaperTrail.request(enabled: false) { create(:user_card, :random, user:, card_kind: "prepaid") }
+    transaction = nil
+    operation = audited_operation do
+      transaction = CardTransaction.new(user:, context:, user_card:, description: "Planned VA lunch", date: Time.zone.tomorrow, price: -1000)
+      transaction.card_installments.first.price = -1000
+      transaction.save!
+    end
+
+    preview, result = apply(operation)
+
+    expect(preview).to have_attributes(state: "previewable")
+    expect(result).to have_attributes(status: "applied")
+    expect(CardTransaction).not_to exist(transaction.id)
+    expect(Reference.where(user_card:)).not_to exist
+    expect(CashTransaction.where(user_card:, cash_transaction_type: "CardInstallment")).not_to exist
+  end
+
   it "recreates a destroyed UserCard before its billing references" do
     user_card = PaperTrail.request(enabled: false) { create(:user_card, :random, user:) }
     reference = PaperTrail.request(enabled: false) { create(:reference, user_card:, context:) }

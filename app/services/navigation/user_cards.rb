@@ -6,7 +6,8 @@ module Navigation
       search_term: :scalar,
       user_card: {
         id: :scalar_or_array,
-        status: :scalar_or_array
+        status: :scalar_or_array,
+        card_kind: :scalar
       }
     }.freeze
 

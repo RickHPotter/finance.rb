@@ -44,7 +44,7 @@ class Views::Subscriptions::Form < Views::Base
             )
 
             div(class: "mb-6 grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-2") do
-              div(id: "subscription_main_category_combobox", class: "combobox-shell w-full category-icon") do
+              div(id: "subscription_main_category_combobox", class: "combobox-shell w-full plus-icon") do
                 render Views::Shared::SingleSelectCombobox.new(
                   name: "subscription[main_category_id]",
                   options: main_category_options,

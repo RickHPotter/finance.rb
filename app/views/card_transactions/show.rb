@@ -77,7 +77,8 @@ class Views::CardTransactions::Show < Views::Base
   end
 
   def installments_and_invoices_section
-    section_card("Installments and Invoices") do
+    section_title = card_transaction.user_card.credit? ? "installments_and_invoices" : "purchase_installment"
+    section_card(I18n.t("card_transactions.#{section_title}")) do
       if mobile?
         div(class: "space-y-2") do
           installments.each do |installment|
@@ -85,11 +86,13 @@ class Views::CardTransactions::Show < Views::Base
           end
         end
       else
-        div(class: "grid gap-4 xl:grid-cols-2 xl:items-start") do
+        div(class: "grid gap-4 #{'xl:grid-cols-2' if card_transaction.user_card.credit?} xl:items-start") do
           div(class: "overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700") do
             div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-2xs font-bold uppercase tracking-[0.18em] text-white") do
               span(class: "col-span-2 text-center") { model_attribute(CardInstallment, :number) }
-              span(class: "col-span-3") { model_attribute(CardTransaction, :reference_month_year) }
+              span(class: "col-span-3") do
+                model_attribute(CardTransaction, card_transaction.user_card.credit? ? :reference_month_year : :purchase_month_year)
+              end
               span(class: "col-span-3") { model_attribute(CardInstallment, :date) }
               span(class: "col-span-2 text-center") { model_attribute(CardInstallment, :paid) }
               span(class: "col-span-2 text-right") { model_attribute(CardInstallment, :price) }
@@ -114,7 +117,7 @@ class Views::CardTransactions::Show < Views::Base
                 invoice_row(cash_transaction, index + 1, invoice_cash_transactions.count)
               end
             end
-          else
+          elsif card_transaction.user_card.credit?
             div(class: "space-y-2") do
               empty_state_card
             end
@@ -668,6 +671,8 @@ class Views::CardTransactions::Show < Views::Base
   end
 
   def pay_in_advance_available?
+    return false unless card_transaction.user_card.credit?
+
     return false if card_transaction.card_advance_category?
     return false if invoice_cash_transactions.empty?
 
