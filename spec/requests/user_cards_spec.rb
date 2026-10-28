@@ -11,6 +11,21 @@ RSpec.describe "UserCards", type: :request do
   before { sign_in user }
 
   describe "[ #index ]" do
+    it "filters by card kind while preserving the filter in return links" do
+      credit = create(:user_card, user:, card:, user_card_name: "Credit")
+      prepaid = create(:user_card, user:, card:, card_kind: "prepaid", user_card_name: "Prepaid")
+      debit = create(:user_card, user:, card:, card_kind: "debit", user_bank_account:, user_card_name: "Debit")
+
+      get user_cards_path(user_card: { card_kind: "prepaid" })
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.at_css("#show_user_card_#{prepaid.id}")).to be_present
+      expect(response.parsed_body.at_css("#show_user_card_#{credit.id}")).to be_nil
+      expect(response.parsed_body.at_css("#show_user_card_#{debit.id}")).to be_nil
+      return_to = Rack::Utils.parse_query(URI.parse(response.parsed_body.at_css("#show_user_card_#{prepaid.id}")["href"]).query)["return_to"]
+      expect(Rack::Utils.parse_nested_query(URI.parse(return_to).query)).to include("user_card" => { "card_kind" => "prepaid" })
+    end
+
     it "shows prepaid and debit cards without fictional billing dates" do
       prepaid = create(:user_card, user:, card:, card_kind: "prepaid", user_card_name: "Food")
       debit = create(:user_card, user:, card:, card_kind: "debit", user_bank_account:, user_card_name: "Debit")

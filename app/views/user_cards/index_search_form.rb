@@ -6,12 +6,13 @@ class Views::UserCards::IndexSearchForm < Views::Base
   include TranslateHelper
   include CacheHelper
 
-  attr_reader :index_context, :mobile, :search_term, :status
+  attr_reader :index_context, :mobile, :search_term, :status, :card_kind
 
   def initialize(index_context: {}, mobile: false)
     @index_context = index_context
     @search_term = index_context[:search_term]
     @status = index_context[:status]
+    @card_kind = index_context[:card_kind]
     @mobile = mobile
   end
 
@@ -23,7 +24,7 @@ class Views::UserCards::IndexSearchForm < Views::Base
               class: "w-full",
               data: { controller: "reactive-form" } do
       div(class: "flex items-center gap-2") do
-        div(class: mobile ? "w-full" : "grid flex-1 grid-cols-2 gap-2") do
+        div(class: mobile ? "w-full" : "grid flex-1 grid-cols-3 gap-2") do
           TextFieldTag \
             :search_term,
             svg: :magnifying_glass,
@@ -38,6 +39,7 @@ class Views::UserCards::IndexSearchForm < Views::Base
               name: "user_card[status][]",
               selected_statuses:
             )
+            card_kind_filter
           end
         end
 
@@ -62,6 +64,7 @@ class Views::UserCards::IndexSearchForm < Views::Base
                     name: "user_card[status][]",
                     selected_statuses:
                   )
+                  card_kind_filter
                 end
               end
             end
@@ -74,6 +77,20 @@ class Views::UserCards::IndexSearchForm < Views::Base
   end
 
   private
+
+  def card_kind_filter
+    div(id: "user_cards_kind_filter", class: "combobox-shell status-icon") do
+      render Views::Shared::SingleSelectCombobox.new(
+        name: "user_card[card_kind]",
+        options: UserCard.card_kinds.keys.map { |kind| [ model_attribute(UserCard, "card_kinds.#{kind}"), kind ] },
+        selected_value: card_kind,
+        placeholder: model_attribute(UserCard, :card_kind),
+        include_blank: true,
+        blank_label: I18n.t("actions.all"),
+        input_data: mobile ? {} : { action: "change->ruby-ui--combobox#inputChanged change->reactive-form#submit" }
+      )
+    end
+  end
 
   def selected_statuses
     Array(status).map(&:to_s)

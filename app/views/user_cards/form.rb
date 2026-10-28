@@ -43,20 +43,8 @@ class Views::UserCards::Form < Views::Base
           )
         end
 
-        div(class: "mb-3 w-full lg:w-4/12") do
-          bold_label(form, :card_kind)
-          form.select(
-            :card_kind,
-            UserCard.card_kinds.keys.map { |kind| [ model_attribute(UserCard, "card_kinds.#{kind}"), kind ] },
-            {},
-            class: outdoor_input_class,
-            disabled: user_card.persisted? && (user_card.card_transactions.exists? || user_card.references.exists?),
-            data: { card_kind_form_target: "kind", action: "change->card-kind-form#change" }
-          )
-        end
-
-        div(class: "lg:flex lg:gap-2 w-full mb-3") do
-          div(id: "user_card_card_combobox", class: "combobox-shell w-full lg:w-3/12 mb-2 wallet-icon") do
+        div(class: "grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2") do
+          div(id: "user_card_card_combobox", class: "combobox-shell w-full wallet-icon") do
             bold_label(form, :card_id, "user_card_card_id")
 
             render Views::Shared::SingleSelectCombobox.new(
@@ -67,7 +55,34 @@ class Views::UserCards::Form < Views::Base
             )
           end
 
-          div(class: "w-full lg:w-3/12 mb-2 #{'hidden' unless user_card.credit?}", data: { card_kind_form_target: "creditField" }) do
+          div(class: "combobox-shell w-full status-icon", data: { card_kind_form_target: "kind" }) do
+            bold_label(form, :card_kind)
+            render Views::Shared::SingleSelectCombobox.new(
+              name: "user_card[card_kind]",
+              options: UserCard.card_kinds.keys.map { |kind| [ model_attribute(UserCard, "card_kinds.#{kind}"), kind ] },
+              selected_value: user_card.card_kind,
+              placeholder: model_attribute(UserCard, :card_kind),
+              disabled: user_card.persisted? && (user_card.card_transactions.exists? || user_card.references.exists?),
+              input_data: { action: "change->ruby-ui--combobox#inputChanged change->card-kind-form#change" }
+            )
+          end
+        end
+
+        div(class: "grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2") do
+          div(class: "combobox-shell bank-icon #{'hidden' unless user_card.debit?}", data: { card_kind_form_target: "debitField bankAccount" }) do
+            bold_label(form, :user_bank_account)
+            render Views::Shared::SingleSelectCombobox.new(
+              name: "user_card[user_bank_account_id]",
+              options: current_user.user_bank_accounts.order(:user_bank_account_name).map { |account| [ account.pretty_label, account.id ] },
+              selected_value: user_card.user_bank_account_id,
+              placeholder: model_attribute(UserCard, :select_bank_account),
+              include_blank: true
+            )
+          end
+        end
+
+        div(class: "grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2 lg:grid-cols-4") do
+          div(class: ("hidden" unless user_card.credit?).to_s, data: { card_kind_form_target: "creditField" }) do
             bold_label(form, :current_closing_date)
 
             TextField(
@@ -79,7 +94,7 @@ class Views::UserCards::Form < Views::Base
             )
           end
 
-          div(class: "w-full lg:w-3/12 mb-2 #{'hidden' unless user_card.credit?}", data: { card_kind_form_target: "creditField" }) do
+          div(class: ("hidden" unless user_card.credit?).to_s, data: { card_kind_form_target: "creditField" }) do
             bold_label(form, :current_due_date)
 
             TextField(
@@ -91,7 +106,7 @@ class Views::UserCards::Form < Views::Base
             )
           end
 
-          div(class: "w-full lg:w-2/12 mb-2 #{'hidden' unless user_card.credit?}", data: { card_kind_form_target: "creditField" }) do
+          div(class: ("hidden" unless user_card.credit?).to_s, data: { card_kind_form_target: "creditField" }) do
             bold_label(form, :min_spend)
             TextField(
               form, :min_spend,
@@ -100,7 +115,7 @@ class Views::UserCards::Form < Views::Base
             )
           end
 
-          div(class: "w-full lg:w-2/12 mb-2 #{'hidden' unless user_card.credit?}", data: { card_kind_form_target: "creditField" }) do
+          div(class: ("hidden" unless user_card.credit?).to_s, data: { card_kind_form_target: "creditField" }) do
             bold_label(form, :credit_limit)
 
             TextField(
@@ -109,17 +124,6 @@ class Views::UserCards::Form < Views::Base
               data: { controller: "input-select", price_mask_target: :input, action: "click->input-select#select input->price-mask#applyMask" }
             )
           end
-        end
-
-        div(class: "mb-3 w-full lg:w-4/12 #{'hidden' unless user_card.debit?}", data: { card_kind_form_target: "debitField" }) do
-          bold_label(form, :user_bank_account)
-          form.select(
-            :user_bank_account_id,
-            current_user.user_bank_accounts.order(:user_bank_account_name).map { |account| [ account.pretty_label, account.id ] },
-            { include_blank: model_attribute(UserCard, :select_bank_account) },
-            class: outdoor_input_class,
-            data: { card_kind_form_target: "bankAccount" }
-          )
         end
 
         bold_label(form, :active)

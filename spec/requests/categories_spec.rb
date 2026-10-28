@@ -284,10 +284,10 @@ RSpec.describe "Categories", type: :request do
       get new_category_path
 
       document = response.parsed_body
-      selector = document.at_css("#category_parent_category_id")
+      selector = document.at_css("#category_parent_category_combobox")
 
       expect(selector).to be_present
-      options = selector.css("option").map(&:text)
+      options = selector.css("label").map(&:text)
       expect(options).to include(parent.name)
       expect(options).not_to include(child.name)
     end
@@ -295,7 +295,7 @@ RSpec.describe "Categories", type: :request do
     it "offers subscription family built-ins as parents without offering unrelated built-ins" do
       get new_category_path
 
-      option_ids = response.parsed_body.css("#category_parent_category_id option").pluck("value")
+      option_ids = response.parsed_body.css("#category_parent_category_combobox input[type=radio]").pluck("value")
       expect(option_ids).to include(*user.categories.where(category_name: [ "SUBSCRIPTION", "SALARY", "OTHER", "OTHER INCOME" ]).ids.map(&:to_s))
       expect(option_ids).not_to include(user.categories.find_by!(category_name: "EXCHANGE").id.to_s)
     end
@@ -306,7 +306,7 @@ RSpec.describe "Categories", type: :request do
       get new_category_path(parent_category_id: parent.id)
 
       document = response.parsed_body
-      selected_option = document.at_css("#category_parent_category_id option[selected]")
+      selected_option = document.at_css("#category_parent_category_combobox input[checked]")
 
       expect(selected_option).to be_present
       expect(selected_option["value"]).to eq(parent.id.to_s)
@@ -336,7 +336,7 @@ RSpec.describe "Categories", type: :request do
       get edit_category_path(parent)
 
       document = response.parsed_body
-      selector = document.at_css("#category_parent_category_id[disabled]")
+      selector = document.at_css("#category_parent_category_combobox button[disabled]")
 
       expect(selector).to be_present
       expect(response.body).to include(I18n.t("categories.form.has_subcategories_hint"))

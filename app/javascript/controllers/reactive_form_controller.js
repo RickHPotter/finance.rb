@@ -862,7 +862,11 @@ export default class extends Controller {
     this.exchangeIntentWrapperTarget.classList.toggle("hidden", !isExchange)
 
     if (!isExchange) {
-      this.exchangeIntentInputTarget.value = ""
+      const blank = this.exchangeIntentInputTarget.querySelector("input[value='']")
+      if (blank && !blank.checked) {
+        blank.checked = true
+        blank.dispatchEvent(new Event("change", { bubbles: true }))
+      }
     }
   }
 
@@ -1216,7 +1220,7 @@ export default class extends Controller {
     if (!this.hasExchangeIntentInputTarget) { return null }
     if (!this.hasExchangeIntentWrapperTarget || !this.exchangeIntentWrapperTarget.checkVisibility()) { return null }
 
-    return this.exchangeIntentInputTarget
+    return this.exchangeIntentInputTarget.querySelector("[data-ruby-ui--combobox-target='trigger']")
   }
 
   descriptionLabel() {

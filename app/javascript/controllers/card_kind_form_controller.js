@@ -8,8 +8,9 @@ export default class extends Controller {
   }
 
   change() {
-    const credit = this.kindTarget.value === "credit"
-    const debit = this.kindTarget.value === "debit"
+    const kind = this.kindTarget.querySelector("input:checked")?.value
+    const credit = kind === "credit"
+    const debit = kind === "debit"
 
     this.creditFieldTargets.forEach((field) => {
       field.classList.toggle("hidden", !credit)
@@ -17,6 +18,6 @@ export default class extends Controller {
     })
 
     this.debitFieldTargets.forEach((field) => { field.classList.toggle("hidden", !debit) })
-    this.bankAccountTarget.disabled = !debit
+    this.bankAccountTarget.querySelectorAll("input, button").forEach((input) => { input.disabled = !debit })
   }
 }

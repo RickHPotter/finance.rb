@@ -18,14 +18,16 @@ RSpec.describe "Noncredit card forms", type: :feature do
   it "switches credit fields for prepaid and bank account fields for debit" do
     visit new_user_card_path
 
-    kind = find("select[name='user_card[card_kind]']")
-    kind.select(I18n.t("activerecord.attributes.user_card.card_kinds.prepaid"))
+    kind = find("[data-card-kind-form-target='kind']")
+    kind.find("button").click
+    kind.find("label", text: I18n.t("activerecord.attributes.user_card.card_kinds.prepaid")).click
     expect(page).to have_css("[data-card-kind-form-target='creditField'].hidden", count: 4, visible: :all)
-    expect(page).to have_css("[data-card-kind-form-target='debitField'].hidden", visible: :all)
+    expect(page).to have_css("[data-card-kind-form-target~='debitField'].hidden", visible: :all)
 
-    kind.select(I18n.t("activerecord.attributes.user_card.card_kinds.debit"))
-    expect(page).to have_css("[data-card-kind-form-target='debitField']:not(.hidden)")
-    expect(page).to have_select("user_card[user_bank_account_id]", visible: true)
+    kind.find("button").click
+    kind.find("label", text: I18n.t("activerecord.attributes.user_card.card_kinds.debit")).click
+    expect(page).to have_css("[data-card-kind-form-target~='debitField']:not(.hidden)")
+    expect(page).to have_css("[data-card-kind-form-target~='bankAccount'] button:not([disabled])")
   end
 
   it "keeps a prepaid purchase at one installment on the mobile form" do
@@ -36,5 +38,22 @@ RSpec.describe "Noncredit card forms", type: :feature do
 
     expect(page).to have_field("card_installments_count", with: "1", disabled: true)
     expect(page).to have_css("input[name^='card_transaction[card_installments_attributes]']", visible: :all)
+  end
+
+  it "filters the card list by kind and returns to all cards" do
+    create(:user_card, :random, user:, user_card_name: "Credit card")
+    create(:user_card, :random, user:, card_kind: "prepaid", user_card_name: "Prepaid card")
+    visit user_cards_path
+
+    filter = find("#user_cards_kind_filter")
+    filter.find("button").click
+    filter.find("label", text: I18n.t("activerecord.attributes.user_card.card_kinds.prepaid")).click
+    expect(page).to have_text("Prepaid card")
+    expect(page).to have_no_text("Credit card")
+
+    filter = find("#user_cards_kind_filter")
+    filter.find("button").click
+    filter.find("label", text: I18n.t("actions.all"), exact_text: true).click
+    expect(page).to have_text("Credit card")
   end
 end

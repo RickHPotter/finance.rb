@@ -31,7 +31,7 @@ class Views::CashTransactions::FormControls < Views::Base
   private
 
   def user_bank_account_field
-    div(id: "cash_transaction_user_bank_account_combobox", class: "combobox-shell w-full lg:w-[16%] lg:flex-none mb-3 wallet-icon") do
+    div(id: "cash_transaction_user_bank_account_combobox", class: "combobox-shell w-full lg:w-[13%] lg:flex-none mb-3 wallet-icon") do
       render Views::Shared::SingleSelectCombobox.new(
         name: "cash_transaction[user_bank_account_id]",
         options: user_bank_accounts.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
@@ -182,27 +182,25 @@ class Views::CashTransactions::FormControls < Views::Base
 
   def exchange_intent_field
     div(
-      class: "#{exchange_intent_wrapper_class} mb-3 lg:mb-0 hidden",
+      class: "combobox-shell status-icon #{exchange_intent_wrapper_class} mb-3 lg:mb-0 hidden",
       data: { reactive_form_target: :exchangeIntentWrapper }
     ) do
-      form.select(
-        :friend_notification_intent,
-        [
+      render Views::Shared::SingleSelectCombobox.new(
+        name: "cash_transaction[friend_notification_intent]",
+        options: [
           [ model_attribute(cash_transaction, "friend_notification_intents.loan"), "loan" ],
           [ model_attribute(cash_transaction, "friend_notification_intents.reimbursement"), "reimbursement" ]
         ],
-        {
-          include_blank: true,
-          selected: cash_transaction.effective_friend_notification_intent.presence || params.dig(:cash_transaction, :friend_notification_intent).presence
-        },
-        class: input_class_without_icon,
-        data: { reactive_form_target: :exchangeIntentInput }
+        selected_value: cash_transaction.effective_friend_notification_intent.presence || params.dig(:cash_transaction, :friend_notification_intent).presence,
+        placeholder: model_attribute(cash_transaction, :friend_notification_intent),
+        include_blank: true,
+        combobox_data: { reactive_form_target: :exchangeIntentInput }
       )
     end
   end
 
   def exchange_intent_wrapper_class
-    "w-full lg:w-2/12"
+    "w-full lg:w-[14%] lg:flex-none min-w-0"
   end
 
   def calculate_button_class
