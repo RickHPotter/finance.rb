@@ -302,6 +302,16 @@ RSpec.describe "UserCards", type: :request do
   end
 
   describe "[ #update ]" do
+    it "clears the omitted bank account when an unused debit card becomes prepaid" do
+      user_card = create(:user_card, user:, card:, card_kind: "debit", user_bank_account:, active: false)
+
+      patch user_card_path(user_card), params: { user_card: { card_kind: "prepaid" } }
+
+      expect(response).to have_http_status(:see_other)
+      expect(user_card.reload).to be_prepaid
+      expect(user_card.user_bank_account_id).to be_nil
+    end
+
     it "updates the record" do
       user_card = create(:user_card, user:, card:)
 

@@ -166,10 +166,19 @@ class UserCardsController < ApplicationController
       ret_params[:days_until_due_date] = ret_params[:current_due_date] - ret_params[:current_closing_date]
     end
 
-    ret_params.permit(
+    permitted = ret_params.permit(
       :user_card_name, :due_date_day, :days_until_due_date, :min_spend, :credit_limit, :active, :user_id, :card_id,
       :current_closing_date, :current_due_date, :card_kind, :user_bank_account_id
     ).merge(user_id: current_user.id)
+    clear_omitted_bank_account(permitted)
+    permitted
+  end
+
+  def clear_omitted_bank_account(permitted)
+    return unless action_name == "update" && @user_card.debit? && permitted[:card_kind].present?
+    return if permitted[:card_kind] == "debit" || permitted.key?(:user_bank_account_id)
+
+    permitted[:user_bank_account_id] = nil
   end
 
   def search_params

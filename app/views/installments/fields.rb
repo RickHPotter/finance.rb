@@ -123,7 +123,7 @@ module Views
       end
 
       def locked?
-        installment&.paid? || false
+        installment.persisted? && installment.paid?
       end
 
       def installment_date_data

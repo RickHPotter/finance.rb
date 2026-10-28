@@ -1624,7 +1624,7 @@ CREATE TABLE public.user_cards (
     updated_at timestamp(6) without time zone NOT NULL,
     card_kind character varying DEFAULT 'credit'::character varying NOT NULL,
     user_bank_account_id bigint,
-    CONSTRAINT user_cards_card_kind_values CHECK (((card_kind)::text = ANY ((ARRAY['credit'::character varying, 'prepaid'::character varying, 'debit'::character varying])::text[])))
+    CONSTRAINT user_cards_card_kind_values CHECK (((card_kind)::text = ANY (ARRAY[('credit'::character varying)::text, ('prepaid'::character varying)::text, ('debit'::character varying)::text])))
 );
 
 

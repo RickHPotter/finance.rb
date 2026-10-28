@@ -17,6 +17,7 @@ class CardInstallment < Installment
   # @validations ..............................................................
   validates :card_installments_count, presence: true
   validate :validate_noncredit_sibling_installments
+  validate :validate_noncredit_cash_transaction
 
   # @callbacks ................................................................
   before_validation :set_installment_type, :set_paid, on: :create
@@ -116,6 +117,12 @@ class CardInstallment < Installment
   # @private_instance_methods .................................................
 
   private
+
+  def validate_noncredit_cash_transaction
+    return if user_card.blank? || user_card.credit? || (cash_transaction_id.blank? && cash_transaction.blank?)
+
+    errors.add(:base, :noncredit_cash_transaction)
+  end
 
   def validate_noncredit_sibling_installments
     return if user_card&.credit? || user_card.blank?

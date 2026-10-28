@@ -50,6 +50,16 @@ RSpec.describe "Noncredit card transactions", type: :model do
       expect(transaction).not_to be_valid
       expect(transaction.errors[:card_installments]).to be_present
     end
+
+    it "rejects an invoice link on a #{kind} installment" do
+      transaction = purchase(user_card: noncredit_card(kind), date: Time.zone.today)
+      transaction.save!
+      installment = transaction.card_installments.first
+      installment.cash_transaction = create(:cash_transaction, :random, user:)
+
+      expect(installment).not_to be_valid
+      expect(installment.errors.details[:base]).to include(error: :noncredit_cash_transaction)
+    end
   end
 
   it "rejects switching a persisted credit purchase to prepaid without creating a reference" do
