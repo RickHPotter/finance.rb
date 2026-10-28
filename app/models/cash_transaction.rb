@@ -666,9 +666,13 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def friend_notification_intent_present_for_exchange_category
     return if composite?
-    return unless exchange_category? && friend_notification_intent.blank?
+    return unless exchange_category? && friend_notification_intent.blank? && friend_exchange_entity?
 
     errors.add(:friend_notification_intent, :blank)
+  end
+
+  def friend_exchange_entity?
+    entity_transactions.reject(&:marked_for_destruction?).any? { |entity_transaction| entity_transaction.entity&.friendship_id.present? }
   end
 
   def context_destroying?

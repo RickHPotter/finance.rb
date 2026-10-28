@@ -16,7 +16,8 @@ module FiscalReceipts
 
     def initialize(url)
       @url = URI.parse(url)
-      @payload = URI.decode_www_form(@url.query.to_s).to_h["p"]
+      encoded_payload = @url.query.to_s.match(/\Ap=([^&]+)\z/)&.captures&.first
+      @payload = URI::DEFAULT_PARSER.unescape(encoded_payload) if encoded_payload
       @access_key = AccessKey.new(@payload.to_s.split("|", 2).first)
     rescue URI::InvalidURIError, ArgumentError
       raise Unavailable, I18n.t("fiscal_import.messages.goias_url_required")
@@ -25,7 +26,7 @@ module FiscalReceipts
     def call
       validate_source!
       Net::HTTP.start(HOST, 443, use_ssl: true, open_timeout: 4, read_timeout: 8) do |http|
-        landing, cookies = fetch(http, "#{PATH}?#{URI.encode_www_form(p: @payload)}")
+        landing, cookies = fetch(http, @url.request_uri)
         raise Unavailable, I18n.t("fiscal_import.messages.goias_rejected") unless valid_landing?(landing)
 
         danfe_html, = fetch(http, "#{DETAIL_PATH}?#{URI.encode_www_form(chNFe: @access_key.value)}", cookies:)
@@ -54,10 +55,17 @@ module FiscalReceipts
 
     def validate_source!
       valid_uri = @url.scheme == "https" && @url.host == HOST && @url.port == 443 && @url.path == PATH && @url.userinfo.nil? && @url.fragment.nil?
-      valid_payload = @payload&.match?(/\A\d{44}\|[\d|A-Fa-f]{1,180}\z/)
-      return if valid_uri && valid_payload && @access_key.valid? && @access_key.state_code == "52" && @access_key.model == "65"
+      return if valid_uri && valid_qr_payload? && @access_key.valid? && @access_key.state_code == "52" && @access_key.model == "65"
 
       raise Unavailable, I18n.t("fiscal_import.messages.goias_url_required")
+    end
+
+    def valid_qr_payload?
+      return false if @payload.to_s.bytesize > 1024
+
+      @payload&.match?(/\A\d{44}\|2\|[\d|A-Fa-f]{1,180}\z/) ||
+        @payload&.match?(/\A\d{44}\|3\|[12]\z/) ||
+        @payload&.match?(%r{\A\d{44}\|3\|[12]\|\d{1,2}\|\d+\.\d{2}\|\d\|\d{5,20}\|[A-Za-z\d+/]+={0,2}\z})
     end
 
     def fetch(http, path, cookies: nil)

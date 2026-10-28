@@ -26,4 +26,11 @@ RSpec.describe FiscalReceipts::SourceKey do
 
     expect(described_class.new(url).call).to eq(url)
   end
+
+  it "keeps the encoded version 3 Goiás QR payload intact" do
+    goias_key = "52260301427744000150650010005752241062577988"
+    url = "https://nfeweb.sefaz.go.gov.br/nfeweb/sites/nfce/danfeNFCe?p=#{goias_key}%7C3%7C1%7C24%7C109.95%7C2%7C70596315180%7CAb+/Cd=="
+
+    expect(described_class.new(url).call).to eq(url)
+  end
 end

@@ -2,14 +2,14 @@
 
 ## Status and ownership
 
-**First supported-source slice and persisted receipt inbox implemented; the user reports
-manual cash/card validation complete.** Authorized XML prefill, Goiás NFC-e
+**Supported-source import and persisted receipt inbox complete per user confirmation
+on 2026-10-28.** Authorized XML prefill, Goiás NFC-e
 signed-QR lookup, Paraná NFC-e key/QR lookup, PDF text-source extraction, image/camera
 QR scanning, and the cross-device inbox are implemented.
 The cash/card index pages launch the import modal. It defaults to Goiás, lets the user
 select Paraná, and provides bulk category/entity defaults with per-line-item edits.
 The file picker shows its selected filename and keeps Import file disabled until a
-file is selected. Duplicate-document protection remains a NARUTO-03 bug. NF-e-specific
+file is selected. Duplicate-document protection moved to NARUTO-07. NF-e-specific
 accuracy and adjustment analysis move to NARUTO-07; screenshot/document OCR moves to
 NARUTO-08. Additional state expansion is optional. This workstream
 is distinct from V2 attachment security and deployment hardening. Fiscal data is
@@ -162,8 +162,9 @@ simple transaction. Price-sum and line-item validations continue to apply.
 5. Save only through the normal transaction form after NARUTO-02 validations pass.
    The successfully imported upload is staged as a receipt attachment; a key or QR
    URL alone must not be represented as an attached file.
-6. Detect an already-imported document identifier for the current user/context and
-   warn before creating a duplicate. The exact duplicate policy is an open decision.
+
+Duplicate-document detection is a deferred NARUTO-07 feature, not a condition for
+completing this supported-source flow.
 
 ## Manual-test handoff for the implemented slice
 
@@ -198,22 +199,18 @@ NF-e/NFC-e; model-55 accuracy is not yet verified.
 Image and camera import need a readable QR; PDF import needs selectable text containing
 a supported GO QR URL or PR key in the first three pages. There is no OCR fallback for
 printed item rows, scanned PDFs, or images without a QR. HEIC browser decoding depends
-on support in the user's browser. Duplicate-document warnings remain pending; additional
-state adapters are optional. Lookup can fail if a state's public HTML changes or blocks the
+on support in the user's browser. Duplicate-document warnings are planned in NARUTO-07;
+additional state adapters are optional. Lookup can fail if a state's public HTML changes or blocks the
 query; manual line-item entry remains the fallback.
 
 ## Completion checklist
 
-The user reports manual testing complete for the supported first slice. Remaining
-NARUTO-03 gates and deferred work are:
+The user confirmed the supported V3 flow complete and NARUTO-03 closed on 2026-10-28:
 
-- [x] User manually tested cash/card imports through the supported source and save flows.
-- [ ] Decide the duplicate-document policy and implement a warning/protection scoped
-  to the agreed user/context behavior.
-- [ ] Finish V2 attachment security and durability gates in
-  [the attachment plan](04-v2-development-plan.md), including a healthy homolog
-  deployment and verified storage persistence/backup.
-- [ ] Run focused specs and CI after the remaining NARUTO-03 implementation.
+- [x] User manually tested cash/card imports through the supported source and save flows and confirmed the V3 phase complete.
+- [x] V2 attachment security and durability release checks confirmed complete by the user on 2026-10-28.
+- [x] Move duplicate-document policy and protection to
+  [NARUTO-07](../naruto-07/01-product-and-data-contract.md).
 
 Discount/total-adjustment and model-55 field analysis move to
 [NARUTO-07](../naruto-07/01-product-and-data-contract.md). Printed-text and screenshot
@@ -246,9 +243,8 @@ Goiás signed-QR lookup, Paraná key/QR lookup, PDF text extraction, image/camer
 scanning, and cash/card draft prefill. The import modal is launched from index pages;
 it includes state choice, a non-overflowing custom file picker with filename display,
 disabled-until-selected Import file action, and bulk category/entity defaults. The
-user reports the supported flows manually tested. This plan remains incomplete for
-duplicate protection and the V2 attachment release gates; NF-e/reconciliation and
-OCR are separate NARUTO-07 and NARUTO-08 features.
+user confirmed the supported V3 phase complete on 2026-10-28. Duplicate protection
+and NF-e/reconciliation are NARUTO-07 work; OCR is a separate NARUTO-08 feature.
 
 On desktop and PWA, the index-page import entry is a localized menu for importing now
 or opening saved receipts; the ordinary New Transaction action remains separate. The
@@ -285,9 +281,9 @@ retention after validation failure have focused model/request/feature coverage.
 
 ### Slice 1 — Supported-source discovery and fixtures
 
-Partially complete: the first GO and PR source paths have been investigated and
-implemented, and the support limitations are documented above. Still needed are
-sanitized fixtures and broader failure cases for reliable repeatable coverage.
+The first GO and PR source paths were investigated and implemented, and their support
+limits are documented above. The original discovery checklist remains useful for new
+state adapters and future regression coverage.
 
 - Build a support matrix for XML, PDF/image QR extraction, and manual 44-digit key by
   fiscal model, QR version, state, and consultation endpoint. Verify
@@ -295,14 +291,14 @@ sanitized fixtures and broader failure cases for reliable repeatable coverage.
 - Gather sanitized, non-personal fixtures for successful, malformed, and unsupported
   receipts, including a photographed QR and a key-only
   case. Do not use live taxpayer documents in automated tests.
-- Lock the parser output schema and duplicate identifier. NARUTO-07 analyzes fiscal
-  adjustments and fuller reconciliation behavior.
+- Lock the parser output schema. NARUTO-07 owns the duplicate identifier/policy,
+  fiscal adjustments, and fuller reconciliation behavior.
 
 ### Slice 2 — Safe parsing and retrieval
 
 The initial XML, QR/key, PDF, and image source adapters plus state-specific lookup
-services exist. Remaining verification should cover hostile/malformed input, response
-limits, and lookup failures before treating retrieval as release-hardened.
+services exist. Regression verification for future adapter changes should cover
+hostile/malformed input, response limits, and lookup failures.
 
 - Verify each adapter returns the normalized draft shape with source provenance and
   safe errors; add missing malformed/unsupported-source cases to service specs.
@@ -324,43 +320,39 @@ and card flow manually tested.
 - Acceptance check: unmatched totals remain visible and the existing exact-sum contract
   prevents an invalid transaction from being saved.
 
-### Slice 4 — Duplicate protection and persistence policy
+### Slice 4 — Source evidence and deferred duplicate protection
 
-Partially complete: imported uploaded source files, generated key/QR-only manifests,
-and Goiás consultation snapshots are staged as receipt attachments, including through
-the saved receipt inbox. Duplicate policy and protection are still undecided/unimplemented.
+Imported uploaded source files, generated key/QR-only manifests, and Goiás consultation
+snapshots are staged as receipt attachments, including through the saved receipt inbox.
+Duplicate policy and protection moved to NARUTO-07.
 
-- Define whether fiscal identifiers are stored on the transaction or an import record.
-- Prevent accidental duplicate imports within the agreed user/context scope, while
-  allowing an explicit intentional duplicate if the product decision permits it.
 - Never log remote response bodies. Retain the user's source or a local JSON manifest;
   for Goiás, retain only the verified public DANFE/detail pages and derived JSON as
   private, forced-download evidence. Do not mislabel derived JSON as signed XML.
 
 ### Slice 5 — Verification and rollout
 
-Still open here: duplicate protection and attachment/security edge cases. Manual
-end-to-end testing is reported complete; OCR and richer total adjustment behavior
-are tracked in NARUTO-08 and NARUTO-07 respectively.
+V2 attachment release checks and the supported V3 import flow were confirmed complete
+by the user on 2026-10-28. NARUTO-03 is closed; duplicate protection and richer total
+adjustment behavior are NARUTO-07 work, and OCR is NARUTO-08 work.
 
 - Unit specs for sanitized XML, QR/key, PDF/image, and current cent-precision conversion.
 - Service/request specs for key format/check digit, QR allowlist, malformed URLs,
   redirect attempts, private destinations, timeouts, oversized responses/files,
-  unsupported state formats, CAPTCHA/missing-item fallbacks, and duplicate documents.
+  unsupported state formats, and CAPTCHA/missing-item fallbacks. Duplicate-document
+  coverage belongs to NARUTO-07.
 - Form/request coverage for cash and card draft prefill, optional/blank categories,
   bulk defaults and overrides, edited items, total mismatch, user cancellation, and
   successful normal submission.
 - Retain the user-completed manual source checks as a regression script for future changes.
-- Run focused specs, RuboCop, and `bin/ci`; release only after attachment V2 storage
-  and security gates are also satisfied.
+- Keep focused specs, RuboCop, and `bin/ci` as regression checks for later changes.
 
-## Open decisions before implementation
+## Deferred decisions outside NARUTO-03
 
-1. What duplicate policy should apply when the same fiscal identifier is imported
-   again in the same or another context?
-2. Which additional state formats should be prioritized after GO and PR, based on
+1. Which additional state formats should be prioritized after GO and PR, based on
    official item-bearing consultation paths and feasibility without CAPTCHA or
-   restricted credentials? This is optional expansion, not a NARUTO-03 closure gate.
+   restricted credentials? This is optional expansion. The duplicate policy is now
+   [NARUTO-07](../naruto-07/01-product-and-data-contract.md) work.
 
 OCR coverage and review belong to [NARUTO-08](../naruto-08/01-product-and-data-contract.md).
 Document adjustments and NF-e field accuracy belong to

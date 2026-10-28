@@ -162,25 +162,28 @@ Explicitly out of scope:
 
 ### NARUTO-03: Attach documents and import Brazilian fiscal receipts
 
-Status: attachment support and the first fiscal-import workflow are implemented.
+Status: **closed on 2026-10-28 per user confirmation.** NARUTO-03 V2 attachment
+hardening and the supported V3 fiscal-import flow are complete. Fiscal-document
+duplicate protection was moved to NARUTO-07.
+
 Cash/card index pages open an import modal where authorized XML, Goiás signed QR,
 Paraná NFC-e key/QR, PDF text, or a readable image QR can prefill an unsaved
 transaction with line items. Imported uploads can be retained as transaction receipts;
 category/entity defaults can be applied to all rows and exceptions edited individually.
 Goiás key-only lookup remains unavailable because its public page requires a browser
 challenge. The supported cash/card import flows have been manually exercised. Duplicate
-fiscal-document protection remains a NARUTO-03 bug, and attachment security/deployment
-gates remain open. NF-e support and monetary reconciliation move to NARUTO-07; OCR of
-screenshots and documents moves to NARUTO-08. Broader state coverage is optional; see
+fiscal-document protection, NF-e support, and monetary reconciliation are NARUTO-07
+work; OCR of screenshots and documents moves to NARUTO-08. Broader state coverage is
+optional; see
 the [NARUTO-03 status and plans](docs/sprints/5-naruto/naruto-03/01-product-and-data-contract.md).
 
 Goal: allow any `CashTransaction`, `CardTransaction`, or `LineItem` to carry one or
 more file attachments as documentary evidence, and convert a supported Brazilian cupom
 fiscal into reviewable line items in a cash or card transaction draft.
 
-`ActiveStorage` is configured and its tables already exist. V1 adds model declarations,
+`ActiveStorage` is configured and its tables already exist. V1 added model declarations,
 validators, and cash/card upload and display UI. Attachment security and durable
-production storage require the NARUTO-03 hardening V2 plan below.
+production storage were addressed in the NARUTO-03 V2 plan below.
 
 Locked V1 direction:
 
@@ -196,17 +199,16 @@ Locked V1 direction:
 - rolling back a transaction does not remove its attachments
 - a paperclip icon badge appears on transaction index rows that have attachments
 - expanded transaction detail shows a file list with download links and a delete action
-- V2 now authorizes receipt downloads and direct uploads and identifies deletions by
-  attachment; deployed storage persistence, backup/restore, and remaining security
-  failure cases are release gates before the feature is considered complete
+- V2 authorizes receipt downloads and direct uploads and identifies deletions by
+  attachment; the user confirmed its release checks complete on 2026-10-28
 
 Fiscal document import depends on NARUTO-02's transaction line-item form. The
 `naruto-03-v2` branch implements the first supported paths: uploaded authorized XML,
 Goiás signed QR URL, Paraná NFC-e key/QR, PDF text extraction, and image/camera QR
 scanning. These create a reviewable cash/card draft; a short cupom number alone is not
-a lookup key. Remaining work and exact state/source limitations are tracked in
-`05-v3-brazilian-fiscal-import-plan.md` (the V3 label is the existing document phase,
-not the branch name).
+a lookup key. Source limitations and the completed flow are recorded in
+`05-v3-brazilian-fiscal-import-plan.md` (the V3 label is the completed supported-source
+phase, not the branch name). Duplicate protection moved to NARUTO-07.
 
 Coverage:
 
@@ -218,7 +220,7 @@ References:
 - [product and data contract](docs/sprints/5-naruto/naruto-03/01-product-and-data-contract.md)
 - [implementation slices](docs/sprints/5-naruto/naruto-03/02-implementation-slices.md)
 - [decisions and test matrix](docs/sprints/5-naruto/naruto-03/03-decisions-and-test-matrix.md)
-- [V2 development plan for pending attachment fixes](docs/sprints/5-naruto/naruto-03/04-v2-development-plan.md)
+- [V2 attachment hardening plan](docs/sprints/5-naruto/naruto-03/04-v2-development-plan.md)
 - [V3 Brazilian fiscal import plan](docs/sprints/5-naruto/naruto-03/05-v3-brazilian-fiscal-import-plan.md)
 
 Explicitly out of scope for the current attachment and fiscal-import plan:
@@ -401,8 +403,8 @@ Explicitly out of scope:
 
 ### NARUTO-07: Harden fiscal import for NF-e and monetary accuracy
 
-Status: planned. This extends NARUTO-03's supported NFC-e/cupom import; it does not
-reopen the completed manual-validation gate or absorb the NARUTO-03 duplicate-import bug.
+Status: planned. This extends NARUTO-03's supported NFC-e/cupom import and owns the
+deferred duplicate-document policy and protection. NARUTO-03 remains closed.
 
 Goal: harden the existing basic authorized-XML parser for NF-e (model 55) documents
 and investigate the fiscal fields and document-level adjustments needed to represent
@@ -420,7 +422,11 @@ identify which fields belong on the transaction, each `LineItem`, or provenance-
 metadata; and explain how item totals reconcile with the payable amount. Do not
 silently alter product prices or invent a balancing item. Present any discrepancy for
 review and obtain a product decision on an explicit adjustment representation before
-implementation. Preserve the original document and source/provenance metadata.
+implementation. Preserve the original document and source/provenance metadata. The
+reported Goiás NFC-e case has R$119.95 in products, R$10.00 in discounts, and R$109.95
+payable; the discount must be captured and explained automatically. Define duplicate
+checks for saved drafts and completed cash/card transactions using the fiscal key,
+with a clear policy for intentional repeats and user/context scope.
 
 Coverage: sanitized model-55 XML fixtures, malformed/unauthorized documents, item and
 document totals with discounts/charges, status and date handling, cash/card prefill,
@@ -488,7 +494,7 @@ Batch 3: Independent Enhancements (can start any time, no blockers)
 │   ├── Upload UI: Stimulus attachment-upload-controller, direct upload, browser progress
 │   ├── Display: attachment list, paperclip badge on index rows, delete action
 │   ├── Fiscal import: supported XML/QR sources, saved inbox, cash/card prefill
-│   └── Finish duplicate-import protection and attachment release gates
+│   └── Closed; duplicate-import protection moved to NARUTO-07
 └── NARUTO-04: Subscription Enhancements
     ├── Migration: add subscription_kind and main_category_id to finance_subscriptions
     ├── Built-in: localize/reconcile SALARY/SALARIO; four family parents allow children
@@ -505,7 +511,7 @@ Batch 4: Integration & Reporting (after Batch 2 merges)
 └── Update balance dashboard to reflect debit card transactions correctly (NARUTO-06)
 
 Batch 5: Fiscal Accuracy and Assisted Entry (after NARUTO-03)
-├── NARUTO-07: NF-e model 55 import and fiscal monetary-field analysis
+├── NARUTO-07: NF-e model 55 import, monetary accuracy, and duplicate protection
 │   ├── Analyze source fields, status, and total reconciliation before schema decisions
 │   ├── Extend supplied authorized-XML parsing and reviewable cash/card prefill
 │   └── Test adjustments, provenance, and unresolved differences
