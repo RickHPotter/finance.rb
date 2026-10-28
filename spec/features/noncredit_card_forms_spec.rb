@@ -15,7 +15,7 @@ RSpec.describe "Noncredit card forms", type: :feature do
     page.driver.browser.manage.window.resize_to(@original_window_size.width, @original_window_size.height)
   end
 
-  it "switches credit fields for prepaid and bank account fields for debit" do
+  it "offers credit and prepaid on new cards and hides credit fields for prepaid" do
     visit new_user_card_path
 
     kind = find("[data-card-kind-form-target='kind']")
@@ -24,10 +24,16 @@ RSpec.describe "Noncredit card forms", type: :feature do
     expect(page).to have_css("[data-card-kind-form-target='creditField'].hidden", count: 4, visible: :all)
     expect(page).to have_css("[data-card-kind-form-target~='debitField'].hidden", visible: :all)
 
-    kind.find("button").click
-    kind.find("label", text: I18n.t("activerecord.attributes.user_card.card_kinds.debit")).click
+    expect(kind).to have_no_css("input[value='debit']", visible: :all)
+  end
+
+  it "keeps existing debit cards editable with their bank account" do
+    card = create(:user_card, :random, user:, card_kind: "debit", user_bank_account: user.user_bank_accounts.first)
+    visit edit_user_card_path(card)
+
     expect(page).to have_css("[data-card-kind-form-target~='debitField']:not(.hidden)")
     expect(page).to have_css("[data-card-kind-form-target~='bankAccount'] button:not([disabled])")
+    expect(page).to have_css("input[name='user_card[card_kind]'][value='debit']:checked", visible: :all)
   end
 
   it "keeps a prepaid purchase at one installment on the mobile form" do

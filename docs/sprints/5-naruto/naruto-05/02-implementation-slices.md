@@ -1,5 +1,9 @@
 # NARUTO-05 — Implementation slices and acceptance matrix
 
+## Scope update
+
+Debit is deferred from the user-facing release. New cards offer credit and prepaid only; existing debit records and backend compatibility remain. The debit implementation below is historical context, not a claim of supported bank-balance checking or deduction. The user has exercised prepaid purchase recording successfully; broader manual acceptance remains open. The latest full CI pass predates subsequent UI changes.
+
 The product decisions are locked in the [product contract](01-product-and-data-contract.md). Complete, verify, and commit one slice at a time. Status notes below track local implementation and verification, not manual acceptance.
 
 ## Slice 0 — Baseline and dependency map
@@ -64,7 +68,7 @@ Tests: query/service/report specs, audit adapter specs, cross-context and paid-h
 Status: automated verification complete on 2026-10-20. `yarn build` and the final `bin/ci` run passed: 2,349 fast, 49 feature, 141 operational, and 27 JavaScript tests, plus RuboCop, ERB lint, Bundler Audit, and Brakeman. The first CI attempt had a browser viewport leak and an overlapping-test database deadlock; both were addressed, and the second combined run passed. Manual testing has not yet been performed. The V1 limitations remain prepaid spending-only tracking and deferred debit-bank reconciliation in NARUTO-06.
 
 - Run focused specs, relevant feature specs, `yarn build`, `bin/rubocop -A`, and `bin/ci` according to repository instructions. Fix failures or record genuine external CI blockers without calling the feature tested.
-- Manually create credit, VA/VR prepaid, and debit cards; record a purchase; change date/card and inspect month/year; verify exactly one installment and no noncredit reference/invoice cash row; test direct reference route, invalid/foreign bank account, both locales, PWA, index/report totals, and rollback. Verify old credit card billing and payment again.
+- Manually create credit and VA/VR prepaid cards; record a purchase; change date/card and inspect month/year; verify exactly one installment and no prepaid reference/invoice cash row; test direct reference route, both locales, PWA, index/report totals, and rollback. Verify old credit card billing and payment again and confirm existing debit records remain accessible.
 - Record manual evidence, outstanding limitations, and NARUTO-06 follow-up in this document and `SPRINT_5.md`. Do not claim HMG/PROD validation from local testing.
 
 Ready for manual testing means Slices 1–4 and automated checks are complete. Done means manual acceptance passes and the remaining follow-on work is explicitly separate.

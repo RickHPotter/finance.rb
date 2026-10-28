@@ -305,13 +305,13 @@ Explicitly out of scope:
 - salary split across multiple bank accounts
 - start/end date enforcement or proration
 
-### NARUTO-05: Add pre-paid and debit card support
+### NARUTO-05: Add pre-paid card support
 
-Status: ready for manual testing (2026-10-20). Slices 1–4 are committed and the final `bin/ci` run passed end to end: 2,349 fast, 49 feature, 141 operational, and 27 JavaScript tests; style and security checks passed. Manual credit/prepaid/debit acceptance remains before calling NARUTO-05 done. No HMG/PROD claim.
+Status: prepaid manually exercised; broader manual acceptance remains. Debit is deferred: it is no longer offered when creating cards because purchases do not check or deduct the bank balance. Existing debit records and their backend behavior remain accessible for compatibility; this does not constitute supported debit balance tracking. Full `bin/ci` passed after the financial fixes, before later UI changes. No HMG/PROD claim.
 
 Goal: introduce a `card_kind` enum on `UserCard` so not every card is assumed to be a
 credit card with a billing cycle. This covers VA (Vale Alimentação) and VR (Vale
-Refeição) benefit cards, debit cards, gift cards, transport cards, and any pre-loaded
+Refeição) benefit cards, gift cards, transport cards, and any pre-loaded
 card where spending is direct rather than billed.
 
 Currently recording a transaction on a VA/VR card causes the application to create
@@ -337,8 +337,8 @@ Locked V1 direction:
   debit, but do not deduct from its balance or create a linked cash transaction in V1
 - block changing a card's kind once it has any transaction or Reference in any
   context; existing credit cards remain credit and keep their billing history
-- the card form gains a "Card type" selector (Credit / Pre-paid / Debit) that shows or
-  hides billing-cycle fields based on selection; debit shows a bank account selector
+- the card form offers Credit / Pre-paid; existing debit cards retain their account
+  selector for compatibility, but new debit cards are not offered in the form
 - `Audit::Rollback::Adapters::UserCard` is updated to handle `card_kind` without
   breaking existing credit card rollbacks
 
@@ -361,7 +361,7 @@ References:
 Explicitly out of scope:
 
 - pre-paid card top-up recording convention (deferred to NARUTO-05 V2)
-- actual bank account balance deduction (NARUTO-06 scope)
+- debit card support, including available-balance checks and bank balance deduction (deferred to NARUTO-06)
 - automatic card reload / top-up modelling
 
 ### NARUTO-06: Consolidate card and account balance dashboard

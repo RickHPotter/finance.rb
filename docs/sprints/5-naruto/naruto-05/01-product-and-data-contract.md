@@ -1,4 +1,10 @@
-# NARUTO-05 — Prepaid and debit cards: product and data contract
+# NARUTO-05 — Prepaid cards: product and data contract
+
+## Scope update
+
+Debit is deferred from the user-facing V1: the new-card form offers credit and prepaid only. Existing debit cards remain visible and editable, and their existing backend behavior remains in place for compatibility; direct API/model creation is not disabled. That behavior does not check or deduct the linked bank balance and is not supported as complete debit functionality. Future debit work must establish available-balance checks and deduction/reconciliation. The debit details below describe the retained implementation, not a V1 acceptance requirement.
+
+The user has exercised a prepaid purchase and confirmed that it does not change the bank balance. Broader manual acceptance remains outstanding.
 
 ## Status and intent
 
@@ -38,7 +44,7 @@ The debit bank account is descriptive routing data in this slice, **not** a seco
 
 ## UI and API contract
 
-The card form offers localized Credit, Prepaid, and Debit choices. Credit keeps billing, limit, and existing card-specific fields. Prepaid hides billing and bank-account fields. Debit hides billing fields and requires an owned bank account. Edit/show/index clearly identify kind. Show a truthful “spending recorded; balance/top-ups not tracked yet” treatment for prepaid; do not present spent amount as remaining balance. Credit-only reference dates, unpaid invoices, limit, and payment actions must be hidden or unavailable for noncredit cards, including direct endpoints.
+The new-card form offers localized Credit and Prepaid choices. Credit keeps billing, limit, and existing card-specific fields. Prepaid hides billing and bank-account fields. Existing debit cards retain their bank-account field. Edit/show/index clearly identify kind. Show a truthful “spending recorded; balance/top-ups not tracked yet” treatment for prepaid; do not present spent amount as remaining balance. Credit-only reference dates, unpaid invoices, limit, and payment actions must be hidden or unavailable for noncredit cards, including direct endpoints.
 
 Card transaction forms accept any active card but adapt to kind. For prepaid/debit, render one installment and no invoice/reference picker, closing date, or billing refresh. Changing card or date updates the visible date/period without calling credit reference helpers. Desktop and PWA must agree. The transaction list remains filterable by card/context and displays the noncredit purchase date and paid state truthfully; a future planned entry must remain visibly unpaid until confirmed, not auto-complete when its date arrives. Existing credit screens retain their current behavior. Server responses for invalid kind/account/installment combinations are localized and actionable.
 
@@ -52,4 +58,4 @@ The NARUTO-06 contract must continue to call this a spending total until a separ
 
 ## Acceptance boundary
 
-Call NARUTO-05 ready for manual testing only after every slice's focused specs, relevant feature specs, JS build, RuboCop, and CI checks pass, or any environment-only failure is explicitly recorded. Manual test credit regression, prepaid/debit creation and editing, one-installment rejection, invalid/foreign bank account, no references/invoice projections, dates/paid state, both screen sizes, context/index/report behavior, and rollback. A local pass is not a claim about HMG or PROD.
+Call NARUTO-05 ready for manual testing only after every slice's focused specs, relevant feature specs, JS build, RuboCop, and CI checks pass, or any environment-only failure is explicitly recorded. Manual test credit regression, prepaid creation and editing, one-installment rejection, no references/invoice projections, dates/paid state, both screen sizes, context/index/report behavior, and rollback. Existing debit records should remain accessible. A local pass is not a claim about HMG or PROD.

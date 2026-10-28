@@ -59,7 +59,7 @@ class Views::UserCards::Form < Views::Base
             bold_label(form, :card_kind)
             render Views::Shared::SingleSelectCombobox.new(
               name: "user_card[card_kind]",
-              options: UserCard.card_kinds.keys.map { |kind| [ model_attribute(UserCard, "card_kinds.#{kind}"), kind ] },
+              options: available_card_kinds.map { |kind| [ model_attribute(UserCard, "card_kinds.#{kind}"), kind ] },
               selected_value: user_card.card_kind,
               placeholder: model_attribute(UserCard, :card_kind),
               disabled: user_card.persisted? && (user_card.card_transactions.exists? || user_card.references.exists?),
@@ -211,6 +211,12 @@ class Views::UserCards::Form < Views::Base
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
       end
     end
+  end
+
+  def available_card_kinds
+    kinds = %w[credit prepaid]
+    kinds << "debit" if user_card.persisted? && user_card.debit?
+    kinds
   end
 
   def reference_return_options
