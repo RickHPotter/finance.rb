@@ -26,7 +26,7 @@ module FiscalReceipts
     def call
       validate_source!
       Net::HTTP.start(HOST, 443, use_ssl: true, open_timeout: 4, read_timeout: 8) do |http|
-        landing, cookies = fetch(http, "#{PATH}?#{URI.encode_www_form(p: @payload)}")
+        landing, cookies = fetch(http, @url.request_uri)
         raise Unavailable, I18n.t("fiscal_import.messages.goias_rejected") unless valid_landing?(landing)
 
         danfe_html, = fetch(http, "#{DETAIL_PATH}?#{URI.encode_www_form(chNFe: @access_key.value)}", cookies:)

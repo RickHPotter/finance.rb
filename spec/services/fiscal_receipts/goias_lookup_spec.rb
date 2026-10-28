@@ -53,15 +53,22 @@ RSpec.describe FiscalReceipts::GoiasLookup do
   it "imports a version 3 QR URL while preserving its base64 signature" do
     version_three_payload = "#{key}|3|1|24|109.95|2|70596315180|Ab+/Cd=="
     version_three_url = "https://#{described_class::HOST}#{described_class::PATH}?p=#{version_three_payload.gsub('|', '%7C')}"
-    landing_request = stub_request(:get, "https://#{described_class::HOST}#{described_class::PATH}?#{URI.encode_www_form(p: version_three_payload)}")
+    landing_request = stub_request(:get, /#{Regexp.escape(described_class::PATH)}\?/)
                       .to_return(status: 200, body: "<iframe class='iframe-danfe-nfce' src='#{described_class::DETAIL_PATH}?chNFe=#{key}'></iframe>")
     stub_request(:get, /#{Regexp.escape(described_class::DETAIL_PATH)}\?/)
       .to_return(status: 200, body: "new DanfeNFCe('#receipt', '/images/', '#{receipt_html.to_json[1..-2]}');")
     stub_request(:get, /#{Regexp.escape(described_class::DETAILED_PAGE_PATH)}\?/).to_return(status: 200, body: detailed_html)
 
-    draft = described_class.new(version_three_url).call
+    lookup = described_class.new(version_three_url)
+    requested_paths = []
+    allow(lookup).to receive(:fetch).and_wrap_original do |original, http, path, **options|
+      requested_paths << path
+      original.call(http, path, **options)
+    end
+    draft = lookup.call
 
     expect(landing_request).to have_been_requested
+    expect(requested_paths.first).to eq(URI(version_three_url).request_uri)
     expect(draft.items.first).to eq(description: "Arroz", price_cents: 1250)
   end
 
