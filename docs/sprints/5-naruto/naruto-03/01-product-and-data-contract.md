@@ -2,8 +2,11 @@
 
 ## Status and scope
 
-NARUTO-03 is not complete yet. Receipt attachments and the first fiscal-import flow
-are implemented. Desktop cash/card index pages expose an import action beside New;
+The user confirmed the V2 attachment-hardening and supported V3 fiscal-import phases
+complete on 2026-10-28. NARUTO-03 is closed; fiscal-document duplicate protection
+moved to [NARUTO-07](../naruto-07/01-product-and-data-contract.md).
+
+Desktop cash/card index pages expose an import action beside New;
 the PWA exposes it as a floating action above the New button. Both open the same modal,
 which accepts authorized XML, a complete Goiás signed QR URL, a Paraná NFC-e key/QR
 URL or 44-digit key, PDF text, and an image/camera QR scan. Supported sources prefill
@@ -27,16 +30,16 @@ The first persisted receipt-inbox workflow is implemented: a cupom can be saved 
 device and opened later in either cash or card transaction form; the uploaded source or
 a generated JSON manifest, plus available Goiás consultation evidence, becomes
 transaction attachments only after successful save. The user reports the supported
-cash/card import flows manually tested. Remaining NARUTO-03 work is duplicate-document
-protection and the V2 attachment security/failure-path and deployed storage checks.
+cash/card import flows manually tested. The user confirmed the V2 attachment release
+checks complete on 2026-10-28. Duplicate-document protection moved to NARUTO-07.
 NF-e model-55 accuracy and fiscal adjustments are [NARUTO-07](../naruto-07/01-product-and-data-contract.md);
 OCR from screenshots and documents is [NARUTO-08](../naruto-08/01-product-and-data-contract.md).
 Additional state adapters are optional unless separately agreed.
 
 The custom receipt routes disabled Active Storage's defaults, but production-style
 boot exposed a route-registration-order collision. The early route-disable fix is in
-the tree and route loading was verified locally for both `homolog` and `production`;
-the homolog deployment must still be retried and observed healthy.
+the tree and route loading was verified locally for both `homolog` and `production`.
+The user confirmed the V2 deployment release check complete on 2026-10-28.
 
 - [V2 attachment-hardening plan](04-v2-development-plan.md)
 - [V3 Brazilian fiscal import plan](05-v3-brazilian-fiscal-import-plan.md)
@@ -84,27 +87,27 @@ The schema already contains the Active Storage tables. `development` and `produc
 select the `:local` Disk service, whose configured root is `storage/`; `test` selects
 `:test` under `tmp/storage/`. This describes configuration, **not** proof of durable
 production storage. Kamal now declares separate production and homolog volumes at
-`/rails/storage`, the configured Active Storage root. Those mounts have not yet been
-validated across a deployment or backup/restore; do not treat production receipts as
-durable until those checks pass.
+`/rails/storage`, the configured Active Storage root. The user confirmed V2 deployment
+and backup checks complete on 2026-10-28; the repository does not contain the external
+verification record.
 
 Receipt downloads and deletes now use authenticated app routes and attachment IDs;
 the default public Active Storage routes are disabled at application load so
 production-style route initialization cannot add a duplicate default route.
 Authenticated blob delivery retains avatar display. Direct uploads require
 authentication, enforce the declared MIME and 10 MiB limits, and bind their signed
-IDs to the uploader. Content sniffing and several adversarial failure cases remain V2
-release checks.
+IDs to the uploader. The earlier V2 plan listed content sniffing and adversarial
+failure cases as checks; the user confirmed V2 completion on 2026-10-28.
 
-## Fiscal receipt import (implemented baseline; remaining work tracked in V3 plan)
+## Fiscal receipt import (completed supported V3 flow)
 
 The implemented workflow converts supported Brazilian cupom-fiscal sources into
 line items in a cash or card draft. It starts from an import modal opened by the
 desktop index action or the PWA floating action, not from the transaction form itself.
 The draft is unsaved and must be reviewed and completed before normal submission.
 Current supported paths and their limits are listed in the V3 plan. A short printed cupom
-number is not a usable lookup key on its own. Duplicate detection remains an open
-NARUTO-03 bug; OCR and deeper NF-e support have their own features.
+number is not a usable lookup key on its own. Duplicate detection and deeper NF-e
+support are NARUTO-07 work; OCR has its own feature.
 
 OCR of screenshots and photographed receipts is outside this scope and belongs to
 NARUTO-08. A readable QR in a receipt photo remains a supported NARUTO-03 input; its
@@ -117,9 +120,9 @@ of scope.
 |---|---|
 | The sprint required 10 MB and five files per record; a detailed slice exempted `LineItem`. | All three models enforce the same rules, even without LineItem UI. |
 | The example used `size: { max: 10.megabytes }`; the installed gem requires a comparison key. | Use `size: { less_than_or_equal_to: 10.megabytes }`. `limit: { max: 5 }` remains valid. |
-| An appended draft said no model had attachments and production should use object storage, while the resolved section said attachments and local disk already existed. | The appended draft is removed. The current models and configured services are recorded above; durable production storage remains a V2 requirement. |
-| Older text treated fiscal extraction as indefinitely out of scope or still wholly planned. | The first fiscal-import paths are implemented and user-tested; duplicate protection stays here, NF-e/adjustment accuracy moves to NARUTO-07, and OCR moves to NARUTO-08. |
-| The plan described a future audit version from a touch. | Deletion now writes an explicit audit annotation in the same DB transaction as detaching; Active Storage purges after commit. V2 still needs failure-path and duplicate-audit checks. |
+| An appended draft said no model had attachments and production should use object storage, while the resolved section said attachments and local disk already existed. | The appended draft is removed. The current models and configured services are recorded above; the user confirmed V2 storage checks complete. |
+| Older text treated fiscal extraction as indefinitely out of scope or still wholly planned. | The first fiscal-import paths are implemented and user-tested; duplicate protection and NF-e/adjustment accuracy move to NARUTO-07, and OCR moves to NARUTO-08. |
+| The plan described a future audit version from a touch. | Deletion now writes an explicit audit annotation in the same DB transaction as detaching; Active Storage purges after commit. The earlier V2 plan listed failure-path and duplicate-audit checks; the user confirmed V2 completion. |
 
 See [implementation status](02-implementation-slices.md) and
 [decisions and test matrix](03-decisions-and-test-matrix.md).

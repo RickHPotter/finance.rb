@@ -1,15 +1,15 @@
-# NARUTO-03 — Implementation status and remaining slices
+# NARUTO-03 — Completed implementation slices
 
-This file maps the implemented attachment baseline and remaining NARUTO-03 work.
+This file records the completed attachment and fiscal-import slices of NARUTO-03.
 Receipt attachments and the first Brazilian fiscal-import path are implemented. The
 import flow is launched from the desktop index action or the PWA floating action on
 cash/card index pages, supports authorized XML, Goiás
 signed QR, Paraná key/QR, PDF text, and image/camera QR inputs, and fills a reviewable
-unsaved draft. The user reports manual cash/card import validation complete. V2
-deployment/security verification and duplicate protection remain here. NF-e-specific
+unsaved draft. The user confirmed V2 attachment hardening and the supported V3 import
+phase complete on 2026-10-28. Duplicate protection moved to NARUTO-07. NF-e-specific
 accuracy and reconciliation belong to NARUTO-07; OCR without a usable structured
 source belongs to NARUTO-08. State expansion is optional unless separately agreed.
-NARUTO-03 is complete only when its attachment gates and duplicate-import bug are resolved.
+NARUTO-03 is closed as of 2026-10-28; duplicate-import protection is NARUTO-07 work.
 
 ## Slice 1 — Attachment hosts and model limits
 
@@ -74,24 +74,26 @@ not deleted. The Turbo response removes only that attachment's row.
 The default public Active Storage routes are disabled at application load, before
 production-style route initialization can draw them. This avoids a duplicate
 `rails_service_blob` name with the authenticated app route. Local route boot has been
-verified in `homolog` and `production`; the failed homolog deployment has not yet been
-retried. Blob delivery now goes through
+verified in `homolog` and `production`; the user confirmed V2 deployment checks complete
+on 2026-10-28. Blob delivery now goes through
 an authenticated controller that checks receipt ownership/context (and preserves
 authenticated avatar delivery). Direct-upload disk-service routes remain for the
 upload protocol. Operational reconciliation for a post-commit storage purge failure
-and audit-failure request coverage are still pending.
+and audit-failure request coverage were listed as earlier V2 checks; completion was
+confirmed by the user, without external verification records in this repository.
 
 ## Slice 5 — Verification and release gate
 
 Existing tests cover cash/card model limits, transaction update uploads, badges,
 show-page links, LineItem limits, authorized receipt download, owner/non-owner
 deletion, and oversized/anonymous direct-upload rejection. Shared-blob deletion,
-wrong-context coverage, browser upload failure paths, audit failure, and confirmed
-deployment storage checks are still pending.
+wrong-context coverage, browser upload failure paths, audit failure, and deployment
+storage checks were listed in the earlier V2 acceptance plan. The user confirmed V2
+complete on 2026-10-28.
 
-The [decisions and test matrix](03-decisions-and-test-matrix.md) separates current
-coverage from pending checks. A clean test run alone cannot prove a production storage
-mount; verify that separately.
+The [decisions and test matrix](03-decisions-and-test-matrix.md) records the earlier
+verification checklist. The user confirmed its V2 release checks complete; the
+repository does not contain independent evidence for external deployment checks.
 
 ## Slice 6 — Production-style route boot and deployment verification
 
@@ -100,11 +102,12 @@ The duplicate Active Storage route failure was reproduced locally under both
 now set when the application is configured, in addition to
 `config.active_storage.draw_routes = false`. Both environments now load the custom
 authenticated receipt route locally. Retrying homolog and confirming container health
-is still required.
+was part of the V2 release checklist confirmed complete by the user on 2026-10-28.
 
 ## Slice 7 — Brazilian cupom-fiscal import to transaction line items
 
-The first user-facing slice is implemented and user-tested; duplicate protection remains.
+The supported V3 import phase is implemented and user-confirmed complete. Duplicate
+protection is a NARUTO-07 follow-up.
 The [V3 plan](05-v3-brazilian-fiscal-import-plan.md) defines the intended flow: read a
 supported fiscal XML, PDF/image, QR URL, or 44-digit access key; retrieve item details
 from an official consultation where feasible or extract a printed receipt locally;
@@ -121,7 +124,7 @@ until a file is selected. The modal also provides a camera QR scanner and contro
 apply category/entity defaults across imported rows before individual exceptions are
 edited. Categories may remain blank under the current NARUTO-02 contract.
 
-Still open in NARUTO-03: duplicate-document protection and its product policy.
+Moved to NARUTO-07: duplicate-document protection and its product policy.
 Printed-item OCR when there is no usable structured source moves to NARUTO-08;
 NF-e model-55 hardening and total-adjustment reconciliation move to NARUTO-07.
 Additional state adapters require a separate scope decision. Do not describe Goiás key-only lookup as

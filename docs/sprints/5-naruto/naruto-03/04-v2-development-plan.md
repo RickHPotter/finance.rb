@@ -1,5 +1,9 @@
 # NARUTO-03 V2 — Attachment hardening development plan
 
+Status: **complete per user confirmation on 2026-10-28**. The checklist below records
+the original release contract; this repository does not contain evidence of every
+external deployment and backup check.
+
 ## Purpose and current baseline
 
 V2 finishes the attachment feature's security and operational contract. Brazilian
@@ -10,15 +14,15 @@ overall NARUTO-03 feature. The V1 [contract](01-product-and-data-contract.md) an
 The three attachment hosts have the 10 MiB per-file, five-file model contract; only
 cash and card transactions have UI. V2 code now routes receipt delivery and upload
 through authenticated controllers, identifies deletions by attachment, and declares
-separate persistent Disk volumes for production and homolog. Remaining code and
-operational verification gates are tracked in the
-[decision matrix](03-decisions-and-test-matrix.md).
+separate persistent Disk volumes for production and homolog. The original code and
+operational verification checklist is retained in the
+[decision matrix](03-decisions-and-test-matrix.md); the user confirmed V2 completion.
 
 Production-style route loading previously failed because Active Storage's default
 `rails_service_blob` route was drawn alongside the custom authenticated route. The
 application now disables Active Storage route drawing early as well as through the
-Rails configuration. Local `homolog` and `production` route commands pass; a healthy
-homolog deployment is still an acceptance check.
+Rails configuration. Local `homolog` and `production` route commands pass; the user
+confirmed the deployment acceptance check complete on 2026-10-28.
 
 ## Slice 1 — Define receipt identity and authorization
 
@@ -120,16 +124,15 @@ Local configuration alone does not satisfy this gate.
   compensation and transaction rollback leaves existing files intact.
 - Deployment check: storage survives a new container and can be restored from backup.
 
-Run focused specs after each slice, then `bin/rubocop -A` and `bin/ci` under the
-repository's test environment. Do not mark V2 complete until the deployment check
-and the security cases pass in addition to CI.
+The user confirmed V2 complete on 2026-10-28. Keep the security, deployment, and CI
+checks above as a regression checklist for later changes.
 
 ## Separate required workstream: V3 fiscal import
 
 The supported cupom-fiscal-to-line-items flow is tracked in the
 [V3 Brazilian fiscal import plan](05-v3-brazilian-fiscal-import-plan.md) and has been
-manually exercised by the user. Its remaining NARUTO-03 product bug is duplicate
-protection. NF-e-specific accuracy is NARUTO-07; screenshot/document OCR is NARUTO-08.
+manually exercised by the user. Fiscal-document duplicate protection and NF-e-specific
+accuracy moved to NARUTO-07; screenshot/document OCR is NARUTO-08.
 Line-item receipt upload UI, attachment versioning, and document management remain
 outside this V2 plan. Any remote fiscal lookup must review issuer/recipient data and
 protect against unsafe URL fetching before implementation.

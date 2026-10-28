@@ -15,8 +15,9 @@
 5. Attachment files are documentary evidence. Financial rollback does not alter them.
    Deletion must leave an audit annotation, while the annotation has no financial
    compensation.
-6. Production currently selects local Disk storage. Persistence across deploys is
-   unverified in this repository and is a V2 release gate.
+6. Production currently selects local Disk storage. The user confirmed V2 deployment
+   and backup checks complete on 2026-10-28; external verification is not recorded
+   in this repository.
 7. V2 implements authenticated receipt downloads, direct-upload authorization, and
    an attachment-specific delete identifier. Signed avatars remain available to
    authenticated users; anonymous Active Storage delivery is disabled.
@@ -29,9 +30,9 @@
    Goiás, supports Paraná selection, and allows bulk category/entity defaults with
    per-line-item overrides. Blank categories are allowed under the current contract.
 
-## Current tests and gaps
+## Tests and historical V2 verification checklist
 
-| Concern | Existing evidence | Required V2 verification |
+| Concern | Existing repository evidence | Earlier V2 verification checklist |
 |---|---|---|
 | Cash/card model validation | `spec/models/cash_transaction_spec.rb`, `spec/models/card_transaction_spec.rb` cover allowed, disallowed, oversized, and sixth attachments. | Keep the 10 MiB edge covered. |
 | LineItem model validation | `spec/models/line_item_spec.rb` covers allowed, disallowed, oversized, sixth attachment, and exactly 10 MiB. | None for the agreed model contract. |
@@ -42,14 +43,13 @@
 | Direct upload | `spec/requests/attachments_spec.rb` covers anonymous and oversized rejection; authenticated controller validates allowlisted MIME and byte size before blob creation. | Unsupported-type request; cross-actor signed blob attach; inspect stored bytes/content type. |
 | Storage durability | Production and homolog now have separate named volumes at `/rails/storage`; the storage directories were empty at inspection. | Deploy with the mount, verify persistence across replacement, and exercise backup/restore. |
 | Production-style route boot | `config.active_storage.draw_routes = false` plus the early `ActiveStorage.draw_routes = false` prevents default routes from colliding with the authenticated receipt route; local homolog and production route commands boot. | Redeploy homolog and confirm container health and authenticated file/avatar flows. |
-| Fiscal receipt import | XML parser, Goiás signed-QR and Paraná key/QR adapters, PDF text-source extraction, image/camera QR scanning, index-page modal, cash/card draft prefill, and bulk category/entity defaults are implemented; service, request, and browser specs cover supported paths. The user reports manual cash/card validation complete. | Fix duplicate policy/protection in NARUTO-03. NF-e/total-adjustment analysis is NARUTO-07; screenshot/document OCR is NARUTO-08. Additional states are optional; see [V3 plan](05-v3-brazilian-fiscal-import-plan.md). |
+| Fiscal receipt import | XML parser, Goiás signed-QR and Paraná key/QR adapters, PDF text-source extraction, image/camera QR scanning, index-page modal, cash/card draft prefill, and bulk category/entity defaults are implemented; service, request, and browser specs cover supported paths. The user reports manual cash/card validation complete. | Duplicate policy/protection and NF-e/total-adjustment analysis moved to NARUTO-07; screenshot/document OCR is NARUTO-08. Additional states are optional; see [V3 plan](05-v3-brazilian-fiscal-import-plan.md). |
 
-## Release gate
+## Completion status
 
-The attachment baseline is implemented. V2 is complete only when the security and
-storage checks above pass, the homolog deployment is healthy, the attachment route is
-unambiguous, and `bin/ci` is green. The fiscal-import code is implemented for the
-documented source matrix, and the user reports the manual import flow complete.
-NARUTO-03 remains open for duplicate protection and V2 attachment gates. Reconciliation
+The user confirmed V2 attachment hardening and the supported V3 fiscal-import flow
+complete on 2026-10-28. The table above records repository evidence and the earlier
+V2 checklist, not a new list of release blockers. NARUTO-03 is closed; duplicate
+fiscal-document protection moved to NARUTO-07. Reconciliation
 and NF-e expansion are NARUTO-07; OCR is NARUTO-08. Broader state coverage should be
 tracked separately unless made an explicit release requirement.

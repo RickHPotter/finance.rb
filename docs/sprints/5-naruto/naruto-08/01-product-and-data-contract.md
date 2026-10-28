@@ -60,5 +60,5 @@ as an issued fiscal document or automatically saved as a completed transaction.
   screenshots or handwritten notes until examples and tests support them.
 
 Completion requires a documented source matrix, safe extraction, visible uncertainty
-and reconciliation, regression coverage, and manual validation. It must not be used
-to mark NARUTO-03 or NARUTO-07 complete prematurely.
+and reconciliation, regression coverage, and manual validation. NARUTO-03 is already
+closed; NARUTO-08 completion does not imply NARUTO-07 completion.
