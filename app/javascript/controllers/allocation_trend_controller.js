@@ -31,6 +31,7 @@ export default class extends Controller {
     "content",
     "summaryIncome",
     "summaryOutcome",
+    "summaryDiscount",
     "summaryNet",
     "chartCanvas",
     "bucketList",
@@ -135,6 +136,8 @@ export default class extends Controller {
   renderSummary(summary) {
     this.summaryIncomeTarget.textContent = this.formatCents(summary.income.amount_cents)
     this.summaryOutcomeTarget.textContent = this.formatCents(summary.outcome.amount_cents)
+    this.summaryDiscountTarget.closest("div").classList.toggle("hidden", !summary.discount)
+    if (summary.discount) this.summaryDiscountTarget.textContent = this.formatCents(summary.discount.amount_cents)
     this.summaryNetTarget.textContent = this.formatCents(summary.net_cents)
     this.applyNetTone(this.summaryNetTarget, summary.net_cents)
   }
@@ -149,7 +152,8 @@ export default class extends Controller {
         labels: buckets.map((bucket) => this.formatPeriod(bucket.key)),
         datasets: [
           this.chartDataset(this.label("income"), "income", buckets, "#059669"),
-          this.chartDataset(this.label("outcome"), "outcome", buckets, "#e11d48")
+          this.chartDataset(this.label("outcome"), "outcome", buckets, "#e11d48"),
+          ...(buckets[0]?.discount ? [this.chartDataset(this.label("discount"), "discount", buckets, "#0284c7")] : [])
         ]
       },
       options: {
@@ -231,6 +235,7 @@ export default class extends Controller {
       const metrics = document.createElement("div")
       metrics.className = "mt-3 grid gap-3 md:grid-cols-2"
       metrics.append(this.metricCard("income", entry.income), this.metricCard("outcome", entry.outcome))
+      if (entry.discount) metrics.appendChild(this.metricCard("discount", entry.discount))
       row.appendChild(metrics)
       list.appendChild(row)
     })
@@ -480,7 +485,8 @@ export default class extends Controller {
   }
 
   hasActivity(payload) {
-    return Number(payload?.summary?.income?.source_count || 0) > 0 || Number(payload?.summary?.outcome?.source_count || 0) > 0
+    return Number(payload?.summary?.income?.source_count || 0) > 0 || Number(payload?.summary?.outcome?.source_count || 0) > 0 ||
+      Number(payload?.summary?.discount?.source_count || 0) > 0
   }
 
   showLoading() {

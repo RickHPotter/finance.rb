@@ -48,22 +48,37 @@ module Reports
     end
 
     def aggregate_payload(rows)
-      income_rows = rows.select { |row| row_amount(row).positive? }
-      outcome_rows = rows.select { |row| row_amount(row).negative? }
+      income_rows = rows.select { |row| regular_amount(row).positive? }
+      outcome_rows = rows.select { |row| regular_amount(row).negative? }
+      discount_rows = rows.select { |row| discount_amount(row).positive? }
 
       {
-        income: metric_payload(income_rows),
-        outcome: metric_payload(outcome_rows),
+        income: metric_payload(income_rows, :regular_amount),
+        outcome: metric_payload(outcome_rows, :regular_amount),
+        discount: metric_payload(discount_rows, :discount_amount),
         net_cents: rows.sum { |row| row_amount(row) }
       }
     end
 
-    def metric_payload(rows)
+    def metric_payload(rows, amount_method)
+      amount_fn = method(amount_method)
       {
-        amount_cents: rows.sum { |row| row_amount(row).abs },
+        amount_cents: rows.sum { |row| amount_fn.call(row).abs },
         source_count: rows.size,
-        sources: Drilldowns.new(rows:, return_to: source_dashboard_path, amount_fn: method(:row_amount)).call
+        sources: Drilldowns.new(rows:, return_to: source_dashboard_path, amount_fn:).call
       }
+    end
+
+    def regular_amount(row)
+      row_amount(row) - discount_amount(row)
+    end
+
+    def discount_amount(row)
+      transaction = row.transaction
+      return 0 unless transaction.composite? && dimension == :category && !transaction.price.to_i.zero?
+
+      total = matching_line_items_for(transaction).select(&:discount?).sum(&:price)
+      ((row.amount_cents.to_d * total) / transaction.price).round
     end
 
     def row_amount(row)
