@@ -10,6 +10,11 @@ analysis exposes an unaddressed product choice, resolve it before dependent work
 
 ## Slice 0 — Examples, source capabilities, and decisions
 
+Status: initial source inventory and synthetic examples prepared. Real sanitized
+model-55 and GO adjustment examples, current schema/status confirmation, and final
+source-specific reconciliation semantics remain verification work in later slices;
+the synthetic fragments are not proof of real-world source compatibility.
+
 - Collect sanitized model-55 authorized XML examples: ordinary, discount, freight or
   other charges, and an adjustment-heavy or inconsistent case. Obtain permission to
   use real documents only as input for sanitization; do not commit taxpayer details,

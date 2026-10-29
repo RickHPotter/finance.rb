@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Synthetic minimal example; not a signed or schema-complete fiscal document. -->
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe">
+  <NFe><infNFe Id="NFe52010100000000000000550010000000011000000014">
+    <ide><mod>55</mod><dhEmi>2026-01-01T12:00:00-03:00</dhEmi></ide>
+    <emit><xNome>EXEMPLO FICTICIO</xNome></emit>
+      <det nItem="1"><prod><xProd>Produto</xProd><qCom>1.0000</qCom><uCom>UN</uCom><vUnCom>119.95</vUnCom><vProd>119.95</vProd><vDesc>10.00</vDesc></prod></det>
+    <total><ICMSTot><vProd>119.95</vProd><vDesc>10.00</vDesc><vNF>109.95</vNF></ICMSTot></total>
+  </infNFe></NFe>
+  <protNFe><infProt><chNFe>52010100000000000000550010000000011000000014</chNFe><cStat>100</cStat></infProt></protNFe>
+</nfeProc>

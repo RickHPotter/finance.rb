@@ -6,6 +6,31 @@ This is an investigation worksheet, not a complete NF-e specification. The tag n
 below describe fields already read in the code; candidate fields must be checked against
 official layouts and sanitized fixtures before their semantics or formulas are locked.
 
+## Slice 0 source review
+
+The [official NF-e manual's validation rule W16-10](https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=nebWFce4X9o%3D)
+illustrates that `vNF` can depend on products, discounts, freight, insurance, other
+charges, and several tax components, with documented exceptions. This older manual is
+evidence that a simplistic product-minus-discount formula is insufficient, not a current
+complete formula. The [official NF-e document index](https://www.nfe.fazenda.gov.br/portal/listaConteudo.aspx?tipoConteudo=ndIjl%2BiEFdE%3D)
+lists the newer manuals; validate applicable versions and technical notes before
+claiming broad coverage. An [earlier field manual](https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=HO2V%2BvzhFBk%3D)
+also distinguishes quantity and unit-price precision from currency totals. Do not
+recalculate original product totals from rounded unit prices.
+
+The synthetic examples in `spec/fixtures/files/fiscal_naruto_07/` cover ordinary,
+discounted, freight, and unresolved model-55 fragments, a model-65 discount fragment,
+and a GO-shaped discount HTML excerpt. They contain fictitious identities and are
+neither signed nor schema-complete; the GO excerpt illustrates expected shape, not a
+verified live SEFAZ response. Real sanitized examples and current official status,
+authorization, and layout confirmation remain necessary for manual acceptance.
+
+XML reports item and document adjustment totals at different levels. The document
+total is not an additional charge on top of the same item totals: recognize a source
+adjustment once, preserve its components, and leave inconsistent values unresolved.
+Existing GO/PR adapters currently read product rows and payable totals; availability
+and meaning of displayed adjustments require source-specific fixture verification.
+
 | Source | Currently extracted | Known limitation |
 |---|---|---|
 | Supplied XML | `infNFe/@Id`, `ide/mod`, `protNFe/infProt/cStat`, issuer name, issue time, `ICMSTot/vNF`, and item descriptions/amounts | Parser accepts status 100 or 150 and checks key format/model, but does not compare protocol key, verify signature, or establish later cancellation status. |
