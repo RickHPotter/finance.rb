@@ -38,6 +38,13 @@ invent source fields or silently compensate for an unexplained difference.
 
 ## Slice 1 — Fiscal document parsing and evidence
 
+Status: preliminary parser work captures separate source amounts and checks a supplied
+protocol key for model 55 (and rejects a mismatched key for model 65 when supplied).
+Existing normalized item amounts are intentionally unchanged until reconciliation is
+implemented. The extra details are not yet carried through saved receipts or forms;
+synthetic fixtures do not establish full schema, signature, cancellation, or real-world
+document support. Slice 1 remains open for that integration and source verification.
+
 - Extend the bounded XML parser for model 55 and preserve existing model-65 support.
   Validate supported structure, access key and model, and protocol consistency as
   established in slice 0; distinguish supplied authorization evidence from current

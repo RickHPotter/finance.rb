@@ -30,12 +30,17 @@ module FiscalReceipts
 
     def authorized_info(document)
       info = document.at_xpath("/nfeProc/NFe/infNFe")
-      protocol = document.at_xpath("/nfeProc/protNFe/infProt/cStat")&.text
-      raise InvalidDocument, I18n.t("fiscal_import.messages.authorized_xml_required") unless info && %w[100 150].include?(protocol)
+      protocol = document.at_xpath("/nfeProc/protNFe/infProt")
+      raise InvalidDocument, I18n.t("fiscal_import.messages.authorized_xml_required") unless info && %w[100 150].include?(value_at(protocol, "cStat"))
 
       key = AccessKey.new(info["Id"].to_s.delete_prefix("NFe"))
       raise InvalidDocument, I18n.t("fiscal_import.messages.access_key_invalid") unless key.valid?
       raise InvalidDocument, I18n.t("fiscal_import.messages.document_model_mismatch") if value_at(info, "ide/mod") != key.model
+
+      protocol_key = value_at(protocol, "chNFe")
+      if (key.model == "55" && protocol_key.blank?) || (protocol_key.present? && protocol_key != key.value)
+        raise InvalidDocument, I18n.t("fiscal_import.messages.protocol_key_mismatch")
+      end
 
       [ info, key ]
     end
@@ -53,8 +58,37 @@ module FiscalReceipts
         issued_at: Time.zone.parse(value_at(info, "ide/dhEmi") || value_at(info, "ide/dEmi")),
         total_cents:,
         items: rows.map { |row| parse_item(row) },
-        source: "xml"
+        source: "xml",
+        fiscal_details: fiscal_details(info, rows)
       )
+    end
+
+    def fiscal_details(info, rows)
+      {
+        model: value_at(info, "ide/mod"),
+        document_totals: fiscal_amounts(info.at_xpath("total/ICMSTot"), %w[vProd vDesc vFrete vSeg vOutro vNF]),
+        items: rows.map { |row| fiscal_item_details(row) }
+      }
+    end
+
+    def fiscal_item_details(row)
+      product = row.at_xpath("prod")
+      raise InvalidDocument, I18n.t("fiscal_import.messages.item_data_missing") unless product
+
+      {
+        product_code: value_at(product, "cProd"),
+        quantity: value_at(product, "qCom"),
+        unit: value_at(product, "uCom"),
+        unit_price: value_at(product, "vUnCom"),
+        amounts: fiscal_amounts(product, %w[vProd vDesc vFrete vSeg vOutro])
+      }
+    end
+
+    def fiscal_amounts(node, fields)
+      fields.each_with_object({}) do |field, result|
+        value = value_at(node, field)
+        result[field] = cents(value) if value.present?
+      end
     end
 
     def parse_item(row)
@@ -81,6 +115,8 @@ module FiscalReceipts
     end
 
     def value_at(node, path)
+      return if node.nil?
+
       node.at_xpath(path)&.text&.strip
     end
   end
