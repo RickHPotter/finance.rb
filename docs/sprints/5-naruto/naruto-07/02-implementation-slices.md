@@ -62,9 +62,9 @@ the implementation actually provides it.
 
 ## Slice 2 — Reconciliation and review
 
-Status: the discount identity, reserved category migration and model constraints are
-implemented as a foundation. The form, fiscal import, reporting and full integration
-below are still outstanding; this is not a claim of a usable discount flow.
+Status: the discount identity, reserved category migration, model constraints, and
+manual form control are implemented. Fiscal import, reporting and full integration
+below are still outstanding; this is not a claim that the feature is complete.
 
 - Add the permanent DISCOUNT system category and a dedicated discount line type or
   equivalent server-validated identity. Only the Add Discount action and fiscal import

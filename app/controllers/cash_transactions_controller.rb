@@ -1047,7 +1047,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       line_items_attributes: [
-        :id, :description, :price, :comment, :category_id, :friend_notification_intent, :_destroy,
+        :id, :description, :price, :comment, :category_id, :item_kind, :friend_notification_intent, :_destroy,
         { entity_transactions_attributes: [
           :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
           { exchanges_attributes: %i[id number exchange_type bound_type price date month year paid _destroy] }

@@ -630,7 +630,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: card_installment_permitted_attributes,
       line_items_attributes: [
-        :id, :description, :price, :comment, :category_id, :_destroy,
+        :id, :description, :price, :comment, :category_id, :item_kind, :_destroy,
         { entity_transactions_attributes: [
           :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
           { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }

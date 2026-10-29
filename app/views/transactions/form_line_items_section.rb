@@ -87,6 +87,16 @@ class Views::Transactions::FormLineItemsSection < Views::Base
             variant: :ghost,
             size: :sm,
             class: split_purchase_action_button_class,
+            data: { action: "click->composite-transaction#addDiscount", composite_transaction_target: "discountButton" }
+          ) do
+            cached_icon(:plus)
+            span { I18n.t("transactions.composite.add_discount") }
+          end
+          Button(
+            type: :button,
+            variant: :ghost,
+            size: :sm,
+            class: split_purchase_action_button_class,
             data: { modal_target: bulk_defaults_modal_id, modal_toggle: bulk_defaults_modal_id }
           ) do
             cached_icon(:cog)
@@ -108,7 +118,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
   end
 
   def render_existing_rows
-    items = transaction.line_items.to_a
+    items = transaction.line_items.to_a.sort_by { |item| item.discount? ? 0 : 1 }
     return render_initial_row if items.empty?
 
     items.each_with_index do |item, idx|
@@ -186,6 +196,13 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         render_row(item_form, LineItem.new, "NEW_LINE_ITEM")
       end
     end
+
+    template(data: { composite_transaction_target: "discountTemplate" }) do
+      item = LineItem.new(item_kind: "discount", description: I18n.t("transactions.composite.discount"))
+      form.fields_for :line_items, item, child_index: "NEW_LINE_ITEM" do |item_form|
+        render_row(item_form, item, "NEW_LINE_ITEM")
+      end
+    end
   end
 
   def render_row(item_form, item, index)
@@ -193,11 +210,13 @@ class Views::Transactions::FormLineItemsSection < Views::Base
       class: row_class(item),
       data: {
         composite_transaction_target: "row",
-        persisted: item.persisted?.to_s
+        persisted: item.persisted?.to_s,
+        discount: item.discount?.to_s
       }
     ) do
       item_form.hidden_field :id if item.persisted?
       item_form.hidden_field :_destroy, value: (item.marked_for_destruction? ? "1" : "0")
+      item_form.hidden_field :item_kind
 
       div(class: "grid min-w-0 w-full flex-1 grid-cols-2 items-center gap-2 md:w-auto #{row_grid_class}") do
         div(class: "col-span-2 min-w-0 md:col-span-1") do
@@ -215,60 +234,64 @@ class Views::Transactions::FormLineItemsSection < Views::Base
             value: (item.price if item.price.present? && (item.price != 0 || item.description.present? || item.persisted?)),
             placeholder: I18n.t("activerecord.attributes.line_item.price"),
             inputmode: :numeric,
-            class: "#{input_class_without_icon} h-9 px-2.5 py-1.5 text-xs font-graduate dark:font-mono sign-based",
+            class: "#{input_class_without_icon} h-9 px-2.5 py-1.5 text-xs font-graduate dark:font-mono #{'sign-based' unless item.discount?}",
             autocomplete: "off",
             data: {
               price_mask_target: "input",
               composite_transaction_target: "itemPrice",
               action: "input->price-mask#applyMask input->composite-transaction#recalculate input->composite-entity-modal#priceChanged",
-              sign: price_sign
+              sign: item.discount? ? "+" : price_sign
             }
           )
         end
 
-        line_item_exchange_intent(item, index) if transaction.is_a?(CashTransaction)
+        if item.discount?
+          discount_allocation(item_form)
+        else
+          line_item_exchange_intent(item, index) if transaction.is_a?(CashTransaction)
 
-        div(class: "combobox-shell min-w-0 plus-icon #{category_mobile_span}") do
-          render Views::Shared::SingleSelectCombobox.new(
-            name: "#{form.object_name}[line_items_attributes][#{index}][category_id]",
-            options: categories,
-            selected_value: item.category_id,
-            placeholder: I18n.t("activerecord.attributes.line_item.category_id"),
-            input_data: {
-              action: "change->composite-transaction#recalculate change->reactive-form#syncExchangeIntentVisibility"
-            }
-          )
-        end
-
-        div(class: "col-span-2 flex min-w-0 md:col-span-1") do
-          div(class: "combobox-shell user-icon min-w-0 flex-1") do
+          div(class: "combobox-shell min-w-0 plus-icon #{category_mobile_span}") do
             render Views::Shared::SingleSelectCombobox.new(
-              name: "#{form.object_name}[line_items_attributes][#{index}][entity_transactions_attributes][0][entity_id]",
-              options: entities.map { |label, value| [ label, value, {} ] },
-              selected_value: item.entity_id,
-              placeholder: I18n.t("activerecord.attributes.line_item.entity_id"),
-              input_data: { action: "change->composite-entity-modal#entityChanged" },
-              trigger_class: "rounded-r-none",
-              trigger_data: { composite_entity_modal_target: "entityPicker" }
+              name: "#{form.object_name}[line_items_attributes][#{index}][category_id]",
+              options: categories,
+              selected_value: item.category_id,
+              placeholder: I18n.t("activerecord.attributes.line_item.category_id"),
+              input_data: {
+                action: "change->composite-transaction#recalculate change->reactive-form#syncExchangeIntentVisibility"
+              }
             )
           end
 
-          SheetTrigger(
-            class: "shrink-0",
-            data: {
-              composite_entity_modal_target: "trigger",
-              line_item_key: index.to_s,
-              action: "click->composite-entity-modal#open"
-            }
-          ) do
-            button(
-              type: :button,
-              disabled: item.entity_id.blank?,
-              class: "flex h-10 items-center gap-1 whitespace-nowrap rounded-l-none rounded-r-md border border-l-0 border-slate-300 px-2 " \
-                     "text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          div(class: "col-span-2 flex min-w-0 md:col-span-1") do
+            div(class: "combobox-shell user-icon min-w-0 flex-1") do
+              render Views::Shared::SingleSelectCombobox.new(
+                name: "#{form.object_name}[line_items_attributes][#{index}][entity_transactions_attributes][0][entity_id]",
+                options: entities.map { |label, value| [ label, value, {} ] },
+                selected_value: item.entity_id,
+                placeholder: I18n.t("activerecord.attributes.line_item.entity_id"),
+                input_data: { action: "change->composite-entity-modal#entityChanged" },
+                trigger_class: "rounded-r-none",
+                trigger_data: { composite_entity_modal_target: "entityPicker" }
+              )
+            end
+
+            SheetTrigger(
+              class: "shrink-0",
+              data: {
+                composite_entity_modal_target: "trigger",
+                line_item_key: index.to_s,
+                action: "click->composite-entity-modal#open"
+              }
             ) do
-              cached_icon(:user_group)
-              span { I18n.t("transactions.composite.entity_modal_trigger") }
+              button(
+                type: :button,
+                disabled: item.entity_id.blank?,
+                class: "flex h-10 items-center gap-1 whitespace-nowrap rounded-l-none rounded-r-md border border-l-0 border-slate-300 px-2 " \
+                       "text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              ) do
+                cached_icon(:user_group)
+                span { I18n.t("transactions.composite.entity_modal_trigger") }
+              end
             end
           end
         end
@@ -285,6 +308,12 @@ class Views::Transactions::FormLineItemsSection < Views::Base
         cached_icon(:destroy)
       end
     end
+  end
+
+  def discount_allocation(item_form)
+    discount_category = current_user.categories.find_by!(category_name: "DISCOUNT", parent_category_id: nil, built_in: true)
+    item_form.hidden_field :category_id, value: discount_category.id
+    span(class: "text-xs font-semibold text-slate-600 dark:text-slate-300") { discount_category.name }
   end
 
   def line_item_exchange_intent(item, index)

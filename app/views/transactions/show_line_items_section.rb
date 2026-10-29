@@ -136,7 +136,7 @@ class Views::Transactions::ShowLineItemsSection < Views::Base
   end
 
   def line_items
-    @line_items ||= transaction.line_items.includes(:categories, :entities).to_a
+    @line_items ||= transaction.line_items.includes(:categories, :entities).to_a.sort_by { |item| item.discount? ? 0 : 1 }
   end
 
   def percentage_of_total(item)

@@ -15,6 +15,8 @@ export default class extends Controller {
     "parentPrice",
     "itemsList",
     "template",
+    "discountTemplate",
+    "discountButton",
     "row",
     "itemPrice",
     "parentTotal",
@@ -119,6 +121,16 @@ export default class extends Controller {
     this.recalculate()
   }
 
+  addDiscount(event) {
+    if (event) event.preventDefault()
+    if (!this.hasDiscountTemplateTarget || !this.hasItemsListTarget || this.activeRows.some(row => row.dataset.discount === "true")) return
+
+    const timestamp = new Date().getTime().toString() + Math.floor(Math.random() * 1000).toString()
+    const content = this.discountTemplateTarget.innerHTML.replace(/NEW_LINE_ITEM/gi, timestamp)
+    this.itemsListTarget.insertAdjacentHTML("afterbegin", content)
+    this.recalculate()
+  }
+
   removeRow(event) {
     if (event) event.preventDefault()
 
@@ -176,6 +188,7 @@ export default class extends Controller {
   syncRowSign() {
     const sign = this.parentSign
     this.itemPriceTargets.forEach(input => {
+      if (input.closest("[data-discount='true']")) return
       input.dataset.sign = sign
     })
   }
@@ -217,6 +230,9 @@ export default class extends Controller {
   }
 
   recalculate() {
+    if (this.hasDiscountButtonTarget) {
+      this.discountButtonTarget.disabled = this.activeRows.some(row => row.dataset.discount === "true")
+    }
     const parentInput = this.resolveParentPriceInput()
     const parentVal = parentInput ? parentInput.value : "0"
     const sign = parentInput?.dataset.sign
