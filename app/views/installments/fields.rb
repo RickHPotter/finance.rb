@@ -37,7 +37,7 @@ module Views
 
             div(class: "flex items-center gap-2") do
               data = {}
-              data = { action: "click->reactive-form#togglePaid" } if installment.installment_type == "CashInstallment"
+              data = { action: "click->reactive-form#togglePaid" } if installment.installment_type == "CashInstallment" || prepaid_card_installment?
 
               span(class: "installment_number_display text-gray-300 dark:font-mono dark:text-slate-600") do
                 installment.number
@@ -123,7 +123,11 @@ module Views
       end
 
       def locked?
-        installment.persisted? && installment.paid?
+        installment.persisted? && installment.paid? && !prepaid_card_installment?
+      end
+
+      def prepaid_card_installment?
+        transactable.is_a?(CardTransaction) && transactable.user_card&.prepaid?
       end
 
       def installment_date_data

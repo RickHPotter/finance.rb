@@ -628,7 +628,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       id: [], subscription_id: [], card_installment_ids: [], category_id: [], entity_id: [],
       receipts: [],
       category_transactions_attributes: %i[id category_id _destroy],
-      card_installments_attributes: %i[id number date month year price _destroy],
+      card_installments_attributes: card_installment_permitted_attributes,
       line_items_attributes: [
         :id, :description, :price, :comment, :category_id, :_destroy,
         { entity_transactions_attributes: [
@@ -641,6 +641,12 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
         { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
       ]
     )
+  end
+
+  def card_installment_permitted_attributes
+    attributes = %i[id number date month year price _destroy]
+    attributes << :paid if action_name == "update" && @card_transaction&.user_card&.prepaid?
+    attributes
   end
 
   def assignable_card_transaction_params

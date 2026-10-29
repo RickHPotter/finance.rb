@@ -55,6 +55,7 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
   end
 
   def current_installment_history_error_key
+    return if prepaid_paid_state_toggle_only?
     return if shared_paid_state_toggle_only?
     return if actionable_shared_return_correction?
     return if editable_shared_return_structure_change_after_payment?
@@ -62,6 +63,13 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
     return confirmation_history_error_key if historical_correction_confirmation_required?
 
     installment_history_error_key if unsafe_installment_rewrite_attempted?
+  end
+
+  def prepaid_paid_state_toggle_only?
+    return false unless is_a?(CardTransaction) && user_card&.prepaid?
+    return false if parent_financial_fields_changed? || installments.any?(&:marked_for_destruction?) || installments.any?(&:new_record?)
+
+    changed_installments.any? && changed_installments.all? { |installment| shared_paid_toggle_only_for?(installment) }
   end
 
   def unsafe_installment_rewrite_attempted?
@@ -354,11 +362,18 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
     return false if changed_installments.empty?
     return false if is_a?(CashTransaction) && exchange_return_paid_price_correction_candidate?
     return false if will_save_change_to_date? || will_save_change_to_month? || will_save_change_to_year?
-    return false unless changed_installments.all? { |installment| installment.changes.except("updated_at").keys == [ "price" ] }
+    return false unless changed_installments.all? { |installment| paid_amount_change_only?(installment) }
     return false unless changed_installments.any? { |installment| installment_previously_paid?(installment) }
     return false if will_save_change_to_price? && current_installment_total != price
 
     true
+  end
+
+  def paid_amount_change_only?(installment)
+    keys = installment.changes.except("updated_at").keys
+    return keys == [ "price" ] unless is_a?(CardTransaction) && user_card&.prepaid?
+
+    keys.include?("price") && (keys - %w[price paid]).empty?
   end
 
   def current_installment_total
