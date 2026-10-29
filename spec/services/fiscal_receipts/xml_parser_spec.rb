@@ -27,10 +27,11 @@ RSpec.describe FiscalReceipts::XmlParser do
     expect(draft.issuer).to eq("Mercado Exemplo")
     expect(draft.total_cents).to eq(1975)
     expect(draft.items).to eq([
-                                { description: "Arroz", price_cents: 1150 },
+                                { description: "Arroz", price_cents: 1250 },
                                 { description: "Feijao", price_cents: 825 }
                               ])
     expect(draft.difference_cents).to eq(0)
+    expect(draft.discount_cents).to eq(100)
   end
 
   it "preserves a total mismatch for review" do
@@ -39,11 +40,12 @@ RSpec.describe FiscalReceipts::XmlParser do
     expect(draft.difference_cents).to eq(25)
   end
 
-  it "keeps a fully discounted product as a free item" do
+  it "preserves a fully discounted product and includes its discount" do
     free_item = "<det nItem=\"3\"><prod><xProd>Free Feijao</xProd><vProd>8.25</vProd><vDesc>8.25</vDesc></prod></det>"
     draft = described_class.new(xml.sub("<total>", "#{free_item}<total>")).call
 
-    expect(draft.items.last).to eq({ description: "Free Feijao", price_cents: 0 })
+    expect(draft.items.last).to eq({ description: "Free Feijao", price_cents: 825 })
+    expect(draft.discount_cents).to eq(925)
     expect(draft.difference_cents).to eq(0)
   end
 
@@ -84,6 +86,13 @@ RSpec.describe FiscalReceipts::XmlParser do
     expect { described_class.new(source.sub(%r{<chNFe>.*?</chNFe>}, "")).call }.to raise_error(described_class::InvalidDocument, /protocol key/)
     expect { described_class.new(source.sub(%r{<chNFe>.*?</chNFe>}, "<chNFe>#{'0' * 44}</chNFe>")).call }
       .to raise_error(described_class::InvalidDocument, /protocol key/)
+  end
+
+  it "rejects conflicting item and document discount totals" do
+    source = Rails.root.join("spec/fixtures/files/fiscal_naruto_07/discount_55.xml").read
+    source = source.sub("<vProd>119.95</vProd><vDesc>10.00</vDesc><vNF>", "<vProd>119.95</vProd><vDesc>9.00</vDesc><vNF>")
+
+    expect { described_class.new(source).call }.to raise_error(described_class::InvalidDocument, /adjustment totals disagree/)
   end
 
   it "rejects an inconsistent protocol key for model 65 when one is supplied" do

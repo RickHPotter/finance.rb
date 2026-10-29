@@ -41,6 +41,20 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
       expect(user.fiscal_receipt_drafts.sole.payload).not_to have_key("user_id")
     end
 
+    it "preserves recognized adjustments and original fiscal details for later review" do
+      payload = draft.merge(discount_cents: 1000, freight_cents: 200,
+                            fiscal_details: { model: "55", document_totals: { vProd: 11_995, vDesc: 1000 },
+                                              items: [ { quantity: "1.0000", amounts: { vProd: 11_995 } } ] })
+
+      post fiscal_receipt_drafts_path, params: { draft: payload }, as: :json
+
+      expect(response).to have_http_status(:created)
+      stored = user.fiscal_receipt_drafts.sole.fiscal_draft
+      expect(stored).to include("discount_cents" => 1000, "freight_cents" => 200)
+      expect(stored.dig("fiscal_details", "document_totals")).to include("vProd" => 11_995, "vDesc" => 1000)
+      expect(stored.dig("fiscal_details", "items", 0, "quantity")).to eq("1.0000")
+    end
+
     it "keeps owner-scoped Goiás page evidence with the saved receipt" do
       blob = ActiveStorage::Blob.create_and_upload!(
         io: StringIO.new("<html>Goiás detailed page</html>"),

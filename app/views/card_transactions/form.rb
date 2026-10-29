@@ -58,6 +58,7 @@ class Views::CardTransactions::Form < Views::Base
         data: {
           controller: "reactive-form price-mask composite-transaction attachment-upload fiscal-import",
           fiscal_import_transaction_type_value: "card_transaction",
+          fiscal_import_freight_label_value: I18n.t("transactions.composite.freight"),
           fiscal_import_pending_draft_value: fiscal_receipt_draft&.payload&.to_json,
           fiscal_import_pending_draft_id_value: fiscal_receipt_draft&.id,
           composite_transaction_composite_value: card_transaction.composite?,

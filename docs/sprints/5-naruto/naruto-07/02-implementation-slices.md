@@ -40,10 +40,10 @@ invent source fields or silently compensate for an unexplained difference.
 
 Status: preliminary parser work captures separate source amounts and checks a supplied
 protocol key for model 55 (and rejects a mismatched key for model 65 when supplied).
-Existing normalized item amounts are intentionally unchanged until reconciliation is
-implemented. The extra details are not yet carried through saved receipts or forms;
-synthetic fixtures do not establish full schema, signature, cancellation, or real-world
-document support. Slice 1 remains open for that integration and source verification.
+Normalized XML item amounts now preserve gross product values; recognized discounts
+and freight are separate, with source amounts retained in the saved receipt. Synthetic
+fixtures do not establish full schema, signature, cancellation, or real-world document
+support. Slice 1 remains open for source verification.
 
 - Extend the bounded XML parser for model 55 and preserve existing model-65 support.
   Validate supported structure, access key and model, and protocol consistency as
@@ -62,9 +62,10 @@ the implementation actually provides it.
 
 ## Slice 2 — Reconciliation and review
 
-Status: the discount identity, reserved category migration, model constraints, and
-manual form control are implemented. Fiscal import, reporting and full integration
-below are still outstanding; this is not a claim that the feature is complete.
+Status: the discount identity, reserved category migration, model constraints, manual
+form control, and initial XML/GO discount and freight draft integration are implemented.
+Reporting and remaining integration below are still outstanding; this is not a claim
+that the feature is complete or that synthetic GO markup proves live source support.
 
 - Add the permanent DISCOUNT system category and a dedicated discount line type or
   equivalent server-validated identity. Only the Add Discount action and fiscal import

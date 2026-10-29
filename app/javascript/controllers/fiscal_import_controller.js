@@ -16,7 +16,8 @@ export default class extends Controller {
     transactionType: String,
     directUploadUrl: String,
     pendingDraft: Object,
-    pendingDraftId: String
+    pendingDraftId: String,
+    freightLabel: String
   }
 
   connect() {
@@ -357,6 +358,21 @@ export default class extends Controller {
       price.value = _applyMask((-item.price_cents).toString())
       price.dispatchEvent(new Event("input", { bubbles: true }))
     })
+    if (draft.freight_cents > 0) {
+      composite.addRow()
+      const row = composite.activeRows.at(-1)
+      row.querySelector("input[name$='[description]']").value = this.freightLabelValue
+      const price = row.querySelector("[data-composite-transaction-target~='itemPrice']")
+      price.value = _applyMask((-draft.freight_cents).toString())
+      price.dispatchEvent(new Event("input", { bubbles: true }))
+    }
+    if (draft.discount_cents > 0) {
+      composite.addDiscount()
+      const discount = composite.activeRows.find(row => row.dataset.discount === "true")
+      const price = discount.querySelector("[data-composite-transaction-target~='itemPrice']")
+      price.value = _applyMask(draft.discount_cents.toString())
+      price.dispatchEvent(new Event("input", { bubbles: true }))
+    }
     composite.recalculate()
     this.applyIssueTimestamp(draft.issued_at)
   }

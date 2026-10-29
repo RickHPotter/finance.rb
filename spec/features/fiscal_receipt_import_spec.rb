@@ -29,7 +29,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     click_button(I18n.t("fiscal_import.import_file"))
     click_button(I18n.t("fiscal_import.continue"))
 
-    expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 2)
+    expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 3)
     separator_spacing = page.evaluate_script(<<~JS)
       (() => {
         const rows = [...document.querySelectorAll("[data-composite-transaction-target~='row']:not(.hidden)")]
@@ -47,7 +47,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(page).to have_field("cash_transaction_date_date_input", with: "2026-10-14")
     expect(page).to have_field("cash_transaction_date_time_input", with: "12:30")
     descriptions = all("[data-composite-transaction-target~='row']:not(.hidden) input[name$='[description]']").map(&:value)
-    expect(descriptions).to eq(%w[Arroz Feijao])
+    expect(descriptions).to eq([ I18n.t("transactions.composite.discount"), "Arroz", "Feijao" ])
     expect(CashTransaction.where(description: "Mercado Exemplo")).not_to exist
   end
 
@@ -62,12 +62,12 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     click_button(I18n.t("fiscal_import.import_file"))
     click_button(I18n.t("fiscal_import.continue"))
 
-    expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 2)
+    expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 3)
     expect(page).to have_field("card_transaction[price]", with: "-R$ 19.75")
     expect(page).to have_field("card_transaction_date_date_input", with: "2026-10-14")
     expect(page).to have_field("card_transaction_date_time_input", with: "12:30")
     descriptions = all("[data-composite-transaction-target~='row']:not(.hidden) input[name$='[description]']").map(&:value)
-    expect(descriptions).to eq(%w[Arroz Feijao])
+    expect(descriptions).to eq([ I18n.t("transactions.composite.discount"), "Arroz", "Feijao" ])
     expect(CardTransaction.where(description: "Mercado Exemplo")).not_to exist
   end
 
@@ -81,6 +81,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(page).to have_css("[data-fiscal-import-target='status']", text: I18n.t("fiscal_import.messages.draft_saved"))
     receipt_draft = user.fiscal_receipt_drafts.sole
     expect(receipt_draft.fiscal_draft).to include("issuer" => "Mercado Exemplo", "total_cents" => 1975)
+    expect(receipt_draft.fiscal_draft.fetch("discount_cents")).to eq(100)
     expect(receipt_draft.source.blob.filename.to_s).to eq("fiscal_receipt.xml")
     expect(CashTransaction.where(description: "Mercado Exemplo")).not_to exist
 
@@ -101,6 +102,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(page).to have_field("cash_transaction_date_date_input", with: "2026-10-14")
     expect(page).to have_field("cash_transaction_date_time_input", with: "12:30")
     expect(page).to have_field("fiscal_receipt_draft_id", with: receipt_draft.id.to_s, type: "hidden")
+    expect(page).to have_css("[data-composite-transaction-target~='row'][data-discount='true']")
     expect(user.fiscal_receipt_drafts).to contain_exactly(receipt_draft)
     expect(CashTransaction.where(description: "Mercado Exemplo")).not_to exist
 

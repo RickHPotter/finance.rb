@@ -52,6 +52,7 @@ module FiscalReceipts
       total_cents = cents(value_at(info, "total/ICMSTot/vNF"))
       raise InvalidDocument, I18n.t("fiscal_import.messages.document_total_invalid") unless total_cents.positive?
 
+      details = fiscal_details(info, rows)
       Draft.new(
         access_key: key.value,
         issuer: value_at(info, "emit/xNome"),
@@ -59,8 +60,18 @@ module FiscalReceipts
         total_cents:,
         items: rows.map { |row| parse_item(row) },
         source: "xml",
-        fiscal_details: fiscal_details(info, rows)
+        fiscal_details: details,
+        discount_cents: adjustment_cents(details, "vDesc"),
+        freight_cents: adjustment_cents(details, "vFrete")
       )
+    end
+
+    def adjustment_cents(details, field)
+      item_amounts = details[:items].filter_map { |item| item[:amounts][field] }
+      document_amount = details[:document_totals][field]
+      raise InvalidDocument, I18n.t("fiscal_import.messages.adjustment_mismatch") if document_amount && item_amounts.any? && document_amount != item_amounts.sum
+
+      document_amount || item_amounts.sum
     end
 
     def fiscal_details(info, rows)
@@ -96,16 +107,10 @@ module FiscalReceipts
       raise InvalidDocument, I18n.t("fiscal_import.messages.item_data_missing") unless product
 
       description = value_at(product, "xProd")
-      amount = cents(value_at(product, "vProd")) - optional_cents(product, "vDesc") +
-               optional_cents(product, "vFrete") + optional_cents(product, "vSeg") + optional_cents(product, "vOutro")
+      amount = cents(value_at(product, "vProd"))
       raise InvalidDocument, I18n.t("fiscal_import.messages.item_data_invalid") if description.blank? || amount.negative?
 
       { description: description.first(255), price_cents: amount }
-    end
-
-    def optional_cents(node, path)
-      value = value_at(node, path)
-      value.present? ? cents(value) : 0
     end
 
     def cents(value)

@@ -19,9 +19,10 @@ RSpec.describe "Fiscal receipt imports", type: :request do
       expect(draft.fetch("total_cents")).to eq(1975)
       expect(draft.fetch("issued_at")).to eq("2026-10-14T12:30:00-03:00")
       expect(draft.fetch("items")).to eq([
-                                           { "description" => "Arroz", "price_cents" => 1150 },
+                                           { "description" => "Arroz", "price_cents" => 1250 },
                                            { "description" => "Feijao", "price_cents" => 825 }
                                          ])
+      expect(draft.fetch("discount_cents")).to eq(100)
     end
 
     it "rejects unsupported files" do

@@ -50,8 +50,11 @@ class FiscalReceiptDraftsController < ApplicationController
     payload = JSON.parse(payload) if payload.is_a?(String)
     return {} unless payload.respond_to?(:permit)
 
-    payload.permit(:access_key, :issuer, :issued_at, :total_cents, :difference_cents, :source,
-                   items: %i[description price_cents]).to_h
+    payload.permit(:access_key, :issuer, :issued_at, :total_cents, :difference_cents, :source, :discount_cents, :freight_cents,
+                   items: %i[description price_cents],
+                   fiscal_details: [ :model, { document_totals: %i[vProd vDesc vFrete vSeg vOutro vNF],
+                                               items: [ :product_code, :quantity, :unit, :unit_price,
+                                                        { amounts: %i[vProd vDesc vFrete vSeg vOutro] } ] } ]).to_h
   end
 
   def attach_uploaded_source(receipt_draft)

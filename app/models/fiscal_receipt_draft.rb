@@ -12,6 +12,7 @@ class FiscalReceiptDraft < ApplicationRecord
   # @validations ..............................................................
   validates :payload, presence: true
   validate :payload_follows_contract
+  validate :adjustments_follow_contract
   validates :source,
             content_type: %w[application/json application/pdf image/jpeg image/png image/heic application/xml text/xml],
             size: { less_than_or_equal_to: 10.megabytes },
@@ -47,6 +48,15 @@ class FiscalReceiptDraft < ApplicationRecord
     errors.add(:payload, :too_long, count: 256.kilobytes) if payload.to_json.bytesize > 256.kilobytes
     errors.add(:payload, :invalid) unless payload.fetch("total_cents", nil).is_a?(Integer) && payload.fetch("total_cents").positive?
     errors.add(:payload, :invalid) unless valid_items?
+  end
+
+  def adjustments_follow_contract
+    return unless payload.is_a?(Hash)
+
+    %w[discount_cents freight_cents].each do |key|
+      value = payload[key]
+      errors.add(:payload, :invalid) unless value.nil? || (value.is_a?(Integer) && value >= 0)
+    end
   end
 
   def normalize_payload_keys

@@ -72,6 +72,23 @@ RSpec.describe FiscalReceipts::GoiasLookup do
     expect(draft.items.first).to eq(description: "Arroz", price_cents: 1250)
   end
 
+  it "extracts a displayed discount without altering the product amount" do
+    landing = "<iframe class='iframe-danfe-nfce' src='#{described_class::DETAIL_PATH}?chNFe=#{key}'></iframe>"
+    stub_request(:get, /#{Regexp.escape(described_class::PATH)}\?/).to_return(status: 200, body: landing)
+    example = Rails.root.join("spec/fixtures/files/fiscal_naruto_07/goias_discount.html").read
+    html = "<div id=\"u20\">Mercado</div><span class=\"chave\">#{key}</span>#{example}"
+    stub_request(:get, /#{Regexp.escape(described_class::DETAIL_PATH)}\?/)
+      .to_return(status: 200, body: "new DanfeNFCe('#receipt', '/images/', '#{html.to_json[1..-2]}');")
+    stub_request(:get, /#{Regexp.escape(described_class::DETAILED_PAGE_PATH)}\?/).to_return(status: 200, body: detailed_html)
+
+    draft = described_class.new(url).call
+
+    expect(draft.items.first[:price_cents]).to eq(11_995)
+    expect(draft.discount_cents).to eq(1000)
+    expect(draft.total_cents).to eq(10_995)
+    expect(draft.difference_cents).to eq(0)
+  end
+
   it "accepts the shorter online version 3 QR payload" do
     online_url = "https://#{described_class::HOST}#{described_class::PATH}?p=#{key}%7C3%7C1"
     landing_request = stub_request(:get, "https://#{described_class::HOST}#{described_class::PATH}?#{URI.encode_www_form(p: "#{key}|3|1")}")
