@@ -421,6 +421,14 @@ Explicitly out of scope:
 
 Status: planned. This extends NARUTO-03's supported NFC-e/cupom import and owns the
 deferred duplicate-document policy and protection. NARUTO-03 remains closed.
+Planning has started: create discounts as dedicated first line items through Add Discount
+or fiscal import, with fixed DISCOUNT category and no entity, while preserving product
+amounts; warn on a duplicate completed transaction in the current context and
+allow an explicit intentional repeat. For a saved-receipt duplicate, offer to open the
+existing receipt or explicitly save another. Reports retain original product-category
+amounts and show discounts separately under DISCOUNT. Source-identified freight is a
+separate charge line. Deleted records do not trigger duplicate warnings; other charge
+semantics require fixture-based investigation.
 
 Goal: harden the existing basic authorized-XML parser for NF-e (model 55) documents
 and investigate the fiscal fields and document-level adjustments needed to represent
@@ -448,7 +456,9 @@ Coverage: sanitized model-55 XML fixtures, malformed/unauthorized documents, ite
 document totals with discounts/charges, status and date handling, cash/card prefill,
 attachments, and rejection or review of unresolved differences.
 
-Reference: [NF-e and fiscal-accuracy development plan](docs/sprints/5-naruto/naruto-07/01-product-and-data-contract.md).
+References: [product contract](docs/sprints/5-naruto/naruto-07/01-product-and-data-contract.md),
+[implementation slices](docs/sprints/5-naruto/naruto-07/02-implementation-slices.md), and
+[field inventory](docs/sprints/5-naruto/naruto-07/03-field-inventory-and-reconciliation.md).
 
 ### NARUTO-08: Read screenshots and photographed documents with OCR
 
