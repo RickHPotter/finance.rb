@@ -2,7 +2,8 @@
 
 ## Status
 
-Approved planning contract as of 2026-09-25.
+Closed per user confirmation. Category hierarchy, selection, filtering, grouped display,
+and status cascade have been manually verified.
 
 ---
 

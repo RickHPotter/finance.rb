@@ -45,6 +45,9 @@ reference merge work. They compose cleanly on top of it.
 
 ### NARUTO-01: Create category hierarchy
 
+Status: closed per user confirmation. Category hierarchy, selection, filtering,
+grouped display, and status cascade have been manually verified.
+
 Goal: let users organise categories into a two-level parent/child hierarchy so a
 family of related spending can be grouped without polluting the flat list.
 
@@ -93,7 +96,7 @@ References:
 
 ### NARUTO-02: Add bulk and composite transactions
 
-Status: the original split-purchase scope has since been extended to cover per-line-item
+Status: closed per user confirmation. The original split-purchase scope was extended to cover per-line-item
 friend repayments and exchange notifications. The transaction breakdown and that
 friend-aware extension belong to NARUTO-02; NARUTO-03 only adds receipt/document
 handling and the fiscal-document import workflow that can prefill these line
@@ -231,12 +234,11 @@ Explicitly out of scope for the current attachment and fiscal-import plan:
 
 ### NARUTO-04: Extend subscriptions with salary support and bulk operations
 
-Status: implementation complete, manual verification underway as of 2026-10-19. The
+Status: closed per user confirmation. The
 salary/OTHER families, subscription kind/main-category forms, atomic bulk operations,
 and rollback hardening are implemented with focused specs. Manual testing has passed
-so far, including the SALARIO income-subscription flow after fixing an accidental
-duplicate-category lookup and the PWA index styling review. Full CI and the remaining
-manual acceptance flows are still required before this feature is done. The signed-total,
+including the SALARIO income-subscription flow after fixing an accidental
+duplicate-category lookup and the PWA index styling review. The signed-total,
 cash-only income, immutable-kind, category-choice, and atomic bulk-edit decisions are
 locked. See the
 [NARUTO-04 product contract](docs/sprints/5-naruto/naruto-04/01-product-and-data-contract.md)

@@ -2,6 +2,10 @@
 
 ## Current Status
 
+NARUTO-02 is closed per user confirmation. The historical notes below describe the
+implementation and verification at the time; fiscal import was subsequently delivered
+and closed under NARUTO-03.
+
 The original composite-transaction slices are implemented. Follow-up work expanded
 NARUTO-02 to include per-line-item cash friend repayments, intent-specific notification
 reconciliation, and safe repayment recalculation when an item price changes. This
