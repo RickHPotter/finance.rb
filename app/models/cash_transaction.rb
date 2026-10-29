@@ -46,6 +46,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
            dependent: :restrict_with_error
   has_many :line_items, as: :transactable, dependent: :destroy, inverse_of: :transactable
   has_many_attached :receipts
+  has_one :fiscal_document_link, as: :transactable, dependent: :destroy
   accepts_nested_attributes_for :piggy_bank, allow_destroy: true
   accepts_nested_attributes_for :line_items, allow_destroy: true, reject_if: :blank_line_item_attributes?
 

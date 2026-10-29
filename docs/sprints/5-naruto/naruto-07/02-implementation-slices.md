@@ -99,6 +99,10 @@ differences are visible and prevent a misleading save until resolved.
 
 ## Slice 3 — Duplicate protection
 
+Status: a scoped fiscal-document link and user-bound signed identity token provide a
+foundation. Import warnings, draft checks, final-save enforcement, concurrency handling,
+and the user override are not yet implemented; duplicate protection is not active.
+
 - Persist a validated fiscal identity for draft and completed transaction paths; a
   blob filename or client-submitted draft field alone is not a trusted identity.
   Design an atomic server-side final check for concurrent submissions.

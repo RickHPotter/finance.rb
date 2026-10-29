@@ -1042,6 +1042,43 @@ ALTER SEQUENCE public.finance_subscriptions_id_seq OWNED BY public.finance_subsc
 
 
 --
+-- Name: fiscal_document_links; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.fiscal_document_links (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    context_id bigint NOT NULL,
+    access_key character varying(44) NOT NULL,
+    transactable_type character varying NOT NULL,
+    transactable_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT fiscal_document_links_access_key_format CHECK (((access_key)::text ~ '^[0-9]{44}$'::text)),
+    CONSTRAINT fiscal_document_links_transaction_type CHECK (((transactable_type)::text = ANY ((ARRAY['CashTransaction'::character varying, 'CardTransaction'::character varying])::text[])))
+);
+
+
+--
+-- Name: fiscal_document_links_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.fiscal_document_links_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: fiscal_document_links_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.fiscal_document_links_id_seq OWNED BY public.fiscal_document_links.id;
+
+
+--
 -- Name: fiscal_receipt_drafts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1928,6 +1965,13 @@ ALTER TABLE ONLY public.finance_subscriptions ALTER COLUMN id SET DEFAULT nextva
 
 
 --
+-- Name: fiscal_document_links id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fiscal_document_links ALTER COLUMN id SET DEFAULT nextval('public.fiscal_document_links_id_seq'::regclass);
+
+
+--
 -- Name: fiscal_receipt_drafts id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2251,6 +2295,14 @@ ALTER TABLE ONLY public.exchanges
 
 ALTER TABLE ONLY public.finance_subscriptions
     ADD CONSTRAINT finance_subscriptions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: fiscal_document_links fiscal_document_links_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fiscal_document_links
+    ADD CONSTRAINT fiscal_document_links_pkey PRIMARY KEY (id);
 
 
 --
@@ -3075,6 +3127,34 @@ CREATE INDEX index_finance_subscriptions_on_status ON public.finance_subscriptio
 --
 
 CREATE INDEX index_finance_subscriptions_on_user_id ON public.finance_subscriptions USING btree (user_id);
+
+
+--
+-- Name: index_fiscal_document_links_on_context_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_fiscal_document_links_on_context_id ON public.fiscal_document_links USING btree (context_id);
+
+
+--
+-- Name: index_fiscal_document_links_on_scope_and_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_fiscal_document_links_on_scope_and_key ON public.fiscal_document_links USING btree (user_id, context_id, access_key);
+
+
+--
+-- Name: index_fiscal_document_links_on_transactable; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_fiscal_document_links_on_transactable ON public.fiscal_document_links USING btree (transactable_type, transactable_id);
+
+
+--
+-- Name: index_fiscal_document_links_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_fiscal_document_links_on_user_id ON public.fiscal_document_links USING btree (user_id);
 
 
 --
@@ -4015,6 +4095,14 @@ ALTER TABLE ONLY public.message_actions
 
 
 --
+-- Name: fiscal_document_links fk_rails_be90a8df21; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fiscal_document_links
+    ADD CONSTRAINT fk_rails_be90a8df21 FOREIGN KEY (context_id) REFERENCES public.contexts(id);
+
+
+--
 -- Name: active_storage_attachments fk_rails_c3b3935057; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4060,6 +4148,14 @@ ALTER TABLE ONLY public.conversation_participants
 
 ALTER TABLE ONLY public.piggy_banks
     ADD CONSTRAINT fk_rails_d56a7dffc1 FOREIGN KEY (return_cash_transaction_id) REFERENCES public.cash_transactions(id);
+
+
+--
+-- Name: fiscal_document_links fk_rails_d6a93b4cf5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fiscal_document_links
+    ADD CONSTRAINT fk_rails_d6a93b4cf5 FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -4205,6 +4301,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261028160000'),
 ('20261028151000'),
 ('20261028150000'),
 ('20261020120000'),
