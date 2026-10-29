@@ -58,6 +58,7 @@ en:
         card_advance: Card Advance
         card_installment: Card Installment
         card_payment: Card Payment
+        discount: Discount
         exchange: Lend Request
         exchange_return: Lend Return
         borrow_return: Borrow Return
@@ -146,6 +147,7 @@ pt-BR:
         card_advance: Antecipação de Cartão
         card_installment: Parcelamento de Cartão
         card_payment: Pagamento de Cartão
+        discount: Desconto
         exchange: Pedido Empréstimo
         exchange_return: Acerto Empréstimo
         borrow_return: Retorno Empréstimo

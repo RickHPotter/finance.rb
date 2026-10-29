@@ -1331,7 +1331,9 @@ CREATE TABLE public.line_items (
     comment text,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    friend_notification_intent character varying
+    friend_notification_intent character varying,
+    item_kind character varying DEFAULT 'product'::character varying NOT NULL,
+    CONSTRAINT line_items_item_kind_values CHECK (((item_kind)::text = ANY ((ARRAY['product'::character varying, 'discount'::character varying])::text[])))
 );
 
 
@@ -3251,6 +3253,13 @@ CREATE INDEX index_line_items_on_transactable_type_and_transactable_id ON public
 
 
 --
+-- Name: index_line_items_one_discount_per_transaction; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_line_items_one_discount_per_transaction ON public.line_items USING btree (transactable_type, transactable_id) WHERE ((item_kind)::text = 'discount'::text);
+
+
+--
 -- Name: index_message_actions_on_actor_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4196,6 +4205,8 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261028151000'),
+('20261028150000'),
 ('20261020120000'),
 ('20261016120000'),
 ('20261015120000'),

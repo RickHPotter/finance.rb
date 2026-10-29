@@ -79,6 +79,8 @@ show its source and effect on reconciliation, and retain the original product va
   category cannot be changed and no entity may be selected. Enforce these rules at the
   server boundary, including crafted requests and later edits. A discount line can be
   removed, and ordinary line-item category selection cannot create one manually.
+- If a user already has a top-level custom `DISCOUNT` category, reuse it and make it
+  permanent while preserving its existing history and category relationships.
 - The discount line always appears **first**, whether created manually or by import,
   including after saving, reopening, duplication, and removal/re-addition. Ordering
   must persist or be derived consistently, rather than only arranged in the browser.
