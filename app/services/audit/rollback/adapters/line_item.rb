@@ -25,6 +25,22 @@ class Audit::Rollback::Adapters::LineItem < Audit::Rollback::Adapters::Base
     RECALCULATIONS
   end
 
+  def compensate!(rows:, **)
+    return super(**) unless action == "recreate" && before_state["item_kind"] == "discount"
+
+    category_row = rows.find do |row|
+      state = row.before_state || {}
+      row.record_type == "CategoryTransaction" && row.action == "recreate" &&
+        state["transactable_type"] == "LineItem" && state["transactable_id"] == item_id
+    end
+    raise CompensationNotImplementedError, "discount category is missing from the rollback" unless category_row
+
+    record = record_class.new(restore_attributes.merge("id" => item_id))
+    record.category_transactions.build(category_row.adapter.restore_attributes.merge("id" => category_row.item_id))
+    record.save!
+    [ category_row.key ]
+  end
+
   private
 
   def parent_identity
