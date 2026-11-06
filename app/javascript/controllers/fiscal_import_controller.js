@@ -179,6 +179,8 @@ export default class extends Controller {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || this.message("import_failed"))
 
+      this.showSourceSummary(result.draft)
+
       this.duplicateConfirmed = false
       if (result.duplicate_transaction) {
         if (!window.confirm(this.message("duplicate_transaction"))) return
@@ -363,6 +365,7 @@ export default class extends Controller {
     const priceMask = this.application.getControllerForElementAndIdentifier(this.element, "price-mask")
     if (!splitTab || splitTab.disabled || !composite || !priceMask) throw new Error(this.message("split_unavailable"))
 
+    this.showSourceSummary(draft)
     const identity = this.element.querySelector("#fiscal_identity_token")
     if (identity && draft.identity_token) identity.value = draft.identity_token
     const confirmation = this.element.querySelector("[name='fiscal_duplicate_confirmed']")
@@ -403,6 +406,24 @@ export default class extends Controller {
     }
     composite.recalculate()
     this.applyIssueTimestamp(draft.issued_at)
+  }
+
+  showSourceSummary(draft) {
+    const summary = this.element.querySelector("[data-fiscal-import-summary]")
+    if (!summary) return
+
+    const amounts = {
+      products: (draft.items || []).reduce((sum, item) => sum + Number(item.price_cents || 0), 0),
+      discount: Number(draft.discount_cents || 0),
+      freight: Number(draft.freight_cents || 0),
+      total: Number(draft.total_cents || 0),
+      difference: Number(draft.difference_cents || 0)
+    }
+    const formatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+    Object.entries(amounts).forEach(([key, amount]) => {
+      summary.querySelector(`[data-fiscal-summary-amount='${key}']`).textContent = formatter.format(amount / 100)
+    })
+    summary.hidden = false
   }
 
   applyIssueTimestamp(issuedAt) {

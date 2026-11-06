@@ -18,6 +18,7 @@ class Views::Transactions::FormLineItemsSection < Views::Base
 
   def view_template
     div(class: "mb-0") do
+      render Views::Transactions::FiscalReceiptSummary.new
       expanded_section
     end
   end

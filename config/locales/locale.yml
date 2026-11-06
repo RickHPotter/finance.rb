@@ -32,6 +32,14 @@ en:
       parana: "Paraná QR URL or 44-digit access key"
     lookup: "Look up receipt"
     review: "Imported %{count} items. Review the draft; categories may be left blank."
+    source_summary:
+      title: "Original receipt amounts"
+      products: "Products"
+      discount: "Discount"
+      freight: "Freight"
+      total: "Receipt total"
+      difference: "Unexplained difference"
+      hint: "These are source amounts; edits to the transaction do not change them."
     messages:
       camera_https: "Live camera scanning needs HTTPS or localhost. Upload a receipt photo instead."
       camera_point: "Point the camera at the cupom QR code."
@@ -570,6 +578,14 @@ pt-BR:
       parana: "URL do QR ou chave de acesso de 44 dígitos do Paraná"
     lookup: "Consultar cupom"
     review: "%{count} itens importados. Confira os dados; as categorias podem ficar em branco."
+    source_summary:
+      title: "Valores originais do cupom"
+      products: "Produtos"
+      discount: "Desconto"
+      freight: "Frete"
+      total: "Total do cupom"
+      difference: "Diferença não explicada"
+      hint: "Estes são os valores do cupom; alterações na transação não os modificam."
     messages:
       camera_https: "A leitura pela câmera exige HTTPS ou localhost. Envie uma foto do cupom."
       camera_point: "Aponte a câmera para o QR Code do cupom."

@@ -27,6 +27,12 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
     expect(page).to have_button(I18n.t("fiscal_import.import_file"), disabled: false)
     click_button(I18n.t("fiscal_import.import_file"))
+    within("[data-fiscal-import-summary]", visible: true) do
+      expect(page).to have_text(I18n.t("fiscal_import.source_summary.title"))
+      expect(find("[data-fiscal-summary-amount='products']").text).to include("20,75")
+      expect(find("[data-fiscal-summary-amount='discount']").text).to include("1,00")
+      expect(find("[data-fiscal-summary-amount='difference']").text).to include("0,00")
+    end
     click_button(I18n.t("fiscal_import.continue"))
 
     expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 3)
@@ -44,6 +50,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect((separator_spacing.fetch("before") - separator_spacing.fetch("after")).abs).to be <= 2
     expect(page).to have_field("cash_transaction[description]", with: "Mercado Exemplo")
     expect(page).to have_field("cash_transaction[price]", with: "-R$ 19.75")
+    expect(page).to have_css("[data-fiscal-import-summary] [data-fiscal-summary-amount='total']", text: "19,75")
     expect(page).to have_field("cash_transaction_date_date_input", with: "2026-10-14")
     expect(page).to have_field("cash_transaction_date_time_input", with: "12:30")
     descriptions = all("[data-composite-transaction-target~='row']:not(.hidden) input[name$='[description]']").map(&:value)
