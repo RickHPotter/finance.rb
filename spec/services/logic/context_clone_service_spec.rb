@@ -4,6 +4,43 @@ require "rails_helper"
 
 RSpec.describe Logic::ContextCloneService do
   describe "#call" do
+    it "copies split purchases and fiscal identities and removes them when the cloned context is purged" do
+      user = create(:user, :random)
+      source_context = user.main_context
+      account = create(:user_bank_account, :random, user:)
+      category = create(:category, :random, user:)
+      discount = user.categories.find_by!(category_name: "DISCOUNT", parent_category_id: nil)
+      date = Time.zone.today
+      purchase = create(:cash_transaction, user:, context: source_context, user_bank_account: account, date:, price: -9000,
+                                           cash_installments: [ build(:cash_installment, number: 1, date:, price: -9000) ],
+                                           line_items: [
+                                             LineItem.new(description: "Food", price: -10_000,
+                                                          category_transactions: [ CategoryTransaction.new(category:) ]),
+                                             LineItem.new(description: "Discount", item_kind: "discount", price: 1000,
+                                                          category_transactions: [ CategoryTransaction.new(category: discount) ])
+                                           ])
+      key = "41140978393592000146651000000000031222222235"
+      FiscalDocumentLink.create!(user:, context: source_context, transactable: purchase, access_key: key)
+      purchase.receipts.attach(io: StringIO.new("receipt"), filename: "receipt.xml", content_type: "application/xml")
+
+      cloned_context = described_class.new(source_context:, name: "Receipt clone").call
+      clone = cloned_context.cash_transactions.find_by!(description: purchase.description)
+      expect(clone.line_items.map { |item| [ item.item_kind, item.price, item.category_id ] }).to contain_exactly(
+        [ "product", -10_000, category.id ], [ "discount", 1000, discount.id ]
+      )
+      expect(clone.fiscal_document_link.access_key).to eq(key)
+      expect(clone.receipts.blobs.pluck(:id)).to eq(purchase.receipts.blobs.pluck(:id))
+
+      item_ids = clone.line_item_ids
+      cloned_context.update!(archived_at: Time.current)
+      Logic::ContextPurgeService.new(context: cloned_context, user:).call
+      expect(LineItem.where(id: item_ids)).to be_empty
+      expect(FiscalDocumentLink.where(context_id: cloned_context.id)).to be_empty
+      expect(purchase.reload.line_items.count).to eq(2)
+      expect(purchase.fiscal_document_link.access_key).to eq(key)
+      expect(purchase.receipts).to be_attached
+    end
+
     it "clones a prepaid purchase without introducing a bill or cash projection" do
       user = create(:user, :random)
       source_context = create(:context, user:, name: "Prepaid source")
