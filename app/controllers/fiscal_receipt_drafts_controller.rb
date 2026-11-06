@@ -11,15 +11,19 @@ class FiscalReceiptDraftsController < ApplicationController
   end
 
   def create
-    receipt_draft = current_user.fiscal_receipt_drafts.new(payload: fiscal_draft_payload)
-    attach_uploaded_source(receipt_draft) if params[:source_signed_id].present?
-    attach_uploaded_evidence(receipt_draft)
-    attach_manifest_source(receipt_draft) unless receipt_draft.source.attached?
+    payload = fiscal_draft_payload
+    key = FiscalReceipts::IdentityToken.read(payload["identity_token"], user: current_user)
+    return render json: { error: I18n.t("fiscal_import.messages.invalid_identity") }, status: :unprocessable_content if key.blank? || key != payload["access_key"]
 
-    if receipt_draft.save
-      render json: { id: receipt_draft.id }, status: :created
-    else
-      render json: { error: receipt_draft.errors.full_messages.to_sentence }, status: :unprocessable_content
+    current_user.with_lock do
+      existing = existing_verified_draft(key)
+      if existing && !ActiveModel::Type::Boolean.new.cast(params[:duplicate_confirmed])
+        render json: { error: I18n.t("fiscal_import.messages.duplicate_draft"),
+                       existing_draft_url: fiscal_receipt_drafts_path(anchor: "fiscal_receipt_draft_#{existing.id}") }, status: :conflict
+        return
+      end
+
+      save_receipt_draft(payload)
     end
   rescue ActiveSupport::MessageVerifier::InvalidSignature, ActiveRecord::RecordNotFound
     render json: { error: I18n.t("fiscal_import.messages.upload_failed") }, status: :unprocessable_content
@@ -45,16 +49,35 @@ class FiscalReceiptDraftsController < ApplicationController
 
   private
 
+  def save_receipt_draft(payload)
+    receipt_draft = current_user.fiscal_receipt_drafts.new(payload:)
+    attach_uploaded_source(receipt_draft) if params[:source_signed_id].present?
+    attach_uploaded_evidence(receipt_draft)
+    attach_manifest_source(receipt_draft) unless receipt_draft.source.attached?
+
+    if receipt_draft.save
+      render json: { id: receipt_draft.id }, status: :created
+    else
+      render json: { error: receipt_draft.errors.full_messages.to_sentence }, status: :unprocessable_content
+    end
+  end
+
   def fiscal_draft_payload
     payload = params.require(:draft)
     payload = JSON.parse(payload) if payload.is_a?(String)
     return {} unless payload.respond_to?(:permit)
 
-    payload.permit(:access_key, :issuer, :issued_at, :total_cents, :difference_cents, :source, :discount_cents, :freight_cents,
+    payload.permit(:access_key, :identity_token, :issuer, :issued_at, :total_cents, :difference_cents, :source, :discount_cents, :freight_cents,
                    items: %i[description price_cents],
                    fiscal_details: [ :model, { document_totals: %i[vProd vDesc vFrete vSeg vOutro vNF],
                                                items: [ :product_code, :quantity, :unit, :unit_price,
                                                         { amounts: %i[vProd vDesc vFrete vSeg vOutro] } ] } ]).to_h
+  end
+
+  def existing_verified_draft(key)
+    current_user.fiscal_receipt_drafts.where("payload ->> 'access_key' = ?", key).find do |draft|
+      FiscalReceipts::IdentityToken.read(draft.payload["identity_token"], user: current_user) == key
+    end
   end
 
   def attach_uploaded_source(receipt_draft)

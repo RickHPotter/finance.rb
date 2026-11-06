@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class CardTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
+  include FiscalReceiptIdentity
   include TabsConcern
   include ReceiptUploadAuthorization
 
@@ -158,11 +159,13 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     return render_local_update if params[:commit] == "Update"
 
     saved =
-      if action_name == "create" && params[:fiscal_receipt_draft_id].present?
-        ActiveRecord::Base.transaction do
-          result = @card_transaction.save
-          consume_fiscal_receipt_draft if result
-          result
+      if action_name == "create"
+        save_with_fiscal_identity(@card_transaction) do
+          ActiveRecord::Base.transaction do
+            result = @card_transaction.save
+            consume_fiscal_receipt_draft if result
+            result
+          end
         end
       else
         @card_transaction.save

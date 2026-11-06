@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class CashTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
+  include FiscalReceiptIdentity
   include TabsConcern
   include ReceiptUploadAuthorization
 
@@ -531,11 +532,13 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     return render_update_form if params[:commit] == "Update"
 
     saved =
-      if action_name == "create" && params[:fiscal_receipt_draft_id].present?
-        ActiveRecord::Base.transaction do
-          result = apply_source_message(target: @cash_transaction) { @cash_transaction.save }
-          consume_fiscal_receipt_draft if result
-          result
+      if action_name == "create"
+        save_with_fiscal_identity(@cash_transaction) do
+          ActiveRecord::Base.transaction do
+            result = apply_source_message(target: @cash_transaction) { @cash_transaction.save }
+            consume_fiscal_receipt_draft if result
+            result
+          end
         end
       else
         apply_source_message(target: @cash_transaction) { @cash_transaction.save }

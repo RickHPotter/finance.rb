@@ -179,6 +179,12 @@ export default class extends Controller {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || this.message("import_failed"))
 
+      this.duplicateConfirmed = false
+      if (result.duplicate_transaction) {
+        if (!window.confirm(this.message("duplicate_transaction"))) return
+        this.duplicateConfirmed = true
+      }
+
       this.evidenceSignedIds = result.evidence_signed_ids || []
 
       if (this.hasTransactionUrlValue) {
@@ -216,6 +222,7 @@ export default class extends Controller {
       sessionStorage.setItem(PENDING_DRAFT_KEY, JSON.stringify({
         transactionType: this.transactionTypeValue,
         draft: this.pendingDraft,
+        duplicateConfirmed: this.duplicateConfirmed,
         receiptSignedId,
         evidenceSignedIds: this.evidenceSignedIds || []
       }))
@@ -234,7 +241,7 @@ export default class extends Controller {
 
     try {
       const sourceSignedId = this.importedFile && !this.shouldOmitCameraSource() ? await this.uploadReceipt(this.importedFile) : null
-      const response = await fetch(this.draftsUrlValue, {
+      let response = await fetch(this.draftsUrlValue, {
         method: "POST",
         headers: {
           "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content || "",
@@ -243,7 +250,19 @@ export default class extends Controller {
         },
         body: JSON.stringify({ draft: this.pendingDraft, source_signed_id: sourceSignedId, evidence_signed_ids: this.evidenceSignedIds || [] })
       })
-      const result = await response.json()
+      let result = await response.json()
+      if (response.status === 409 && result.existing_draft_url) {
+        if (!window.confirm(result.error)) {
+          window.location.assign(result.existing_draft_url)
+          return
+        }
+        response = await fetch(this.draftsUrlValue, {
+          method: "POST",
+          headers: { "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content || "", Accept: "application/json", "Content-Type": "application/json" },
+          body: JSON.stringify({ draft: this.pendingDraft, source_signed_id: sourceSignedId, evidence_signed_ids: this.evidenceSignedIds || [], duplicate_confirmed: true })
+        })
+        result = await response.json()
+      }
       if (!response.ok) throw new Error(result.error || this.message("import_failed"))
 
       this.showStatus(this.message("draft_saved"))
@@ -315,6 +334,10 @@ export default class extends Controller {
     sessionStorage.removeItem(PENDING_DRAFT_KEY)
     try {
       this.applyDraft(payload.draft)
+      const identity = this.element.querySelector("#fiscal_identity_token")
+      if (identity) identity.value = payload.draft.identity_token || ""
+      const confirmation = this.element.querySelector("[name='fiscal_duplicate_confirmed']")
+      if (confirmation && payload.duplicateConfirmed) confirmation.checked = true
       if (payload.receiptSignedId) this.attachImportedReceipt(payload.receiptSignedId)
       for (const signedId of payload.evidenceSignedIds || []) this.attachImportedReceipt(signedId)
     } catch (error) {
@@ -339,6 +362,11 @@ export default class extends Controller {
     const composite = this.application.getControllerForElementAndIdentifier(this.element, "composite-transaction")
     const priceMask = this.application.getControllerForElementAndIdentifier(this.element, "price-mask")
     if (!splitTab || splitTab.disabled || !composite || !priceMask) throw new Error(this.message("split_unavailable"))
+
+    const identity = this.element.querySelector("#fiscal_identity_token")
+    if (identity && draft.identity_token) identity.value = draft.identity_token
+    const confirmation = this.element.querySelector("[name='fiscal_duplicate_confirmed']")
+    if (confirmation && this.duplicateConfirmed) confirmation.checked = true
 
     splitTab.click()
     composite.clearAllRows()

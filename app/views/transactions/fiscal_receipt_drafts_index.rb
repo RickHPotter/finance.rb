@@ -53,6 +53,7 @@ class Views::Transactions::FiscalReceiptDraftsIndex < Views::Base
   def render_draft(draft)
     data = draft.fiscal_draft
     div(
+      id: "fiscal_receipt_draft_#{draft.id}",
       class: "flex min-w-0 flex-col rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition hover:shadow-md " \
              "dark:border-slate-700 dark:bg-slate-900"
     ) do

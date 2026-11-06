@@ -6,7 +6,8 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
   let(:user) { create(:user, :random) }
   let(:draft) do
     {
-      access_key: "52261000000000000000650010000000000000000000",
+      access_key: "41140978393592000146651000000000031222222235",
+      identity_token: FiscalReceipts::IdentityToken.issue(user:, access_key: "41140978393592000146651000000000031222222235"),
       issuer: "Mercado Exemplo",
       issued_at: "2026-10-14T12:30:00-03:00",
       total_cents: 1150,
@@ -19,6 +20,40 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
   before { sign_in user }
 
   describe "POST /fiscal_receipt_drafts" do
+    it "warns about an existing draft and permits an explicit repeat after confirmation" do
+      post fiscal_receipt_drafts_path, params: { draft: }, as: :json
+      existing = user.fiscal_receipt_drafts.sole
+
+      expect do
+        post fiscal_receipt_drafts_path, params: { draft: }, as: :json
+      end.not_to change(user.fiscal_receipt_drafts, :count)
+      expect(response).to have_http_status(:conflict)
+      expect(response.parsed_body.fetch("existing_draft_url")).to include("fiscal_receipt_draft_#{existing.id}")
+
+      expect do
+        post fiscal_receipt_drafts_path, params: { draft:, duplicate_confirmed: true }, as: :json
+      end.to change(user.fiscal_receipt_drafts, :count).by(1)
+    end
+
+    it "does not disclose another user's draft or accept their identity token" do
+      other = create(:user, :random)
+      other.fiscal_receipt_drafts.create!(payload: draft.stringify_keys)
+      foreign_token = FiscalReceipts::IdentityToken.issue(user: other, access_key: draft[:access_key])
+
+      post fiscal_receipt_drafts_path, params: { draft: draft.merge(identity_token: foreign_token) }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+
+      post fiscal_receipt_drafts_path, params: { draft: }, as: :json
+      expect(response).to have_http_status(:created)
+    end
+
+    it "allows a receipt again after its draft has been deleted" do
+      post fiscal_receipt_drafts_path, params: { draft: }, as: :json
+      user.fiscal_receipt_drafts.sole.destroy!
+      post fiscal_receipt_drafts_path, params: { draft: }, as: :json
+      expect(response).to have_http_status(:created)
+    end
+
     it "persists the extracted draft with a private source manifest" do
       expect do
         post fiscal_receipt_drafts_path, params: { draft: }, as: :json
