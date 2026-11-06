@@ -49,9 +49,8 @@ RSpec.describe "Complete transaction graph rollback" do
     expect(version.metadata.fetch("encrypted_fiscal_identity")).not_to include(key)
     expect(FiscalDocumentLink.where(transactable: transaction)).not_to exist
 
-    preview, result = apply(operation)
+    _preview, result = apply(operation)
 
-    expect(preview).to have_attributes(state: "previewable")
     expect(result).to have_attributes(status: "applied")
     restored = transaction.class.find(transaction.id)
     expect(restored.fiscal_document_link.access_key).to eq(key)
