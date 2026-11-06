@@ -6,6 +6,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   include HasMonthYear
   include HasStartingPrice
   include FinancialAuditable
+  include FiscalIdentityAuditable
   include HasCashInstallments
   include HasFinancialSafetyRules
   include HasFinancialSafetyGuards

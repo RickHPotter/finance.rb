@@ -30,6 +30,33 @@ RSpec.describe "Complete transaction graph rollback" do
     [ preview, result ]
   end
 
+  it "restores fiscal duplicate protection when a cash transaction deletion is undone" do
+    transaction = PaperTrail.request(enabled: false) { create(:cash_transaction, user:, context:, user_bank_account: account) }
+    expect_fiscal_identity_restored_after_undo(transaction)
+  end
+
+  it "restores fiscal duplicate protection when a card transaction deletion is undone" do
+    card = create(:user_card, :random, user:, card_kind: "prepaid")
+    transaction = PaperTrail.request(enabled: false) { create(:card_transaction, user:, context:, user_card: card) }
+    expect_fiscal_identity_restored_after_undo(transaction)
+  end
+
+  def expect_fiscal_identity_restored_after_undo(transaction)
+    key = "41140978393592000146651000000000031222222235"
+    FiscalDocumentLink.create!(user:, context:, transactable: transaction, access_key: key)
+    operation = audited_operation { transaction.destroy! }
+    version = operation.audit_versions.find_by!(item_type: transaction.class.name, event: :destroy)
+    expect(version.metadata.fetch("encrypted_fiscal_identity")).not_to include(key)
+    expect(FiscalDocumentLink.where(transactable: transaction)).not_to exist
+
+    preview, result = apply(operation)
+
+    expect(preview).to have_attributes(state: "previewable")
+    expect(result).to have_attributes(status: "applied")
+    restored = transaction.class.find(transaction.id)
+    expect(restored.fiscal_document_link.access_key).to eq(key)
+  end
+
   it "restores a transaction with a canonical cross-transaction reference" do
     source = PaperTrail.request(enabled: false) { create(:cash_transaction, user:, context:, user_bank_account: account, description: "Reference root") }
     referenced = PaperTrail.request(enabled: false) do

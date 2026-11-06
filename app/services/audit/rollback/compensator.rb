@@ -137,6 +137,7 @@ class Audit::Rollback::Compensator
     prepare_parent(parent)
     parent.save!
     restore_post_compensation_attributes(parent_row, parent)
+    restore_fiscal_identity(parent_row, parent)
     impact.capture_transaction(parent)
     mark_handled(parent_row, *installment_rows, *allocation_rows)
   end
@@ -257,6 +258,17 @@ class Audit::Rollback::Compensator
 
     attributes = parent_row.adapter.post_compensation_attributes
     Audit::BulkMutation.update_columns!(parent, attributes) if attributes.present?
+  end
+
+  def restore_fiscal_identity(parent_row, parent)
+    version = parent_row.adapter.transition.versions.find(&:event_destroy?)
+    encrypted_identity = version&.metadata&.fetch("encrypted_fiscal_identity", nil)
+    return if encrypted_identity.blank?
+
+    key = FiscalReceipts::AuditIdentity.decrypt(encrypted_identity, user: parent.user, context: parent.context)
+    raise CompensationError, "fiscal identity could not be restored" if key.blank?
+
+    FiscalDocumentLink.create!(user: parent.user, context: parent.context, transactable: parent, access_key: key)
   end
 
   def mark_handled(*rows)

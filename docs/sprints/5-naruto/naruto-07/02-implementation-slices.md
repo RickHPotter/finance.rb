@@ -104,9 +104,8 @@ on the user's database row. New links and split items are preserved when cloning
 context. Existing transactions and unsigned legacy drafts have no trusted identity and
 are not backfilled from arbitrary attachments; they remain usable but cannot reliably
 participate in duplicate warnings. Deleting a linked transaction or signed draft removes
-its match. Audit rollback currently recreates a deleted transaction without its fiscal
-link, so that restored transaction will not itself trigger a duplicate warning. Restoring
-the identity through audit history needs a design that respects access-key handling.
+its match. Audit rollback restores the fiscal link when undoing a transaction deletion;
+the identity in audit metadata is encrypted and bound to the original user and context.
 
 - Persist a validated fiscal identity for draft and completed transaction paths; a
   blob filename or client-submitted draft field alone is not a trusted identity.

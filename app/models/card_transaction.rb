@@ -6,6 +6,7 @@ class CardTransaction < ApplicationRecord
   include HasMonthYear
   include HasStartingPrice
   include FinancialAuditable
+  include FiscalIdentityAuditable
   include HasCardInstallments
   include HasFinancialSafetyRules
   include HasFinancialSafetyGuards

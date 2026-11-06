@@ -27,7 +27,11 @@ class Audit::VersionMetadata
   class << self
     def for(record)
       allowed_attributes = ALLOWED_ATTRIBUTES.fetch(record.class.name)
-      record.attributes.slice(*allowed_attributes).compact
+      metadata = record.attributes.slice(*allowed_attributes).compact
+      if record.respond_to?(:encrypted_fiscal_identity_for_audit) && record.encrypted_fiscal_identity_for_audit.present?
+        metadata["encrypted_fiscal_identity"] = record.encrypted_fiscal_identity_for_audit
+      end
+      metadata
     end
   end
 end
