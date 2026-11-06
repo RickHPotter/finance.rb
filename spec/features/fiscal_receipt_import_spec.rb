@@ -122,6 +122,41 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(page).to have_field("fiscal_receipt_draft_id", with: receipt_draft.id.to_s, type: "hidden")
   end
 
+  it "offers to open an existing saved receipt instead of saving it again" do
+    visit cash_transactions_path
+    open_receipt_menu
+    2.times do |index|
+      find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
+      click_button(I18n.t("fiscal_import.import_file"))
+      expect(page).to have_button(I18n.t("fiscal_import.save_for_later"), disabled: false)
+      if index.zero?
+        click_button(I18n.t("fiscal_import.save_for_later"))
+        expect(page).to have_css("[data-fiscal-import-target='status']", text: I18n.t("fiscal_import.messages.draft_saved"))
+      else
+        dismiss_confirm { click_button(I18n.t("fiscal_import.save_for_later")) }
+      end
+    end
+
+    expect(page).to have_current_path(fiscal_receipt_drafts_path, ignore_query: true)
+    expect(page).to have_text("Mercado Exemplo")
+    expect(user.fiscal_receipt_drafts.count).to eq(1)
+  end
+
+  it "asks before importing a receipt that already has a transaction" do
+    existing = create(:cash_transaction, user:, user_bank_account: user.user_bank_accounts.first)
+    FiscalDocumentLink.create!(user:, context: user.main_context, transactable: existing,
+                               access_key: "41140978393592000146651000000000031222222235")
+
+    visit cash_transactions_path
+    open_receipt_menu
+    find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
+    accept_confirm { click_button(I18n.t("fiscal_import.import_file")) }
+    click_button(I18n.t("fiscal_import.continue"))
+
+    expect(page).to have_field("fiscal_duplicate_confirmed", checked: true, visible: :all)
+    expect(page).to have_field("cash_transaction[description]", with: "Mercado Exemplo")
+  end
+
   it "provides localized import status messages in desktop and PWA layouts" do
     [ [ "en", :en ], [ "pt-BR", :"pt-BR" ] ].each do |stored_locale, locale|
       user.profile.update!(locale: stored_locale)
