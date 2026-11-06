@@ -28,29 +28,28 @@ authorization, and layout confirmation remain necessary for manual acceptance.
 XML reports item and document adjustment totals at different levels. The document
 total is not an additional charge on top of the same item totals: recognize a source
 adjustment once, preserve its components, and leave inconsistent values unresolved.
-Existing GO/PR adapters currently read product rows and payable totals; availability
-and meaning of displayed adjustments require source-specific fixture verification.
+The GO adapter recognizes specific displayed discount and freight labels; PR currently
+reads product rows and payable totals. Availability and meaning of displayed adjustments
+require source-specific real-fixture verification.
 
 | Source | Currently extracted | Known limitation |
 |---|---|---|
-| Supplied XML | `infNFe/@Id`, `ide/mod`, `protNFe/infProt/cStat`, issuer name, issue time, `ICMSTot/vNF`, and item descriptions/amounts | Parser accepts status 100 or 150 and checks key format/model, but does not compare protocol key, verify signature, or establish later cancellation status. |
-| XML items | `vProd - vDesc + vFrete + vSeg + vOutro` per product | The resulting draft item is already adjusted. Original `vProd` and the component adjustments are not retained in the normalized item. |
-| Goiás NFC-e consultation | Item descriptions and displayed row amounts, displayed payable total, key, issuer, issue time | The parser does not extract the displayed document discount; it can leave a difference. Separate consultation evidence is retained. |
+| Supplied XML | `infNFe/@Id`, `ide/mod`, protocol status and key, issuer name, issue time, `ICMSTot` amounts, and item descriptions/amounts | Parser accepts status 100 or 150, requires the matching protocol key for model 55 and checks it for model 65 when present. It does not verify signature or later cancellation status. |
+| XML items | Original `vProd`, item adjustments, quantity, unit, unit price, and code | Gross product values remain in draft lines; source adjustment amounts are retained separately. Unsupported components remain in the difference. |
+| Goiás NFC-e consultation | Item descriptions and displayed row amounts, payable total, recognized displayed discount/freight, key, issuer, issue time | Adjustment labels are covered by synthetic markup only. Separate consultation evidence is retained. |
 | Paraná NFC-e consultation | Item descriptions and displayed row amounts, displayed payable total, key, issuer, issue time | Adjustment information is not currently normalized; verify availability with fixtures before promising it. |
 
 The normalized `FiscalReceipts::Draft` currently has access key, issuer, issue time,
-total cents, item description/price, and source. `difference_cents` is document total
-minus item sum. The saved inbox permits those fields and requires nonnegative item
-amounts. The final cash/card transaction does not have a dedicated fiscal-key identity.
-The import UI negates item and parent amounts when preparing an expense.
+total cents, item description/price, source, recognized adjustments, and XML source
+details. `difference_cents` is document total minus item sum plus discount minus freight.
+The saved inbox preserves these fields. New cash/card transactions can carry a signed,
+user-scoped fiscal identity. The import UI negates product, freight, and parent amounts
+when preparing an expense and uses a positive dedicated discount line.
 
-The existing `LineItem` validation requires item prices to have the same sign as the
-parent transaction, and the parent requires their sum to equal its price. Therefore a
-positive R$10 discount row under a negative R$109.95 expense is **not currently
-valid**. The user has chosen a dedicated discount line created only through Add Discount
-or fiscal import, with permanent DISCOUNT category, no entity, and first position.
-Supporting it requires an explicit model, allocation, reporting, and rollback design;
-it must not be treated as ordinary positive income by accident.
+Product line prices have the same sign as the parent, and the parent requires line
+prices to sum to its price. A dedicated positive discount line is allowed for an expense
+with the permanent DISCOUNT category and no entity. It is shown first and reported
+separately from ordinary income.
 
 ## Fields to investigate
 

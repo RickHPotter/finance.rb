@@ -419,9 +419,10 @@ Explicitly out of scope:
 
 ### NARUTO-07: Harden fiscal import for NF-e and monetary accuracy
 
-Status: planned. This extends NARUTO-03's supported NFC-e/cupom import and owns the
+Status: implemented in slices; real-source verification and user manual acceptance
+remain open. This extends NARUTO-03's supported NFC-e/cupom import and owns the
 deferred duplicate-document policy and protection. NARUTO-03 remains closed.
-Planning has started: create discounts as dedicated first line items through Add Discount
+Create discounts as dedicated first line items through Add Discount
 or fiscal import, with fixed DISCOUNT category and no entity, while preserving product
 amounts; warn on a duplicate completed transaction in the current context and
 allow an explicit intentional repeat. For a saved-receipt duplicate, offer to open the
@@ -432,9 +433,10 @@ semantics require fixture-based investigation.
 
 Goal: harden the existing basic authorized-XML parser for NF-e (model 55) documents
 and investigate the fiscal fields and document-level adjustments needed to represent
-NF-e and NFC-e transactions accurately. The current parser can accept a model-55
-`nfeProc` structurally, but only model-65 fixtures are covered and NF-e-specific
-accuracy is not verified. Start with supplied authorized XML; evaluate DANFE PDF and
+NF-e and NFC-e transactions accurately. The parser accepts model-55 and model-65
+`nfeProc` documents and checks the supplied protocol as described in the contract.
+Model-55 fixtures are synthetic, so real-world accuracy is not yet verified. Start
+with supplied XML; evaluate DANFE PDF and
 state-specific public consultation separately. A 44-digit
 key alone is not a promise of automatic XML or product-row retrieval: the official
 NF-e consultation has a browser challenge, and distribution of XML has separate
@@ -445,16 +447,18 @@ freight, insurance, other charges, taxes, payments, and issuance/cancellation st
 identify which fields belong on the transaction, each `LineItem`, or provenance-only
 metadata; and explain how item totals reconcile with the payable amount. Do not
 silently alter product prices or invent a balancing item. Present any discrepancy for
-review and obtain a product decision on an explicit adjustment representation before
-implementation. Preserve the original document and source/provenance metadata. The
+review. Preserve the original document and source/provenance metadata. The
 reported Goiás NFC-e case has R$119.95 in products, R$10.00 in discounts, and R$109.95
 payable; the discount must be captured and explained automatically. Define duplicate
 checks for saved drafts and completed cash/card transactions using the fiscal key,
 with a clear policy for intentional repeats and user/context scope.
 
-Coverage: sanitized model-55 XML fixtures, malformed/unauthorized documents, item and
+Coverage: synthetic model-55 XML fixtures, malformed/unsupported documents, item and
 document totals with discounts/charges, status and date handling, cash/card prefill,
 attachments, and rejection or review of unresolved differences.
+Real sanitized model-55 and Goiás examples, Paraná adjustment semantics, and the user's
+manual testing remain open. Unsigned old drafts and old transactions have no trusted
+fiscal identity for duplicate matching.
 
 References: [product contract](docs/sprints/5-naruto/naruto-07/01-product-and-data-contract.md),
 [implementation slices](docs/sprints/5-naruto/naruto-07/02-implementation-slices.md), and

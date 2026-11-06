@@ -2,11 +2,9 @@
 
 ## Status
 
-The feature is ready for slice 0 investigation; no implementation or acceptance is
-claimed. The [contract](01-product-and-data-contract.md) records the user's product
-decisions. The [field inventory](03-field-inventory-and-reconciliation.md) records
-current behavior and investigation targets, not established fiscal rules. If source
-analysis exposes an unaddressed product choice, resolve it before dependent work.
+The main implementation slices are in place. The [contract](01-product-and-data-contract.md)
+records product decisions and limitations; the [field inventory](03-field-inventory-and-reconciliation.md)
+records current source behavior. Real-source verification and manual acceptance remain open.
 
 ## Slice 0 — Examples, source capabilities, and decisions
 
@@ -62,10 +60,11 @@ the implementation actually provides it.
 
 ## Slice 2 — Reconciliation and review
 
-Status: the discount identity, reserved category migration, model constraints, manual
-form control, and initial XML/GO discount and freight draft integration are implemented.
-Reporting and remaining integration below are still outstanding; this is not a claim
-that the feature is complete or that synthetic GO markup proves live source support.
+Status: discount identity, reserved category migration, manual form control, XML/GO
+discount and freight integration, original-source review, and category reporting are
+implemented. Synthetic GO markup does not prove live source support. Paraná discount
+and freight extraction is not established: unexplained differences remain visible for
+manual resolution rather than being guessed.
 
 - Add the permanent DISCOUNT system category and a dedicated discount line type or
   equivalent server-validated identity. Only the Add Discount action and fiscal import
@@ -99,9 +98,13 @@ differences are visible and prevent a misleading save until resolved.
 
 ## Slice 3 — Duplicate protection
 
-Status: a scoped fiscal-document link and user-bound signed identity token provide a
-foundation. Import warnings, draft checks, final-save enforcement, concurrency handling,
-and the user override are not yet implemented; duplicate protection is not active.
+Status: signed identities and scoped links support import warnings, final-save checks,
+explicit repeats, and user-wide saved-draft warnings. The final check serializes saves
+on the user's database row. New links and split items are preserved when cloning a
+context. Existing transactions and unsigned legacy drafts have no trusted identity and
+are not backfilled from arbitrary attachments; they remain usable but cannot reliably
+participate in duplicate warnings. Deleting a linked transaction or signed draft removes
+its match.
 
 - Persist a validated fiscal identity for draft and completed transaction paths; a
   blob filename or client-submitted draft field alone is not a trusted identity.
@@ -119,6 +122,17 @@ users and contexts, repeat lookup without save, retries, deletion, simultaneous
 submissions, and any explicit override. No duplicate check leaks another user's data.
 
 ## Slice 4 — End-to-end verification and handoff
+
+Focused checks so far cover the fiscal parser and requests, discount forms in a browser,
+category reports, and context clone/purge. A full CI run is in progress; record its final
+result separately rather than treating these focused checks as full acceptance.
+
+For manual testing, use documents the user is authorized to inspect. Check an ordinary
+receipt, a discount and freight, and an unexplained mismatch in both cash and card
+forms. Verify the original amounts, editable rows, fixed discount category, evidence,
+duplicate warning and explicit repeat, saved-receipt reopening, and category totals.
+Repeat the key flows on mobile and desktop. Keep real keys, personal details, and live
+QR URLs out of committed fixtures and documentation.
 
 - Run focused parser, draft, model, request, rollback/reporting, and browser specs;
   test saved-inbox transfer and validation failure; build JavaScript and run RuboCop.

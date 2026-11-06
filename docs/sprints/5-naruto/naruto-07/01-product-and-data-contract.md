@@ -1,32 +1,37 @@
 # NARUTO-07 — NF-e import, fiscal monetary accuracy, and duplicate protection
 
-## Planning status
+## Implementation status
 
-The product decisions are recorded and the feature is ready for source and field
-investigation. No implementation or acceptance is claimed. The user chose a dedicated discount line that preserves the
+The product decisions and implementation slices are recorded. The user chose a dedicated discount line that preserves the
 original product amounts, and chose a warning with an explicit repeat for a document
 already saved as a transaction in the current financial context. For an existing
 saved receipt, warn and offer to open it or explicitly save another. Recognized freight
 is shown as a separate charge line. Deleted records do not trigger duplicate warnings.
 See the
 [implementation slices](02-implementation-slices.md) and
-[field inventory](03-field-inventory-and-reconciliation.md). NARUTO-03 remains closed.
+[field inventory](03-field-inventory-and-reconciliation.md). Implementation covers the
+model-55 XML path, discount and freight reconciliation, receipt review, and duplicate
+warnings. Real sanitized model-55 and Goiás adjustment examples and user manual
+acceptance remain outstanding; synthetic examples alone do not prove production source
+compatibility. NARUTO-03 remains closed.
 
 ## Purpose and boundary
 
 Harden NARUTO-03's basic XML parsing for NF-e (model 55), while investigating
-the fiscal fields needed to represent purchases accurately. The current parser accepts
-an authorized `nfeProc` whose model matches its access key, but its fixtures and
-verified product behavior cover model 65; model-55 accuracy is not established.
+the fiscal fields needed to represent purchases accurately. The parser accepts an
+`nfeProc` with an accepted supplied protocol status and a model matching its access key.
+Synthetic fixtures cover models 55 and 65; model-55 real-world accuracy remains to be
+verified.
 NARUTO-03 V2 attachment hardening and the supported V3 import flow were confirmed
 complete by the user on 2026-10-28. NARUTO-07 also owns the deferred fiscal-document
 duplicate policy and protection. NARUTO-08 owns OCR of screenshots and photographed
 documents.
 
 The first NF-e source should be a user-supplied XML containing an authorization
-protocol. The current parser checks protocol status, but does not establish signature
-validity, match the protocol key to the invoice key, or check later cancellation
-events; do not present the present check as complete verification of authorization
+protocol. The parser checks the supplied protocol status and, for model 55, matches
+its key to the invoice key. Model 65 rejects a mismatched protocol key when one is
+present. It does not establish signature validity or check later cancellation
+events; do not present these checks as complete verification of authorization
 or current status. Do not treat a
 44-digit key, a DANFE PDF, or a public consultation page as equivalent to the signed
 XML. Assess each additional retrieval route with its own state, access, authorization,
@@ -59,11 +64,10 @@ not assume every fiscal total is the cash/card amount or sum tax components twic
 
 The Goiás NFC-e example reported by the user has R$119.95 in product rows, R$10.00
 in the public consultation's **Valor Total dos Descontos**, and R$109.95 payable. The
-current draft exposes R$10.00 as an unexplained excess because the importer reads
-product rows and the payable total but does not capture the discount. Use a sanitized
-fixture for this case; do not put its live QR URL or taxpayer identifiers in tests or
-documentation. The chosen representation must capture the R$10.00 automatically,
-show its source and effect on reconciliation, and retain the original product values.
+importer recognizes this displayed discount in the synthetic example and represents
+it separately. Do not put a live QR URL or taxpayer identifiers in tests or
+documentation. The same behavior still needs verification with a sanitized real
+consultation response.
 
 ## Discount line contract
 
