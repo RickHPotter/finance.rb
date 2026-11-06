@@ -40,6 +40,26 @@ RSpec.describe Reports::InteractiveAllocationBreakdown do
     expect(category_bundle[:swatches].pluck(:id)).to contain_exactly(food.id, home.id)
   end
 
+  it "shows a discount with no entity in the category breakdown without assigning it to an entity" do
+    discount = user.categories.find_by!(category_name: "DISCOUNT", parent_category_id: nil)
+    date = Date.new(2026, 7, 15)
+    create(:cash_transaction, user:, context:, user_bank_account: account, date:, month: 7, year: 2026, price: -9000,
+                              cash_installments: [ build(:cash_installment, number: 1, price: -9000, date:, month: 7, year: 2026) ],
+                              line_items: [
+                                LineItem.new(description: "Food", price: -10_000, category_transactions: [ CategoryTransaction.new(category: food) ],
+                                             entity_transactions: [ EntityTransaction.new(entity: ana, price: -10_000) ]),
+                                LineItem.new(item_kind: "discount", description: "Discount", price: 1000,
+                                             category_transactions: [ CategoryTransaction.new(category: discount) ])
+                              ])
+
+    categories = described_class.new(rows: canonical_rows, query_state:, primary_dimension: :category).call
+    discount_entry = categories[:items].find { |item| item[:id] == discount.id.to_s }
+    expect(discount_entry[:all_secondary_items].sole).to include(id: "__unassigned__", total_cents: 1000)
+
+    entities = described_class.new(rows: canonical_rows, query_state:, primary_dimension: :entity).call
+    expect(entities.dig(:items, 0, :all_secondary_items).sum { |item| item[:total_cents] }).to eq(-10_000)
+  end
+
   private
 
   def create_transaction(price:, date:, categories:, entities:)

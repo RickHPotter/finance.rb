@@ -57,16 +57,16 @@ module Reports
         entities = item.entities.uniq(&:id).sort_by { |entity| [ entity.name, entity.id ] }
 
         if primary_dimension == :category
-          append_category_row(entries, row, categories, entities, amount: item_amount)
+          append_category_row(entries, row, categories, entities, amount: item_amount, include_unassigned: item.discount?)
         else
           append_entity_row(entries, row, categories, entities, amount: item_amount)
         end
       end
     end
 
-    def append_category_row(entries, row, categories, entities, amount: row.amount_cents)
+    def append_category_row(entries, row, categories, entities, amount: row.amount_cents, include_unassigned: false)
       base_categories = categories.reject { |category| base_category_excluded?(category) }
-      return if base_categories.empty? || entities.empty?
+      return if base_categories.empty? || (entities.empty? && !include_unassigned)
 
       base_categories.each do |base_category|
         entry = ensure_primary_entry(entries, base_category)
@@ -116,8 +116,9 @@ module Reports
 
     def ensure_secondary_entry(group, records, dimension)
       ids = records.map(&:id)
-      id = ids.join("-")
-      group[:secondary_items][id] ||= secondary_payload(records, dimension).merge(
+      id = records.empty? ? "__unassigned__" : ids.join("-")
+      payload = records.empty? ? { name: I18n.t("balances.monthly_analysis.unassigned"), avatar_paths: [] } : secondary_payload(records, dimension)
+      group[:secondary_items][id] ||= payload.merge(
         id:,
         rank: records.length,
         total_cents: 0,
