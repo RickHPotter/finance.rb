@@ -875,7 +875,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     attributes = attributes.with_indifferent_access
     return false if attributes[:id].present?
 
-    substantive_attributes = attributes.except(:id, :_destroy, :entity_transactions_attributes)
+    substantive_attributes = attributes.except(:id, :_destroy, :item_kind, :entity_transactions_attributes)
     return false if substantive_attributes.values.any?(&:present?)
 
     entity_transactions = attributes[:entity_transactions_attributes]
