@@ -102,6 +102,25 @@ RSpec.describe "Fiscal receipt imports", type: :request do
       expect(response.parsed_body.fetch("error")).to include("cupom photo with a readable QR")
     end
 
+    it "explains the consultation-page limitation without sending or returning its session details" do
+      sign_in user
+      source = "https://nfeweb.sefaz.go.gov.br/nfeweb/sites/nfce/render/xml-consulta-completa;jsessionid=example-session" \
+               "?g-recaptcha-response=example-captcha&chaveAcesso=52260301427744000150650010005752241062577988"
+
+      expect(FiscalReceipts::GoiasLookup).not_to receive(:new)
+      post fiscal_receipt_imports_path, params: { source: }, headers: { "Accept" => "application/json" }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body.fetch("error")).to eq(I18n.t("fiscal_import.messages.goias_consultation_link"))
+      expect(response.body).not_to include("example-session", "example-captcha")
+    end
+
+    it "filters fiscal source URLs and keys from request parameters in logs" do
+      filter = ActiveSupport::ParameterFilter.new(Rails.application.config.filter_parameters)
+      expect(filter.filter("source" => "example-session", "unrelated" => "visible"))
+        .to eq("source" => "[FILTERED]", "unrelated" => "visible")
+    end
+
     it "requires authentication" do
       receipt = fixture_file_upload("fiscal_receipt.xml", "application/xml")
 

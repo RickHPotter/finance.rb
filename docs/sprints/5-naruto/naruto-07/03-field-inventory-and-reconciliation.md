@@ -37,6 +37,7 @@ require source-specific real-fixture verification.
 | Supplied XML | `infNFe/@Id`, `ide/mod`, protocol status and key, issuer name, issue time, `ICMSTot` amounts, and item descriptions/amounts | Parser accepts status 100 or 150, requires the matching protocol key for model 55 and checks it for model 65 when present. It does not verify signature or later cancellation status. |
 | XML items | Original `vProd`, item adjustments, quantity, unit, unit price, and code | Gross product values remain in draft lines; source adjustment amounts are retained separately. Unsupported components remain in the difference. |
 | Goiás NFC-e consultation | Item descriptions and displayed row amounts, payable total, recognized displayed discount/freight, key, issuer, issue time | Adjustment labels are covered by synthetic markup only. Separate consultation evidence is retained. |
+| Goiás full-consultation result link | Recognized so the importer can explain the supported alternatives. | A browser-session and CAPTCHA result URL is not a receipt QR URL and is not replayed by the importer. Use the original receipt QR or authorized XML. Fiscal `source` parameters are filtered from application request logs. |
 | Paraná NFC-e consultation | Item descriptions and displayed row amounts, displayed payable total, key, issuer, issue time | Adjustment information is not currently normalized; verify availability with fixtures before promising it. |
 
 The normalized `FiscalReceipts::Draft` currently has access key, issuer, issue time,

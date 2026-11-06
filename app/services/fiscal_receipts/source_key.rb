@@ -3,6 +3,7 @@
 module FiscalReceipts
   class SourceKey
     class InvalidSource < StandardError; end
+    GOIAS_CONSULTATION_PATH = %r{\A/nfeweb/sites/nfce/render/xml-consulta-completa(?:;jsessionid=[A-Za-z0-9._:-]+)?\z}
 
     def initialize(value)
       @value = value.to_s.strip
@@ -18,6 +19,8 @@ module FiscalReceipts
 
     def url_key
       uri = URI.parse(@value)
+      raise InvalidSource, I18n.t("fiscal_import.messages.goias_consultation_link") if goias_consultation?(uri)
+
       if %w[http https].include?(uri.scheme) && uri.host == ParanaLookup::HOST && uri.path == ParanaLookup::PATH
         return URI.decode_www_form(uri.query.to_s).to_h.fetch("p").split("|", 2).first
       end
@@ -26,6 +29,10 @@ module FiscalReceipts
       raise InvalidSource, I18n.t("fiscal_import.messages.source_url_invalid")
     rescue URI::InvalidURIError, KeyError
       raise InvalidSource, I18n.t("fiscal_import.messages.source_url_invalid")
+    end
+
+    def goias_consultation?(uri)
+      uri.scheme == "https" && uri.host == GoiasLookup::HOST && uri.port == 443 && uri.userinfo.nil? && uri.path.match?(GOIAS_CONSULTATION_PATH)
     end
   end
 end
