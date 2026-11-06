@@ -124,9 +124,14 @@ submissions, and any explicit override. No duplicate check leaks another user's 
 
 ## Slice 4 — End-to-end verification and handoff
 
-Focused checks so far cover the fiscal parser and requests, discount forms in a browser,
-category reports, and context clone/purge. A full CI run is in progress; record its final
-result separately rather than treating these focused checks as full acceptance.
+On 2026-11-06, CI passed setup, Ruby and ERB style, 2,386 fast examples, 144
+operational examples, JavaScript checks, and Brakeman. Its browser profile exposed an
+empty split-row regression, which was fixed; the complete browser profile then passed
+all 62 examples. The full CI run did not pass because of that initial browser failure
+and existing dependency-audit advisories, including Rails, Rack, Nokogiri, and
+rails-html-sanitizer. The fast and operational profiles preceded the final two-line
+blank-row fix. These automated results do not constitute manual acceptance.
+After the fix, all 138 cash/card transaction model examples also passed.
 
 For manual testing, use documents the user is authorized to inspect. Check an ordinary
 receipt, a discount and freight, and an unexplained mismatch in both cash and card
