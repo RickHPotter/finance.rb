@@ -236,6 +236,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     return render_card_advance_failure(I18n.t("card_advance.invalid_payment_window")) unless payment_window&.cover?(payment_date)
     return render_card_advance_failure(card_advance_save_failure_message) unless persist_card_advance(payment_date)
 
+    return render_cash_index_after_advance if params[:return_to_cash_index] == "1"
+
     build_index_context(card_installments_for_selected_user_card)
     @index_context[:active_month_years] = [ Date.new(@card_transaction.year, @card_transaction.month).strftime("%Y%m").to_i ]
 
@@ -285,6 +287,24 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   private
+
+  def render_cash_index_after_advance
+    context = IndexState::CashTransactions.new(
+      current_user:, current_context:, params:, cash_installments: current_context.cash_installments,
+      transaction_filters: {}, search_filters: {}, selection_context: cash_advance_selection_context
+    ).to_h
+    render turbo_stream: [
+      turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: context, mobile: context[:force_mobile])),
+      turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:createda, CardTransaction) })
+    ]
+  end
+
+  def cash_advance_selection_context
+    parsed = JSON.parse(params[:index_context_json].presence || "{}")
+    parsed.is_a?(Hash) ? parsed : {}
+  rescue JSON::ParserError, TypeError
+    {}
+  end
 
   def validate_selected_user_card
     user_card_id = params[:user_card_id].presence || params.dig(:card_transaction, :user_card_id).presence

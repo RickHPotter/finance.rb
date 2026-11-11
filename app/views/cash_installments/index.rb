@@ -52,7 +52,9 @@ class Views::CashInstallments::Index < Views::Base
       failed_zeroed_installment = failed_zeroed_return_installment?(cash_installment, cash_transaction)
       pulsing_payment = should_display_link_to_pay && !failed_zeroed_installment
 
-      render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay || cash_transaction.card_payment?
+      render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay
+      render Views::CashInstallments::PayModal.new(cash_installment:, index_context:, mode: :date) if cash_transaction.card_payment?
+      render_advance_modal(cash_installment, cash_transaction)
 
       div(class: "relative") do
         div(
@@ -72,6 +74,7 @@ class Views::CashInstallments::Index < Views::Base
         style: pulsing_payment ? pulsing_row_style(presentation) : presentation.row_style,
         data: {
           id: cash_installment.id,
+          paid: cash_installment.paid?.to_s,
           datatable_target: :row,
           action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection"
         }.merge(presentation.metadata)
@@ -137,7 +140,9 @@ class Views::CashInstallments::Index < Views::Base
       should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
       failed_zeroed_installment = failed_zeroed_return_installment?(cash_installment, cash_transaction)
       pulsing_payment = should_display_link_to_pay && !failed_zeroed_installment
-      render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay || cash_transaction.card_payment?
+      render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay
+      render Views::CashInstallments::PayModal.new(cash_installment:, index_context:, mode: :date) if cash_transaction.card_payment?
+      render_advance_modal(cash_installment, cash_transaction)
 
       div(
         class: [
@@ -149,6 +154,7 @@ class Views::CashInstallments::Index < Views::Base
         style: pulsing_payment ? pulsing_row_style(presentation) : presentation.row_style,
         draggable: true,
         data: { id: cash_installment.id,
+                paid: cash_installment.paid?.to_s,
                 datatable_target: :row,
                 action: [
                   "mousedown->datatable#preventRangeSelection",
@@ -268,7 +274,10 @@ class Views::CashInstallments::Index < Views::Base
           action_menu_button(model_attribute(cash_installment, :pay), modal_id: "cashInstallmentModal_#{cash_installment.id}") if payable
           action_menu_report_payment_failure(cash_transaction) if cash_transaction.return_failure_reportable?
           if cash_transaction.card_payment?
-            action_menu_button(model_attribute(cash_installment, :change_date), modal_id: "cashInstallmentModal_#{cash_installment.id}")
+            action_menu_button(model_attribute(cash_installment, :change_date), modal_id: "cashInstallmentDateModal_#{cash_installment.id}")
+          end
+          if advance_payment_window(cash_installment, cash_transaction)&.available?
+            action_menu_button(model_attribute(CardTransaction, :pay_in_advance), modal_id: advance_modal_id(cash_transaction))
           end
           if cash_transaction.can_be_destroyed?
             action_menu_link(action_message(:duplicate), duplicate_cash_transaction_path(cash_transaction, return_to: index_context[:return_to]))
@@ -277,6 +286,28 @@ class Views::CashInstallments::Index < Views::Base
         end
       end
     end
+  end
+
+  def advance_payment_window(cash_installment, cash_transaction)
+    return unless cash_transaction.card_payment? && !cash_installment.paid? && cash_transaction.user_card&.credit?
+
+    @advance_payment_windows ||= {}
+    @advance_payment_windows[cash_installment.id] ||= Logic::CardAdvancePaymentWindow.new(
+      user_card: cash_transaction.user_card, context: current_context, month: cash_transaction.month, year: cash_transaction.year
+    )
+  end
+
+  def advance_modal_id(cash_transaction)
+    "cardTransactionModal_#{cash_transaction.user_card_id}_#{cash_transaction.month}_#{cash_transaction.year}"
+  end
+
+  def render_advance_modal(cash_installment, cash_transaction)
+    window = advance_payment_window(cash_installment, cash_transaction)
+    return unless window&.available?
+
+    render Views::CardTransactions::PayInAdvanceModal.new(month: cash_transaction.month, year: cash_transaction.year,
+                                                          user_card_id: cash_transaction.user_card_id, payment_window: window,
+                                                          cash_index_context: index_context)
   end
 
   def action_menu_link(label, href)

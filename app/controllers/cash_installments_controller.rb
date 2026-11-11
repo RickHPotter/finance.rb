@@ -3,7 +3,29 @@
 class CashInstallmentsController < ApplicationController
   include TranslateHelper
 
-  before_action :set_cash_installment, only: %i[pay]
+  before_action :set_cash_installment, only: %i[pay change_date]
+
+  def change_date
+    return head :not_found unless @cash_installment.cash_transaction.card_payment?
+
+    date = Time.zone.parse(cash_installment_params[:date].to_s)
+    if date.blank?
+      @cash_installment.errors.add(:date, :blank)
+      return handle_failed_save(@cash_installment)
+    end
+
+    original_date = @cash_installment.date
+    original_period = Time.zone.local(@cash_installment.year, @cash_installment.month, 1)
+    CashInstallment.transaction do
+      Audit::BulkMutation.update_columns!(@cash_installment.cash_transaction, date:)
+      Audit::BulkMutation.update_columns!(@cash_installment, date:, month: date.month, year: date.year)
+      recalculate_balances_for([ original_period, original_date, date ].min)
+    end
+    handle_save
+  rescue ArgumentError, TypeError
+    @cash_installment.errors.add(:date, :invalid)
+    handle_failed_save(@cash_installment)
+  end
 
   def pay
     cash_installment_date = @cash_installment.date
