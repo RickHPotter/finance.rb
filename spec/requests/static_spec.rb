@@ -35,8 +35,15 @@ RSpec.describe "Static", type: :request do
       get donation_static_path
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("href=\"#{baby_names_path}\"")
+      expect(response.body).not_to include("href=\"#{baby_names_path}\"")
     end
+  end
+
+  it "does not advertise Baby Names in the app manifest" do
+    get pwa_manifest_path(format: :json)
+
+    expect(response).to have_http_status(:ok)
+    expect(JSON.parse(response.body).fetch("shortcuts").pluck("url")).not_to include(baby_names_path)
   end
 
   describe "[ GET /static/notification ]" do
