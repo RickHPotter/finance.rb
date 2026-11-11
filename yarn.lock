@@ -253,10 +253,10 @@
   resolved "https://registry.yarnpkg.com/@rails/actioncable/-/actioncable-8.1.300.tgz#bfd50813be0225a0403bddb11e8ba9a00b1fb135"
   integrity sha512-zOENQsq3NM2jyBY6Z2qtZa3V/R/6OEqA+LGKixQbBMl7kk/J3FXDRcszPe74LsHNgB01jCl/DXu/xA8sHt4I/g==
 
-"@rails/activestorage@^8.1.400":
-  version "8.1.400"
-  resolved "https://registry.yarnpkg.com/@rails/activestorage/-/activestorage-8.1.400.tgz#355c3b59e238f837ef422d148b361d9a96b28fe6"
-  integrity sha512-ScpkkHXTQ7QByvzLbnrnubpsWRKhlu08kXyRhSV+Hh1s1X43lv5T0PFLhXAvmqrIcq8nQ2up8iyuCmIzacPDDw==
+"@rails/activestorage@8.1.401":
+  version "8.1.401"
+  resolved "https://registry.yarnpkg.com/@rails/activestorage/-/activestorage-8.1.401.tgz#80b6d3886fb1dffcc2a3ce64760b91c7a51631fc"
+  integrity sha512-PjUMgsCbXrKAhZj6mjvx5U7B/Nmtofe/drucyu8twMlLJkG+Ke1iLQGr8FDl2dOfJ+T5fUEXUpJQUbPZjSzkQw==
   dependencies:
     spark-md5 "^3.0.1"
 
@@ -585,10 +585,10 @@ hasown@^2.0.3:
   dependencies:
     function-bind "^1.1.2"
 
-hotkeys-js@4.0.8:
-  version "4.0.8"
-  resolved "https://registry.yarnpkg.com/hotkeys-js/-/hotkeys-js-4.0.8.tgz#beb864ec28c852320245d27bd2d47ae8f1605305"
-  integrity sha512-A0nu5ZU7cN8nEx3uGUHrv1WnJvjPFUw4Cfxj8pLyR5AIg14ACP4D0YZ+5JHAPjlvUbPbgok56+XTZWjscYCV4A==
+hotkeys-js@4.1.2:
+  version "4.1.2"
+  resolved "https://registry.yarnpkg.com/hotkeys-js/-/hotkeys-js-4.1.2.tgz#f85cef6749d0a527ca1981eacbd5750dd7e02cd9"
+  integrity sha512-SXPG2KJ4AW0wyZwh7lBtBavfbunm78kcTqjc2b7TXe7bkyKwDJDlByXbMoGiNrhRkONfdzNg6KqRc3PKBj6tfQ==
 
 hotkeys-js@>=3:
   version "4.0.4"
