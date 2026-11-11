@@ -56,7 +56,7 @@ class ProfilesController < ApplicationController
   end
 
   def profile_params
-    params.require(:user_profile).permit(:display_name, :first_name, :last_name, :locale, :timezone, :avatar)
+    params.require(:user_profile).permit(:display_name, :first_name, :last_name, :locale, :timezone, :sex, :avatar)
   end
 
   def preference_params
