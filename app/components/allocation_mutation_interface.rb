@@ -232,7 +232,7 @@ module Components
 
       records =
         if allocation_type == :category
-          current_user.categories.active.where(built_in: false)
+          current_user.categories.active.where(built_in: false).includes(:parent_category)
         elsif operation == :switch
           current_user.entities.active
         else
@@ -240,7 +240,8 @@ module Components
         end
 
       @allocation_options[cache_key] = records.order(allocation_type == :category ? :category_name : :entity_name).map do |record|
-        [ record.name, record.id, {} ]
+        label = allocation_type == :category ? record.hierarchical_name : record.name
+        [ label, record.id, {} ]
       end
     end
 

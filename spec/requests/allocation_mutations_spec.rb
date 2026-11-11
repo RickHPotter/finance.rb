@@ -96,6 +96,24 @@ RSpec.describe "Allocation mutations" do
     expect(card_launcher["data-allocation-mutation-launch"]).to eq("true")
   end
 
+  it "distinguishes standalone and child categories in allocation choices and previews" do
+    parent = create(:category, user:, category_name: "HSH")
+    child = create(:category, user:, category_name: "LABOUR", parent_category: parent)
+    standalone = create(:category, user:, category_name: "LABOUR")
+
+    get cash_transactions_path
+    document = Nokogiri::HTML5(response.body)
+    modal = document.at_css("##{Components::AllocationMutationInterface.modal_id('installment')}")
+    inputs = modal.css("input[name^='allocation_choice[category_']")
+    expect(inputs.find { |input| input["value"] == child.id.to_s }["data-text"]).to eq("HSH → LABOUR")
+    expect(inputs.find { |input| input["value"] == standalone.id.to_s }["data-text"]).to eq("LABOUR")
+
+    preview_params[:allocation_mutation][:action][:destination_id] = child.id
+    post preview_allocation_mutations_path, params: preview_params, as: :json
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body.fetch("destination_label")).to eq("HSH → LABOUR")
+  end
+
   it "counts repeated selected installments once as a paid CardTransaction owner" do
     user_card = create(:user_card, user:)
     card_transaction = create(
