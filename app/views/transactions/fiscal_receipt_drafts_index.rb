@@ -5,10 +5,11 @@ class Views::Transactions::FiscalReceiptDraftsIndex < Views::Base
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::Routes
 
-  attr_reader :drafts
+  attr_reader :drafts, :user_card
 
-  def initialize(drafts:)
+  def initialize(drafts:, user_card: nil)
     @drafts = drafts
+    @user_card = user_card
   end
 
   def view_template
@@ -26,7 +27,7 @@ class Views::Transactions::FiscalReceiptDraftsIndex < Views::Base
             end
             p(class: "mt-1 text-sm text-slate-600 dark:text-slate-400") { I18n.t("fiscal_import.inbox_description") }
           end
-          link_to I18n.t("fiscal_import.back_to_transactions"), cash_transactions_path,
+          link_to I18n.t("fiscal_import.back_to_transactions"), user_card ? card_transactions_path(user_card_id: user_card.id) : cash_transactions_path,
                   class: "inline-flex shrink-0 items-center justify-center rounded-md bg-sky-700 px-3 py-2 text-sm font-semibold " \
                          "text-white transition hover:bg-sky-800",
                   data: { turbo_frame: "_top" }
@@ -74,10 +75,10 @@ class Views::Transactions::FiscalReceiptDraftsIndex < Views::Base
       div(class: "mt-4 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]") do
         link_to I18n.t("fiscal_import.open_cash"), cash_transaction_fiscal_receipt_draft_path(draft),
                 class: primary_button_class, data: { turbo_frame: "_top" }
-        link_to I18n.t("fiscal_import.open_card"), card_transaction_fiscal_receipt_draft_path(draft),
+        link_to I18n.t("fiscal_import.open_card"), card_transaction_fiscal_receipt_draft_path(draft, user_card_id: user_card&.id),
                 class: secondary_button_class, data: { turbo_frame: "_top" }
         button_to(
-          I18n.t("fiscal_import.delete_draft"), fiscal_receipt_draft_path(draft),
+          I18n.t("fiscal_import.delete_draft"), fiscal_receipt_draft_path(draft, user_card_id: user_card&.id),
           method: :delete,
           class: "w-full rounded-lg px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950"
         )

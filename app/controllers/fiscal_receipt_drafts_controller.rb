@@ -7,7 +7,7 @@ class FiscalReceiptDraftsController < ApplicationController
 
   def index
     drafts = current_user.fiscal_receipt_drafts.with_attached_source.recent
-    render Views::Transactions::FiscalReceiptDraftsIndex.new(drafts:)
+    render Views::Transactions::FiscalReceiptDraftsIndex.new(drafts:, user_card: selected_user_card)
   end
 
   def create
@@ -19,7 +19,8 @@ class FiscalReceiptDraftsController < ApplicationController
       existing = existing_verified_draft(key)
       if existing && !ActiveModel::Type::Boolean.new.cast(params[:duplicate_confirmed])
         render json: { error: I18n.t("fiscal_import.messages.duplicate_draft"),
-                       existing_draft_url: fiscal_receipt_drafts_path(anchor: "fiscal_receipt_draft_#{existing.id}") }, status: :conflict
+                       existing_draft_url: fiscal_receipt_drafts_path(user_card_id: selected_user_card&.id,
+                                                                      anchor: "fiscal_receipt_draft_#{existing.id}") }, status: :conflict
         return
       end
 
@@ -31,7 +32,7 @@ class FiscalReceiptDraftsController < ApplicationController
 
   def destroy
     current_user.fiscal_receipt_drafts.find(params[:id]).destroy!
-    redirect_to fiscal_receipt_drafts_path, notice: I18n.t("fiscal_import.deleted"), status: :see_other
+    redirect_to fiscal_receipt_drafts_path(user_card_id: selected_user_card&.id), notice: I18n.t("fiscal_import.deleted"), status: :see_other
   end
 
   def cash_transaction
@@ -44,10 +45,14 @@ class FiscalReceiptDraftsController < ApplicationController
       return
     end
 
-    redirect_to new_card_transaction_path(fiscal_receipt_draft_id: owned_draft.id), status: :see_other
+    redirect_to new_card_transaction_path(fiscal_receipt_draft_id: owned_draft.id, user_card_id: selected_user_card&.id), status: :see_other
   end
 
   private
+
+  def selected_user_card
+    @selected_user_card ||= current_user.user_cards.active.find_by(id: params[:user_card_id]) if params[:user_card_id].present?
+  end
 
   def save_receipt_draft(payload)
     receipt_draft = current_user.fiscal_receipt_drafts.new(payload:)

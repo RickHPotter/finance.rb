@@ -78,6 +78,42 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(CardTransaction.where(description: "Mercado Exemplo")).not_to exist
   end
 
+  [ 390, 1280 ].each do |width|
+    it "keeps the selected card when importing from its index at #{width}px" do
+      create(:user_card, :random, user:, user_card_name: "A first card")
+      card = create(:user_card, :random, user:, user_card_name: "Z selected card")
+      page.driver.browser.manage.window.resize_to(width, 844)
+      visit cash_transactions_path
+      page.execute_script("Turbo.visit(arguments[0])", card_transactions_path(user_card_id: card.id))
+      expect(page).to have_css("#cardFiscalImportModal", visible: :all)
+      open_receipt_menu
+      find("#cardFiscalImportModal [data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
+      click_button(I18n.t("fiscal_import.import_file"))
+      click_button(I18n.t("fiscal_import.continue"))
+
+      expect(page).to have_current_path(%r{/card_transactions/new})
+      expect(page).to have_css("input[name='card_transaction[user_card_id]'][value='#{card.id}']:checked", visible: :all)
+      expect(page).to have_field("card_transaction[description]", with: "Mercado Exemplo")
+    end
+
+    it "keeps the selected card when opening a saved receipt at #{width}px" do
+      create(:user_card, :random, user:, user_card_name: "A first card")
+      card = create(:user_card, :random, user:, user_card_name: "Z selected card")
+      key = "41140978393592000146651000000000031222222235"
+      user.fiscal_receipt_drafts.create!(payload: { access_key: key, issuer: "Saved receipt", total_cents: 1000,
+                                                    identity_token: FiscalReceipts::IdentityToken.issue(user:, access_key: key),
+                                                    items: [ { description: "Product", price_cents: 1000 } ] })
+      page.driver.browser.manage.window.resize_to(width, 844)
+      visit card_transactions_path(user_card_id: card.id)
+      click_button(I18n.t("fiscal_import.open"))
+      click_link(I18n.t("fiscal_import.use_saved"))
+      click_link(I18n.t("fiscal_import.open_card"))
+
+      expect(page).to have_css("input[name='card_transaction[user_card_id]'][value='#{card.id}']:checked", visible: :all)
+      expect(page).to have_field("card_transaction[description]", with: "Saved receipt")
+    end
+  end
+
   it "saves imported receipts to the cross-device inbox without creating a transaction" do
     visit cash_transactions_path
     open_receipt_menu
@@ -348,8 +384,9 @@ RSpec.describe "Fiscal receipt import", type: :feature do
       "[data-controller='action-menu'][class~='bottom-20'][class~='right-3'] button[aria-haspopup='menu'][class~='h-14'][class~='w-14']"
     )
     expect(page).to have_css("a[data-mobile-scroll-nav='plus'][class~='h-14'][class~='w-14']")
-    expect(page).to have_css("a[data-mobile-scroll-nav='top'][class~='bottom-52']", visible: :all)
-    expect(page).to have_css("a[data-mobile-scroll-nav='bottom'][class~='bottom-52']", visible: :all)
+    expect(page).to have_css("a[data-mobile-scroll-nav='top'][class~='bottom-36']", visible: :all)
+    expect(page).to have_css("a[data-mobile-scroll-nav='bottom'][class~='bottom-36']", visible: :all)
+    expect(page).to have_no_css("[data-action-menu-target='trigger'] span[aria-hidden='true']")
     expect(page).to have_css("[data-modal-toggle='#{modal_id}']", visible: :all)
     expect(page).to have_css("[data-action-menu-target='menu']", visible: :all)
   end

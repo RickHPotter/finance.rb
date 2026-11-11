@@ -63,7 +63,6 @@ class Views::Shared::MobileFloatingNav < Views::Base
             data: { action: "click->action-menu#toggle", action_menu_target: "trigger" }
           ) do
             cached_icon :paperclip
-            span(class: "absolute bottom-1 right-2 text-xs font-bold leading-none", aria: { hidden: true }) { "⌄" }
           end
         end
       end
@@ -95,8 +94,7 @@ class Views::Shared::MobileFloatingNav < Views::Base
   end
 
   def nav_button_class
-    bottom = inbox_action ? "bottom-52" : "bottom-36"
-    "opacity-0 translate-y-2 pointer-events-none flex items-center justify-center fixed #{bottom} right-3
+    "opacity-0 translate-y-2 pointer-events-none flex items-center justify-center fixed bottom-36 right-3
      h-12 w-12 bg-gray-300/95 text-black rounded-full shadow-lg z-50 transition-all duration-200".squish
   end
 

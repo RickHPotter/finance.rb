@@ -35,6 +35,18 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
       end.to change(user.fiscal_receipt_drafts, :count).by(1)
     end
 
+    it "preserves the selected card when the duplicate warning opens an existing draft" do
+      card = create(:user_card, :random, user:)
+      post fiscal_receipt_drafts_path, params: { draft: }, as: :json
+      existing = user.fiscal_receipt_drafts.sole
+
+      post fiscal_receipt_drafts_path(user_card_id: card.id), params: { draft: }, as: :json
+
+      expect(response).to have_http_status(:conflict)
+      expect(response.parsed_body.fetch("existing_draft_url"))
+        .to eq(fiscal_receipt_drafts_path(user_card_id: card.id, anchor: "fiscal_receipt_draft_#{existing.id}"))
+    end
+
     it "does not disclose another user's draft or accept their identity token" do
       other = create(:user, :random)
       other.fiscal_receipt_drafts.create!(payload: draft.stringify_keys)
@@ -151,6 +163,37 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
   end
 
   describe "GET /fiscal_receipt_drafts/:id/card_transaction" do
+    it "carries the selected owned card from the inbox into the transaction form" do
+      receipt_draft = user.fiscal_receipt_drafts.create!(payload: draft.stringify_keys)
+      card = create(:user_card, :random, user:)
+
+      get fiscal_receipt_drafts_path(user_card_id: card.id)
+      expect(response.body).to include(card_transaction_fiscal_receipt_draft_path(receipt_draft, user_card_id: card.id))
+
+      get card_transaction_fiscal_receipt_draft_path(receipt_draft, user_card_id: card.id)
+      expect(response).to redirect_to(new_card_transaction_path(fiscal_receipt_draft_id: receipt_draft.id, user_card_id: card.id))
+    end
+
+    it "does not carry another user's card into the transaction form" do
+      receipt_draft = user.fiscal_receipt_drafts.create!(payload: draft.stringify_keys)
+      create(:user_card, :random, user:)
+      foreign_card = create(:user_card, :random, user: create(:user, :random))
+
+      get card_transaction_fiscal_receipt_draft_path(receipt_draft, user_card_id: foreign_card.id)
+      expect(response).to redirect_to(new_card_transaction_path(fiscal_receipt_draft_id: receipt_draft.id))
+    end
+
+    it "does not infer a card when the inbox was opened without one" do
+      receipt_draft = user.fiscal_receipt_drafts.create!(payload: draft.stringify_keys)
+      create(:user_card, :random, user:)
+
+      get fiscal_receipt_drafts_path
+      expect(response.body).to include(card_transaction_fiscal_receipt_draft_path(receipt_draft))
+
+      get card_transaction_fiscal_receipt_draft_path(receipt_draft)
+      expect(response).to redirect_to(new_card_transaction_path(fiscal_receipt_draft_id: receipt_draft.id))
+    end
+
     it "redirects to card setup when the user has no active card" do
       receipt_draft = user.fiscal_receipt_drafts.create!(payload: draft.stringify_keys)
 
