@@ -11,17 +11,19 @@ See the
 [implementation slices](02-implementation-slices.md) and
 [field inventory](03-field-inventory-and-reconciliation.md). Implementation covers the
 model-55 XML path, discount and freight reconciliation, receipt review, and duplicate
-warnings. Real sanitized model-55 and Goiás adjustment examples and user manual
-acceptance remain outstanding; synthetic examples alone do not prove production source
-compatibility. NARUTO-03 remains closed.
+warnings. Manual acceptance was confirmed by the user on 2026-11-12, including successful import of a
+real NF-e XML. NARUTO-07 is closed. The user accepts the remaining source limitations:
+investigate real Goiás and complex adjustment examples when available, and handle
+unsupported adjustments manually. Synthetic fixtures do not establish compatibility
+with every production document. NARUTO-03 remains closed.
 
 ## Purpose and boundary
 
 Harden NARUTO-03's basic XML parsing for NF-e (model 55), while investigating
 the fiscal fields needed to represent purchases accurately. The parser accepts an
 `nfeProc` with an accepted supplied protocol status and a model matching its access key.
-Synthetic fixtures cover models 55 and 65; model-55 real-world accuracy remains to be
-verified.
+Synthetic fixtures cover models 55 and 65; one real model-55 XML import was also
+confirmed by the user, without claiming coverage of all document variants.
 NARUTO-03 V2 attachment hardening and the supported V3 import flow were confirmed
 complete by the user on 2026-10-28. NARUTO-07 also owns the deferred fiscal-document
 duplicate policy and protection. NARUTO-08 owns OCR of screenshots and photographed
@@ -162,7 +164,7 @@ override or cancellation path. Keep the attachment and evidence handoff unchange
    differences, duplicate detection, cash/card drafts, and attachment handoff; then
    manual testing and CI.
 
-## Open product decisions
+## Deferred investigations
 
 - Which insurance, tax, and other adjustment fields can be represented reliably,
   based on the supported source fixtures? Do not assume all tax fields are extra charges.
@@ -170,6 +172,5 @@ override or cancellation path. Keep the attachment and evidence handoff unchange
   this application's users without solving a browser challenge or requiring paid
   third-party access?
 
-Completion requires the field analysis, chosen reconciliation contract, implemented
-model-55 source path, duplicate protection, tests, and manual validation. Broader
-state/portal coverage is optional and must be documented honestly.
+The user accepted these limitations for closure. Broader state/portal coverage is
+optional; OCR-assisted extraction is tracked separately in NARUTO-08.

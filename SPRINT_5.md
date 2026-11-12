@@ -419,9 +419,9 @@ Explicitly out of scope:
 
 ### NARUTO-07: Harden fiscal import for NF-e and monetary accuracy
 
-Status: implemented in slices; real-source verification and user manual acceptance
-remain open. This extends NARUTO-03's supported NFC-e/cupom import and owns the
-deferred duplicate-document policy and protection. NARUTO-03 remains closed.
+Status: **closed on 2026-11-12 following user manual acceptance.** This extends
+NARUTO-03's supported NFC-e/cupom import and implements duplicate-document protection.
+NARUTO-03 remains closed.
 Create discounts as dedicated first line items through Add Discount
 or fiscal import, with fixed DISCOUNT category and no entity, while preserving product
 amounts; warn on a duplicate completed transaction in the current context and
@@ -435,8 +435,8 @@ Goal: harden the existing basic authorized-XML parser for NF-e (model 55) docume
 and investigate the fiscal fields and document-level adjustments needed to represent
 NF-e and NFC-e transactions accurately. The parser accepts model-55 and model-65
 `nfeProc` documents and checks the supplied protocol as described in the contract.
-Model-55 fixtures are synthetic, so real-world accuracy is not yet verified. Start
-with supplied XML; evaluate DANFE PDF and
+The user successfully imported a real NF-e XML; automated model-55 fixtures are synthetic.
+Use supplied XML; evaluate broader DANFE PDF support and
 state-specific public consultation separately. A 44-digit
 key alone is not a promise of automatic XML or product-row retrieval: the official
 NF-e consultation has a browser challenge, and distribution of XML has separate
@@ -456,9 +456,10 @@ with a clear policy for intentional repeats and user/context scope.
 Coverage: synthetic model-55 XML fixtures, malformed/unsupported documents, item and
 document totals with discounts/charges, status and date handling, cash/card prefill,
 attachments, and rejection or review of unresolved differences.
-Real sanitized model-55 and Goiás examples, Paraná adjustment semantics, and the user's
-manual testing remain open. Unsigned old drafts and old transactions have no trusted
-fiscal identity for duplicate matching.
+The user accepted the remaining limitations: real Goiás adjustment and other complex
+examples can be investigated when available; Paraná adjustment extraction and other
+unrecognized charges are not normalized. Unsigned old drafts and old transactions
+have no trusted fiscal identity for duplicate matching. OCR is NARUTO-08 work.
 
 References: [product contract](docs/sprints/5-naruto/naruto-07/01-product-and-data-contract.md),
 [implementation slices](docs/sprints/5-naruto/naruto-07/02-implementation-slices.md), and

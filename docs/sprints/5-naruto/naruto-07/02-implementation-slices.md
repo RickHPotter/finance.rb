@@ -4,14 +4,16 @@
 
 The main implementation slices are in place. The [contract](01-product-and-data-contract.md)
 records product decisions and limitations; the [field inventory](03-field-inventory-and-reconciliation.md)
-records current source behavior. Real-source verification and manual acceptance remain open.
+records current source behavior. The user confirmed manual acceptance and successful
+real NF-e XML import on 2026-11-12. NARUTO-07 is closed; additional real-source
+adjustment cases will be investigated when examples become available.
 
 ## Slice 0 — Examples, source capabilities, and decisions
 
-Status: initial source inventory and synthetic examples prepared. Real sanitized
-model-55 and GO adjustment examples, current schema/status confirmation, and final
-source-specific reconciliation semantics remain verification work in later slices;
-the synthetic fragments are not proof of real-world source compatibility.
+Status: source inventory and synthetic examples prepared. The user successfully imported
+a real model-55 XML and accepted deferring additional real Goiás and complex adjustment
+examples and source-specific verification until examples are available. Synthetic
+fragments are not proof of universal real-world source compatibility.
 
 - Collect sanitized model-55 authorized XML examples: ordinary, discount, freight or
   other charges, and an adjustment-heavy or inconsistent case. Obtain permission to
@@ -41,7 +43,8 @@ protocol key for model 55 (and rejects a mismatched key for model 65 when suppli
 Normalized XML item amounts now preserve gross product values; recognized discounts
 and freight are separate, with source amounts retained in the saved receipt. Synthetic
 fixtures do not establish full schema, signature, cancellation, or real-world document
-support. Slice 1 remains open for source verification.
+support. The user confirmed a real NF-e XML import works; additional source variants
+remain future verification work.
 
 - Extend the bounded XML parser for model 55 and preserve existing model-65 support.
   Validate supported structure, access key and model, and protocol consistency as
@@ -123,6 +126,15 @@ users and contexts, repeat lookup without save, retries, deletion, simultaneous
 submissions, and any explicit override. No duplicate check leaks another user's data.
 
 ## Slice 4 — End-to-end verification and handoff
+
+The user confirmed the manual pass on 2026-11-12. The historical checklist below is
+retained as a regression guide, not a claim that each listed source or scenario was
+individually verified. Additional source examples are deferred by user decision.
+
+On 2026-11-12, the complete `bin/ci` run passed: 2,406 fast, 69 feature, and 144
+operational examples; 27 JavaScript tests; Ruby and ERB style; Bundler Audit; and
+Brakeman. The preceding attempt was interrupted after the filesystem filled; the
+successful run was restarted after clearing a regenerable download cache.
 
 On 2026-11-06, CI passed setup, Ruby and ERB style, 2,386 fast examples, 144
 operational examples, JavaScript checks, and Brakeman. Its browser profile exposed an

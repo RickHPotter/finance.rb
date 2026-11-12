@@ -23,7 +23,9 @@ discounted, freight, and unresolved model-55 fragments, a model-65 discount frag
 and a GO-shaped discount HTML excerpt. They contain fictitious identities and are
 neither signed nor schema-complete; the GO excerpt illustrates expected shape, not a
 verified live SEFAZ response. Real sanitized examples and current official status,
-authorization, and layout confirmation remain necessary for manual acceptance.
+authorization, and layout confirmation remain future verification work. The user
+confirmed successful import of a real NF-e XML and accepted the remaining limitations
+for NARUTO-07 closure on 2026-11-12.
 
 XML reports item and document adjustment totals at different levels. The document
 total is not an additional charge on top of the same item totals: recognize a source
@@ -81,7 +83,7 @@ from the additional adjustment sum. The payable amount and the amount the user c
 to record may differ; the product decision must specify when that is allowed and how
 it is shown. A residual is not automatically a discount, freight, tax, or rounding.
 
-## Open decisions
+## Decisions and deferred investigation
 
 1. The user chose a dedicated first discount line with original product amounts preserved,
    fixed DISCOUNT category, no entity, and removal support. A transaction has at most
