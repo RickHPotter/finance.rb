@@ -2,18 +2,20 @@
 
 class Views::CardTransactions::PayInAdvanceModal < Views::Base
   include Phlex::Rails::Helpers::FormWith
+  include Phlex::Rails::Helpers::HiddenFieldTag
 
   include TranslateHelper
   include ComponentsHelper
   include CacheHelper
 
-  attr_reader :month, :year, :user_card_id, :payment_window
+  attr_reader :month, :year, :user_card_id, :payment_window, :cash_index_context
 
-  def initialize(month:, year:, user_card_id:, payment_window:)
+  def initialize(month:, year:, user_card_id:, payment_window:, cash_index_context: nil)
     @month = month
     @year = year
     @user_card_id = user_card_id
     @payment_window = payment_window
+    @cash_index_context = cash_index_context
   end
 
   def view_template
@@ -46,6 +48,10 @@ class Views::CardTransactions::PayInAdvanceModal < Views::Base
           url: pay_in_advance_card_transactions_path,
           data: { controller: "price-mask", action: "submit->price-mask#removeMasks" }
         ) do |form|
+          if cash_index_context
+            hidden_field_tag :return_to_cash_index, "1"
+            hidden_field_tag :index_context_json, cash_index_context.to_json
+          end
           TextField form, :month, class: :hidden, value: month
           TextField form, :year, class: :hidden, value: year
           TextField form, :user_card_id, class: :hidden, value: user_card_id

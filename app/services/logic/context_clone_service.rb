@@ -13,6 +13,7 @@ module Logic
       @cash_transaction_map = {}
       @card_transaction_map = {}
       @entity_transaction_map = {}
+      @line_item_map = {}
       @investment_map = {}
       @reference_map = {}
       @subscription_map = {}
@@ -38,6 +39,9 @@ module Logic
         clone_subscription_associations!
         clone_cash_transaction_associations!
         clone_card_transaction_associations!
+        clone_line_items!
+        clone_fiscal_document_links!
+        clone_receipt_attachments!
         clone_investment_associations!
         clone_exchanges!
 
@@ -157,6 +161,32 @@ module Logic
 
     def clone_investment_associations!
       clone_polymorphic_category_transactions!("Investment", @investment_map)
+    end
+
+    def clone_line_items!
+      { "CashTransaction" => @cash_transaction_map, "CardTransaction" => @card_transaction_map }.each do |type, mapping|
+        LineItem.where(transactable_type: type, transactable_id: mapping.keys).order(:id).find_each do |item|
+          @line_item_map[item.id] = insert_clone!(LineItem, item, overrides: { transactable_id: mapping.fetch(item.transactable_id) })
+        end
+      end
+      clone_polymorphic_category_transactions!("LineItem", @line_item_map)
+      clone_polymorphic_entity_transactions!("LineItem", @line_item_map)
+    end
+
+    def clone_fiscal_document_links!
+      { "CashTransaction" => @cash_transaction_map, "CardTransaction" => @card_transaction_map }.each do |type, mapping|
+        FiscalDocumentLink.where(context: @source_context, transactable_type: type, transactable_id: mapping.keys).find_each do |link|
+          insert_clone!(FiscalDocumentLink, link, overrides: { context_id: @target_context.id, transactable_id: mapping.fetch(link.transactable_id) })
+        end
+      end
+    end
+
+    def clone_receipt_attachments!
+      { "CashTransaction" => @cash_transaction_map, "CardTransaction" => @card_transaction_map, "LineItem" => @line_item_map }.each do |type, mapping|
+        ActiveStorage::Attachment.where(record_type: type, record_id: mapping.keys, name: "receipts").find_each do |attachment|
+          insert_clone!(ActiveStorage::Attachment, attachment, overrides: { record_id: mapping.fetch(attachment.record_id) })
+        end
+      end
     end
 
     def clone_exchanges!

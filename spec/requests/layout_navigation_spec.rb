@@ -59,9 +59,9 @@ RSpec.describe "Layout and Footer Navigation", type: :request do
       expect(row1.at_css("button#theme_toggle")).to be_present
       expect(row1.css("form[action*='/locale']").size).to eq(2)
 
-      # Row 2: BabyNames link centered
+      # The baby-names shortcut is no longer shown in the footer.
       row2 = desktop_section.at_css("div.flex.justify-center a[href='#{baby_names_path}']")
-      expect(row2).to be_present
+      expect(row2).to be_nil
     end
 
     it "does not render baby names link in desktop footer for unauthorized users" do
@@ -93,11 +93,11 @@ RSpec.describe "Layout and Footer Navigation", type: :request do
       rows = mobile_section.element_children
       expect(rows.size).to eq(4)
 
-      # Row 1: spreaded, Donate, Baby Names, Logout
+      # Row 1: Donate and Logout
       row1 = rows[0]
       expect(row1["class"]).to include("justify-between")
       expect(row1.at_css("a[href='#{donation_static_path}']")).to be_present
-      expect(row1.at_css("a[href='#{baby_names_path}']")).to be_present
+      expect(row1.at_css("a[href='#{baby_names_path}']")).to be_nil
       expect(row1.at_css("a[href='#{destroy_user_session_path}']")).to be_present
 
       # Row 2: centered light dark button

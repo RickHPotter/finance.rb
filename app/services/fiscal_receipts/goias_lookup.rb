@@ -109,8 +109,16 @@ module FiscalReceipts
         issued_at: issue_time(document.text),
         total_cents: brazilian_cents(total),
         items: rows.map { |row| parse_item(row) },
-        source: "sefaz_go"
+        source: "sefaz_go",
+        discount_cents: displayed_adjustment(document, /Valor Total dos Descontos/i),
+        freight_cents: displayed_adjustment(document, /Valor (?:Total )?do Frete/i)
       )
+    end
+
+    def displayed_adjustment(document, label_pattern)
+      row = document.css("#linhaTotal").find { |entry| entry.at_css("label")&.text&.match?(label_pattern) }
+      amount = row&.at_css(".totalNumb")&.text
+      amount.present? ? brazilian_cents(amount) : 0
     end
 
     def extract_receipt_html(html)

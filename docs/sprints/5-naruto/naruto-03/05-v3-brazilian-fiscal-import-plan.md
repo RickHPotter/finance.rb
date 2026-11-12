@@ -253,11 +253,11 @@ Imported items open the regular cash/card Split Purchase form, whose mobile line
 spacing and balance summary are adapted for narrow screens without changing the desktop
 form behavior.
 
-The saved receipt inbox has an initial implementation: phone imports can be saved
-without creating a financial transaction, and a user-owned inbox can reopen them in
-cash or card forms on another device. The user reports this flow manually exercised;
-follow-up security hardening remains open below. The inbox does not replace or auto-save normal
-cash/card transactions.
+The saved receipt inbox lets phone imports be saved without creating a financial
+transaction and reopened in cash or card forms on another device. The user reports
+the save-for-later workflow has been extensively tested and works well. The inbox does
+not replace or auto-save normal cash/card transactions. This functional confirmation
+is not a separate security assessment.
 
 ### Slice 0 — Persisted receipt inbox and cross-device handoff
 

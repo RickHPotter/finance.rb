@@ -6,7 +6,8 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
   let(:user) { create(:user, :random) }
   let(:draft) do
     {
-      access_key: "52261000000000000000650010000000000000000000",
+      access_key: "41140978393592000146651000000000031222222235",
+      identity_token: FiscalReceipts::IdentityToken.issue(user:, access_key: "41140978393592000146651000000000031222222235"),
       issuer: "Mercado Exemplo",
       issued_at: "2026-10-14T12:30:00-03:00",
       total_cents: 1150,
@@ -19,6 +20,52 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
   before { sign_in user }
 
   describe "POST /fiscal_receipt_drafts" do
+    it "warns about an existing draft and permits an explicit repeat after confirmation" do
+      post fiscal_receipt_drafts_path, params: { draft: }, as: :json
+      existing = user.fiscal_receipt_drafts.sole
+
+      expect do
+        post fiscal_receipt_drafts_path, params: { draft: }, as: :json
+      end.not_to change(user.fiscal_receipt_drafts, :count)
+      expect(response).to have_http_status(:conflict)
+      expect(response.parsed_body.fetch("existing_draft_url")).to include("fiscal_receipt_draft_#{existing.id}")
+
+      expect do
+        post fiscal_receipt_drafts_path, params: { draft:, duplicate_confirmed: true }, as: :json
+      end.to change(user.fiscal_receipt_drafts, :count).by(1)
+    end
+
+    it "preserves the selected card when the duplicate warning opens an existing draft" do
+      card = create(:user_card, :random, user:)
+      post fiscal_receipt_drafts_path, params: { draft: }, as: :json
+      existing = user.fiscal_receipt_drafts.sole
+
+      post fiscal_receipt_drafts_path(user_card_id: card.id), params: { draft: }, as: :json
+
+      expect(response).to have_http_status(:conflict)
+      expect(response.parsed_body.fetch("existing_draft_url"))
+        .to eq(fiscal_receipt_drafts_path(user_card_id: card.id, anchor: "fiscal_receipt_draft_#{existing.id}"))
+    end
+
+    it "does not disclose another user's draft or accept their identity token" do
+      other = create(:user, :random)
+      other.fiscal_receipt_drafts.create!(payload: draft.stringify_keys)
+      foreign_token = FiscalReceipts::IdentityToken.issue(user: other, access_key: draft[:access_key])
+
+      post fiscal_receipt_drafts_path, params: { draft: draft.merge(identity_token: foreign_token) }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+
+      post fiscal_receipt_drafts_path, params: { draft: }, as: :json
+      expect(response).to have_http_status(:created)
+    end
+
+    it "allows a receipt again after its draft has been deleted" do
+      post fiscal_receipt_drafts_path, params: { draft: }, as: :json
+      user.fiscal_receipt_drafts.sole.destroy!
+      post fiscal_receipt_drafts_path, params: { draft: }, as: :json
+      expect(response).to have_http_status(:created)
+    end
+
     it "persists the extracted draft with a private source manifest" do
       expect do
         post fiscal_receipt_drafts_path, params: { draft: }, as: :json
@@ -39,6 +86,20 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
 
       expect(response).to have_http_status(:created)
       expect(user.fiscal_receipt_drafts.sole.payload).not_to have_key("user_id")
+    end
+
+    it "preserves recognized adjustments and original fiscal details for later review" do
+      payload = draft.merge(discount_cents: 1000, freight_cents: 200,
+                            fiscal_details: { model: "55", document_totals: { vProd: 11_995, vDesc: 1000 },
+                                              items: [ { quantity: "1.0000", amounts: { vProd: 11_995 } } ] })
+
+      post fiscal_receipt_drafts_path, params: { draft: payload }, as: :json
+
+      expect(response).to have_http_status(:created)
+      stored = user.fiscal_receipt_drafts.sole.fiscal_draft
+      expect(stored).to include("discount_cents" => 1000, "freight_cents" => 200)
+      expect(stored.dig("fiscal_details", "document_totals")).to include("vProd" => 11_995, "vDesc" => 1000)
+      expect(stored.dig("fiscal_details", "items", 0, "quantity")).to eq("1.0000")
     end
 
     it "keeps owner-scoped Goiás page evidence with the saved receipt" do
@@ -102,6 +163,37 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
   end
 
   describe "GET /fiscal_receipt_drafts/:id/card_transaction" do
+    it "carries the selected owned card from the inbox into the transaction form" do
+      receipt_draft = user.fiscal_receipt_drafts.create!(payload: draft.stringify_keys)
+      card = create(:user_card, :random, user:)
+
+      get fiscal_receipt_drafts_path(user_card_id: card.id)
+      expect(response.body).to include(card_transaction_fiscal_receipt_draft_path(receipt_draft, user_card_id: card.id))
+
+      get card_transaction_fiscal_receipt_draft_path(receipt_draft, user_card_id: card.id)
+      expect(response).to redirect_to(new_card_transaction_path(fiscal_receipt_draft_id: receipt_draft.id, user_card_id: card.id))
+    end
+
+    it "does not carry another user's card into the transaction form" do
+      receipt_draft = user.fiscal_receipt_drafts.create!(payload: draft.stringify_keys)
+      create(:user_card, :random, user:)
+      foreign_card = create(:user_card, :random, user: create(:user, :random))
+
+      get card_transaction_fiscal_receipt_draft_path(receipt_draft, user_card_id: foreign_card.id)
+      expect(response).to redirect_to(new_card_transaction_path(fiscal_receipt_draft_id: receipt_draft.id))
+    end
+
+    it "does not infer a card when the inbox was opened without one" do
+      receipt_draft = user.fiscal_receipt_drafts.create!(payload: draft.stringify_keys)
+      create(:user_card, :random, user:)
+
+      get fiscal_receipt_drafts_path
+      expect(response.body).to include(card_transaction_fiscal_receipt_draft_path(receipt_draft))
+
+      get card_transaction_fiscal_receipt_draft_path(receipt_draft)
+      expect(response).to redirect_to(new_card_transaction_path(fiscal_receipt_draft_id: receipt_draft.id))
+    end
+
     it "redirects to card setup when the user has no active card" do
       receipt_draft = user.fiscal_receipt_drafts.create!(payload: draft.stringify_keys)
 

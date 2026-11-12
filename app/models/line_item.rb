@@ -9,6 +9,8 @@ class LineItem < ApplicationRecord
 
   audits_financial_changes
 
+  enum :item_kind, { product: "product", discount: "discount" }, default: :product, validate: true
+
   # @relationships ............................................................
   belongs_to :transactable, polymorphic: true, touch: true
   has_many_attached :receipts
@@ -23,6 +25,8 @@ class LineItem < ApplicationRecord
             limit: { max: 5 }
   validate :validate_leaf_category
   validate :validate_price_sign_matches_parent
+  validate :validate_discount_line
+  validate :prevent_discount_category_on_product
   validate :validate_exchange_friend_notification_intent
   validate :validate_entity_exchange_schedule_matches_price, if: :persisted_price_change?
 
@@ -125,6 +129,7 @@ class LineItem < ApplicationRecord
   end
 
   def validate_leaf_category
+    return if discount?
     return if category_id.blank?
 
     cat = Category.find_by(id: category_id)
@@ -133,14 +138,46 @@ class LineItem < ApplicationRecord
     errors.add(:category_id, :must_be_leaf_category) if cat.parent?
   end
 
+  def prevent_discount_category_on_product
+    return unless product? && category&.built_in? && category.category_name == "DISCOUNT"
+
+    allocation = category_transactions.reject(&:marked_for_destruction?).first
+    return if persisted? && allocation&.persisted? && !allocation.will_save_change_to_category_id?
+
+    errors.add(:category_id, :discount_reserved)
+  end
+
   def validate_price_sign_matches_parent
     return if price.blank? || transactable.blank? || transactable.price.blank?
+
+    if discount?
+      errors.add(:price, :must_be_positive_for_discount) if price.negative?
+      return
+    end
 
     if transactable.price.positive? && price.negative?
       errors.add(:price, :must_be_positive_to_match_transaction)
     elsif transactable.price.negative? && price.positive?
       errors.add(:price, :must_be_negative_to_match_transaction)
     end
+  end
+
+  def validate_discount_line
+    return unless discount?
+
+    errors.add(:category_id, :discount_category_required) unless discount_category_valid?
+    errors.add(:entity_id, :discount_entity_forbidden) if entity_transactions.any? { |entity| !entity.marked_for_destruction? }
+    siblings = transactable&.line_items&.reject(&:marked_for_destruction?) || []
+    errors.add(:item_kind, :only_one_discount) if siblings.count(&:discount?) > 1
+    errors.add(:item_kind, :discount_expense_only) if transactable&.price.to_i.positive?
+  end
+
+  def discount_category_valid?
+    active_categories = category_transactions.reject(&:marked_for_destruction?)
+    return false unless active_categories.one?
+
+    category = active_categories.first.category
+    category&.built_in? && category.category_name == "DISCOUNT" && category.user_id == user&.id
   end
 
   def validate_exchange_friend_notification_intent
@@ -211,13 +248,15 @@ end
 #  comment                    :text
 #  description                :string           not null
 #  friend_notification_intent :string
+#  item_kind                  :string           default("product"), not null
 #  price                      :integer          default(0), not null
-#  transactable_type          :string           not null, indexed => [transactable_id]
+#  transactable_type          :string           not null, indexed => [transactable_id], uniquely indexed => [transactable_id]
 #  created_at                 :datetime         not null
 #  updated_at                 :datetime         not null
-#  transactable_id            :bigint           not null, indexed => [transactable_type]
+#  transactable_id            :bigint           not null, indexed => [transactable_type], uniquely indexed => [transactable_type]
 #
 # Indexes
 #
 #  index_line_items_on_transactable_type_and_transactable_id  (transactable_type,transactable_id)
+#  index_line_items_one_discount_per_transaction              (transactable_type,transactable_id) UNIQUE WHERE ((item_kind)::text = 'discount'::text)
 #

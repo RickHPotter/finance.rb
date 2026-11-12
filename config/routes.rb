@@ -153,6 +153,7 @@ Rails.application.routes.draw do
   resources :cash_installments, only: [] do
     member do
       patch :pay
+      patch :change_date
     end
 
     collection do

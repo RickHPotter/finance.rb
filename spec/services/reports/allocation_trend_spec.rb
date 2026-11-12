@@ -16,6 +16,28 @@ RSpec.describe Reports::AllocationTrend do
   describe Reports::CategoryTrend do
     subject(:payload) { described_class.new(context:, category:, query_state:).call }
 
+    it "reports discounts separately from income and preserves gross product category amounts" do
+      discount_category = user.categories.find_by!(category_name: "DISCOUNT", parent_category_id: nil)
+      create(
+        :cash_transaction, user:, context:, user_bank_account: account, date: Date.new(2026, 7, 15), month: 7, year: 2026,
+                           price: -9000, paid: false,
+                           cash_installments: [ build(:cash_installment, number: 1, price: -9000, date: Date.new(2026, 7, 15), month: 7, year: 2026) ],
+                           line_items: [
+                             LineItem.new(description: "Food", price: -10_000, category_transactions: [ CategoryTransaction.new(category:) ]),
+                             LineItem.new(item_kind: "discount", description: "Discount", price: 1000,
+                                          category_transactions: [ CategoryTransaction.new(category: discount_category) ])
+                           ]
+      )
+
+      food = described_class.new(context:, category:, query_state:).call
+      discount = described_class.new(context:, category: discount_category, query_state:).call
+
+      expect(food.dig(:summary, :outcome, :amount_cents)).to eq(10_000)
+      expect(discount.dig(:summary, :discount, :amount_cents)).to eq(1000)
+      expect(discount.dig(:summary, :income, :amount_cents)).to eq(0)
+      expect(discount.dig(:summary, :net_cents)).to eq(1000)
+    end
+
     it "reconciles mixed cash and card ordinary rows into buckets, counterpart bundles, and typed drill-downs" do
       second_category = create(:category, user:, category_name: "ESSENTIAL")
       second_entity = create(:entity, user:, entity_name: "BRUNO")

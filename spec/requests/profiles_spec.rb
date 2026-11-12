@@ -23,6 +23,16 @@ RSpec.describe "Profiles", type: :request do
       expect(user.profile.reload.display_name).to eq("New Name")
     end
 
+    it "saves the selected sex and shows it when reopening the profile" do
+      patch profile_path, params: { user_profile: { sex: "masculine" } }
+
+      expect(response).to redirect_to(edit_profile_path)
+      expect(user.profile.reload.sex).to eq("masculine")
+
+      get edit_profile_path
+      expect(response.parsed_body.at_css("select[name='user_profile[sex]'] option[selected]")["value"]).to eq("masculine")
+    end
+
     it "updates the user preference with new fields" do
       patch "/profile", params: {
         user_preference: {

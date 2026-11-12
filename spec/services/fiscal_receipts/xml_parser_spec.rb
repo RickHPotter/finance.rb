@@ -27,10 +27,11 @@ RSpec.describe FiscalReceipts::XmlParser do
     expect(draft.issuer).to eq("Mercado Exemplo")
     expect(draft.total_cents).to eq(1975)
     expect(draft.items).to eq([
-                                { description: "Arroz", price_cents: 1150 },
+                                { description: "Arroz", price_cents: 1250 },
                                 { description: "Feijao", price_cents: 825 }
                               ])
     expect(draft.difference_cents).to eq(0)
+    expect(draft.discount_cents).to eq(100)
   end
 
   it "preserves a total mismatch for review" do
@@ -39,11 +40,12 @@ RSpec.describe FiscalReceipts::XmlParser do
     expect(draft.difference_cents).to eq(25)
   end
 
-  it "keeps a fully discounted product as a free item" do
+  it "preserves a fully discounted product and includes its discount" do
     free_item = "<det nItem=\"3\"><prod><xProd>Free Feijao</xProd><vProd>8.25</vProd><vDesc>8.25</vDesc></prod></det>"
     draft = described_class.new(xml.sub("<total>", "#{free_item}<total>")).call
 
-    expect(draft.items.last).to eq({ description: "Free Feijao", price_cents: 0 })
+    expect(draft.items.last).to eq({ description: "Free Feijao", price_cents: 825 })
+    expect(draft.discount_cents).to eq(925)
     expect(draft.difference_cents).to eq(0)
   end
 
@@ -56,5 +58,46 @@ RSpec.describe FiscalReceipts::XmlParser do
   it "rejects an unapproved document" do
     expect { described_class.new(xml.sub("<cStat>100</cStat>", "<cStat>101</cStat>")).call }
       .to raise_error(described_class::InvalidDocument, /authorized/)
+  end
+
+  it "retains original model-55 fiscal values separately from the current normalized item" do
+    source = Rails.root.join("spec/fixtures/files/fiscal_naruto_07/discount_55.xml").read
+    draft = described_class.new(source).call
+
+    expect(draft.total_cents).to eq(10_995)
+    expect(draft.fiscal_details[:document_totals]).to include("vProd" => 11_995, "vDesc" => 1000, "vNF" => 10_995)
+    expect(draft.fiscal_details[:items].first).to include(quantity: "1.0000", unit_price: "119.95", amounts: include("vProd" => 11_995, "vDesc" => 1000))
+  end
+
+  it "reads synthetic model-55 ordinary, freight and unresolved examples" do
+    fixtures = Rails.root.join("spec/fixtures/files/fiscal_naruto_07")
+    ordinary = described_class.new(fixtures.join("ordinary_55.xml").read).call
+    freight = described_class.new(fixtures.join("freight_55.xml").read).call
+    unresolved = described_class.new(fixtures.join("unresolved_55.xml").read).call
+
+    expect(ordinary.difference_cents).to eq(0)
+    expect(freight.fiscal_details[:document_totals]).to include("vFrete" => 800)
+    expect(unresolved.difference_cents).to eq(300)
+  end
+
+  it "requires a matching model-55 authorization protocol key" do
+    source = Rails.root.join("spec/fixtures/files/fiscal_naruto_07/ordinary_55.xml").read
+
+    expect { described_class.new(source.sub(%r{<chNFe>.*?</chNFe>}, "")).call }.to raise_error(described_class::InvalidDocument, /protocol key/)
+    expect { described_class.new(source.sub(%r{<chNFe>.*?</chNFe>}, "<chNFe>#{'0' * 44}</chNFe>")).call }
+      .to raise_error(described_class::InvalidDocument, /protocol key/)
+  end
+
+  it "rejects conflicting item and document discount totals" do
+    source = Rails.root.join("spec/fixtures/files/fiscal_naruto_07/discount_55.xml").read
+    source = source.sub("<vProd>119.95</vProd><vDesc>10.00</vDesc><vNF>", "<vProd>119.95</vProd><vDesc>9.00</vDesc><vNF>")
+
+    expect { described_class.new(source).call }.to raise_error(described_class::InvalidDocument, /adjustment totals disagree/)
+  end
+
+  it "rejects an inconsistent protocol key for model 65 when one is supplied" do
+    source = xml.sub("<cStat>100</cStat>", "<chNFe>#{'0' * 44}</chNFe><cStat>100</cStat>")
+
+    expect { described_class.new(source).call }.to raise_error(described_class::InvalidDocument, /protocol key/)
   end
 end

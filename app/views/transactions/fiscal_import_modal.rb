@@ -3,12 +3,13 @@
 class Views::Transactions::FiscalImportModal < Views::Base
   include Phlex::Rails::Helpers::Routes
 
-  attr_reader :modal_id, :transaction_type, :transaction_url
+  attr_reader :modal_id, :transaction_type, :transaction_url, :user_card_id
 
-  def initialize(modal_id:, transaction_type:, transaction_url:)
+  def initialize(modal_id:, transaction_type:, transaction_url:, user_card_id: nil)
     @modal_id = modal_id
     @transaction_type = transaction_type
     @transaction_url = transaction_url
+    @user_card_id = user_card_id
   end
 
   def view_template
@@ -21,7 +22,7 @@ class Views::Transactions::FiscalImportModal < Views::Base
         content_data: {
           controller: "fiscal-import",
           fiscal_import_url_value: fiscal_receipt_imports_path,
-          fiscal_import_drafts_url_value: fiscal_receipt_drafts_path,
+          fiscal_import_drafts_url_value: fiscal_receipt_drafts_path(user_card_id:),
           fiscal_import_transaction_url_value: transaction_url,
           fiscal_import_transaction_type_value: transaction_type,
           fiscal_import_direct_upload_url_value: rails_direct_uploads_path,

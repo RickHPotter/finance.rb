@@ -6,6 +6,7 @@ class CardTransaction < ApplicationRecord
   include HasMonthYear
   include HasStartingPrice
   include FinancialAuditable
+  include FiscalIdentityAuditable
   include HasCardInstallments
   include HasFinancialSafetyRules
   include HasFinancialSafetyGuards
@@ -32,6 +33,7 @@ class CardTransaction < ApplicationRecord
   belongs_to :reference_transactable, polymorphic: true, optional: true
   has_many :line_items, as: :transactable, dependent: :destroy, inverse_of: :transactable
   has_many_attached :receipts
+  has_one :fiscal_document_link, as: :transactable, dependent: :destroy
   accepts_nested_attributes_for :line_items, allow_destroy: true, reject_if: :blank_line_item_attributes?
 
   # @validations ..............................................................
@@ -375,7 +377,7 @@ class CardTransaction < ApplicationRecord
     attributes = attributes.with_indifferent_access
     return false if attributes[:id].present?
 
-    substantive_attributes = attributes.except(:id, :_destroy, :entity_transactions_attributes)
+    substantive_attributes = attributes.except(:id, :_destroy, :item_kind, :entity_transactions_attributes)
     return false if substantive_attributes.values.any?(&:present?)
 
     entity_transactions = attributes[:entity_transactions_attributes]

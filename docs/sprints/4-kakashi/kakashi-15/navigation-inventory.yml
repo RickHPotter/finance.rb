@@ -16,7 +16,8 @@ center_container_replacements:
   - paths:
       - app/controllers/card_transactions_controller.rb
       - app/views/card_transactions/pay_in_advance.turbo_stream.erb
-    expected_occurrences: 3
+    # Includes the cash-index refresh after paying a card invoice in advance.
+    expected_occurrences: 4
     classification: in_place_stream
     slice: 3
   - paths:

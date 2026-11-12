@@ -47,8 +47,9 @@ document.addEventListener("keyup", (e) => {
   // SCROLL TO LAST PAID
   if (key === "n") {
     e.preventDefault()
-    const paidTransactions = document.querySelectorAll("[data-datatable-target='row']:not(.animate-pulse):not([data-row-kind='budget'])")
-    const lastPaidTransaction = paidTransactions[paidTransactions.length - 1]
+    const paidTransactions = Array.from(document.querySelectorAll("[data-datatable-target~='row'][data-paid='true']"))
+      .filter(row => row.checkVisibility())
+    const lastPaidTransaction = paidTransactions.at(-1)
 
     if (!lastPaidTransaction) { return }
 

@@ -193,7 +193,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
                   modal_toggle: "cardFiscalImportModal"
                 }
               ) { I18n.t("fiscal_import.import_now") }
-              link_to fiscal_receipt_drafts_path,
+              link_to fiscal_receipt_drafts_path(user_card_id: user_card&.id),
                       class: action_menu_item_class,
                       role: "menuitem",
                       data: { action: "click->action-menu#close", turbo_frame: "_top" } do

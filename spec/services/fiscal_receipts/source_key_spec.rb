@@ -20,6 +20,20 @@ RSpec.describe FiscalReceipts::SourceKey do
       .to raise_error(described_class::InvalidSource)
   end
 
+  it "identifies a Goiás consultation result without echoing or replaying its session and CAPTCHA" do
+    url = "https://nfeweb.sefaz.go.gov.br/nfeweb/sites/nfce/render/xml-consulta-completa;jsessionid=example-session" \
+          "?g-recaptcha-response=example-captcha&chaveAcesso=#{access_key}"
+
+    expect { described_class.new(url).call }
+      .to raise_error(described_class::InvalidSource, I18n.t("fiscal_import.messages.goias_consultation_link"))
+  end
+
+  it "does not recognize an unrelated host as a Goiás consultation" do
+    url = "https://example.com/nfeweb/sites/nfce/render/xml-consulta-completa;jsessionid=example"
+    expect { described_class.new(url).call }
+      .to raise_error(described_class::InvalidSource, I18n.t("fiscal_import.messages.source_url_invalid"))
+  end
+
   it "keeps the signed payload of an official Goiás QR URL" do
     goias_key = "52260301427744000150650010005752241062577988"
     url = "https://nfeweb.sefaz.go.gov.br/nfeweb/sites/nfce/danfeNFCe?p=#{goias_key}|2|1|1|8063029A08AC070E0D5C6DDB0891AC3F116830AC"

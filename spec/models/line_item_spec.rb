@@ -336,13 +336,15 @@ end
 #  comment                    :text
 #  description                :string           not null
 #  friend_notification_intent :string
+#  item_kind                  :string           default("product"), not null
 #  price                      :integer          default(0), not null
-#  transactable_type          :string           not null, indexed => [transactable_id]
+#  transactable_type          :string           not null, indexed => [transactable_id], uniquely indexed => [transactable_id]
 #  created_at                 :datetime         not null
 #  updated_at                 :datetime         not null
-#  transactable_id            :bigint           not null, indexed => [transactable_type]
+#  transactable_id            :bigint           not null, indexed => [transactable_type], uniquely indexed => [transactable_type]
 #
 # Indexes
 #
 #  index_line_items_on_transactable_type_and_transactable_id  (transactable_type,transactable_id)
+#  index_line_items_one_discount_per_transaction              (transactable_type,transactable_id) UNIQUE WHERE ((item_kind)::text = 'discount'::text)
 #

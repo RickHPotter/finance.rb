@@ -93,6 +93,7 @@ class Views::Transactions::FiscalImportSection < Views::Base
       end
 
       p(class: "mt-2 text-xs", role: :status, data: { fiscal_import_target: "status" })
+      render Views::Transactions::FiscalReceiptSummary.new
     end
   end
 end

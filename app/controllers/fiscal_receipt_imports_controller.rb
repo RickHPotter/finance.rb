@@ -4,7 +4,9 @@ class FiscalReceiptImportsController < ApplicationController
   def create
     file = params[:file]
     draft = file.respond_to?(:tempfile) ? draft_from_file(file) : draft_from_source(params[:source])
-    render json: { draft: draft.as_json, evidence_signed_ids: create_evidence_blobs }
+    payload = draft.as_json.merge(identity_token: FiscalReceipts::IdentityToken.issue(user: current_user, access_key: draft.access_key))
+    existing = FiscalDocumentLink.find_by(user: current_user, context: current_context, access_key: draft.access_key)
+    render json: { draft: payload, duplicate_transaction: existing.present?, evidence_signed_ids: create_evidence_blobs }
   rescue FiscalReceipts::XmlParser::InvalidDocument, FiscalReceipts::ParanaLookup::Unavailable, FiscalReceipts::GoiasLookup::Unavailable,
          FiscalReceipts::SourceKey::InvalidSource, FiscalReceipts::PdfKeyExtractor::Unreadable => e
     render_error(e.message)
@@ -30,7 +32,10 @@ class FiscalReceiptImportsController < ApplicationController
       @evidence_files = lookup.evidence_files
       return draft
     end
-    if FiscalReceipts::AccessKey.new(normalized).state_code == "52"
+    key = FiscalReceipts::AccessKey.new(normalized)
+    raise FiscalReceipts::SourceKey::InvalidSource, I18n.t("fiscal_import.messages.nfe_xml_required") if key.valid? && key.model == "55"
+
+    if key.state_code == "52"
       raise FiscalReceipts::GoiasLookup::Unavailable,
             I18n.t("fiscal_import.messages.goias_key_challenge")
     end

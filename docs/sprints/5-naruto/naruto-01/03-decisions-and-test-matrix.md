@@ -128,6 +128,9 @@ deleting a parent category that owns subcategories.
 ---
 
 ## Acceptance Sign-Off Checklist
+
+NARUTO-01 is closed per user confirmation. The unchecked items below are the original
+planning checklist and do not imply that the feature remains open.
 - [ ] Database migration applied with scoped unique index `(user_id, parent_category_id, category_name) NULLS NOT DISTINCT`.
 - [ ] Model validations allow direct transactions on parents and allow identical child names under different parents.
 - [ ] `CategoryBadge` renders compound `[ HSH [ LABOUR ] ]` visual for subcategories.

@@ -1,17 +1,40 @@
 # NARUTO-07 — NF-e import, fiscal monetary accuracy, and duplicate protection
 
+## Implementation status
+
+The product decisions and implementation slices are recorded. The user chose a dedicated discount line that preserves the
+original product amounts, and chose a warning with an explicit repeat for a document
+already saved as a transaction in the current financial context. For an existing
+saved receipt, warn and offer to open it or explicitly save another. Recognized freight
+is shown as a separate charge line. Deleted records do not trigger duplicate warnings.
+See the
+[implementation slices](02-implementation-slices.md) and
+[field inventory](03-field-inventory-and-reconciliation.md). Implementation covers the
+model-55 XML path, discount and freight reconciliation, receipt review, and duplicate
+warnings. Manual acceptance was confirmed by the user on 2026-11-12, including successful import of a
+real NF-e XML. NARUTO-07 is closed. The user accepts the remaining source limitations:
+investigate real Goiás and complex adjustment examples when available, and handle
+unsupported adjustments manually. Synthetic fixtures do not establish compatibility
+with every production document. NARUTO-03 remains closed.
+
 ## Purpose and boundary
 
 Harden NARUTO-03's basic XML parsing for NF-e (model 55), while investigating
-the fiscal fields needed to represent purchases accurately. The current parser accepts
-an authorized `nfeProc` whose model matches its access key, but its fixtures and
-verified product behavior cover model 65; model-55 accuracy is not established.
+the fiscal fields needed to represent purchases accurately. The parser accepts an
+`nfeProc` with an accepted supplied protocol status and a model matching its access key.
+Synthetic fixtures cover models 55 and 65; one real model-55 XML import was also
+confirmed by the user, without claiming coverage of all document variants.
 NARUTO-03 V2 attachment hardening and the supported V3 import flow were confirmed
 complete by the user on 2026-10-28. NARUTO-07 also owns the deferred fiscal-document
 duplicate policy and protection. NARUTO-08 owns OCR of screenshots and photographed
 documents.
 
-The first NF-e source should be an authorized XML supplied by the user. Do not treat a
+The first NF-e source should be a user-supplied XML containing an authorization
+protocol. The parser checks the supplied protocol status and, for model 55, matches
+its key to the invoice key. Model 65 rejects a mismatched protocol key when one is
+present. It does not establish signature validity or check later cancellation
+events; do not present these checks as complete verification of authorization
+or current status. Do not treat a
 44-digit key, a DANFE PDF, or a public consultation page as equivalent to the signed
 XML. Assess each additional retrieval route with its own state, access, authorization,
 and item-detail limitations before committing to support. The national public NF-e
@@ -43,20 +66,62 @@ not assume every fiscal total is the cash/card amount or sum tax components twic
 
 The Goiás NFC-e example reported by the user has R$119.95 in product rows, R$10.00
 in the public consultation's **Valor Total dos Descontos**, and R$109.95 payable. The
-current draft exposes R$10.00 as an unexplained excess because the importer reads
-product rows and the payable total but does not capture the discount. Use a sanitized
-fixture for this case; do not put its live QR URL or taxpayer identifiers in tests or
-documentation. The chosen representation must capture the R$10.00 automatically,
-show its source and effect on reconciliation, and retain the original product values.
+importer recognizes this displayed discount in the synthetic example and represents
+it separately. Do not put a live QR URL or taxpayer identifiers in tests or
+documentation. The same behavior still needs verification with a sanitized real
+consultation response.
+
+## Discount line contract
+
+- A user creates a discount through a dedicated **Add Discount** button, not by
+  selecting DISCOUNT on an ordinary line item. Fiscal import creates a discount line
+  automatically when it recognizes a source discount; never infer one from an
+  unexplained difference.
+- A transaction can have at most one discount line. The button must not create a
+  second line, and the server must reject duplicate discount lines. If the source
+  contains multiple discounts, represent their recognized total in that one line while
+  preserving the underlying source details and avoiding double counting.
+- A discount line has the permanent system category `DISCOUNT` and no entity. The
+  category cannot be changed and no entity may be selected. Enforce these rules at the
+  server boundary, including crafted requests and later edits. A discount line can be
+  removed, and ordinary line-item category selection cannot create one manually.
+- If a user already has a top-level custom `DISCOUNT` category, reuse it and make it
+  permanent while preserving its existing history and category relationships.
+- The discount line always appears **first**, whether created manually or by import,
+  including after saving, reopening, duplication, and removal/re-addition. Ordering
+  must persist or be derived consistently, rather than only arranged in the browser.
+- The discount reduces the purchase total while original product amounts remain
+  visible. In category reports, R$100 in Food with a R$10 discount remains R$100
+  under Food and R$10 under DISCOUNT; do not distribute the discount across products.
+  Its signed effect on the expense total is +R$10, yielding a net expense of R$90.
+  Label it as a discount rather than ordinary income. Test aggregation, audit and
+  rollback when changing the existing line-item sign rules.
+- Preserve source provenance and distinguish imported discount values from subsequent
+  user edits; never claim a manually added discount came from the fiscal document.
+
+## Freight and other charges
+
+When the source identifies freight, show it as a separate positive charge in the
+purchase breakdown: R$100 in products plus R$10 freight yields R$110. In the expense
+ledger, that freight line has the same negative sign as the product lines. Do not
+silently distribute freight across products or infer freight from a residual. The final
+price remains the priority; retain source details, avoid double counting, and let the
+user review or categorize the charge through the normal line-item flow. Insurance,
+taxes, and other charges require fixture-based investigation; if they cannot be
+represented reliably, show the unresolved difference for manual resolution.
 
 ## Duplicate fiscal-document protection
 
-The deferred NARUTO-03 duplicate-import item is now owned here. Choose a policy for
-the same validated fiscal access key appearing in a saved receipt draft or a completed cash/card
-transaction. Define the lookup scope across user, financial context, cash versus card,
-and deleted or abandoned drafts before implementation. The review should identify an
-existing match without exposing another user's data, and specify whether an intentional
-second transaction is allowed with an explicit override. Do not treat a repeated QR
+The deferred NARUTO-03 duplicate-import item is now owned here. If a validated fiscal
+access key matches a completed cash/card transaction owned by the user in the current
+financial context, warn the user and allow an intentional repeat only with explicit
+confirmation. Transactions in other contexts must not trigger that warning. When the
+same receipt is already saved for later, warn and offer to open the existing saved
+receipt or explicitly save another. Saved receipts belong to the user and currently have
+no context column, so this saved-receipt check is user-wide. Deleted transactions and
+drafts do not trigger warnings; an existing saved receipt remains eligible until deleted
+or consumed. Identify an existing match without exposing another user's data.
+Do not treat a repeated QR
 lookup alone as a duplicate financial transaction. Add request and browser coverage for
 first import, repeated draft, completed transaction, other user/context, and any
 override or cancellation path. Keep the attachment and evidence handoff unchanged.
@@ -64,13 +129,14 @@ override or cancellation path. Keep the attachment and evidence handoff unchange
 ## Proposed user contract
 
 1. An accepted source produces an unsaved cash/card Split Purchase draft through the
-   existing NARUTO-02 form; the user reviews and completes normal transaction fields.
+   existing NARUTO-02 form; the user chooses cash or card, reviews, and completes the
+   normal transaction fields. A fiscal payment method does not choose the form.
 2. Keep the original fiscal values and source provenance. Never silently rewrite item
    prices to force the draft to balance.
 3. Show source item sum, document adjustments, fiscal total, intended transaction
-   amount, and any unresolved difference in a way the user can inspect. Decide whether
-   explicit adjustment line items or dedicated fields are appropriate only after the
-   field investigation and examples.
+   amount, and any unresolved difference in a way the user can inspect. Show discounts
+   as the dedicated first line item while retaining original product values. Decide
+   report allocation and handling of other adjustments after investigation.
 4. If the amounts cannot be reconciled under the chosen representation, require a
    visible manual resolution before saving; do not create a misleading transaction.
 5. Reuse NARUTO-03's private attachment/evidence and draft-inbox flow. Apply its
@@ -87,9 +153,9 @@ override or cancellation path. Keep the attachment and evidence handoff unchange
 3. **Review and reconciliation:** add the chosen fields/summary to the existing draft
    and cash/card form, expose discrepancies and manual correction, preserve attachments,
    and maintain the exact-sum save guard.
-4. **Duplicate protection:** choose the identity, scope, warning/block, and intentional
-   repeat policy; implement it across the saved draft and final cash/card transaction
-   flows with no cross-user information leakage.
+4. **Duplicate protection:** implement current-context transaction warnings, saved
+   receipt warnings, and explicit repeat confirmation; exclude deleted records and
+   prevent cross-user information leakage.
 5. **Additional sources only if proven feasible:** evaluate DANFE text and authorized
    retrieval separately. A scanned PDF or screenshot belongs to NARUTO-08 OCR, not
    an implicit NF-e parser fallback.
@@ -98,19 +164,13 @@ override or cancellation path. Keep the attachment and evidence handoff unchange
    differences, duplicate detection, cash/card drafts, and attachment handoff; then
    manual testing and CI.
 
-## Open product decisions
+## Deferred investigations
 
-- How should discounts, freight, insurance, and other paid adjustments appear in a
-  transaction: dedicated fields, explicit adjustment line items, or user-assigned
-  allocation? What must reports and rollback preserve?
-- Should payment method from the document suggest cash versus card, or remain
-  provenance only? Never infer a specific user card/account from fiscal data alone.
+- Which insurance, tax, and other adjustment fields can be represented reliably,
+  based on the supported source fixtures? Do not assume all tax fields are extra charges.
 - Which NF-e lookup or distribution path, if any, is authorized and maintainable for
   this application's users without solving a browser challenge or requiring paid
   third-party access?
-- Should a repeated fiscal access key warn or block, and under what conditions may the
-  user explicitly create a second cash/card transaction from the same document?
 
-Completion requires the field analysis, chosen reconciliation contract, implemented
-model-55 source path, duplicate protection, tests, and manual validation. Broader
-state/portal coverage is optional and must be documented honestly.
+The user accepted these limitations for closure. Broader state/portal coverage is
+optional; OCR-assisted extraction is tracked separately in NARUTO-08.

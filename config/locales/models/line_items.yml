@@ -18,7 +18,15 @@ en:
           attributes:
             category_id:
               must_be_leaf_category: "must be a subcategory or standalone category, not a parent category"
+              discount_category_required: "must be the built-in DISCOUNT category"
+              discount_reserved: "is reserved for discount lines"
+            entity_id:
+              discount_entity_forbidden: "cannot be set on a discount"
+            item_kind:
+              only_one_discount: "allows only one discount per transaction"
+              discount_expense_only: "can only be used on expenses"
             price:
+              must_be_positive_for_discount: "must reduce the expense"
               must_be_positive_to_match_transaction: "must be positive to match transaction price"
               must_be_negative_to_match_transaction: "must be negative to match transaction price"
             base:
@@ -30,6 +38,9 @@ en:
       split_purchase: "Split Purchase"
       split_purchase_hint: "Break down purchase across multiple categories and entities"
       add_item: "Add item"
+      add_discount: "Add Discount"
+      discount: "Discount"
+      freight: "Freight"
       bulk_defaults: "Set defaults for all line items"
       defaults_button: "Defaults"
       bulk_defaults_hint: "Choose one or both values to apply to every current line item, then adjust exceptions individually."
@@ -72,7 +83,15 @@ pt-BR:
           attributes:
             category_id:
               must_be_leaf_category: "deve ser uma subcategoria ou categoria avulsa, não uma categoria pai"
+              discount_category_required: "deve ser a categoria integrada DESCONTO"
+              discount_reserved: "é reservada para itens de desconto"
+            entity_id:
+              discount_entity_forbidden: "não pode ser definida para um desconto"
+            item_kind:
+              only_one_discount: "permite somente um desconto por transação"
+              discount_expense_only: "só pode ser usado em despesas"
             price:
+              must_be_positive_for_discount: "deve reduzir a despesa"
               must_be_positive_to_match_transaction: "deve ser positivo para coincidir com o valor da transação"
               must_be_negative_to_match_transaction: "deve ser negativo para coincidir com o valor da transação"
             base:
@@ -84,6 +103,9 @@ pt-BR:
       split_purchase: "Compra Dividida"
       split_purchase_hint: "Divida a compra entre múltiplas categorias e pessoas"
       add_item: "Adicionar item"
+      add_discount: "Adicionar desconto"
+      discount: "Desconto"
+      freight: "Frete"
       bulk_defaults: "Definir padrão para todos os itens"
       defaults_button: "Padrões"
       bulk_defaults_hint: "Escolha um ou os dois valores para aplicar a todos os itens atuais e depois ajuste as exceções individualmente."

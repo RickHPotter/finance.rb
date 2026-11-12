@@ -108,6 +108,9 @@ module Logic
 
       delete_category_transactions!
       delete_entity_transactions!
+      delete_receipt_attachments!
+      Audit::BulkMutation.delete_all!(LineItem.where(id: @line_item_ids))
+      FiscalDocumentLink.where(context_id: context.id).delete_all
 
       Audit::BulkMutation.delete_all!(Reference.where(context_id: context.id))
     end
@@ -174,8 +177,15 @@ module Logic
       Audit::BulkMutation.delete_all!(EntityTransaction.where(id: @entity_transaction_ids))
     end
 
+    def delete_receipt_attachments!
+      { "CashTransaction" => @cash_transaction_ids, "CardTransaction" => @card_transaction_ids, "LineItem" => @line_item_ids }.each do |type, ids|
+        ActiveStorage::Attachment.where(record_type: type, record_id: ids, name: "receipts").delete_all
+      end
+    end
+
     def polymorphic_category_transactions_scope
       CategoryTransaction.none
+                         .or(CategoryTransaction.where(transactable_type: "LineItem", transactable_id: @line_item_ids))
                          .or(CategoryTransaction.where(transactable_type: "CardTransaction", transactable_id: @card_transaction_ids))
                          .or(CategoryTransaction.where(transactable_type: "CashTransaction", transactable_id: @cash_transaction_ids))
                          .or(CategoryTransaction.where(transactable_type: "Investment", transactable_id: @investment_ids))
@@ -184,6 +194,7 @@ module Logic
 
     def polymorphic_entity_transactions_scope
       EntityTransaction.none
+                       .or(EntityTransaction.where(transactable_type: "LineItem", transactable_id: @line_item_ids))
                        .or(EntityTransaction.where(transactable_type: "CardTransaction", transactable_id: @card_transaction_ids))
                        .or(EntityTransaction.where(transactable_type: "CashTransaction", transactable_id: @cash_transaction_ids))
                        .or(EntityTransaction.where(transactable_type: "Subscription", transactable_id: @subscription_ids))
@@ -195,6 +206,8 @@ module Logic
       @cash_transaction_ids = context.cash_transactions.pluck(:id)
       @investment_ids = context.investments.pluck(:id)
       @subscription_ids = context.subscriptions.pluck(:id)
+      @line_item_ids = LineItem.where(transactable_type: "CashTransaction", transactable_id: @cash_transaction_ids)
+                               .or(LineItem.where(transactable_type: "CardTransaction", transactable_id: @card_transaction_ids)).pluck(:id)
     end
 
     def collect_affected_owner_ids!

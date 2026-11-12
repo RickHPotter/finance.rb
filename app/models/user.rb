@@ -173,6 +173,7 @@ class User < ApplicationRecord
       Category.new(built_in: true, category_name: "CARD INSTALLMENT"),
       Category.new(built_in: true, category_name: "INVESTMENT"),
       Category.new(built_in: true, category_name: "SUBSCRIPTION"),
+      Category.new(built_in: true, category_name: "DISCOUNT"),
       Category.new(built_in: true, category_name: locale == "pt-BR" ? "SALARIO" : "SALARY"),
       Category.new(built_in: true, category_name: "OTHER"),
       Category.new(built_in: true, category_name: "OTHER INCOME"),

@@ -128,4 +128,30 @@ RSpec.describe "Audit rollback LineItem adapter" do
     expect(recreated).to be_present
     expect(recreated).to have_attributes(description: "Apples", price: 50_00)
   end
+
+  it "restores a deleted discount together with its fixed category" do
+    discount_category = user.categories.find_by!(category_name: "DISCOUNT", parent_category_id: nil)
+    expense = PaperTrail.request(enabled: false) do
+      create(:cash_transaction, user:, context:, user_bank_account: account, price: -9000,
+                                cash_installments: [ build(:cash_installment, number: 1, price: -9000) ],
+                                line_items: [
+                                  LineItem.new(description: "Product", price: -10_000),
+                                  LineItem.new(description: "Discount", price: 1000, item_kind: "discount",
+                                               category_transactions: [ CategoryTransaction.new(category: discount_category) ])
+                                ])
+    end
+    discount = expense.line_items.find(&:discount?)
+    allocation = discount.category_transactions.sole
+    discount_state = discount.attributes.except(*LineItem.paper_trail_options.fetch(:skip))
+    allocation_state = allocation.attributes.except(*CategoryTransaction.paper_trail_options.fetch(:skip))
+    PaperTrail.request(enabled: false) { discount.destroy! }
+    record_destroy(discount, state: discount_state)
+    record_destroy(allocation, state: allocation_state)
+
+    preview, result = apply
+
+    expect(preview).to have_attributes(state: "previewable")
+    expect(result).to have_attributes(status: "applied")
+    expect(LineItem.find(discount.id)).to have_attributes(item_kind: "discount", price: 1000, category_id: discount_category.id)
+  end
 end

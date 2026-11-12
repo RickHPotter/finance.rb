@@ -33,7 +33,6 @@ class Views::Shared::AppFooter < Views::Base
     div(class: "block md:hidden") do
       div(class: "flex items-center justify-between w-full px-4 py-2") do
         donate_link
-        baby_names_link if current_user&.id&.in?(BabyNamesAccess::ALLOWED_USER_IDS)
         logout_link if current_user
       end
 
@@ -60,12 +59,6 @@ class Views::Shared::AppFooter < Views::Base
         theme_switcher(id: "theme_toggle")
         locale_links
       end
-
-      if current_user&.id&.in?(BabyNamesAccess::ALLOWED_USER_IDS)
-        div(class: "flex justify-center mb-2") do
-          baby_names_link
-        end
-      end
     end
   end
 
@@ -75,13 +68,6 @@ class Views::Shared::AppFooter < Views::Base
 
   def current_context
     rails_view_context.current_context
-  end
-
-  def baby_names_link
-    FooterLink(href: baby_names_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do
-      plain I18n.t("baby_names.pwa.shortcut_name")
-      render_icon(:light_bulb)
-    end
   end
 
   def donate_link

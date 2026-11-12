@@ -45,6 +45,9 @@ reference merge work. They compose cleanly on top of it.
 
 ### NARUTO-01: Create category hierarchy
 
+Status: closed per user confirmation. Category hierarchy, selection, filtering,
+grouped display, and status cascade have been manually verified.
+
 Goal: let users organise categories into a two-level parent/child hierarchy so a
 family of related spending can be grouped without polluting the flat list.
 
@@ -93,7 +96,7 @@ References:
 
 ### NARUTO-02: Add bulk and composite transactions
 
-Status: the original split-purchase scope has since been extended to cover per-line-item
+Status: closed per user confirmation. The original split-purchase scope was extended to cover per-line-item
 friend repayments and exchange notifications. The transaction breakdown and that
 friend-aware extension belong to NARUTO-02; NARUTO-03 only adds receipt/document
 handling and the fiscal-document import workflow that can prefill these line
@@ -231,12 +234,11 @@ Explicitly out of scope for the current attachment and fiscal-import plan:
 
 ### NARUTO-04: Extend subscriptions with salary support and bulk operations
 
-Status: implementation complete, manual verification underway as of 2026-10-19. The
+Status: closed per user confirmation. The
 salary/OTHER families, subscription kind/main-category forms, atomic bulk operations,
 and rollback hardening are implemented with focused specs. Manual testing has passed
-so far, including the SALARIO income-subscription flow after fixing an accidental
-duplicate-category lookup and the PWA index styling review. Full CI and the remaining
-manual acceptance flows are still required before this feature is done. The signed-total,
+including the SALARIO income-subscription flow after fixing an accidental
+duplicate-category lookup and the PWA index styling review. The signed-total,
 cash-only income, immutable-kind, category-choice, and atomic bulk-edit decisions are
 locked. See the
 [NARUTO-04 product contract](docs/sprints/5-naruto/naruto-04/01-product-and-data-contract.md)
@@ -417,14 +419,24 @@ Explicitly out of scope:
 
 ### NARUTO-07: Harden fiscal import for NF-e and monetary accuracy
 
-Status: planned. This extends NARUTO-03's supported NFC-e/cupom import and owns the
-deferred duplicate-document policy and protection. NARUTO-03 remains closed.
+Status: **closed on 2026-11-12 following user manual acceptance.** This extends
+NARUTO-03's supported NFC-e/cupom import and implements duplicate-document protection.
+NARUTO-03 remains closed.
+Create discounts as dedicated first line items through Add Discount
+or fiscal import, with fixed DISCOUNT category and no entity, while preserving product
+amounts; warn on a duplicate completed transaction in the current context and
+allow an explicit intentional repeat. For a saved-receipt duplicate, offer to open the
+existing receipt or explicitly save another. Reports retain original product-category
+amounts and show discounts separately under DISCOUNT. Source-identified freight is a
+separate charge line. Deleted records do not trigger duplicate warnings; other charge
+semantics require fixture-based investigation.
 
 Goal: harden the existing basic authorized-XML parser for NF-e (model 55) documents
 and investigate the fiscal fields and document-level adjustments needed to represent
-NF-e and NFC-e transactions accurately. The current parser can accept a model-55
-`nfeProc` structurally, but only model-65 fixtures are covered and NF-e-specific
-accuracy is not verified. Start with supplied authorized XML; evaluate DANFE PDF and
+NF-e and NFC-e transactions accurately. The parser accepts model-55 and model-65
+`nfeProc` documents and checks the supplied protocol as described in the contract.
+The user successfully imported a real NF-e XML; automated model-55 fixtures are synthetic.
+Use supplied XML; evaluate broader DANFE PDF support and
 state-specific public consultation separately. A 44-digit
 key alone is not a promise of automatic XML or product-row retrieval: the official
 NF-e consultation has a browser challenge, and distribution of XML has separate
@@ -435,18 +447,23 @@ freight, insurance, other charges, taxes, payments, and issuance/cancellation st
 identify which fields belong on the transaction, each `LineItem`, or provenance-only
 metadata; and explain how item totals reconcile with the payable amount. Do not
 silently alter product prices or invent a balancing item. Present any discrepancy for
-review and obtain a product decision on an explicit adjustment representation before
-implementation. Preserve the original document and source/provenance metadata. The
+review. Preserve the original document and source/provenance metadata. The
 reported Goiás NFC-e case has R$119.95 in products, R$10.00 in discounts, and R$109.95
 payable; the discount must be captured and explained automatically. Define duplicate
 checks for saved drafts and completed cash/card transactions using the fiscal key,
 with a clear policy for intentional repeats and user/context scope.
 
-Coverage: sanitized model-55 XML fixtures, malformed/unauthorized documents, item and
+Coverage: synthetic model-55 XML fixtures, malformed/unsupported documents, item and
 document totals with discounts/charges, status and date handling, cash/card prefill,
 attachments, and rejection or review of unresolved differences.
+The user accepted the remaining limitations: real Goiás adjustment and other complex
+examples can be investigated when available; Paraná adjustment extraction and other
+unrecognized charges are not normalized. Unsigned old drafts and old transactions
+have no trusted fiscal identity for duplicate matching. OCR is NARUTO-08 work.
 
-Reference: [NF-e and fiscal-accuracy development plan](docs/sprints/5-naruto/naruto-07/01-product-and-data-contract.md).
+References: [product contract](docs/sprints/5-naruto/naruto-07/01-product-and-data-contract.md),
+[implementation slices](docs/sprints/5-naruto/naruto-07/02-implementation-slices.md), and
+[field inventory](docs/sprints/5-naruto/naruto-07/03-field-inventory-and-reconciliation.md).
 
 ### NARUTO-08: Read screenshots and photographed documents with OCR
 

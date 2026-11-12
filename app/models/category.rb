@@ -226,9 +226,13 @@ class Category < ApplicationRecord
   def validate_built_in_hierarchy
     if built_in? && parent_category_id.present?
       errors.add(:parent_category_id, :built_in_cannot_have_parent)
-    elsif parent_category&.built_in? && !parent_category.subscription_family_parent?
+    elsif parent_category&.built_in? && !parent_category.subscription_family_parent? && !existing_discount_parent?
       errors.add(:parent_category_id, :built_in_cannot_be_parent)
     end
+  end
+
+  def existing_discount_parent?
+    persisted? && !will_save_change_to_parent_category_id? && parent_category&.category_name == "DISCOUNT"
   end
 
   def validate_active_state_matches_parent

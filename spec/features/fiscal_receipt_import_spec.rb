@@ -27,9 +27,15 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
     expect(page).to have_button(I18n.t("fiscal_import.import_file"), disabled: false)
     click_button(I18n.t("fiscal_import.import_file"))
+    within("[data-fiscal-import-summary]", visible: true) do
+      expect(page).to have_text(I18n.t("fiscal_import.source_summary.title"))
+      expect(find("[data-fiscal-summary-amount='products']").text).to include("20,75")
+      expect(find("[data-fiscal-summary-amount='discount']").text).to include("1,00")
+      expect(find("[data-fiscal-summary-amount='difference']").text).to include("0,00")
+    end
     click_button(I18n.t("fiscal_import.continue"))
 
-    expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 2)
+    expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 3)
     separator_spacing = page.evaluate_script(<<~JS)
       (() => {
         const rows = [...document.querySelectorAll("[data-composite-transaction-target~='row']:not(.hidden)")]
@@ -44,10 +50,12 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect((separator_spacing.fetch("before") - separator_spacing.fetch("after")).abs).to be <= 2
     expect(page).to have_field("cash_transaction[description]", with: "Mercado Exemplo")
     expect(page).to have_field("cash_transaction[price]", with: "-R$ 19.75")
+    expect(page).to have_css("[data-fiscal-import-summary] [data-fiscal-summary-amount='total']", text: "19,75")
     expect(page).to have_field("cash_transaction_date_date_input", with: "2026-10-14")
     expect(page).to have_field("cash_transaction_date_time_input", with: "12:30")
     descriptions = all("[data-composite-transaction-target~='row']:not(.hidden) input[name$='[description]']").map(&:value)
-    expect(descriptions).to eq(%w[Arroz Feijao])
+    expect(descriptions).to eq([ I18n.t("transactions.composite.discount"), "Arroz", "Feijao" ])
+    expect_split_items_survive_tab_switch("cash_transaction", descriptions)
     expect(CashTransaction.where(description: "Mercado Exemplo")).not_to exist
   end
 
@@ -62,13 +70,50 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     click_button(I18n.t("fiscal_import.import_file"))
     click_button(I18n.t("fiscal_import.continue"))
 
-    expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 2)
+    expect(page).to have_css("[data-composite-transaction-target~='row']:not(.hidden)", count: 3)
     expect(page).to have_field("card_transaction[price]", with: "-R$ 19.75")
     expect(page).to have_field("card_transaction_date_date_input", with: "2026-10-14")
     expect(page).to have_field("card_transaction_date_time_input", with: "12:30")
     descriptions = all("[data-composite-transaction-target~='row']:not(.hidden) input[name$='[description]']").map(&:value)
-    expect(descriptions).to eq(%w[Arroz Feijao])
+    expect(descriptions).to eq([ I18n.t("transactions.composite.discount"), "Arroz", "Feijao" ])
+    expect_split_items_survive_tab_switch("card_transaction", descriptions)
     expect(CardTransaction.where(description: "Mercado Exemplo")).not_to exist
+  end
+
+  [ 390, 1280 ].each do |width|
+    it "keeps the selected card when importing from its index at #{width}px" do
+      create(:user_card, :random, user:, user_card_name: "A first card")
+      card = create(:user_card, :random, user:, user_card_name: "Z selected card")
+      page.driver.browser.manage.window.resize_to(width, 844)
+      visit cash_transactions_path
+      page.execute_script("Turbo.visit(arguments[0])", card_transactions_path(user_card_id: card.id))
+      expect(page).to have_css("#cardFiscalImportModal", visible: :all)
+      open_receipt_menu
+      find("#cardFiscalImportModal [data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
+      click_button(I18n.t("fiscal_import.import_file"))
+      click_button(I18n.t("fiscal_import.continue"))
+
+      expect(page).to have_current_path(%r{/card_transactions/new})
+      expect(page).to have_css("input[name='card_transaction[user_card_id]'][value='#{card.id}']:checked", visible: :all)
+      expect(page).to have_field("card_transaction[description]", with: "Mercado Exemplo")
+    end
+
+    it "keeps the selected card when opening a saved receipt at #{width}px" do
+      create(:user_card, :random, user:, user_card_name: "A first card")
+      card = create(:user_card, :random, user:, user_card_name: "Z selected card")
+      key = "41140978393592000146651000000000031222222235"
+      user.fiscal_receipt_drafts.create!(payload: { access_key: key, issuer: "Saved receipt", total_cents: 1000,
+                                                    identity_token: FiscalReceipts::IdentityToken.issue(user:, access_key: key),
+                                                    items: [ { description: "Product", price_cents: 1000 } ] })
+      page.driver.browser.manage.window.resize_to(width, 844)
+      visit card_transactions_path(user_card_id: card.id)
+      click_button(I18n.t("fiscal_import.open"))
+      click_link(I18n.t("fiscal_import.use_saved"))
+      click_link(I18n.t("fiscal_import.open_card"))
+
+      expect(page).to have_css("input[name='card_transaction[user_card_id]'][value='#{card.id}']:checked", visible: :all)
+      expect(page).to have_field("card_transaction[description]", with: "Saved receipt")
+    end
   end
 
   it "saves imported receipts to the cross-device inbox without creating a transaction" do
@@ -81,6 +126,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(page).to have_css("[data-fiscal-import-target='status']", text: I18n.t("fiscal_import.messages.draft_saved"))
     receipt_draft = user.fiscal_receipt_drafts.sole
     expect(receipt_draft.fiscal_draft).to include("issuer" => "Mercado Exemplo", "total_cents" => 1975)
+    expect(receipt_draft.fiscal_draft.fetch("discount_cents")).to eq(100)
     expect(receipt_draft.source.blob.filename.to_s).to eq("fiscal_receipt.xml")
     expect(CashTransaction.where(description: "Mercado Exemplo")).not_to exist
 
@@ -101,6 +147,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(page).to have_field("cash_transaction_date_date_input", with: "2026-10-14")
     expect(page).to have_field("cash_transaction_date_time_input", with: "12:30")
     expect(page).to have_field("fiscal_receipt_draft_id", with: receipt_draft.id.to_s, type: "hidden")
+    expect(page).to have_css("[data-composite-transaction-target~='row'][data-discount='true']")
     expect(user.fiscal_receipt_drafts).to contain_exactly(receipt_draft)
     expect(CashTransaction.where(description: "Mercado Exemplo")).not_to exist
 
@@ -111,6 +158,41 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(page).to have_field("card_transaction_date_date_input", with: "2026-10-14")
     expect(page).to have_field("card_transaction_date_time_input", with: "12:30")
     expect(page).to have_field("fiscal_receipt_draft_id", with: receipt_draft.id.to_s, type: "hidden")
+  end
+
+  it "offers to open an existing saved receipt instead of saving it again" do
+    visit cash_transactions_path
+    open_receipt_menu
+    2.times do |index|
+      find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
+      click_button(I18n.t("fiscal_import.import_file"))
+      expect(page).to have_button(I18n.t("fiscal_import.save_for_later"), disabled: false)
+      if index.zero?
+        click_button(I18n.t("fiscal_import.save_for_later"))
+        expect(page).to have_css("[data-fiscal-import-target='status']", text: I18n.t("fiscal_import.messages.draft_saved"))
+      else
+        dismiss_confirm { click_button(I18n.t("fiscal_import.save_for_later")) }
+      end
+    end
+
+    expect(page).to have_current_path(fiscal_receipt_drafts_path, ignore_query: true)
+    expect(page).to have_text("Mercado Exemplo")
+    expect(user.fiscal_receipt_drafts.count).to eq(1)
+  end
+
+  it "asks before importing a receipt that already has a transaction" do
+    existing = create(:cash_transaction, user:, user_bank_account: user.user_bank_accounts.first)
+    FiscalDocumentLink.create!(user:, context: user.main_context, transactable: existing,
+                               access_key: "41140978393592000146651000000000031222222235")
+
+    visit cash_transactions_path
+    open_receipt_menu
+    find("[data-fiscal-import-target='file']", visible: :all).attach_file(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"))
+    accept_confirm { click_button(I18n.t("fiscal_import.import_file")) }
+    click_button(I18n.t("fiscal_import.continue"))
+
+    expect(page).to have_field("fiscal_duplicate_confirmed", checked: true, visible: :all)
+    expect(page).to have_field("cash_transaction[description]", with: "Mercado Exemplo")
   end
 
   it "provides localized import status messages in desktop and PWA layouts" do
@@ -276,6 +358,18 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     url
   end
 
+  def expect_split_items_survive_tab_switch(transaction_name, descriptions)
+    click_button(I18n.t("transactions.composite.single_purchase"))
+    submitted_names = page.evaluate_script("Array.from(new FormData(document.querySelector('input[name=\"#{transaction_name}[split_purchase]\"]').form).keys())")
+    expect(submitted_names.grep(/\[line_items_attributes\]/)).to be_empty
+
+    click_button(I18n.t("transactions.composite.split_purchase"))
+    fields = all("[data-composite-transaction-target~='row']:not(.hidden) input[name$='[description]']")
+    expect(fields.map(&:value)).to eq(descriptions)
+    expect(fields.map(&:disabled?)).to all(be(false))
+    expect(page).to have_css("[data-composite-transaction-target~='row'][data-discount='true']", count: 1)
+  end
+
   def simulate_camera_import(url)
     page.execute_script(<<~JS, url)
       const sourceInput = document.querySelector("[data-fiscal-import-target='source']")
@@ -304,8 +398,9 @@ RSpec.describe "Fiscal receipt import", type: :feature do
       "[data-controller='action-menu'][class~='bottom-20'][class~='right-3'] button[aria-haspopup='menu'][class~='h-14'][class~='w-14']"
     )
     expect(page).to have_css("a[data-mobile-scroll-nav='plus'][class~='h-14'][class~='w-14']")
-    expect(page).to have_css("a[data-mobile-scroll-nav='top'][class~='bottom-52']", visible: :all)
-    expect(page).to have_css("a[data-mobile-scroll-nav='bottom'][class~='bottom-52']", visible: :all)
+    expect(page).to have_css("a[data-mobile-scroll-nav='top'][class~='bottom-36']", visible: :all)
+    expect(page).to have_css("a[data-mobile-scroll-nav='bottom'][class~='bottom-36']", visible: :all)
+    expect(page).to have_no_css("[data-action-menu-target='trigger'] span[aria-hidden='true']")
     expect(page).to have_css("[data-modal-toggle='#{modal_id}']", visible: :all)
     expect(page).to have_css("[data-action-menu-target='menu']", visible: :all)
   end

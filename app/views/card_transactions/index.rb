@@ -32,7 +32,8 @@ class Views::CardTransactions::Index < Views::Base
               render Views::Transactions::FiscalImportModal.new(
                 modal_id: "cardFiscalImportModal",
                 transaction_type: "card_transaction",
-                transaction_url: new_card_transaction_path(user_card_id: user_card&.id, return_to: index_context[:return_to])
+                transaction_url: new_card_transaction_path(user_card_id: user_card&.id, return_to: index_context[:return_to]),
+                user_card_id: user_card&.id
               )
               render Views::Shared::AddToSubscriptionModal.new(
                 modal_id: "cardTransactionsAddToSubscriptionModal",
@@ -83,7 +84,7 @@ class Views::CardTransactions::Index < Views::Base
                 import_label: I18n.t("fiscal_import.import_now")
               },
               inbox_action: {
-                href: fiscal_receipt_drafts_path,
+                href: fiscal_receipt_drafts_path(user_card_id: user_card&.id),
                 label: I18n.t("fiscal_import.inbox"),
                 use_saved_label: I18n.t("fiscal_import.use_saved")
               }

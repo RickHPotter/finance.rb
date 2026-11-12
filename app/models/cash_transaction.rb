@@ -6,6 +6,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   include HasMonthYear
   include HasStartingPrice
   include FinancialAuditable
+  include FiscalIdentityAuditable
   include HasCashInstallments
   include HasFinancialSafetyRules
   include HasFinancialSafetyGuards
@@ -46,6 +47,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
            dependent: :restrict_with_error
   has_many :line_items, as: :transactable, dependent: :destroy, inverse_of: :transactable
   has_many_attached :receipts
+  has_one :fiscal_document_link, as: :transactable, dependent: :destroy
   accepts_nested_attributes_for :piggy_bank, allow_destroy: true
   accepts_nested_attributes_for :line_items, allow_destroy: true, reject_if: :blank_line_item_attributes?
 
@@ -873,7 +875,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     attributes = attributes.with_indifferent_access
     return false if attributes[:id].present?
 
-    substantive_attributes = attributes.except(:id, :_destroy, :entity_transactions_attributes)
+    substantive_attributes = attributes.except(:id, :_destroy, :item_kind, :entity_transactions_attributes)
     return false if substantive_attributes.values.any?(&:present?)
 
     entity_transactions = attributes[:entity_transactions_attributes]

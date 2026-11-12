@@ -120,9 +120,10 @@ class Views::Shared::AllocationTrend < Views::Base
 
   def report_content
     div(class: "hidden space-y-5", data: { allocation_trend_target: "content" }) do
-      div(class: "grid gap-3 sm:grid-cols-3") do
+      div(class: "grid gap-3 sm:grid-cols-2 xl:grid-cols-4") do
         summary_card(:income, "text-emerald-700 dark:text-emerald-300")
         summary_card(:outcome, "text-rose-700 dark:text-rose-300")
+        summary_card(:discount, "text-sky-700 dark:text-sky-300")
         summary_card(:net, "text-slate-950 dark:text-slate-100")
       end
 
@@ -150,7 +151,7 @@ class Views::Shared::AllocationTrend < Views::Base
   def summary_card(name, tone)
     div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900") do
       p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") do
-        translate(name)
+        translate(name, default: name == :discount ? I18n.t("transactions.composite.discount") : name.to_s.humanize)
       end
       p(class: "mt-2 text-xl font-bold #{tone}", data: { allocation_trend_target: "summary#{name.to_s.camelize}" }) { "--" }
     end
@@ -196,7 +197,7 @@ class Views::Shared::AllocationTrend < Views::Base
 
   def labels
     labels = %i[
-      income outcome net cash card no_sources error current_account_balance first_recorded latest_recorded no_recorded_balance recorded_on
+      income outcome discount net cash card no_sources error current_account_balance first_recorded latest_recorded no_recorded_balance recorded_on
     ].index_with { |key| translate(key, default: key.to_s.humanize) }
     detail_labels = %i[
       purchase_date installment_date billing_period purchase_period closing_date due_date installment paid pending advance generated_payment invoice

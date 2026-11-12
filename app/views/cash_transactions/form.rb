@@ -38,6 +38,7 @@ class Views::CashTransactions::Form < Views::Base
                 data: {
                   controller: "reactive-form price-mask composite-transaction attachment-upload fiscal-import",
                   fiscal_import_transaction_type_value: "cash_transaction",
+                  fiscal_import_freight_label_value: I18n.t("transactions.composite.freight"),
                   fiscal_import_pending_draft_value: fiscal_receipt_draft&.payload&.to_json,
                   fiscal_import_pending_draft_id_value: fiscal_receipt_draft&.id,
                   composite_transaction_composite_value: cash_transaction.composite?,
@@ -72,6 +73,12 @@ class Views::CashTransactions::Form < Views::Base
         form.hidden_field :split_purchase, value: cash_transaction.composite? ? "1" : "0"
         hidden_field_tag :return_to, return_to
         hidden_field_tag :fiscal_receipt_draft_id, fiscal_receipt_draft&.id || params[:fiscal_receipt_draft_id]
+        hidden_field_tag :fiscal_identity_token, params[:fiscal_identity_token], id: "fiscal_identity_token"
+        label(class: "#{'hidden' if params[:fiscal_identity_token].blank? && params[:fiscal_receipt_draft_id].blank?} flex items-center gap-2 text-sm text-amber-600",
+              data: { fiscal_duplicate_confirmation: true }) do
+          input(type: :checkbox, name: "fiscal_duplicate_confirmed", value: "1", checked: params[:fiscal_duplicate_confirmed] == "1")
+          plain I18n.t("fiscal_import.messages.confirm_duplicate")
+        end
 
         hidden_field_tag :category_colours,       categories_json,        disabled: true, data: { reactive_form_target: :categoryColours }
         hidden_field_tag :entity_icons,           entities_json,          disabled: true, data: { reactive_form_target: :entityIcons }

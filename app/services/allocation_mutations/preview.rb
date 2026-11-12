@@ -115,7 +115,10 @@ class AllocationMutations::Preview
   def allocation_label(allocation_id)
     return if allocation_id.blank?
 
-    allocation_scope.find_by(id: allocation_id)&.name
+    record = allocation_scope.find_by(id: allocation_id)
+    return record&.hierarchical_name if action.allocation_type == :category
+
+    record&.name
   end
 
   def allocation_scope

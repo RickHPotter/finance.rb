@@ -15,6 +15,8 @@ export default class extends Controller {
     "parentPrice",
     "itemsList",
     "template",
+    "discountTemplate",
+    "discountButton",
     "row",
     "itemPrice",
     "parentTotal",
@@ -42,9 +44,10 @@ export default class extends Controller {
     this.applySplitVisibility(isSplit)
 
     if (isSplit) {
+      this.restoreSplitRows()
       if (this.activeRows.length === 0) this.addRow()
     } else {
-      this.clearAllRows()
+      this.suspendSplitRows()
     }
 
     this.syncSplitHiddenInput(isSplit)
@@ -56,9 +59,10 @@ export default class extends Controller {
     this.applySplitVisibility(isSplit)
 
     if (isSplit) {
+      this.restoreSplitRows()
       if (this.activeRows.length === 0) this.addRow()
     } else {
-      this.clearAllRows()
+      this.suspendSplitRows()
     }
 
     this.syncSplitHiddenInput(isSplit)
@@ -86,6 +90,49 @@ export default class extends Controller {
   syncSplitHiddenInput(isSplit) {
     const input = this.element.querySelector("input[name*='[split_purchase]']")
     if (input) input.value = isSplit ? "1" : "0"
+  }
+
+  suspendSplitRows() {
+    this.rowTargets.forEach(row => {
+      if (row.dataset.splitSuspended === "true") return
+
+      row.dataset.splitSuspended = "true"
+      const destroyInput = row.querySelector("input[name$='[_destroy]']")
+      if (row.dataset.persisted === "true" && destroyInput) {
+        destroyInput.dataset.splitPreviousValue = destroyInput.value
+        destroyInput.value = "1"
+      }
+
+      row.querySelectorAll("input, select, textarea, button").forEach(control => {
+        const keepForDestruction = row.dataset.persisted === "true" &&
+          (control === destroyInput || control.matches("input[name$='[id]']"))
+        if (!keepForDestruction) this.suspendControl(control)
+      })
+    })
+
+    this.element.querySelectorAll("[data-composite-entity-modal-target~='group'] input, " +
+      "[data-composite-entity-modal-target~='group'] select, " +
+      "[data-composite-entity-modal-target~='group'] textarea, " +
+      "[data-composite-entity-modal-target~='group'] button").forEach(control => this.suspendControl(control))
+  }
+
+  suspendControl(control) {
+    if (control.disabled) return
+    control.dataset.splitSuspended = "true"
+    control.disabled = true
+  }
+
+  restoreSplitRows() {
+    this.element.querySelectorAll("[data-split-suspended='true']").forEach(element => {
+      if (element.matches("input, select, textarea, button")) element.disabled = false
+      delete element.dataset.splitSuspended
+    })
+    this.rowTargets.forEach(row => {
+      const destroyInput = row.querySelector("input[data-split-previous-value]")
+      if (!destroyInput) return
+      destroyInput.value = destroyInput.dataset.splitPreviousValue
+      delete destroyInput.dataset.splitPreviousValue
+    })
   }
 
   clearAllRows() {
@@ -116,6 +163,16 @@ export default class extends Controller {
     }
 
     this.syncRowSign()
+    this.recalculate()
+  }
+
+  addDiscount(event) {
+    if (event) event.preventDefault()
+    if (!this.hasDiscountTemplateTarget || !this.hasItemsListTarget || this.activeRows.some(row => row.dataset.discount === "true")) return
+
+    const timestamp = new Date().getTime().toString() + Math.floor(Math.random() * 1000).toString()
+    const content = this.discountTemplateTarget.innerHTML.replace(/NEW_LINE_ITEM/gi, timestamp)
+    this.itemsListTarget.insertAdjacentHTML("afterbegin", content)
     this.recalculate()
   }
 
@@ -176,6 +233,7 @@ export default class extends Controller {
   syncRowSign() {
     const sign = this.parentSign
     this.itemPriceTargets.forEach(input => {
+      if (input.closest("[data-discount='true']")) return
       input.dataset.sign = sign
     })
   }
@@ -217,6 +275,9 @@ export default class extends Controller {
   }
 
   recalculate() {
+    if (this.hasDiscountButtonTarget) {
+      this.discountButtonTarget.disabled = this.activeRows.some(row => row.dataset.discount === "true")
+    }
     const parentInput = this.resolveParentPriceInput()
     const parentVal = parentInput ? parentInput.value : "0"
     const sign = parentInput?.dataset.sign

@@ -43,15 +43,15 @@ class Views::Subscriptions::Subscription < Views::Base
       class: desktop_row_class,
       data: { id: subscription.id, datatable_target: :row, subscription_bulk_target: :row }
     ) do
-      div(class: "col-span-3 flex flex-col justify-center px-3 py-3") do
-        div(class: "flex items-center gap-2") do
+      div(class: "relative col-span-3 flex flex-col justify-center px-9 py-3 text-center") do
+        div(class: "absolute left-3 top-1/2 -translate-y-1/2") do
           selection_checkbox
-          link_to subscription.description,
-                  subscription_path(subscription, return_to:),
-                  id: "show_subscription_#{subscription.id}",
-                  class: "font-lekton text-base font-semibold text-slate-900 no-underline hover:underline dark:text-slate-100",
-                  data: { turbo_frame: "_top", turbo_prefetch: false }
         end
+        link_to subscription.description,
+                subscription_path(subscription, return_to:),
+                id: "show_subscription_#{subscription.id}",
+                class: "font-lekton text-base font-semibold text-slate-900 no-underline hover:underline dark:text-slate-100",
+                data: { turbo_frame: "_top", turbo_prefetch: false }
         p(class: "truncate text-sm text-slate-500 dark:text-slate-400") { subscription.comment.presence }
       end
 

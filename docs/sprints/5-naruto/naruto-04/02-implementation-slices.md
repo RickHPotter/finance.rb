@@ -1,5 +1,8 @@
 # NARUTO-04 — Implementation slices and acceptance matrix
 
+NARUTO-04 is closed per user confirmation. The slice statuses and checklists below
+are historical implementation and verification notes.
+
 The product contract is locked. Each remaining slice should be implemented, tested, and committed separately. Do not begin bulk mutation before the main/additional-category and kind contracts are stable.
 
 ## Slice 0 — Baseline and decisions

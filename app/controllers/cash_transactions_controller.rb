@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class CashTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
+  include FiscalReceiptIdentity
   include TabsConcern
   include ReceiptUploadAuthorization
 
@@ -531,11 +532,13 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     return render_update_form if params[:commit] == "Update"
 
     saved =
-      if action_name == "create" && params[:fiscal_receipt_draft_id].present?
-        ActiveRecord::Base.transaction do
-          result = apply_source_message(target: @cash_transaction) { @cash_transaction.save }
-          consume_fiscal_receipt_draft if result
-          result
+      if action_name == "create"
+        save_with_fiscal_identity(@cash_transaction) do
+          ActiveRecord::Base.transaction do
+            result = apply_source_message(target: @cash_transaction) { @cash_transaction.save }
+            consume_fiscal_receipt_draft if result
+            result
+          end
         end
       else
         apply_source_message(target: @cash_transaction) { @cash_transaction.save }
@@ -1047,7 +1050,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       line_items_attributes: [
-        :id, :description, :price, :comment, :category_id, :friend_notification_intent, :_destroy,
+        :id, :description, :price, :comment, :category_id, :item_kind, :friend_notification_intent, :_destroy,
         { entity_transactions_attributes: [
           :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
           { exchanges_attributes: %i[id number exchange_type bound_type price date month year paid _destroy] }

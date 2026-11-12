@@ -16,7 +16,8 @@ export default class extends Controller {
     transactionType: String,
     directUploadUrl: String,
     pendingDraft: Object,
-    pendingDraftId: String
+    pendingDraftId: String,
+    freightLabel: String
   }
 
   connect() {
@@ -178,6 +179,14 @@ export default class extends Controller {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || this.message("import_failed"))
 
+      this.showSourceSummary(result.draft)
+
+      this.duplicateConfirmed = false
+      if (result.duplicate_transaction) {
+        if (!window.confirm(this.message("duplicate_transaction"))) return
+        this.duplicateConfirmed = true
+      }
+
       this.evidenceSignedIds = result.evidence_signed_ids || []
 
       if (this.hasTransactionUrlValue) {
@@ -215,6 +224,7 @@ export default class extends Controller {
       sessionStorage.setItem(PENDING_DRAFT_KEY, JSON.stringify({
         transactionType: this.transactionTypeValue,
         draft: this.pendingDraft,
+        duplicateConfirmed: this.duplicateConfirmed,
         receiptSignedId,
         evidenceSignedIds: this.evidenceSignedIds || []
       }))
@@ -233,7 +243,7 @@ export default class extends Controller {
 
     try {
       const sourceSignedId = this.importedFile && !this.shouldOmitCameraSource() ? await this.uploadReceipt(this.importedFile) : null
-      const response = await fetch(this.draftsUrlValue, {
+      let response = await fetch(this.draftsUrlValue, {
         method: "POST",
         headers: {
           "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content || "",
@@ -242,7 +252,19 @@ export default class extends Controller {
         },
         body: JSON.stringify({ draft: this.pendingDraft, source_signed_id: sourceSignedId, evidence_signed_ids: this.evidenceSignedIds || [] })
       })
-      const result = await response.json()
+      let result = await response.json()
+      if (response.status === 409 && result.existing_draft_url) {
+        if (!window.confirm(result.error)) {
+          window.location.assign(result.existing_draft_url)
+          return
+        }
+        response = await fetch(this.draftsUrlValue, {
+          method: "POST",
+          headers: { "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content || "", Accept: "application/json", "Content-Type": "application/json" },
+          body: JSON.stringify({ draft: this.pendingDraft, source_signed_id: sourceSignedId, evidence_signed_ids: this.evidenceSignedIds || [], duplicate_confirmed: true })
+        })
+        result = await response.json()
+      }
       if (!response.ok) throw new Error(result.error || this.message("import_failed"))
 
       this.showStatus(this.message("draft_saved"))
@@ -314,6 +336,10 @@ export default class extends Controller {
     sessionStorage.removeItem(PENDING_DRAFT_KEY)
     try {
       this.applyDraft(payload.draft)
+      const identity = this.element.querySelector("#fiscal_identity_token")
+      if (identity) identity.value = payload.draft.identity_token || ""
+      const confirmation = this.element.querySelector("[name='fiscal_duplicate_confirmed']")
+      if (confirmation && payload.duplicateConfirmed) confirmation.checked = true
       if (payload.receiptSignedId) this.attachImportedReceipt(payload.receiptSignedId)
       for (const signedId of payload.evidenceSignedIds || []) this.attachImportedReceipt(signedId)
     } catch (error) {
@@ -339,6 +365,12 @@ export default class extends Controller {
     const priceMask = this.application.getControllerForElementAndIdentifier(this.element, "price-mask")
     if (!splitTab || splitTab.disabled || !composite || !priceMask) throw new Error(this.message("split_unavailable"))
 
+    this.showSourceSummary(draft)
+    const identity = this.element.querySelector("#fiscal_identity_token")
+    if (identity && draft.identity_token) identity.value = draft.identity_token
+    const confirmation = this.element.querySelector("[name='fiscal_duplicate_confirmed']")
+    if (confirmation && this.duplicateConfirmed) confirmation.checked = true
+
     splitTab.click()
     composite.clearAllRows()
     priceMask.setSignForSelector(".sign-based", "-")
@@ -357,8 +389,41 @@ export default class extends Controller {
       price.value = _applyMask((-item.price_cents).toString())
       price.dispatchEvent(new Event("input", { bubbles: true }))
     })
+    if (draft.freight_cents > 0) {
+      composite.addRow()
+      const row = composite.activeRows.at(-1)
+      row.querySelector("input[name$='[description]']").value = this.freightLabelValue
+      const price = row.querySelector("[data-composite-transaction-target~='itemPrice']")
+      price.value = _applyMask((-draft.freight_cents).toString())
+      price.dispatchEvent(new Event("input", { bubbles: true }))
+    }
+    if (draft.discount_cents > 0) {
+      composite.addDiscount()
+      const discount = composite.activeRows.find(row => row.dataset.discount === "true")
+      const price = discount.querySelector("[data-composite-transaction-target~='itemPrice']")
+      price.value = _applyMask(draft.discount_cents.toString())
+      price.dispatchEvent(new Event("input", { bubbles: true }))
+    }
     composite.recalculate()
     this.applyIssueTimestamp(draft.issued_at)
+  }
+
+  showSourceSummary(draft) {
+    const summary = this.element.querySelector("[data-fiscal-import-summary]")
+    if (!summary) return
+
+    const amounts = {
+      products: (draft.items || []).reduce((sum, item) => sum + Number(item.price_cents || 0), 0),
+      discount: Number(draft.discount_cents || 0),
+      freight: Number(draft.freight_cents || 0),
+      total: Number(draft.total_cents || 0),
+      difference: Number(draft.difference_cents || 0)
+    }
+    const formatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+    Object.entries(amounts).forEach(([key, amount]) => {
+      summary.querySelector(`[data-fiscal-summary-amount='${key}']`).textContent = formatter.format(amount / 100)
+    })
+    summary.hidden = false
   }
 
   applyIssueTimestamp(issuedAt) {
