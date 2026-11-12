@@ -55,6 +55,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(page).to have_field("cash_transaction_date_time_input", with: "12:30")
     descriptions = all("[data-composite-transaction-target~='row']:not(.hidden) input[name$='[description]']").map(&:value)
     expect(descriptions).to eq([ I18n.t("transactions.composite.discount"), "Arroz", "Feijao" ])
+    expect_split_items_survive_tab_switch("cash_transaction", descriptions)
     expect(CashTransaction.where(description: "Mercado Exemplo")).not_to exist
   end
 
@@ -75,6 +76,7 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     expect(page).to have_field("card_transaction_date_time_input", with: "12:30")
     descriptions = all("[data-composite-transaction-target~='row']:not(.hidden) input[name$='[description]']").map(&:value)
     expect(descriptions).to eq([ I18n.t("transactions.composite.discount"), "Arroz", "Feijao" ])
+    expect_split_items_survive_tab_switch("card_transaction", descriptions)
     expect(CardTransaction.where(description: "Mercado Exemplo")).not_to exist
   end
 
@@ -354,6 +356,18 @@ RSpec.describe "Fiscal receipt import", type: :feature do
     allow(FiscalReceipts::GoiasLookup).to receive(:new).with(url)
                                                        .and_return(instance_double(FiscalReceipts::GoiasLookup, call: draft, evidence_files:))
     url
+  end
+
+  def expect_split_items_survive_tab_switch(transaction_name, descriptions)
+    click_button(I18n.t("transactions.composite.single_purchase"))
+    submitted_names = page.evaluate_script("Array.from(new FormData(document.querySelector('input[name=\"#{transaction_name}[split_purchase]\"]').form).keys())")
+    expect(submitted_names.grep(/\[line_items_attributes\]/)).to be_empty
+
+    click_button(I18n.t("transactions.composite.split_purchase"))
+    fields = all("[data-composite-transaction-target~='row']:not(.hidden) input[name$='[description]']")
+    expect(fields.map(&:value)).to eq(descriptions)
+    expect(fields.map(&:disabled?)).to all(be(false))
+    expect(page).to have_css("[data-composite-transaction-target~='row'][data-discount='true']", count: 1)
   end
 
   def simulate_camera_import(url)

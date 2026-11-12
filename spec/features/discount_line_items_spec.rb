@@ -33,7 +33,22 @@ RSpec.describe "Discount line items", type: :feature do
     discount = first("[data-composite-transaction-target~='row'][data-discount='true']")
     expect(page.all("[data-composite-transaction-target~='row']").first["data-discount"]).to eq("true")
 
+    find("[data-value='single']").click
+    submitted = page.evaluate_script(<<~JS)
+      Array.from(new FormData(document.querySelector("input[name='cash_transaction[split_purchase]']").form).entries())
+        .filter(([name]) => name.includes('[line_items_attributes]'))
+    JS
+    expect(submitted.map(&:first)).to all(match(/\[(id|_destroy)\]\z/))
+    expect(submitted.select { |name, _| name.end_with?("[_destroy]") }.map(&:last)).to eq(%w[1 1])
+    find("[data-value='split']").click
+    expect(page).to have_field("cash_transaction[line_items_attributes][0][description]", with: I18n.t("transactions.composite.discount"))
+    expect(page).to have_field("cash_transaction[line_items_attributes][1][description]", with: "Food")
+
     discount.find("button[data-action='click->composite-transaction#removeRow']").click
+    expect(page).to have_css("[data-composite-transaction-target~='discountButton']:not([disabled])")
+    find("[data-value='single']").click
+    find("[data-value='split']").click
+    expect(page).to have_css("[data-composite-transaction-target~='row'][data-discount='true'].hidden", visible: :all)
     expect(page).to have_css("[data-composite-transaction-target~='discountButton']:not([disabled])")
   end
 end

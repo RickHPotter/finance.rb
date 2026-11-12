@@ -44,9 +44,10 @@ export default class extends Controller {
     this.applySplitVisibility(isSplit)
 
     if (isSplit) {
+      this.restoreSplitRows()
       if (this.activeRows.length === 0) this.addRow()
     } else {
-      this.clearAllRows()
+      this.suspendSplitRows()
     }
 
     this.syncSplitHiddenInput(isSplit)
@@ -58,9 +59,10 @@ export default class extends Controller {
     this.applySplitVisibility(isSplit)
 
     if (isSplit) {
+      this.restoreSplitRows()
       if (this.activeRows.length === 0) this.addRow()
     } else {
-      this.clearAllRows()
+      this.suspendSplitRows()
     }
 
     this.syncSplitHiddenInput(isSplit)
@@ -88,6 +90,49 @@ export default class extends Controller {
   syncSplitHiddenInput(isSplit) {
     const input = this.element.querySelector("input[name*='[split_purchase]']")
     if (input) input.value = isSplit ? "1" : "0"
+  }
+
+  suspendSplitRows() {
+    this.rowTargets.forEach(row => {
+      if (row.dataset.splitSuspended === "true") return
+
+      row.dataset.splitSuspended = "true"
+      const destroyInput = row.querySelector("input[name$='[_destroy]']")
+      if (row.dataset.persisted === "true" && destroyInput) {
+        destroyInput.dataset.splitPreviousValue = destroyInput.value
+        destroyInput.value = "1"
+      }
+
+      row.querySelectorAll("input, select, textarea, button").forEach(control => {
+        const keepForDestruction = row.dataset.persisted === "true" &&
+          (control === destroyInput || control.matches("input[name$='[id]']"))
+        if (!keepForDestruction) this.suspendControl(control)
+      })
+    })
+
+    this.element.querySelectorAll("[data-composite-entity-modal-target~='group'] input, " +
+      "[data-composite-entity-modal-target~='group'] select, " +
+      "[data-composite-entity-modal-target~='group'] textarea, " +
+      "[data-composite-entity-modal-target~='group'] button").forEach(control => this.suspendControl(control))
+  }
+
+  suspendControl(control) {
+    if (control.disabled) return
+    control.dataset.splitSuspended = "true"
+    control.disabled = true
+  }
+
+  restoreSplitRows() {
+    this.element.querySelectorAll("[data-split-suspended='true']").forEach(element => {
+      if (element.matches("input, select, textarea, button")) element.disabled = false
+      delete element.dataset.splitSuspended
+    })
+    this.rowTargets.forEach(row => {
+      const destroyInput = row.querySelector("input[data-split-previous-value]")
+      if (!destroyInput) return
+      destroyInput.value = destroyInput.dataset.splitPreviousValue
+      delete destroyInput.dataset.splitPreviousValue
+    })
   }
 
   clearAllRows() {
