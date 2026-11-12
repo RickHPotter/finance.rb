@@ -67,6 +67,33 @@ RSpec.describe "Fiscal receipt imports", type: :request do
       expect(response.parsed_body.dig("draft", "source")).to eq("sefaz_pr")
     end
 
+    it "explains that an NF-e DANFE PDF requires the authorized XML" do
+      sign_in user
+      key = "52010100000000000000550010000000011000000014"
+      pdf = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"), "application/pdf", original_filename: "danfe.pdf")
+      allow(FiscalReceipts::PdfKeyExtractor).to receive(:new).and_return(instance_double(FiscalReceipts::PdfKeyExtractor, call: key))
+      expect(FiscalReceipts::GoiasLookup).not_to receive(:new)
+      expect(FiscalReceipts::ParanaLookup).not_to receive(:new)
+
+      post fiscal_receipt_imports_path, params: { file: pdf }, headers: { "Accept" => "application/json" }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body.fetch("error")).to eq(I18n.t("fiscal_import.messages.nfe_xml_required"))
+    end
+
+    it "explains the NF-e limitation when the PDF contains no readable key" do
+      sign_in user
+      pdf = Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/fiscal_receipt.xml"), "application/pdf", original_filename: "danfe.pdf")
+      extractor = instance_double(FiscalReceipts::PdfKeyExtractor)
+      allow(FiscalReceipts::PdfKeyExtractor).to receive(:new).and_return(extractor)
+      allow(extractor).to receive(:call).and_raise(FiscalReceipts::PdfKeyExtractor::Unreadable, I18n.t("fiscal_import.messages.pdf_key_not_found"))
+
+      post fiscal_receipt_imports_path, params: { file: pdf }, headers: { "Accept" => "application/json" }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body.fetch("error")).to include("NF-e", "XML")
+    end
+
     it "imports Goiás items from the full signed QR URL" do
       sign_in user
       key = "52260301427744000150650010005752241062577988"

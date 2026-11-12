@@ -32,7 +32,10 @@ class FiscalReceiptImportsController < ApplicationController
       @evidence_files = lookup.evidence_files
       return draft
     end
-    if FiscalReceipts::AccessKey.new(normalized).state_code == "52"
+    key = FiscalReceipts::AccessKey.new(normalized)
+    raise FiscalReceipts::SourceKey::InvalidSource, I18n.t("fiscal_import.messages.nfe_xml_required") if key.valid? && key.model == "55"
+
+    if key.state_code == "52"
       raise FiscalReceipts::GoiasLookup::Unavailable,
             I18n.t("fiscal_import.messages.goias_key_challenge")
     end
