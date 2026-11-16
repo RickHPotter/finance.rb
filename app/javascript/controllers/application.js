@@ -44,14 +44,19 @@ document.addEventListener("keyup", (e) => {
     return
   }
 
-  // SCROLL TO LAST PAID
+  // Cash rows use payment state; other index pages move to the end.
   if (key === "n") {
     e.preventDefault()
+    const isCashIndex = document.querySelector(".cash_transaction_description")
+    if (!isCashIndex) {
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" })
+      return
+    }
+
     const paidTransactions = Array.from(document.querySelectorAll("[data-datatable-target~='row'][data-paid='true']"))
       .filter(row => row.checkVisibility())
     const lastPaidTransaction = paidTransactions.at(-1)
-
-    if (!lastPaidTransaction) { return }
+    if (!lastPaidTransaction) return
 
     const description = lastPaidTransaction.querySelector(".cash_transaction_description")
 
