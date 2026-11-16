@@ -10,9 +10,9 @@ RSpec.describe "Cash last paid shortcut", type: :feature do
     page.execute_script(<<~JS)
       const fixture = document.createElement("div")
       fixture.innerHTML = `
-        <div data-datatable-target="row" data-paid="true" id="paid-first"></div>
-        <div data-datatable-target="row" data-paid="true" id="paid-last"></div>
-        <div data-datatable-target="row" data-paid="false" id="unpaid-last"></div>
+        <div data-datatable-target="row" data-paid="true" id="paid-first"><a class="cash_transaction_description"></a></div>
+        <div data-datatable-target="row" data-paid="true" id="paid-last"><a class="cash_transaction_description"></a></div>
+        <div data-datatable-target="row" data-paid="false" id="unpaid-last"><a class="cash_transaction_description"></a></div>
         <div hidden><div data-datatable-target="row" data-paid="true" id="hidden-paid"></div></div>`
       document.body.appendChild(fixture)
       fixture.querySelectorAll("[data-paid]").forEach(row => {
