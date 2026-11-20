@@ -50,13 +50,14 @@ RSpec.describe PiggyBankReconciliations::Preview do
     )
   end
 
-  def preview(observed_net_cents: 5_500, observed_on: "2026-09-15", target: return_transaction, preview_context: context)
+  def preview(observed_net_cents: 5_500, observed_on: "2026-09-15", target: return_transaction, preview_context: context, installment_date: nil)
     described_class.new(
       user:,
       context: preview_context,
       return_cash_transaction_id: target.id,
       observed_net_cents:,
-      observed_on:
+      observed_on:,
+      installment_date:
     ).call
   end
 
@@ -182,5 +183,34 @@ RSpec.describe PiggyBankReconciliations::Preview do
 
     expect(changed_observation.digest).not_to eq(original.digest)
     expect(changed_graph.digest).not_to eq(changed_observation.digest)
+  end
+
+  describe "installment date" do
+    include ActiveSupport::Testing::TimeHelpers
+
+    around do |example|
+      travel_to Date.new(2026, 11, 10).in_time_zone do
+        example.run
+      end
+    end
+
+    it "keeps the requested installment date in the plan without tying the digest to it" do
+      result = preview(installment_date: Date.new(2026, 12, 15))
+
+      expect(result).to have_attributes(status: :ready, installment_date: Date.new(2026, 12, 15))
+      expect(result.digest).to eq(preview(installment_date: Date.new(2026, 12, 20)).digest)
+    end
+
+    it "rejects an installment date in the past" do
+      result = preview(installment_date: Date.new(2026, 11, 9))
+
+      expect(result).to have_attributes(status: :invalid, reason_code: :invalid_installment_date, digest: nil)
+    end
+
+    it "proposes the scheduled installment date when the request does not carry one" do
+      result = preview
+
+      expect(result).to have_attributes(status: :ready, installment_date: Date.new(2026, 12, 1))
+    end
   end
 end

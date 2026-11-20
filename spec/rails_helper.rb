@@ -88,4 +88,7 @@ RSpec.configure do |config|
   config.filter_rails_from_backtrace!
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
+
+  # Requests may switch the active locale, so restore it after every example.
+  config.after { I18n.locale = I18n.default_locale }
 end

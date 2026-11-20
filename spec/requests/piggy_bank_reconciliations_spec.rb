@@ -3,6 +3,8 @@
 require "rails_helper"
 
 RSpec.describe "Piggy bank reconciliations" do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:user) { create(:user, :random) }
   let(:context) { user.main_context }
   let(:account) { create(:user_bank_account, :random, user:) }
@@ -36,13 +38,14 @@ RSpec.describe "Piggy bank reconciliations" do
     source.piggy_bank.return_cash_transaction
   end
 
-  def preview_plan(observed_net_cents: 5_500, observed_on: "2026-09-15", target: return_transaction)
+  def preview_plan(observed_net_cents: 5_500, observed_on: "2026-09-15", target: return_transaction, installment_date: nil)
     PiggyBankReconciliations::Preview.new(
       user:,
       context:,
       return_cash_transaction_id: target.id,
       observed_net_cents:,
-      observed_on:
+      observed_on:,
+      installment_date:
     ).call
   end
 
@@ -56,6 +59,17 @@ RSpec.describe "Piggy bank reconciliations" do
       expect(response.body).to include("R$ 50.00")
       expect(response.body).to include("piggy_bank_reconciliation_observed_net")
       expect(response.body).to include("piggy_bank_reconciliation_observed_on")
+    end
+
+    it "loads the return installment date input with the balance aware proposal" do
+      travel_to Date.new(2026, 11, 10).in_time_zone do
+        get new_cash_transaction_piggy_bank_reconciliation_path(return_transaction)
+      end
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("piggy_bank_reconciliation_installment_date")
+      expect(response.body).to include("piggy_bank_reconciliation_installment_date_date_input")
+      expect(response.body).to include("2026-12-01")
     end
 
     it "returns 404 for a transaction belonging to another user" do
@@ -101,6 +115,23 @@ RSpec.describe "Piggy bank reconciliations" do
       expect(response.body).to include(I18n.t("piggy_bank_reconciliations.preview.title"))
       expect(response.body).to include("+ R$ 5.00")
       expect(response.body).to include("apply_piggy_bank_reconciliation")
+    end
+
+    it "carries the requested installment date into the preview card" do
+      post preview_cash_transaction_piggy_bank_reconciliation_path(return_transaction),
+           params: valid_params.merge(installment_date: "2026-12-15")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("2026-12-15")
+    end
+
+    it "returns 422 when the requested installment date is in the past" do
+      post preview_cash_transaction_piggy_bank_reconciliation_path(return_transaction),
+           params: valid_params.merge(installment_date: "2020-01-01"),
+           headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("piggy_bank_reconciliations.reasons.invalid_installment_date"))
     end
 
     it "replaces the preview frame and clears notifications via Turbo Stream" do
@@ -200,6 +231,27 @@ RSpec.describe "Piggy bank reconciliations" do
       expect(return_transaction.price).to eq(5_500)
       expect(return_transaction.starting_price).to eq(5_500)
       expect(return_transaction.cash_installments.first.price).to eq(5_500)
+    end
+
+    it "places the unpaid return installment on the requested installment date" do
+      dated_plan = preview_plan(observed_net_cents: 5_500, observed_on: "2026-09-15", installment_date: Date.new(2026, 12, 15))
+      expect(dated_plan.installment_date).to eq(Date.new(2026, 12, 15))
+
+      post cash_transaction_piggy_bank_reconciliation_path(return_transaction),
+           params: apply_params.merge(digest: dated_plan.digest, installment_date: "2026-12-15")
+
+      expect(response).to redirect_to(cash_transaction_path(return_transaction))
+      expect(return_transaction.reload.cash_installments.sole.date.to_date).to eq(Date.new(2026, 12, 15))
+    end
+
+    it "applies when the installment date is changed after calculating the preview" do
+      initial_plan = preview_plan(observed_net_cents: 5_500, observed_on: "2026-09-15", installment_date: Date.new(2026, 12, 1))
+
+      post cash_transaction_piggy_bank_reconciliation_path(return_transaction),
+           params: apply_params.merge(digest: initial_plan.digest, installment_date: "2026-12-25")
+
+      expect(response).to redirect_to(cash_transaction_path(return_transaction))
+      expect(return_transaction.reload.cash_installments.sole.date.to_date).to eq(Date.new(2026, 12, 25))
     end
 
     it "applies a negative delta atomically" do

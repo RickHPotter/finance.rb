@@ -3,14 +3,15 @@
 class PiggyBankReconciliations::Preview
   INVESTMENT_TYPE_CODE = "outros_cofrinho"
 
-  attr_reader :user, :context, :return_cash_transaction_id, :observed_net_cents, :observed_on
+  attr_reader :user, :context, :return_cash_transaction_id, :observed_net_cents, :observed_on, :installment_date
 
-  def initialize(user:, context:, return_cash_transaction_id:, observed_net_cents:, observed_on:)
+  def initialize(user:, context:, return_cash_transaction_id:, observed_net_cents:, observed_on:, installment_date: nil)
     @user = user
     @context = context
     @return_cash_transaction_id = return_cash_transaction_id
     @observed_net_cents = normalize_cents(observed_net_cents)
     @observed_on = normalize_date(observed_on)
+    @requested_installment_date = normalize_date(installment_date)
   end
 
   def call
@@ -20,7 +21,10 @@ class PiggyBankReconciliations::Preview
     return_transaction = find_return_transaction
     return invalid(:return_not_found) if return_transaction.blank?
     return invalid(:invalid_return) unless return_transaction.generated_piggy_bank_return?
-    return invalid(:settled_return, return_transaction:) unless return_transaction.cash_installments.any? { |installment| !installment.paid? }
+    return invalid(:settled_return, return_transaction:) unless open_return?(return_transaction)
+
+    resolve_installment_date(return_transaction)
+    return invalid(:invalid_installment_date, return_transaction:) if unusable_installment_date?
 
     issues = graph_issues(return_transaction)
     return invalid(:invalid_return_graph, return_transaction:, issues:) if issues.any?
@@ -32,6 +36,27 @@ class PiggyBankReconciliations::Preview
   end
 
   private
+
+  def open_return?(return_transaction)
+    return_transaction.cash_installments.any? { |installment| !installment.paid? }
+  end
+
+  def unusable_installment_date?
+    installment_date.blank? || installment_date.past?
+  end
+
+  # The requested date wins; otherwise the balance aware proposal is used.
+  def resolve_installment_date(return_transaction)
+    @installment_date = @requested_installment_date || default_installment_date(return_transaction)
+  end
+
+  def default_installment_date(return_transaction)
+    PiggyBankReconciliations::CalculateSafeInstallmentDate.new(
+      user:,
+      context:,
+      return_cash_transaction: return_transaction
+    ).call
+  end
 
   def find_return_transaction
     context.cash_transactions
@@ -60,6 +85,7 @@ class PiggyBankReconciliations::Preview
       return_cash_transaction: return_transaction,
       investment_type_id: investment_type.id,
       observed_on:,
+      installment_date:,
       recorded_remaining_cents:,
       observed_net_cents:,
       delta_cents:,
@@ -111,6 +137,9 @@ class PiggyBankReconciliations::Preview
   end
 
   def digest_for(return_transaction, investment_type:, calculation:)
+    # The installment date is deliberately left out of the digest: it only tells where the
+    # pending return lands, it does not change any amount, and the user is allowed to adjust
+    # it after the preview was calculated.
     payload = {
       user_id: user.id,
       context_id: context.id,
@@ -120,7 +149,7 @@ class PiggyBankReconciliations::Preview
         observed_on: observed_on.iso8601,
         observed_net_cents:
       },
-      calculation: calculation.except(:status, :return_cash_transaction, :investment_type_id, :observed_on),
+      calculation: calculation.except(:status, :return_cash_transaction, :investment_type_id, :observed_on, :installment_date),
       return_transaction: transaction_state(return_transaction),
       return_installments: return_transaction.cash_installments.sort_by(&:id).map { |installment| installment_state(installment) },
       contributions: return_transaction.piggy_bank_return_links.sort_by(&:id).map { |link| contribution_state(link) },
@@ -220,6 +249,7 @@ class PiggyBankReconciliations::Preview
       return_cash_transaction: return_transaction,
       observed_on:,
       observed_net_cents:,
+      installment_date:,
       issues:
     )
   end

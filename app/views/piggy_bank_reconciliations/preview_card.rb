@@ -1,19 +1,15 @@
 # frozen_string_literal: true
 
 class Views::PiggyBankReconciliations::PreviewCard < Views::Base
-  include Phlex::Rails::Helpers::FormWith
-  include Phlex::Rails::Helpers::HiddenFieldTag
   include Phlex::Rails::Helpers::LinkTo
   include TranslateHelper
   include ComponentsHelper
 
-  attr_reader :return_cash_transaction, :plan, :description, :return_to
+  attr_reader :return_cash_transaction, :plan
 
-  def initialize(return_cash_transaction:, plan:, description: nil, return_to: nil)
+  def initialize(return_cash_transaction:, plan:)
     @return_cash_transaction = return_cash_transaction
     @plan = plan
-    @description = description
-    @return_to = return_to
   end
 
   def view_template
@@ -80,7 +76,17 @@ class Views::PiggyBankReconciliations::PreviewCard < Views::Base
         I18n.t("piggy_bank_reconciliations.preview.resulting_lifetime"),
         money(plan.resulting_lifetime_cents)
       )
+      metric_card(
+        I18n.t("piggy_bank_reconciliations.preview.installment_date"),
+        installment_date_label
+      )
     end
+  end
+
+  def installment_date_label
+    return I18n.t("piggy_bank_reconciliations.preview.installment_date_not_set") if plan.installment_date.blank?
+
+    I18n.l(plan.installment_date.to_date, format: :long)
   end
 
   def metric_card(label, value, emphasis: false, text_color_class: nil)
@@ -117,28 +123,28 @@ class Views::PiggyBankReconciliations::PreviewCard < Views::Base
     end
   end
 
+  # The apply button submits the reconciliation form itself, so whatever the user typed after
+  # the preview was calculated is the value that gets applied. The digest travels on the
+  # action URL because the form has no room for it.
   def apply_form
-    form_with(
-      url: cash_transaction_piggy_bank_reconciliation_path(return_cash_transaction),
-      method: :post,
-      data: { turbo_frame: "_top" },
-      class: "pt-2"
-    ) do |f|
-      f.hidden_field :observed_on, value: plan.observed_on.iso8601
-      f.hidden_field :observed_net, value: plan.observed_net_cents
-      f.hidden_field :digest, value: plan.digest
-      f.hidden_field :description, value: description if description.present?
-      hidden_field_tag :return_to, return_to if return_to.present?
+    button_label = plan.noop? ? I18n.t("piggy_bank_reconciliations.form.apply_noop_button") : I18n.t("piggy_bank_reconciliations.form.apply_button")
 
-      button_label = plan.noop? ? I18n.t("piggy_bank_reconciliations.form.apply_noop_button") : I18n.t("piggy_bank_reconciliations.form.apply_button")
+    div(class: "pt-2") do
       Button(
         type: :submit,
+        form: Views::PiggyBankReconciliations::New::FORM_ID,
+        formaction: apply_path,
+        data: { turbo_frame: "_top" },
         id: "apply_piggy_bank_reconciliation",
         class: "#{submit_button_class(:new)} w-full sm:w-auto cursor-pointer"
       ) do
         button_label
       end
     end
+  end
+
+  def apply_path
+    cash_transaction_piggy_bank_reconciliation_path(return_cash_transaction, digest: plan.digest)
   end
 
   def money(value) = from_cent_based_to_float(value, "R$")

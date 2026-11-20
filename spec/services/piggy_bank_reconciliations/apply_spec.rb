@@ -34,24 +34,25 @@ RSpec.describe PiggyBankReconciliations::Apply do
     source.piggy_bank.return_cash_transaction
   end
 
-  def preview(observed_net_cents: 5_500, observed_on: "2026-09-15", target: return_transaction, preview_context: context)
+  def preview(observed_net_cents: 5_500, observed_on: "2026-09-15", target: return_transaction, preview_context: context, installment_date: nil)
     PiggyBankReconciliations::Preview.new(
       user:,
       context: preview_context,
       return_cash_transaction_id: target&.id,
       observed_net_cents:,
-      observed_on:
+      observed_on:,
+      installment_date:
     ).call
   end
 
   def apply(plan: nil, observed_net_cents: 5_500, observed_on: "2026-09-15", digest: nil, target: return_transaction, apply_context: context, description: nil,
-            request_id: nil)
+            request_id: nil, installment_date: nil)
     if plan
       described_class.from_plan(plan, digest: digest || plan.digest, description:, request_id:).call
     else
       resolved_digest = digest
       if resolved_digest.nil?
-        p = preview(observed_net_cents:, observed_on:, target:, preview_context: apply_context)
+        p = preview(observed_net_cents:, observed_on:, target:, preview_context: apply_context, installment_date:)
         resolved_digest = p.digest
       end
 
@@ -63,7 +64,8 @@ RSpec.describe PiggyBankReconciliations::Apply do
         observed_on:,
         digest: resolved_digest,
         description:,
-        request_id:
+        request_id:,
+        installment_date:
       ).call
     end
   end
@@ -289,5 +291,58 @@ RSpec.describe PiggyBankReconciliations::Apply do
     expect(return_transaction.reload.price).to eq(initial_price)
     expect(return_transaction.cash_installments.sole.price).to eq(initial_installment_price)
     expect(AuditOperation.where(source: :web, actor_id: user.id)).to be_empty
+  end
+
+  describe "installment placement" do
+    include ActiveSupport::Testing::TimeHelpers
+
+    around do |example|
+      travel_to Date.new(2026, 11, 10).in_time_zone do
+        example.run
+      end
+    end
+
+    it "places the unpaid return installment on the reconciled date instead of the return transaction date" do
+      plan = preview(observed_net_cents: 5_500, installment_date: Date.new(2026, 12, 15))
+
+      result = apply(plan:)
+
+      expect(result).to be_applied
+      unpaid = return_transaction.reload.cash_installments.sole
+      expect(unpaid).to have_attributes(price: 5_500, paid: false)
+      expect(unpaid.date.to_date).to eq(Date.new(2026, 12, 15))
+      expect(unpaid.month).to eq(12)
+      expect(unpaid.year).to eq(2026)
+    end
+
+    it "keeps the paid installments untouched while placing the unpaid one" do
+      paid_installment = return_transaction.cash_installments.sole
+      paid_installment.update!(price: 1_000, starting_price: 1_000, paid: true)
+      Logic::Manipulation::CashInstallment.new(paid_installment).split_installment(return_transaction.date, 4_000)
+      paid_date = paid_installment.reload.date
+
+      plan = preview(observed_net_cents: 4_250, installment_date: Date.new(2026, 12, 15))
+      result = apply(plan:)
+
+      expect(result).to be_applied
+      expect(paid_installment.reload.date).to eq(paid_date)
+      expect(return_transaction.reload.cash_installments.where(paid: false).sole.date.to_date).to eq(Date.new(2026, 12, 15))
+    end
+
+    it "keeps the installment where it is when the reconciled date matches the scheduled one" do
+      plan = preview(observed_net_cents: 5_500, installment_date: Date.new(2026, 12, 1))
+
+      result = apply(plan:)
+
+      expect(result).to be_applied
+      expect(return_transaction.reload.cash_installments.sole.date.to_date).to eq(Date.new(2026, 12, 1))
+    end
+
+    it "refuses to reconcile with an installment date in the past" do
+      result = apply(installment_date: Date.new(2026, 11, 9))
+
+      expect(result).to have_attributes(status: :invalid, reason_code: :invalid_installment_date)
+      expect(Investment.count).to eq(0)
+    end
   end
 end

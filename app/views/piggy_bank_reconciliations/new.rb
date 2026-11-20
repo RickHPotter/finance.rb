@@ -7,12 +7,15 @@ class Views::PiggyBankReconciliations::New < Views::Base
   include TranslateHelper
   include ComponentsHelper
 
-  attr_reader :return_cash_transaction, :observed_on, :observed_net, :description, :plan, :return_to
+  FORM_ID = "piggy_bank_reconciliation_form"
 
-  def initialize(return_cash_transaction:, observed_on: nil, observed_net: nil, description: nil, plan: nil, return_to: nil)
+  attr_reader :return_cash_transaction, :observed_on, :observed_net, :installment_date, :description, :plan, :return_to
+
+  def initialize(return_cash_transaction:, observed_on: nil, observed_net: nil, installment_date: nil, description: nil, plan: nil, return_to: nil)
     @return_cash_transaction = return_cash_transaction
     @observed_on = observed_on || Time.zone.today
     @observed_net = observed_net
+    @installment_date = installment_date
     @description = description
     @plan = plan
     @return_to = return_to
@@ -29,9 +32,7 @@ class Views::PiggyBankReconciliations::New < Views::Base
           if plan.present?
             render Views::PiggyBankReconciliations::PreviewCard.new(
               return_cash_transaction:,
-              plan:,
-              description:,
-              return_to:
+              plan:
             )
           end
         end
@@ -76,7 +77,7 @@ class Views::PiggyBankReconciliations::New < Views::Base
       form_with(
         url: preview_cash_transaction_piggy_bank_reconciliation_path(return_cash_transaction),
         method: :post,
-        id: "piggy_bank_reconciliation_form",
+        id: FORM_ID,
         class: "space-y-4",
         data: {
           controller: "price-mask",
@@ -85,7 +86,7 @@ class Views::PiggyBankReconciliations::New < Views::Base
       ) do |f|
         hidden_field_tag :return_to, return_to if return_to.present?
 
-        div(class: "grid grid-cols-1 gap-4 lg:grid-cols-2") do
+        div(class: "grid grid-cols-1 gap-4 lg:grid-cols-3") do
           div do
             label(for: "piggy_bank_reconciliation_observed_on", class: label_class) do
               I18n.t("piggy_bank_reconciliations.form.observed_on_label")
@@ -117,6 +118,25 @@ class Views::PiggyBankReconciliations::New < Views::Base
             )
             p(class: "mt-1 text-xs text-slate-500 dark:text-slate-400") do
               I18n.t("piggy_bank_reconciliations.form.observed_net_hint")
+            end
+          end
+
+          div do
+            label(for: "piggy_bank_reconciliation_installment_date", class: label_class) do
+              I18n.t("piggy_bank_reconciliations.form.installment_date_label")
+            end
+            render Views::Shared::DatetimeInput.new(
+              form: f,
+              field: :installment_date,
+              value: installment_date,
+              id: "piggy_bank_reconciliation_installment_date",
+              show_time: false,
+              calendar: mobile?,
+              min_datetime: Time.zone.today,
+              min_datetime_message: I18n.t("piggy_bank_reconciliations.form.installment_date_min_message")
+            )
+            p(class: "mt-1 text-xs text-slate-500 dark:text-slate-400") do
+              I18n.t("piggy_bank_reconciliations.form.installment_date_hint")
             end
           end
         end

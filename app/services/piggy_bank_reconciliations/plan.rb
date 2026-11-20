@@ -4,7 +4,7 @@ class PiggyBankReconciliations::Plan
   STATUSES = %i[ready noop invalid].freeze
 
   attr_reader :status, :reason_code, :return_cash_transaction, :investment_type_id,
-              :observed_on, :recorded_remaining_cents, :observed_net_cents, :delta_cents,
+              :observed_on, :installment_date, :recorded_remaining_cents, :observed_net_cents, :delta_cents,
               :lifetime_recorded_cents, :paid_cents, :resulting_lifetime_cents, :digest, :issues
 
   def initialize(status:, **attributes)
@@ -13,6 +13,7 @@ class PiggyBankReconciliations::Plan
       :return_cash_transaction,
       :investment_type_id,
       :observed_on,
+      :installment_date,
       :recorded_remaining_cents,
       :observed_net_cents,
       :delta_cents,
@@ -29,6 +30,7 @@ class PiggyBankReconciliations::Plan
     @return_cash_transaction = attributes[:return_cash_transaction]
     @investment_type_id = attributes[:investment_type_id]
     @observed_on = attributes[:observed_on]
+    @installment_date = attributes[:installment_date]
     @recorded_remaining_cents = attributes[:recorded_remaining_cents]
     @observed_net_cents = attributes[:observed_net_cents]
     @delta_cents = attributes[:delta_cents]
@@ -52,6 +54,7 @@ class PiggyBankReconciliations::Plan
       return_cash_transaction_id: return_cash_transaction&.id,
       investment_type_id:,
       observed_on:,
+      installment_date:,
       recorded_remaining_cents:,
       observed_net_cents:,
       delta_cents:,

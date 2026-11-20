@@ -13,6 +13,7 @@ class PiggyBankReconciliation
   attribute :observed_on, :date
   attribute :observed_net, :string
   attribute :observed_net_cents, :integer
+  attribute :installment_date, :date
   attribute :description, :string
   attribute :digest, :string
 

@@ -103,6 +103,7 @@ RSpec.describe "Piggy Bank net reconciliation audit and rollback" do
       "context_id" => context.id,
       "user_id" => user.id,
       "observed_on" => "2026-09-15",
+      "installment_date" => reconcile_result.plan.installment_date.iso8601,
       "recorded_remaining_cents" => 5_000,
       "observed_net_cents" => 5_500,
       "delta_cents" => 500,

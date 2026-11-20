@@ -12,11 +12,13 @@ class PiggyBankReconciliationsController < ApplicationController
     return handle_ineligible_return(alert: I18n.t("piggy_bank_reconciliations.reasons.settled_return")) unless open_piggy_bank_return?
 
     @observed_on = Time.zone.today
+    @installment_date = calculate_default_installment_date
     @return_to = return_to_path
 
     render Views::PiggyBankReconciliations::New.new(
       return_cash_transaction: @return_cash_transaction,
       observed_on: @observed_on,
+      installment_date: @installment_date,
       return_to: @return_to
     )
   end
@@ -77,6 +79,7 @@ class PiggyBankReconciliationsController < ApplicationController
   def extract_inputs
     @observed_on = parse_date(reconciliation_params[:observed_on])
     @observed_net_cents = parse_cents(reconciliation_params[:observed_net])
+    @installment_date = parse_date(reconciliation_params[:installment_date]) || calculate_default_installment_date
     @description = reconciliation_params[:description].presence
     @return_to = return_to_path
   end
@@ -87,7 +90,8 @@ class PiggyBankReconciliationsController < ApplicationController
       context: current_context,
       return_cash_transaction_id: @return_cash_transaction.id,
       observed_net_cents: @observed_net_cents,
-      observed_on: @observed_on
+      observed_on: @observed_on,
+      installment_date: @installment_date
     ).call
   end
 
@@ -98,6 +102,7 @@ class PiggyBankReconciliationsController < ApplicationController
       return_cash_transaction_id: @return_cash_transaction.id,
       observed_net_cents: @observed_net_cents,
       observed_on: @observed_on,
+      installment_date: @installment_date,
       digest: @digest,
       description: @description,
       request_id: request.request_id
@@ -107,14 +112,7 @@ class PiggyBankReconciliationsController < ApplicationController
   def render_preview_success
     respond_to do |format|
       format.html do
-        render Views::PiggyBankReconciliations::New.new(
-          return_cash_transaction: @return_cash_transaction,
-          observed_on: @observed_on,
-          observed_net: reconciliation_params[:observed_net],
-          description: @description,
-          plan: @plan,
-          return_to: @return_to
-        )
+        render new_view(plan: @plan)
       end
       format.turbo_stream do
         render turbo_stream: [
@@ -123,14 +121,24 @@ class PiggyBankReconciliationsController < ApplicationController
             "piggy_bank_reconciliation_preview",
             Views::PiggyBankReconciliations::PreviewCard.new(
               return_cash_transaction: @return_cash_transaction,
-              plan: @plan,
-              description: @description,
-              return_to: @return_to
+              plan: @plan
             )
           )
         ]
       end
     end
+  end
+
+  def new_view(plan: nil)
+    Views::PiggyBankReconciliations::New.new(
+      return_cash_transaction: @return_cash_transaction,
+      observed_on: @observed_on,
+      observed_net: reconciliation_params[:observed_net],
+      installment_date: @installment_date,
+      description: @description,
+      plan:,
+      return_to: @return_to
+    )
   end
 
   def render_preview_failure
@@ -140,14 +148,7 @@ class PiggyBankReconciliationsController < ApplicationController
     respond_to do |format|
       format.html do
         flash.now[:alert] = failure_notifications_for(@reconciliation, :not_reconciled, PiggyBankReconciliation).join(" ")
-        render Views::PiggyBankReconciliations::New.new(
-          return_cash_transaction: @return_cash_transaction,
-          observed_on: @observed_on,
-          observed_net: reconciliation_params[:observed_net],
-          description: @description,
-          plan: nil,
-          return_to: @return_to
-        ), status: :unprocessable_content
+        render new_view(plan: nil), status: :unprocessable_content
       end
       format.turbo_stream do
         render turbo_stream: failure_streams_for(@reconciliation) + [ turbo_stream.update("piggy_bank_reconciliation_preview", "") ],
@@ -164,14 +165,7 @@ class PiggyBankReconciliationsController < ApplicationController
     respond_to do |format|
       format.html do
         flash.now[:alert] = failure_notifications_for(@reconciliation, :not_reconciled, PiggyBankReconciliation).join(" ")
-        render Views::PiggyBankReconciliations::New.new(
-          return_cash_transaction: @return_cash_transaction,
-          observed_on: @observed_on,
-          observed_net: reconciliation_params[:observed_net],
-          description: @description,
-          plan: fresh_plan&.valid? ? fresh_plan : nil,
-          return_to: @return_to
-        ), status: :unprocessable_content
+        render new_view(plan: fresh_plan&.valid? ? fresh_plan : nil), status: :unprocessable_content
       end
       format.turbo_stream do
         render turbo_stream: apply_failure_streams(fresh_plan), status: :unprocessable_content
@@ -186,9 +180,7 @@ class PiggyBankReconciliationsController < ApplicationController
                    "piggy_bank_reconciliation_preview",
                    Views::PiggyBankReconciliations::PreviewCard.new(
                      return_cash_transaction: @return_cash_transaction,
-                     plan: fresh_plan,
-                     description: @description,
-                     return_to: @return_to
+                     plan: fresh_plan
                    )
                  )
                else
@@ -237,6 +229,7 @@ class PiggyBankReconciliationsController < ApplicationController
       observed_on: @observed_on,
       observed_net: reconciliation_params[:observed_net],
       observed_net_cents: @observed_net_cents,
+      installment_date: @installment_date,
       description: @description,
       digest:
     )
@@ -306,7 +299,15 @@ class PiggyBankReconciliationsController < ApplicationController
     ).destination
   end
 
+  def calculate_default_installment_date
+    PiggyBankReconciliations::CalculateSafeInstallmentDate.new(
+      user: current_user,
+      context: current_context,
+      return_cash_transaction: @return_cash_transaction
+    ).call
+  end
+
   def reconciliation_params
-    params.permit(:observed_on, :observed_net, :description, :digest, :return_to)
+    params.permit(:observed_on, :observed_net, :installment_date, :description, :digest, :return_to)
   end
 end

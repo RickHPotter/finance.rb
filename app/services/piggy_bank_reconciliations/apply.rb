@@ -4,7 +4,7 @@ class PiggyBankReconciliations::Apply
   DEFAULT_DESCRIPTION = "OBSERVED NET RECONCILIATION"
 
   attr_reader :user, :context, :return_cash_transaction_id, :observed_net_cents,
-              :observed_on, :digest, :description, :request_id
+              :observed_on, :installment_date, :digest, :description, :request_id
 
   def self.call(...)
     new(...).call
@@ -18,18 +18,21 @@ class PiggyBankReconciliations::Apply
       return_cash_transaction_id: target&.id,
       observed_net_cents: plan.observed_net_cents,
       observed_on: plan.observed_on,
+      installment_date: plan.installment_date,
       digest:,
       description:,
       request_id:
     )
   end
 
-  def initialize(user:, context:, return_cash_transaction_id:, observed_net_cents:, observed_on:, digest:, description: nil, request_id: nil)
+  def initialize(user:, context:, return_cash_transaction_id:, observed_net_cents:, observed_on:, digest:, description: nil, request_id: nil,
+                 installment_date: nil)
     @user = user
     @context = context
     @return_cash_transaction_id = return_cash_transaction_id
     @observed_net_cents = observed_net_cents
     @observed_on = observed_on
+    @installment_date = installment_date
     @digest = digest&.to_s
     @description = description
     @request_id = request_id
@@ -71,7 +74,8 @@ class PiggyBankReconciliations::Apply
       context:,
       return_cash_transaction_id: return_transaction&.id || return_cash_transaction_id,
       observed_net_cents:,
-      observed_on:
+      observed_on:,
+      installment_date:
     ).call
   end
 
@@ -94,6 +98,9 @@ class PiggyBankReconciliations::Apply
     ) do
       investment = build_investment(plan, target)
       investment.save!
+
+      place_unpaid_installments(target, plan.installment_date)
+
       operation = Audit::Operation.ensure_persisted!
     end
 
@@ -104,6 +111,36 @@ class PiggyBankReconciliations::Apply
       return_cash_transaction: target.reload,
       operation:
     )
+  end
+
+  # The piggy bank projection sync drags the unpaid installments back to the return
+  # transaction date. Place them on the reconciled date instead, keeping the distance
+  # between them, so the money lands on the date the user picked.
+  def place_unpaid_installments(return_transaction, target_date)
+    return if target_date.blank?
+
+    installments = return_transaction.cash_installments.where(paid: false).order(:number).to_a
+    return if installments.empty?
+
+    shift = target_date - installments.first.date.to_date
+    return if shift.zero?
+
+    Audit::Operation.with_mutation_source(:piggy_bank_sync) do
+      installments.each do |installment|
+        moved_date = installment.date + shift.days
+        installment.update!(date: moved_date, month: moved_date.month, year: moved_date.year)
+      end
+    end
+
+    recalculate_balances(installments, target_date)
+  end
+
+  # The balance history depends on the installment dates, so it has to be rebuilt from the
+  # earliest month the placement touched.
+  def recalculate_balances(installments, target_date)
+    months = (installments.map { |installment| installment.date.to_date } + [ target_date ]).map { |date| [ date.year, date.month ] }
+    year, month = months.min
+    Logic::RecalculateBalancesService.new(user:, context:, year:, month:).call
   end
 
   def build_investment(plan, target)
@@ -128,6 +165,7 @@ class PiggyBankReconciliations::Apply
       context_id: context.id,
       user_id: user.id,
       observed_on: plan.observed_on.iso8601,
+      installment_date: plan.installment_date&.iso8601,
       recorded_remaining_cents: plan.recorded_remaining_cents,
       observed_net_cents: plan.observed_net_cents,
       delta_cents: plan.delta_cents,
