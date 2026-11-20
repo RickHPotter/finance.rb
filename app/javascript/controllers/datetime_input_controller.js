@@ -332,6 +332,6 @@ export default class extends Controller {
     const frame = document.querySelector("turbo-frame#notification")
     if (!frame) return
 
-    frame.src = `static/notification?${type}=${encodeURIComponent(message)}`
+    frame.src = `/static/notification?${type}=${encodeURIComponent(message)}`
   }
 }

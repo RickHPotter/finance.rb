@@ -104,7 +104,7 @@ export default class extends Controller {
 
   showMessage(type, message) {
     const frame = document.querySelector("turbo-frame#notification")
-    frame.src = `static/notification?${type}=${message}`
+    frame.src = `/static/notification?${type}=${encodeURIComponent(message)}`
   }
 
   removeMessage() {
