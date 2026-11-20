@@ -21,7 +21,7 @@ class Views::CashTransactions::FormControls < Views::Base
     div(class: "lg:flex lg:gap-2 w-full mb-2") do
       user_bank_account_field
       category_and_entity_fields
-      exchange_intent_field
+      exchange_intent_value_field
       date_field
       price_and_installments_controls
       attachments_button if attachment_modal_id
@@ -180,27 +180,12 @@ class Views::CashTransactions::FormControls < Views::Base
     end
   end
 
-  def exchange_intent_field
-    div(
-      class: "combobox-shell status-icon #{exchange_intent_wrapper_class} mb-3 lg:mb-0 hidden",
-      data: { reactive_form_target: :exchangeIntentWrapper }
-    ) do
-      render Views::Shared::SingleSelectCombobox.new(
-        name: "cash_transaction[friend_notification_intent]",
-        options: [
-          [ model_attribute(cash_transaction, "friend_notification_intents.loan"), "loan" ],
-          [ model_attribute(cash_transaction, "friend_notification_intents.reimbursement"), "reimbursement" ]
-        ],
-        selected_value: cash_transaction.effective_friend_notification_intent.presence || params.dig(:cash_transaction, :friend_notification_intent).presence,
-        placeholder: model_attribute(cash_transaction, :friend_notification_intent),
-        include_blank: true,
-        combobox_data: { reactive_form_target: :exchangeIntentInput }
-      )
-    end
-  end
-
-  def exchange_intent_wrapper_class
-    "w-full lg:w-[14%] lg:flex-none min-w-0"
+  def exchange_intent_value_field
+    form.hidden_field(
+      :friend_notification_intent,
+      value: cash_transaction.effective_friend_notification_intent.presence || params.dig(:cash_transaction, :friend_notification_intent).presence,
+      data: { reactive_form_target: :exchangeIntentValue }
+    )
   end
 
   def calculate_button_class

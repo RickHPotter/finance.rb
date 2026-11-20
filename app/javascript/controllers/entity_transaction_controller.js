@@ -10,7 +10,7 @@ export default class extends Controller {
   static targets = [
     "button", "dateInput", "priceInput", "payerInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangesCountEqualsButton",
     "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange", "loanReturnPercentageInput", "mirrorInstallmentsButton",
-    "allocationWarning", "piggyBankReturnPriceInput"
+    "allocationWarning", "piggyBankReturnPriceInput", "exchangeIntentInput"
   ]
 
   async connect() {
@@ -24,6 +24,8 @@ export default class extends Controller {
     this.transactionForm()?.addEventListener("piggy-bank-mode-changed", this.boundRefreshAllocationWarning)
     this.refreshMirrorInstallmentsAvailability()
     this.refreshAllocationWarning()
+    this.syncExchangeIntentDisabled()
+    this.syncExchangeIntentInputValue()
     if (this.element.matches("[data-composite-entity-modal-target~='group']")) {
       this.updatePayer()
     }
@@ -98,6 +100,8 @@ export default class extends Controller {
         this.exchangesCountInputTarget.value = installmentsCount > 0 ? installmentsCount : 1
       }
     }
+
+    this.syncExchangeIntentDisabled()
 
     if (!shouldBeDisabled) await this._updateExchangesPrices()
 
@@ -346,8 +350,33 @@ export default class extends Controller {
 
     const amount = parseInt(_removeMask(this.priceToBeReturnedInputTarget.value), 10) || 0
     this.payerInputTarget.value = amount === 0 ? "false" : "true"
+    this.syncExchangeIntentDisabled()
     this.syncLineItemExchangeIntent()
     this.checkForExchangeCategory()
+  }
+
+  syncExchangeIntentDisabled() {
+    if (!this.hasExchangeIntentInputTarget) return
+
+    this.exchangeIntentInputTarget.disabled = !this.hasExchangesCountInputTarget || this.exchangesCountInputTarget.disabled
+  }
+
+  syncExchangeIntentInputValue() {
+    if (!this.hasExchangeIntentInputTarget) return
+
+    const form = this.transactionForm() || document.querySelector("#transaction_form")
+    const valueInput = form?.querySelector("[data-reactive-form-target='exchangeIntentValue']")
+    if (valueInput) this.exchangeIntentInputTarget.value = valueInput.value
+  }
+
+  syncExchangeIntentValue({ target }) {
+    const form = this.transactionForm() || document.querySelector("#transaction_form")
+    const valueInput = form?.querySelector("[data-reactive-form-target='exchangeIntentValue']")
+    if (valueInput) valueInput.value = target.value
+
+    form?.querySelectorAll("[data-entity-transaction-target~='exchangeIntentInput']").forEach((input) => {
+      input.value = target.value
+    })
   }
 
   syncLineItemExchangeIntent() {

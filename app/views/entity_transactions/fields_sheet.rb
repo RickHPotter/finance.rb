@@ -83,34 +83,38 @@ module Views
                   end
                 end
 
-                div do
-                  bold_label(form, :exchanges_count, "entity_transaction_exchanges_count_#{form.index}")
+                div(class: "grid grid-cols-2 gap-3") do
+                  div do
+                    bold_label(form, :exchanges_count, "entity_transaction_exchanges_count_#{form.index}")
 
-                  div(class: "flex gap-1 justify-between") do
-                    div(class: "flex-1") do
-                      TextFieldTag :exchanges_count,
-                                   type: :number,
-                                   svg: :number,
-                                   min: 0, max: 72,
-                                   disabled: !entity_transaction.is_payer,
-                                   value: entity_transaction&.exchanges_count&.to_i,
-                                   id: "entity_transaction_exchanges_count_#{form.index}",
-                                   class: "font-graduate #{'opacity-50' unless entity_transaction.is_payer}",
-                                   data: { controller: "input-select",
-                                           entity_transaction_target: :exchangesCountInput,
-                                           action: "click->input-select#select input->entity-transaction#updateExchangesPrices" }
-                    end
+                    div(class: "flex gap-1 justify-between") do
+                      div(class: "flex-1") do
+                        TextFieldTag :exchanges_count,
+                                     type: :number,
+                                     svg: :number,
+                                     min: 0, max: 72,
+                                     disabled: !entity_transaction.is_payer,
+                                     value: entity_transaction&.exchanges_count&.to_i,
+                                     id: "entity_transaction_exchanges_count_#{form.index}",
+                                     class: "font-graduate #{'opacity-50' unless entity_transaction.is_payer}",
+                                     data: { controller: "input-select",
+                                             entity_transaction_target: :exchangesCountInput,
+                                             action: "click->input-select#select input->entity-transaction#updateExchangesPrices" }
+                      end
 
-                    div(class: "m-auto") do
-                      Button(
-                        class: modal_icon_button_class,
-                        disabled: !entity_transaction.is_payer,
-                        data: { entity_transaction_target: :exchangesCountEqualsButton, action: "entity-transaction#copyTransactionInstallmentsCount" }
-                      ) do
-                        cached_icon(:equals)
+                      div(class: "m-auto") do
+                        Button(
+                          class: modal_icon_button_class,
+                          disabled: !entity_transaction.is_payer,
+                          data: { entity_transaction_target: :exchangesCountEqualsButton, action: "entity-transaction#copyTransactionInstallmentsCount" }
+                        ) do
+                          cached_icon(:equals)
+                        end
                       end
                     end
                   end
+
+                  exchange_intent_field if transactable.is_a?(CashTransaction)
                 end
 
                 div do
@@ -226,6 +230,43 @@ module Views
             piggy_bank_fields if transactable.is_a?(CashTransaction)
           end
         end
+      end
+
+      def exchange_intent_field
+        intent = transactable.effective_friend_notification_intent.presence || params.dig(:cash_transaction, :friend_notification_intent).presence
+
+        div(
+          class: "min-w-0",
+          data: { reactive_form_target: :exchangeIntentWrapper, entity_form_index: form.index }
+        ) do
+          label(
+            for: exchange_intent_field_id,
+            class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
+          ) { model_attribute(CashTransaction, :friend_notification_intent).downcase }
+
+          select(
+            id: exchange_intent_field_id,
+            class: "mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 " \
+                   "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100",
+            disabled: !entity_transaction.is_payer,
+            data: {
+              entity_transaction_target: :exchangeIntentInput,
+              action: "change->entity-transaction#syncExchangeIntentValue"
+            }
+          ) do
+            option(value: "", selected: intent.blank?) { model_attribute(CashTransaction, :friend_notification_intent) }
+            option(value: "loan", selected: intent == "loan") do
+              model_attribute(CashTransaction, "friend_notification_intents.loan")
+            end
+            option(value: "reimbursement", selected: intent == "reimbursement") do
+              model_attribute(CashTransaction, "friend_notification_intents.reimbursement")
+            end
+          end
+        end
+      end
+
+      def exchange_intent_field_id
+        "cash_transaction_friend_notification_intent_#{form.index}"
       end
 
       def piggy_bank_fields

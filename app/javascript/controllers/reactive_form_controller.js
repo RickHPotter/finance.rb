@@ -22,8 +22,7 @@ export default class extends Controller {
     "addEntity",
     "entityIcons",
 
-    "exchangeIntentWrapper",
-    "exchangeIntentInput",
+    "exchangeIntentWrapper", "exchangeIntentValue",
 
     "userCardCombobox",
     "investmentTypeCombobox",
@@ -841,7 +840,7 @@ export default class extends Controller {
   }
 
   syncExchangeIntentVisibility() {
-    if (!this.hasExchangeIntentWrapperTarget || !this.hasExchangeIntentInputTarget) { return }
+    if (!this.hasExchangeIntentWrapperTarget || !this.hasExchangeIntentValueTarget) { return }
 
     const exchangeCategoryId = this.element.querySelector("#exchange_category_id")?.value
     const hasExchangeCategory = this.categoryWrapperTargets.some((wrapper) => {
@@ -859,15 +858,12 @@ export default class extends Controller {
     })
     const isExchange = hasExchangeCategory && hasFriendEntity && !splitPurchase
 
-    this.exchangeIntentWrapperTarget.classList.toggle("hidden", !isExchange)
+    this.exchangeIntentWrapperTargets.forEach((wrapper) => {
+      const input = wrapper.querySelector("[data-entity-transaction-target~='exchangeIntentInput']")
+      if (input) input.value = isExchange ? this.exchangeIntentValueTarget.value : ""
+    })
 
-    if (!isExchange) {
-      const blank = this.exchangeIntentInputTarget.querySelector("input[value='']")
-      if (blank && !blank.checked) {
-        blank.checked = true
-        blank.dispatchEvent(new Event("change", { bubbles: true }))
-      }
-    }
+    if (!isExchange) this.exchangeIntentValueTarget.value = ""
   }
 
   _updateCategories() {
@@ -1129,7 +1125,6 @@ export default class extends Controller {
       this.quickJumpTimeField(),
       this.quickJumpField(this.hasPriceInputTarget ? this.priceInputTarget : null, this.priceLabel()),
       this.quickJumpField(this.hasInstallmentsCountInputTarget ? this.installmentsCountInputTarget : null, this.installmentsLabel()),
-      this.quickJumpField(this.exchangeIntentElement(), this.exchangeIntentLabel())
     ].filter(Boolean)
   }
 
@@ -1216,13 +1211,6 @@ export default class extends Controller {
     return !["date", "time", "datetime-local", "month", "week", "color", "number"].includes(element.type)
   }
 
-  exchangeIntentElement() {
-    if (!this.hasExchangeIntentInputTarget) { return null }
-    if (!this.hasExchangeIntentWrapperTarget || !this.exchangeIntentWrapperTarget.checkVisibility()) { return null }
-
-    return this.exchangeIntentInputTarget.querySelector("[data-ruby-ui--combobox-target='trigger']")
-  }
-
   descriptionLabel() {
     return "description"
   }
@@ -1265,10 +1253,6 @@ export default class extends Controller {
 
   monthYearLabel() {
     return "month/year"
-  }
-
-  exchangeIntentLabel() {
-    return "intent"
   }
 
   duplicateLabel() {
