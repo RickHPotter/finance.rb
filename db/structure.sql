@@ -1055,7 +1055,7 @@ CREATE TABLE public.fiscal_document_links (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT fiscal_document_links_access_key_format CHECK (((access_key)::text ~ '^[0-9]{44}$'::text)),
-    CONSTRAINT fiscal_document_links_transaction_type CHECK (((transactable_type)::text = ANY ((ARRAY['CashTransaction'::character varying, 'CardTransaction'::character varying])::text[])))
+    CONSTRAINT fiscal_document_links_transaction_type CHECK (((transactable_type)::text = ANY (ARRAY[('CashTransaction'::character varying)::text, ('CardTransaction'::character varying)::text])))
 );
 
 
@@ -1370,7 +1370,7 @@ CREATE TABLE public.line_items (
     updated_at timestamp(6) without time zone NOT NULL,
     friend_notification_intent character varying,
     item_kind character varying DEFAULT 'product'::character varying NOT NULL,
-    CONSTRAINT line_items_item_kind_values CHECK (((item_kind)::text = ANY ((ARRAY['product'::character varying, 'discount'::character varying])::text[])))
+    CONSTRAINT line_items_item_kind_values CHECK (((item_kind)::text = ANY (ARRAY[('product'::character varying)::text, ('discount'::character varying)::text])))
 );
 
 
