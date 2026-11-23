@@ -1,0 +1,185 @@
+# NARUTO-08 OCR fixture corpus manifest
+#
+# Each fixture is a synthetic image generated with ImageMagick for automated testing.
+# No real taxpayer details, live access keys, or production documents are used.
+# The access key fragments are fictitious and will not pass AccessKey validation
+# (checksum is not valid) — this is intentional for safe test isolation.
+
+fixtures:
+  clear_cupom.jpg:
+    family: printed_cupom
+    description: >
+      Clear thermal-print NFC-e cupom. All text is legible. Contains a printed
+      access key fragment (fictitious, invalid checksum). No QR code present in
+      this synthetic fixture.
+    expected_items:
+      - description: "ARROZ TIPO 1 5KG"
+        quantity: 1
+        unit_price_cents: 2490
+        price_cents: 2490
+      - description: "FEIJAO CARIOCA 1KG"
+        quantity: 2
+        unit_price_cents: 850
+        price_cents: 1700
+      - description: "OLEO DE SOJA 900ML"
+        quantity: 1
+        unit_price_cents: 1099
+        price_cents: 1099
+      - description: "ACUCAR CRISTAL 1KG"
+        quantity: 3
+        unit_price_cents: 450
+        price_cents: 1350
+      - description: "CAFE MOIDO 500G"
+        quantity: 1
+        unit_price_cents: 1890
+        price_cents: 1890
+    expected_total_cents: 8529
+    expected_issuer: "SUPERMERCADO EXEMPLO LTDA"
+    expected_date: "2026-11-15T14:32:00"
+    expected_access_key: null  # Fictitious fragment, invalid checksum
+    expected_confidence: high
+    expected_result: success
+
+  faded_cupom.jpg:
+    family: printed_cupom
+    description: >
+      Faded thermal-print cupom derived from clear_cupom.jpg with reduced
+      contrast, noise, and blur. Simulates aged or heat-damaged thermal paper.
+      Some text may be partially or fully unreadable.
+    expected_items:
+      # Same underlying content as clear_cupom.jpg, but OCR may miss items
+      - description: "ARROZ TIPO 1 5KG"
+        price_cents: 2490
+      - description: "FEIJAO CARIOCA 1KG"
+        price_cents: 1700
+      - description: "OLEO DE SOJA 900ML"
+        price_cents: 1099
+      - description: "ACUCAR CRISTAL 1KG"
+        price_cents: 1350
+      - description: "CAFE MOIDO 500G"
+        price_cents: 1890
+    expected_total_cents: 8529
+    expected_issuer: "SUPERMERCADO EXEMPLO LTDA"
+    expected_confidence: low
+    expected_result: partial
+    notes: >
+      OCR may extract fewer items or garbled descriptions. The total may or
+      may not be readable. This is a degraded-quality test: a partial result
+      with low confidence markers is acceptable.
+
+  no_qr_cupom.jpg:
+    family: printed_cupom
+    description: >
+      Printed cupom with clear text but no usable QR code. Access key is
+      absent. Simulates a receipt where the QR is damaged, cut off, or
+      not printed.
+    expected_items:
+      - description: "PAO FRANCES 1KG"
+        quantity: 1
+        unit_price_cents: 1490
+        price_cents: 1490
+      - description: "LEITE INTEGRAL 1L"
+        quantity: 3
+        unit_price_cents: 549
+        price_cents: 1647
+      - description: "MANTEIGA 200G"
+        quantity: 1
+        unit_price_cents: 1280
+        price_cents: 1280
+      - description: "QUEIJO MINAS 500G"
+        quantity: 1
+        unit_price_cents: 2290
+        price_cents: 2290
+      - description: "PRESUNTO FATIADO"
+        quantity: 1
+        unit_price_cents: 1550
+        price_cents: 1550
+    expected_total_cents: 8257
+    expected_issuer: "PADARIA BOM SABOR LTDA"
+    expected_date: "2026-11-18T09:15:30"
+    expected_access_key: null
+    expected_confidence: medium
+    expected_result: success
+    notes: >
+      Text is clear so OCR should extract most items. No access key means
+      no structured-source pairing is possible.
+
+  unreadable.jpg:
+    family: printed_cupom
+    description: >
+      Extremely degraded image with no recoverable text. Simulates a
+      completely unreadable thermal receipt (heavy noise, blur, low contrast).
+    expected_items: []
+    expected_total_cents: null
+    expected_issuer: null
+    expected_access_key: null
+    expected_confidence: null
+    expected_result: failure
+    notes: >
+      OCR should produce no usable items or total. The extraction must fail
+      gracefully with a user-facing error message, not an unhandled exception.
+
+  scanned_danfe.pdf:
+    family: scanned_danfe
+    description: >
+      Image-only PDF simulating a scanned NF-e DANFE. Contains no selectable
+      text (PdfKeyExtractor will fail). The access key fragment is printed in
+      the image but uses a fictitious, invalid checksum.
+    expected_items:
+      - description: "NOTEBOOK 15POL"
+        quantity: 1
+        unit_price_cents: 349900
+        price_cents: 349900
+      - description: "MOUSE WIRELESS"
+        quantity: 1
+        unit_price_cents: 8990
+        price_cents: 8990
+      - description: "TECLADO USB"
+        quantity: 1
+        unit_price_cents: 14990
+        price_cents: 14990
+    expected_total_cents: 373880
+    expected_issuer: "LOJA TESTE EIRELI"
+    expected_date: "2026-11-20T16:45:00"
+    expected_access_key: null  # Fictitious fragment, invalid checksum
+    expected_confidence: medium
+    expected_result: success
+    notes: >
+      Tests the PDF-to-image fallback path. Vips pdfload renders the page,
+      then Tesseract extracts text from the rendered image.
+
+  rotated_receipt.jpg:
+    family: printed_cupom
+    description: >
+      The clear_cupom.jpg rotated 90 degrees clockwise. Tests EXIF/rotation
+      handling in the image preprocessor.
+    expected_items: []  # Same as clear_cupom if rotation is handled
+    expected_total_cents: 8529
+    expected_issuer: "SUPERMERCADO EXEMPLO LTDA"
+    expected_confidence: medium
+    expected_result: partial
+    notes: >
+      If the preprocessor detects and corrects rotation, results should match
+      clear_cupom. If not, OCR on rotated text will likely fail or produce
+      garbage. Tests the auto-rotation preprocessing step.
+
+  cropped_receipt.jpg:
+    family: printed_cupom
+    description: >
+      The clear_cupom.jpg cropped to only the header and first few items.
+      Total, payment, date, and access key are missing.
+    expected_items:
+      - description: "ARROZ TIPO 1 5KG"
+        price_cents: 2490
+      - description: "FEIJAO CARIOCA 1KG"
+        price_cents: 1700
+      - description: "OLEO DE SOJA 900ML"
+        price_cents: 1099
+    expected_total_cents: null  # Total section is cropped off
+    expected_issuer: "SUPERMERCADO EXEMPLO LTDA"
+    expected_access_key: null
+    expected_confidence: medium
+    expected_result: partial
+    notes: >
+      Tests handling of incomplete receipts. Items that are visible should be
+      extracted. Missing total means items_missing or total_missing flag.
