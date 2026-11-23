@@ -6,7 +6,11 @@ import jsQR from "jsqr"
 const PENDING_DRAFT_KEY = "pendingFiscalReceiptImport"
 
 export default class extends Controller {
-  static targets = ["file", "fileName", "importButton", "source", "state", "button", "status", "cameraPanel", "video", "continueButton", "saveDraftButton"]
+  static targets = [
+    "file", "fileName", "importButton", "source", "state", "button",
+    "status", "cameraPanel", "video", "continueButton", "saveDraftButton",
+    "sourceBadge", "differenceGateContainer", "differenceAck", "differenceGateLabel"
+  ]
   static values = {
     url: String,
     draftsUrl: String,
@@ -132,8 +136,8 @@ export default class extends Controller {
         const source = await this.readImageQr(file)
         if (!source) throw new Error(this.message("qr_not_found"))
         await this.performImport({ file, source })
-      } catch (error) {
-        this.showStatus(this.localizedError(error, "image_read_failed"), true)
+      } catch {
+        await this.performImport({ file })
       }
       return
     }
@@ -177,7 +181,15 @@ export default class extends Controller {
         body
       })
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error || this.message("import_failed"))
+      if (!response.ok && response.status !== 202) throw new Error(result.error || this.message("import_failed"))
+
+      if (result.ocr_queued) {
+        this.showStatus(this.message("ocr_queued"))
+        if (this.hasDraftsUrlValue) {
+          window.location.assign(this.draftsUrlValue)
+        }
+        return
+      }
 
       this.showSourceSummary(result.draft)
 
@@ -384,6 +396,13 @@ export default class extends Controller {
     draft.items.forEach((item) => {
       composite.addRow()
       const row = composite.activeRows.at(-1)
+      if (item.confidence) row.dataset.ocrConfidence = item.confidence
+      if (item.ocr_original) row.dataset.ocrOriginal = typeof item.ocr_original === "string" ? item.ocr_original : JSON.stringify(item.ocr_original)
+      if (item.confidence === "low") {
+        row.classList.add("border-l-4", "border-amber-500", "pl-2")
+      } else if (item.confidence === "medium") {
+        row.classList.add("border-l-2", "border-amber-300", "pl-1")
+      }
       row.querySelector("input[name$='[description]']").value = item.description
       const price = row.querySelector("[data-composite-transaction-target~='itemPrice']")
       price.value = _applyMask((-item.price_cents).toString())
@@ -421,9 +440,49 @@ export default class extends Controller {
     }
     const formatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
     Object.entries(amounts).forEach(([key, amount]) => {
-      summary.querySelector(`[data-fiscal-summary-amount='${key}']`).textContent = formatter.format(amount / 100)
+      const el = summary.querySelector(`[data-fiscal-summary-amount='${key}']`)
+      if (el) el.textContent = formatter.format(amount / 100)
     })
     summary.hidden = false
+
+    if (this.hasSourceBadgeTarget) {
+      if (draft.source === "ocr") {
+        this.sourceBadgeTarget.textContent = this.message("source_badge")
+        this.sourceBadgeTarget.classList.remove("hidden")
+      } else {
+        this.sourceBadgeTarget.classList.add("hidden")
+      }
+    }
+
+    const diffAbs = Math.abs(amounts.difference)
+    if (this.hasDifferenceGateContainerTarget) {
+      if (diffAbs > 5) {
+        this.differenceGateContainerTarget.classList.remove("hidden")
+        if (this.hasDifferenceGateLabelTarget) {
+          const diffFormatted = formatter.format(diffAbs / 100)
+          this.differenceGateLabelTarget.textContent = this.message("difference_gate").replace("%{amount}", diffFormatted)
+        }
+        if (this.hasDifferenceAckTarget) {
+          this.differenceAckTarget.checked = false
+        }
+        this.toggleSubmitButtons(false)
+      } else {
+        this.differenceGateContainerTarget.classList.add("hidden")
+        this.toggleSubmitButtons(true)
+      }
+    }
+  }
+
+  acknowledgeDifference() {
+    if (!this.hasDifferenceAckTarget) return
+    this.toggleSubmitButtons(this.differenceAckTarget.checked)
+  }
+
+  toggleSubmitButtons(enabled) {
+    const submits = this.element.querySelectorAll("button[type='submit']:not([data-reactive-form-target='updateButton'])")
+    submits.forEach(btn => {
+      btn.disabled = !enabled
+    })
   }
 
   applyIssueTimestamp(issuedAt) {

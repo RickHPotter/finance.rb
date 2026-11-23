@@ -143,6 +143,46 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
       expect(response.body).to include(own_draft.payload.fetch("issuer"))
       expect(response.body).not_to include(other_draft.payload.fetch("issuer"))
     end
+
+    it "renders processing drafts with a processing badge and disabled buttons" do
+      processing_draft = user.fiscal_receipt_drafts.create!(status: :processing, payload: {})
+
+      get fiscal_receipt_drafts_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("fiscal_receipt_draft_#{processing_draft.id}")
+      expect(response.body).to include(I18n.t("ocr.status.processing"))
+      expect(response.body).to include("animate-pulse")
+      expect(response.body).to include("cursor-not-allowed")
+    end
+
+    it "renders failed drafts with error description and retry button" do
+      failed_draft = user.fiscal_receipt_drafts.create!(
+        status: :failed, payload: {}, ocr_error: "Unreadable text in receipt"
+      )
+
+      get fiscal_receipt_drafts_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("fiscal_receipt_draft_#{failed_draft.id}")
+      expect(response.body).to include("Unreadable text in receipt")
+      expect(response.body).to include(retry_ocr_fiscal_receipt_draft_path(failed_draft))
+    end
+
+    it "renders ready OCR drafts with source badge and review-required notice when flagged" do
+      ocr_payload = draft.stringify_keys.merge(
+        "source" => "ocr",
+        "fiscal_details" => { "review_required" => true }
+      )
+      ready_draft = user.fiscal_receipt_drafts.create!(status: :ready, payload: ocr_payload)
+
+      get fiscal_receipt_drafts_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("fiscal_receipt_draft_#{ready_draft.id}")
+      expect(response.body).to include(I18n.t("ocr.source_badge"))
+      expect(response.body).to include(I18n.t("ocr.status.review_required"))
+    end
   end
 
   describe "GET /fiscal_receipt_drafts/:id/cash_transaction" do
@@ -318,6 +358,41 @@ RSpec.describe "Fiscal receipt drafts", type: :request do
       expect(response).to redirect_to(card_transactions_path(user_card_id: selected_card.id))
       expect(user.card_transactions.find_by!(description: "Imported purchase on selected card").user_card).to eq(selected_card)
       expect(user.fiscal_receipt_drafts.reload).to be_empty
+    end
+  end
+
+  describe "POST /fiscal_receipt_drafts/:id/retry_ocr" do
+    it "re-enqueues OCR job for a failed draft and sets status back to processing" do
+      failed_draft = user.fiscal_receipt_drafts.create!(status: :failed, payload: {}, ocr_error: "Some error")
+
+      expect do
+        post retry_ocr_fiscal_receipt_draft_path(failed_draft)
+      end.to have_enqueued_job(OcrExtractionJob).with(failed_draft.id)
+
+      expect(response).to redirect_to(fiscal_receipt_drafts_path)
+      failed_draft.reload
+      expect(failed_draft.status).to eq("processing")
+      expect(failed_draft.ocr_error).to be_nil
+    end
+
+    it "refuses to retry a draft that is not in failed state" do
+      ready_draft = user.fiscal_receipt_drafts.create!(payload: draft.stringify_keys, status: :ready)
+
+      expect do
+        post retry_ocr_fiscal_receipt_draft_path(ready_draft)
+      end.not_to have_enqueued_job(OcrExtractionJob)
+
+      expect(response).to redirect_to(fiscal_receipt_drafts_path)
+      expect(ready_draft.reload.status).to eq("ready")
+    end
+
+    it "prevents retrying another user's draft" do
+      other = create(:user, :random)
+      foreign_draft = other.fiscal_receipt_drafts.create!(status: :failed, payload: {}, ocr_error: "Fail")
+
+      post retry_ocr_fiscal_receipt_draft_path(foreign_draft)
+
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

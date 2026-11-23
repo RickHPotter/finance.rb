@@ -41,6 +41,7 @@ class Views::CashTransactions::Form < Views::Base
                   fiscal_import_freight_label_value: I18n.t("transactions.composite.freight"),
                   fiscal_import_pending_draft_value: fiscal_receipt_draft&.payload&.to_json,
                   fiscal_import_pending_draft_id_value: fiscal_receipt_draft&.id,
+                  fiscal_import_messages_value: I18n.t("fiscal_import.messages").to_json,
                   composite_transaction_composite_value: cash_transaction.composite?,
                   reactive_form_type_value: "CashTransaction",
                   reactive_form_friend_entity_ids_value: current_user.entities.active.where.not(friendship_id: nil).pluck(:id),
