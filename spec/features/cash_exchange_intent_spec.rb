@@ -16,9 +16,13 @@ RSpec.describe "Cash exchange intent", type: :feature do
     page.execute_script("window.Stimulus.getControllerForElementAndIdentifier(document.querySelector('#transaction_form'), " \
                         "'reactive-form')._insertExchangeCategory()")
 
+    find(".entities_entity_name", text: "Friend").click
+
     intent = find("[data-reactive-form-target='exchangeIntentWrapper']")
-    intent.find("button").click
-    intent.find("label", text: I18n.t("activerecord.attributes.cash_transaction.friend_notification_intents.loan"), exact_text: true).click
-    expect(intent).to have_css("input[value='loan']:checked", visible: :all)
+    select = intent.find("select[data-entity-transaction-target~='exchangeIntentInput']")
+    select.select(I18n.t("activerecord.attributes.cash_transaction.friend_notification_intents.loan"))
+
+    expect(select.value).to eq("loan")
+    expect(find("[data-reactive-form-target='exchangeIntentValue']", visible: :all).value).to eq("loan")
   end
 end
