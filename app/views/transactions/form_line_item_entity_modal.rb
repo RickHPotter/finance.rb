@@ -76,7 +76,7 @@ class Views::Transactions::FormLineItemEntityModal < Views::Base
           line_item_key: index.to_s,
           entity_id: item.entity_id.to_s,
           line_item_price: item.price.to_i,
-          transaction_total_cents: -item.price.to_i
+          transaction_total_cents: item.price.to_i
         }
       ) do
         entity_form.hidden_field :id if entity_transaction.persisted?

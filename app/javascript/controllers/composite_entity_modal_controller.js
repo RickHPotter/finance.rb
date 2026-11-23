@@ -29,8 +29,13 @@ export default class extends Controller {
       group.classList.toggle("hidden", !shouldShow)
       if (shouldShow) {
         group.querySelector("input[name*='[_destroy]']").value = "false"
+        const lineItemPrice = this.lineItemPrice(lineItemKey)
+        group.dataset.lineItemPrice = lineItemPrice.toString()
+        group.dataset.transactionTotalCents = lineItemPrice.toString()
+        const priceInput = group.querySelector("[data-entity-transaction-target~='priceInput']")
+        if (priceInput) priceInput.value = Math.abs(lineItemPrice).toString()
         const amount = group.querySelector("[data-composite-entity-modal-target~='itemPrice']")
-        if (amount) amount.textContent = this.formatCurrency(this.lineItemPrice(lineItemKey))
+        if (amount) amount.textContent = this.formatCurrency(lineItemPrice)
       }
     })
 
@@ -71,7 +76,10 @@ export default class extends Controller {
     if (group) {
       const lineItemPrice = this.lineItemPrice(key)
       group.dataset.lineItemPrice = lineItemPrice.toString()
-      group.dataset.transactionTotalCents = (-lineItemPrice).toString()
+      group.dataset.transactionTotalCents = lineItemPrice.toString()
+
+      const priceInput = group.querySelector("[data-entity-transaction-target~='priceInput']")
+      if (priceInput) priceInput.value = Math.abs(lineItemPrice).toString()
 
       const amount = group.querySelector("[data-composite-entity-modal-target~='itemPrice']")
       if (amount) amount.textContent = this.formatCurrency(lineItemPrice)

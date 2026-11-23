@@ -340,9 +340,22 @@ export default class extends Controller {
 
   transactionTotalCents() {
     const itemTotal = Number(this.element.dataset.transactionTotalCents)
-    if (Number.isFinite(itemTotal)) return itemTotal
+    if (Number.isFinite(itemTotal) && itemTotal !== 0) return itemTotal
 
-    return parseInt(this._removeMask(document.querySelector("#transaction_price").value)) * - 1
+    const lineItemKey = this.element.dataset.lineItemKey
+    if (lineItemKey) {
+      const row = Array.from(document.querySelectorAll("[data-composite-transaction-target~='row']"))
+        .find((item) => item.querySelector("input[name*='[line_items_attributes]']")?.name.match(/line_items_attributes\]\[([^\]]+)\]/)?.[1] === String(lineItemKey))
+      const input = row?.querySelector("input[name$='[price]']")
+      if (input) {
+        const cents = Number(input.value.replace(/[^\d-]/g, "")) || 0
+        const total = input.dataset.sign === "-" && cents > 0 ? -cents : cents
+        if (total !== 0) return total
+      }
+    }
+
+    const txPrice = document.querySelector("#transaction_price")?.value
+    return txPrice ? parseInt(this._removeMask(txPrice), 10) * -1 : 0
   }
 
   updatePayer() {
@@ -443,31 +456,70 @@ export default class extends Controller {
   }
 
   syncLineItemExchangeCategory(group) {
-    const lineItemKey = group.dataset.lineItemKey
-    const row = Array.from(document.querySelectorAll("[data-composite-transaction-target~='row']"))
-      .find((item) => item.querySelector("input[name*='[line_items_attributes]']")?.name.match(/line_items_attributes\]\[([^\]]+)\]/)?.[1] === lineItemKey)
+    const lineItemKey = String(group.dataset.lineItemKey)
+    const rows = Array.from(document.querySelectorAll("[data-composite-transaction-target~='row']"))
+    const row = rows.find((item) => {
+      const match = item.querySelector("input[name*='[line_items_attributes]']")?.name.match(/line_items_attributes\]\[([^\]]+)\]/)
+      return match && String(match[1]) === lineItemKey
+    })
     if (!row) return
 
     const exchangeCategoryId = document.querySelector("#exchange_category_id")?.value
     const categoryInputs = Array.from(row.querySelectorAll("input[name$='[category_id]']"))
-    const exchangeInput = categoryInputs.find((input) => input.value === exchangeCategoryId)
+    const exchangeInput = categoryInputs.find((input) => String(input.value) === String(exchangeCategoryId))
     if (!exchangeInput) return
 
-    const isPayer = this.hasPayerInputTarget && this.payerInputTarget.value === "true"
-    const hasExchange = isPayer
+    const amount = parseInt(this._removeMask(this.priceToBeReturnedInputTarget?.value || "0"), 10) || 0
+    const isPayer = (this.hasPayerInputTarget && this.payerInputTarget.value === "true") || amount !== 0
+    const hasExchange = isPayer || this.activeExchangeWrappers().length > 0
     const selectedInput = categoryInputs.find((input) => input.checked)
 
-    if (hasExchange && selectedInput !== exchangeInput) {
-      row.dataset.preExchangeCategoryId = selectedInput?.value || ""
-      exchangeInput.checked = true
-      exchangeInput.dispatchEvent(new Event("change", { bubbles: true }))
-    } else if (!hasExchange && row.dataset.preExchangeCategoryId && selectedInput === exchangeInput) {
-      const previousInput = categoryInputs.find((input) => input.value === row.dataset.preExchangeCategoryId)
-      if (previousInput) {
-        previousInput.checked = true
-        previousInput.dispatchEvent(new Event("change", { bubbles: true }))
+    if (hasExchange) {
+      if (selectedInput !== exchangeInput) {
+        row.dataset.preExchangeCategoryId = selectedInput?.value || ""
+        categoryInputs.forEach((input) => {
+          if (input !== exchangeInput) input.checked = false
+        })
+        exchangeInput.checked = true
+        exchangeInput.dispatchEvent(new Event("input", { bubbles: true }))
+        exchangeInput.dispatchEvent(new Event("change", { bubbles: true }))
       }
+
+      const combobox = exchangeInput.closest("[data-controller~='ruby-ui--combobox']")
+      if (combobox) {
+        const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "ruby-ui--combobox")
+        comboboxController?.updateTriggerContent()
+      }
+    } else if (row.dataset.preExchangeCategoryId !== undefined && selectedInput === exchangeInput) {
+      const previousValue = row.dataset.preExchangeCategoryId
       delete row.dataset.preExchangeCategoryId
+      if (previousValue) {
+        const previousInput = categoryInputs.find((input) => String(input.value) === String(previousValue))
+        if (previousInput) {
+          categoryInputs.forEach((input) => {
+            if (input !== previousInput) input.checked = false
+          })
+          previousInput.checked = true
+          previousInput.dispatchEvent(new Event("input", { bubbles: true }))
+          previousInput.dispatchEvent(new Event("change", { bubbles: true }))
+
+          const combobox = previousInput.closest("[data-controller~='ruby-ui--combobox']")
+          if (combobox) {
+            const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "ruby-ui--combobox")
+            comboboxController?.updateTriggerContent()
+          }
+        }
+      } else {
+        categoryInputs.forEach((input) => { input.checked = false })
+        exchangeInput.dispatchEvent(new Event("input", { bubbles: true }))
+        exchangeInput.dispatchEvent(new Event("change", { bubbles: true }))
+
+        const combobox = exchangeInput.closest("[data-controller~='ruby-ui--combobox']")
+        if (combobox) {
+          const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "ruby-ui--combobox")
+          comboboxController?.updateTriggerContent()
+        }
+      }
     }
   }
 
@@ -489,7 +541,13 @@ export default class extends Controller {
   }
 
   async automaticLineItemRepayment() {
-    this.exchangesCountInputTarget.value = document.querySelector("[data-reactive-form-target='installmentsCountInput']").value
+    const installmentsInput = document.querySelector("[data-reactive-form-target='installmentsCountInput']")
+    const installmentsCount = parseInt(installmentsInput?.value, 10) || 1
+    this.exchangesCountInputTarget.value = installmentsCount
+    this.exchangesCountInputTarget.disabled = false
+    if (this.hasExchangesCountEqualsButtonTarget) this.exchangesCountEqualsButtonTarget.disabled = false
+    this.exchangesCountInputTarget.classList.remove("opacity-50")
+
     if (this.hasLoanReturnPercentageInputTarget) {
       this.loanReturnPercentageInputTarget.value = "100"
       await this.applyLoanReturnPercentage()
@@ -502,7 +560,8 @@ export default class extends Controller {
   }
 
   copyTransactionInstallmentsCount() {
-    this.exchangesCountInputTarget.value = document.querySelector("[data-reactive-form-target='installmentsCountInput']").value
+    const input = document.querySelector("[data-reactive-form-target='installmentsCountInput']")
+    this.exchangesCountInputTarget.value = parseInt(input?.value, 10) || 1
     this.exchangesCountInputTarget.dispatchEvent(new Event("input"))
   }
 
@@ -600,16 +659,21 @@ export default class extends Controller {
       await new Promise((resolve) => setTimeout(resolve, 50))
       this.addExchangeTarget.click()
     }
+    if (numberOfNewExchangesToAdd > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    }
 
     this._updateWrappers(railsDueDate, visibleExchangesCount)
   }
 
   activeExchangeWrappers() {
-    return this.exchangeWrapperTargets.filter((element) => this.exchangeWrapperActive(element))
+    const wrappers = Array.from(this.element.querySelectorAll("[data-entity-transaction-target~='exchangeWrapper']"))
+    return wrappers.filter((element) => this.exchangeWrapperActive(element))
   }
 
   hiddenExchangeWrappers() {
-    return this.exchangeWrapperTargets.filter((element) => !this.exchangeWrapperActive(element))
+    const wrappers = Array.from(this.element.querySelectorAll("[data-entity-transaction-target~='exchangeWrapper']"))
+    return wrappers.filter((element) => !this.exchangeWrapperActive(element))
   }
 
   exchangeWrapperActive(element) {
@@ -648,7 +712,11 @@ export default class extends Controller {
       startingRailsDate = new RailsDate(yearValue, monthValue, 1)
       startingRailsDate.monthsForwards(1)
     } else {
-      proposedDate = new RailsDate(document.querySelector("#cash_transaction_date").value)
+      const dateEl = document.querySelector("#cash_transaction_date") ||
+                     document.querySelector("#card_transaction_date") ||
+                     document.querySelector(".transaction-date")
+      const rawDate = dateEl?.value
+      proposedDate = rawDate ? new RailsDate(rawDate) : new RailsDate(new Date())
       proposedDate.setHour(0)
       proposedDate.setMinute(0)
 
@@ -687,10 +755,22 @@ export default class extends Controller {
   }
 
   _getDueDate() {
-    const year = parseInt(document.querySelector(".installment_year").value)
-    const month = parseInt(document.querySelector(".installment_month").value)
+    const yearEl = document.querySelector(".installment_year")
+    const monthEl = document.querySelector(".installment_month")
+    if (yearEl?.value && monthEl?.value) {
+      return new RailsDate(parseInt(yearEl.value, 10), parseInt(monthEl.value, 10), 1)
+    }
 
-    return new RailsDate(year, month, 1)
+    const txDateInput = document.querySelector("#cash_transaction_date") ||
+                        document.querySelector("#card_transaction_date") ||
+                        document.querySelector(".transaction-date")
+    if (txDateInput?.value) {
+      const date = new RailsDate(txDateInput.value)
+      return new RailsDate(date.year, date.month, 1)
+    }
+
+    const now = new Date()
+    return new RailsDate(now.getFullYear(), now.getMonth() + 1, 1)
   }
 
   prevMonth({ target }) {
