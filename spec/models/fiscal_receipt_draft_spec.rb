@@ -62,6 +62,21 @@ RSpec.describe FiscalReceiptDraft, type: :model do
     expect(invalid_rows).not_to be_valid
     expect(invalid_rows.errors).to include(:payload)
   end
+
+  it "allows an empty payload when status is processing or failed" do
+    processing_draft = described_class.new(user:, status: :processing, payload: {})
+    failed_draft = described_class.new(user:, status: :failed, payload: {}, ocr_error: "Unreadable")
+
+    expect(processing_draft).to be_valid
+    expect(failed_draft).to be_valid
+  end
+
+  it "requires a valid payload when status is ready" do
+    ready_draft_without_payload = described_class.new(user:, status: :ready, payload: {})
+
+    expect(ready_draft_without_payload).not_to be_valid
+    expect(ready_draft_without_payload.errors).to include(:payload)
+  end
 end
 
 # == Schema Information
@@ -70,7 +85,9 @@ end
 # Database name: primary
 #
 #  id         :bigint           not null, primary key
+#  ocr_error  :text
 #  payload    :jsonb            not null
+#  status     :string           default("ready"), not null
 #  created_at :datetime         not null, indexed => [user_id]
 #  updated_at :datetime         not null
 #  user_id    :bigint           not null, indexed, indexed => [created_at]

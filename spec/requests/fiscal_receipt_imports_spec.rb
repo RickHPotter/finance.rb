@@ -155,5 +155,37 @@ RSpec.describe "Fiscal receipt imports", type: :request do
 
       expect(response).to have_http_status(:unauthorized).or have_http_status(:redirect)
     end
+
+    it "creates a processing draft and enqueues OcrExtractionJob for image uploads" do
+      sign_in user
+      image = fixture_file_upload("ocr_naruto_08/clear_cupom.jpg", "image/jpeg")
+
+      expect do
+        post fiscal_receipt_imports_path, params: { file: image }, headers: { "Accept" => "application/json" }
+      end.to change(user.fiscal_receipt_drafts, :count).by(1)
+         .and have_enqueued_job(OcrExtractionJob)
+
+      expect(response).to have_http_status(:accepted)
+      expect(response.parsed_body).to include(
+        "ocr_queued" => true,
+        "status" => "processing"
+      )
+      draft = user.fiscal_receipt_drafts.sole
+      expect(draft.status).to eq("processing")
+      expect(draft.source).to be_attached
+    end
+
+    it "falls back to OCR for image-only scanned PDFs without selectable text" do
+      sign_in user
+      pdf = fixture_file_upload("ocr_naruto_08/scanned_danfe.pdf", "application/pdf")
+
+      expect do
+        post fiscal_receipt_imports_path, params: { file: pdf }, headers: { "Accept" => "application/json" }
+      end.to change(user.fiscal_receipt_drafts, :count).by(1)
+         .and have_enqueued_job(OcrExtractionJob)
+
+      expect(response).to have_http_status(:accepted)
+      expect(response.parsed_body.fetch("ocr_queued")).to be(true)
+    end
   end
 end

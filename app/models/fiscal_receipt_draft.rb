@@ -2,6 +2,8 @@
 
 class FiscalReceiptDraft < ApplicationRecord
   # @extends ..................................................................
+  enum :status, { processing: "processing", ready: "ready", failed: "failed" }
+
   # @includes ................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -10,9 +12,10 @@ class FiscalReceiptDraft < ApplicationRecord
   has_many_attached :evidence_files
 
   # @validations ..............................................................
-  validates :payload, presence: true
-  validate :payload_follows_contract
-  validate :adjustments_follow_contract
+  validates :status, presence: true
+  validates :payload, presence: true, if: :ready?
+  validate :payload_follows_contract, if: :ready?
+  validate :adjustments_follow_contract, if: :ready?
   validates :source,
             content_type: %w[application/json application/pdf image/jpeg image/png image/heic application/xml text/xml],
             size: { less_than_or_equal_to: 10.megabytes },
@@ -80,7 +83,9 @@ end
 # Database name: primary
 #
 #  id         :bigint           not null, primary key
+#  ocr_error  :text
 #  payload    :jsonb            not null
+#  status     :string           default("ready"), not null
 #  created_at :datetime         not null, indexed => [user_id]
 #  updated_at :datetime         not null
 #  user_id    :bigint           not null, indexed, indexed => [created_at]

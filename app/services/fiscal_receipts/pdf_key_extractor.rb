@@ -6,6 +6,7 @@ require "timeout"
 module FiscalReceipts
   class PdfKeyExtractor
     class Unreadable < StandardError; end
+    class NoSelectableText < Unreadable; end
 
     MAX_TEXT_BYTES = 512.kilobytes
 
@@ -18,6 +19,7 @@ module FiscalReceipts
         Open3.capture3("pdftotext", "-f", "1", "-l", "3", "-enc", "UTF-8", @file.tempfile.path, "-")
       end
       raise Unreadable, I18n.t("fiscal_import.messages.pdf_unreadable") unless status.success? && output.bytesize <= MAX_TEXT_BYTES
+      raise NoSelectableText, I18n.t("fiscal_import.messages.pdf_unreadable") if output.strip.empty?
 
       self.class.source_from_text(output)
     rescue Errno::ENOENT, Timeout::Error

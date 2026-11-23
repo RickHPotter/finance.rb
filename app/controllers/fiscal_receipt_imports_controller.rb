@@ -3,7 +3,14 @@
 class FiscalReceiptImportsController < ApplicationController
   def create
     file = params[:file]
-    draft = file.respond_to?(:tempfile) ? draft_from_file(file) : draft_from_source(params[:source])
+    result = file.respond_to?(:tempfile) ? draft_from_file(file) : draft_from_source(params[:source])
+
+    if result.is_a?(Hash) && result[:ocr_pending]
+      create_ocr_draft(file)
+      return
+    end
+
+    draft = result
     payload = draft.as_json.merge(identity_token: FiscalReceipts::IdentityToken.issue(user: current_user, access_key: draft.access_key))
     existing = FiscalDocumentLink.find_by(user: current_user, context: current_context, access_key: draft.access_key)
     render json: { draft: payload, duplicate_transaction: existing.present?, evidence_signed_ids: create_evidence_blobs }
@@ -19,8 +26,43 @@ class FiscalReceiptImportsController < ApplicationController
 
     case File.extname(file.original_filename.to_s).downcase
     when ".xml" then FiscalReceipts::XmlParser.new(file.read).call
-    when ".pdf" then draft_from_source(FiscalReceipts::PdfKeyExtractor.new(file).call)
-    else raise FiscalReceipts::XmlParser::InvalidDocument, I18n.t("fiscal_import.messages.upload_fiscal_file")
+    when ".pdf" then draft_from_pdf(file)
+    else draft_from_image(file)
+    end
+  end
+
+  def draft_from_pdf(file)
+    draft_from_source(FiscalReceipts::PdfKeyExtractor.new(file).call)
+  rescue FiscalReceipts::PdfKeyExtractor::NoSelectableText
+    { ocr_pending: true }
+  end
+
+  def draft_from_image(file)
+    ext = File.extname(file.original_filename.to_s).downcase
+    raise FiscalReceipts::XmlParser::InvalidDocument, I18n.t("fiscal_import.messages.upload_fiscal_file") unless ext.in?(%w[.jpg .jpeg .png .heic .heif .tiff .tif])
+
+    { ocr_pending: true }
+  end
+
+  def create_ocr_draft(file)
+    receipt_draft = current_user.fiscal_receipt_drafts.new(
+      status: :processing,
+      payload: {}
+    )
+
+    blob = ActiveStorage::Blob.create_and_upload!(
+      io: file.tempfile,
+      filename: file.original_filename,
+      content_type: file.content_type,
+      metadata: { custom: { receipt_upload_user_id: current_user.id.to_s } }
+    )
+    receipt_draft.source.attach(blob)
+
+    if receipt_draft.save
+      OcrExtractionJob.perform_later(receipt_draft.id)
+      render json: { ocr_queued: true, draft_id: receipt_draft.id, status: "processing" }, status: :accepted
+    else
+      render json: { error: receipt_draft.errors.full_messages.to_sentence }, status: :unprocessable_content
     end
   end
 

@@ -48,6 +48,18 @@ class FiscalReceiptDraftsController < ApplicationController
     redirect_to new_card_transaction_path(fiscal_receipt_draft_id: owned_draft.id, user_card_id: selected_user_card&.id), status: :see_other
   end
 
+  def retry_ocr
+    draft = current_user.fiscal_receipt_drafts.find(params[:id])
+    unless draft.failed?
+      redirect_to fiscal_receipt_drafts_path(user_card_id: selected_user_card&.id), alert: I18n.t("ocr.errors.unexpected"), status: :see_other
+      return
+    end
+
+    draft.update!(status: :processing, ocr_error: nil)
+    OcrExtractionJob.perform_later(draft.id)
+    redirect_to fiscal_receipt_drafts_path(user_card_id: selected_user_card&.id), notice: I18n.t("ocr.status.retry_success"), status: :see_other
+  end
+
   private
 
   def selected_user_card

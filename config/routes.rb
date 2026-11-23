@@ -147,6 +147,7 @@ Rails.application.routes.draw do
     member do
       get :cash_transaction
       get :card_transaction
+      post :retry_ocr
     end
   end
 
