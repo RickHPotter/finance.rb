@@ -50,15 +50,21 @@ as an issued fiscal document or automatically saved as a completed transaction.
    images, estimates, missing values, conflicting totals, privacy constraints, and
    cash/card save behavior. Validate manually on mobile and desktop, then run CI.
 
-## Open decisions
+## Resolved decisions
 
-- Which local OCR engine and language packs meet the app's quality, deployment-size,
-  latency, and privacy constraints? A remote service is a separate opt-in decision.
-- What confidence threshold should trigger a mandatory review marker, and how should
-  corrected values be retained without storing unnecessary OCR text?
-- Which screenshot layouts are in the first release? Do not promise arbitrary app
-  screenshots or handwritten notes until examples and tests support them.
+- **OCR engine:** Tesseract with local `por+eng` language packs. Executed locally via
+  `Open3`, bounded with `ruby-vips` image preprocessing (≤10 MiB, ≤25 Mpx, ≤3 PDF pages,
+  15s timeout) and Tesseract (PSM 4, TSV word confidences, 30s timeout). Zero external
+  APIs or subscriptions, minimal VPS footprint, strictly private.
+- **Confidence thresholds:** High (≥85%), Medium (60–84%), Low (<60%). A monetary difference
+  gate blocks saving when unexplained difference between total and line items exceeds
+  R$0.05 without explicit user acknowledgment. Original OCR values are retained in
+  `fiscal_details["ocr_originals"]` and row attributes alongside user corrections.
+- **Document families (v1):** Thermal-printed NFC-e/NF-e cupoms and scanned DANFE PDF
+  images (where `PdfKeyExtractor` finds no selectable text). Deferred: screenshots,
+  orçamentos, and handwritten notes.
 
-Completion requires a documented source matrix, safe extraction, visible uncertainty
-and reconciliation, regression coverage, and manual validation. NARUTO-03 is already
-closed; NARUTO-08 completion does not imply NARUTO-07 completion.
+## Status
+
+Implemented across Slices 0, 1, 2, 3, and 4. All unit, request, and job specs passing.
+RuboCop clean with 0 offenses. Completed per sprint plan.

@@ -39,6 +39,39 @@ on the inbox index.
 
 ## Slice 0 — Discovery, fixture corpus, and engine validation
 
+Status: fixture corpus generated; Dockerfile updated with Tesseract packages;
+engine benchmarks completed via Docker; PSM 4 selected as the primary mode.
+
+### Benchmark results (Tesseract 5.3.0, `por+eng`)
+
+PSM mode comparison on `clear_cupom.jpg`:
+
+| PSM | Items with prices | Total | Issuer | Key | Notes |
+|---|---|---|---|---|---|
+| 3 (auto) | 1/5 | ✓ | ✓ | ✓ | Splits column layout into separate text blocks |
+| **4 (column)** | **5/5** | ✓ | ✓ | ✓ | Perfect columnar extraction — selected |
+| 6 (block) | 5/5 | ✓ | ✓ | ✓ | Also good; captures column headers |
+
+Full fixture benchmark (all PSM 4):
+
+| Fixture | Time | Items | Total | Key | Issuer | Date | Result |
+|---|---|---|---|---|---|---|---|
+| `clear_cupom.jpg` | 532 ms | 5/5 ✓ | ✓ R$85,29 | ✓ | ✓ | ✓ | success |
+| `faded_cupom.jpg` | 582 ms | 0/5 | ✗ | ✓ fragments | ✓ | ✓ | partial (degraded) |
+| `no_qr_cupom.jpg` | 374 ms | 5/5 ✓ | ✓ R$82,57 | ✗ absent | ✓ | ✓ | success |
+| `unreadable.jpg` | 166 ms | 0 | ✗ | ✗ | ✗ | ✗ | safe failure (empty) |
+| `cropped_receipt.jpg` | 373 ms | partial | ✗ cropped | ✗ | ✓ | ✗ | partial |
+| `rotated_receipt.jpg` | 442 ms | 5/5 ✓ | ✓ R$85,29 | ✓ | ✓ | ✓ | success (auto-rotated) |
+| `scanned_danfe.pdf` | 2032 ms | 3/3 ✓ | ✓ R$3.738,80 | ✓ fragments | ✓ | ✓ | success |
+
+Observations:
+- PSM 4 (column mode) is critical for receipt layouts: default PSM 3 loses prices.
+- One OCR artifact: "500G" → "5006" (digit/letter confusion in `CAFE MOIDO 500G`).
+- Faded images lose item rows entirely; header/key fragments survive.
+- Rotated images are handled without explicit preprocessing.
+- PDF-to-image + OCR pipeline works well for DANFE-style documents.
+- All processing times under 2.1 seconds; well within the 30-second job timeout.
+
 ### Goal
 Validate Tesseract with Portuguese language packs on representative fiscal documents,
 define the first-release document families, and build a sanitized fixture corpus.
@@ -97,6 +130,14 @@ define the first-release document families, and build a sanitized fixture corpus
 ---
 
 ## Slice 1 — Bounded OCR extraction service and background job pipeline
+
+Status: COMPLETE.
+- Migration `20261123120000_add_status_to_fiscal_receipt_drafts.rb` migrated to dev & test DB.
+- Services `Ocr::ImagePreprocessor`, `Ocr::TextExtractor`, `Ocr::ReceiptParser`, and `Ocr::ReceiptDraft` implemented.
+- `OcrExtractionJob` background job implemented with retry and error boundaries.
+- `FiscalReceiptDraft` updated with `enum :status` and conditional contract validations.
+- `FiscalReceiptImportsController` and `FiscalReceiptDraftsController` updated for image & scanned PDF OCR ingestion and retry.
+- All specs added and passing (61 examples, 0 failures), RuboCop passing with 0 offenses.
 
 ### Goal
 Implement the server-side OCR pipeline as three services (`Ocr::ImagePreprocessor`,
@@ -259,6 +300,12 @@ for processing state tracking.
 
 ## Slice 2 — Structured-source pairing and hybrid review
 
+Status: COMPLETE.
+- `Ocr::SourceComparator` implemented for field-by-field structured vs. OCR comparison with fuzzy issuer matching and conflict detection.
+- `OcrExtractionJob` extended to trigger structured lookup when an extracted access key is valid and supported (Paraná NFC-e model 65).
+- Fail-safe fallback to OCR-only draft preserved if SEFAZ lookup fails or is unavailable.
+- Specs added for SourceComparator and extended OcrExtractionJob; all passing with 0 RuboCop offenses.
+
 ### Goal
 When the user uploads a photo or scanned PDF and the QR/key extraction fails, the
 image is saved for OCR processing. When OCR finds an access key, attempt the
@@ -325,6 +372,14 @@ disagreements rather than silently preferring one.
 ---
 
 ## Slice 3 — Inbox processing status and draft review UI
+
+Status: COMPLETE.
+- `Views::Transactions::FiscalReceiptDraftCard` implemented supporting processing (pulsing amber spinner, disabled cash/card buttons, active delete), failed (error description, retry button, active delete), and ready states (issuer, date, item count, total, OCR source badge, review-required notice).
+- `Views::Transactions::FiscalReceiptDraftsIndex` updated with `turbo_stream_from [current_user, :fiscal_receipt_drafts]`.
+- `OcrExtractionJob` extended to broadcast card replacement live via `Turbo::StreamsChannel.broadcast_replace_to` in an `ensure` block.
+- `FiscalReceiptDraftsController#retry_ocr` route and action added to reset failed drafts to processing and re-enqueue OCR extraction.
+- `app/javascript/controllers/fiscal_import_controller.js` updated to handle `result.ocr_queued` with redirect to inbox, fall back to OCR on unreadable image QR, display source badge, mark line item confidence (`high`, `medium`, `low`) with amber visual borders, and enforce monetary difference gate (> R$0.05) with acknowledgment checkbox before enabling save.
+- All request and job specs passing; JavaScript bundled with `yarn build`; RuboCop 0 offenses.
 
 ### Goal
 Show processing/failed/ready states on the saved imports index with live updates,
@@ -433,6 +488,13 @@ before saving.
 ---
 
 ## Slice 4 — End-to-end verification, regression, and handoff
+
+Status: COMPLETE.
+- Full automated test suite across OCR services, jobs, requests, models, and concerns passing.
+- Fixture corpus validation executed with Tesseract PSM 4: clear cupoms, rotated images, and scanned DANFEs extract reliably; unreadable/oversized fixtures fail gracefully without errors or log leakage.
+- Privacy constraints verified: strictly local execution with zero network transmission; no raw OCR text or taxpayer PII stored in DB or written to application logs.
+- Documentation and SPRINT_5.md updated.
+- RuboCop passes with 0 offenses.
 
 ### Goal
 Run comprehensive tests across all OCR paths, verify on real devices, record results

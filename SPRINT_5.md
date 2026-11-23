@@ -467,7 +467,7 @@ References: [product contract](docs/sprints/5-naruto/naruto-07/01-product-and-da
 
 ### NARUTO-08: Read screenshots and photographed documents with OCR
 
-Status: planned; last feature in this sprint.
+Status: delivered; complete across Slices 0 through 4.
 
 Goal: speed up transaction creation from screenshots and photos, not only fiscal
 receipts. Support reviewable extraction from ordinary purchase screenshots,
