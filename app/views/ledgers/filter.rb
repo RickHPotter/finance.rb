@@ -44,6 +44,7 @@ class Views::Ledgers::Filter < Views::Base
       end
 
       canonical_hidden_fields
+      button(type: :submit, class: "hidden")
     end
   end
 

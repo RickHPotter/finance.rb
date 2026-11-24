@@ -52,4 +52,18 @@ RSpec.describe "Ledger Turbo navigation", type: :feature do
     expect(final_uri.query).to be_nil
     expect(page).to have_no_text("Content Missing")
   end
+
+  it "submits the search form when pressing Enter in an empty search term input" do
+    create(:entity, user: owner, entity_name: "LALA")
+
+    visit lalas_root_path
+
+    search_input = find("input[name='search_term']")
+    expect(search_input.value).to eq("")
+
+    search_input.send_keys(:enter)
+
+    expect(page).to have_current_path(%r{/lalas/cash_transactions})
+    expect(page).to have_css("form#search_form")
+  end
 end

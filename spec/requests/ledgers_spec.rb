@@ -16,6 +16,7 @@ RSpec.describe "Entity ledgers", type: :request do
 
       document = response.parsed_body
       expect(document.at_css("form#search_form")["action"]).to eq(lalas_cash_transactions_path)
+      expect(document.at_css("form#search_form button[type='submit'].hidden")).to be_present
       card_link = document.css("nav[aria-label='Ledger type'] a").find { |link| link.text.squish == "Card" }
       expect(card_link["href"]).to eq(lalas_card_transactions_path)
       expect(document.at_css("turbo-frame[src*='/lalas/cash_transactions/month_year']")).to be_present
