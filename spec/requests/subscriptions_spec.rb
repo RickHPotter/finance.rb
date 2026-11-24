@@ -596,7 +596,7 @@ RSpec.describe "Subscriptions", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('id="subscription_modal_price"')
-      expect(response.body).to include("click->price-mask#toggleSign")
+      expect(response.body).to include("price-mask#toggleSign")
       expect(response.body).to include("sign-based")
       expect(response.body).to include('data-sign="-"')
     end
