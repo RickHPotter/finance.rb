@@ -178,6 +178,9 @@ RSpec.describe "Fiscal receipt imports", type: :request do
     it "falls back to OCR for image-only scanned PDFs without selectable text" do
       sign_in user
       pdf = fixture_file_upload("ocr_naruto_08/scanned_danfe.pdf", "application/pdf")
+      extractor = instance_double(FiscalReceipts::PdfKeyExtractor)
+      allow(FiscalReceipts::PdfKeyExtractor).to receive(:new).and_return(extractor)
+      allow(extractor).to receive(:call).and_raise(FiscalReceipts::PdfKeyExtractor::NoSelectableText)
 
       expect do
         post fiscal_receipt_imports_path, params: { file: pdf }, headers: { "Accept" => "application/json" }

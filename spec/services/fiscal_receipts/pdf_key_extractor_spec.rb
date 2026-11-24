@@ -23,6 +23,13 @@ RSpec.describe FiscalReceipts::PdfKeyExtractor do
     expect(Open3).to have_received(:capture3).with("pdftotext", "-f", "1", "-l", "3", "-enc", "UTF-8", "/tmp/receipt.pdf", "-")
   end
 
+  it "raises NoSelectableText when the PDF contains no text" do
+    file = instance_double(ActionDispatch::Http::UploadedFile, tempfile: instance_double(Tempfile, path: "/tmp/scanned.pdf"))
+    allow(Open3).to receive(:capture3).and_return([ "", "", instance_double(Process::Status, success?: true) ])
+
+    expect { described_class.new(file).call }.to raise_error(described_class::NoSelectableText)
+  end
+
   it "preserves a line-wrapped Goiás QR URL from PDF text" do
     goias_key = "52260301427744000150650010005752241062577988"
     text = "QR-Code https://nfeweb.sefaz.go.gov.br/nfeweb/sites/nfce/danfeNFCe?p=#{goias_key}|2|1|1|8063029A08AC070E0D5C6DDB\n0891AC3F116830AC"
