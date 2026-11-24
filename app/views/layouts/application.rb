@@ -146,7 +146,7 @@ class Views::Layouts::Application < Views::Base
         data: { turbo_method: :delete }
       ) do
         plain I18n.t(:sign_out)
-        render_icon(:leave)
+        cached_icon(:leave)
       end
     end
   end
@@ -161,7 +161,7 @@ class Views::Layouts::Application < Views::Base
         data: { turbo_frame: "_top", turbo_prefetch: false }
       ) do
         plain I18n.t(:donate)
-        render_icon(:heart)
+        cached_icon(:heart)
       end
     end
   end

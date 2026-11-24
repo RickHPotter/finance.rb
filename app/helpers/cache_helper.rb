@@ -2,8 +2,12 @@
 
 module CacheHelper
   def render_icon(icon_name)
-    Rails.cache.fetch(icon_name, expires_in: 7.days) do
-      render "shared/icons/#{icon_name}"
+    if is_a?(Phlex::SGML)
+      cached_icon(icon_name)
+    else
+      Rails.cache.fetch("icon_v2/#{icon_name}", expires_in: 7.days) do
+        render "shared/icons/#{icon_name}"
+      end
     end
   end
 

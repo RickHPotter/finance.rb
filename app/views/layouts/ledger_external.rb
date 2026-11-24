@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Views::Layouts::LedgerExternal < Views::Base
+  include CacheHelper
+
   LOCALE_QUERY_KEYS = %w[
     active_month_years
     default_year
@@ -82,8 +84,8 @@ class Views::Layouts::LedgerExternal < Views::Base
       aria: { label: I18n.t("ledgers.external.locale.label") },
       data: { ledger_locale_switcher: true }
     ) do
-      locale_link("pt-BR", "🇧🇷", "PT-BR")
-      locale_link("en", "🇬🇧", "EN")
+      locale_link("pt-BR", :flag_br, "PT-BR")
+      locale_link("en", :flag_en, "EN")
     end
   end
 
@@ -91,16 +93,16 @@ class Views::Layouts::LedgerExternal < Views::Base
     rails_view_context.instance_variable_get(:@ledger_unavailable)
   end
 
-  def locale_link(locale, flag, label)
+  def locale_link(locale, flag_icon, label)
     active = I18n.locale.to_s == locale
     a(
       href: locale_path(locale),
       hreflang: locale,
       lang: locale,
       aria: { current: ("page" if active) },
-      class: "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 transition-colors #{locale_link_class(active)}"
+      class: "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors #{locale_link_class(active)}"
     ) do
-      span(aria: { hidden: "true" }) { flag }
+      span(aria: { hidden: "true" }, class: "inline-flex items-center shrink-0") { cached_icon(flag_icon) }
       span { label }
     end
   end

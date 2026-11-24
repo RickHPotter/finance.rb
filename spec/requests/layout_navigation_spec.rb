@@ -33,12 +33,17 @@ RSpec.describe "Layout and Footer Navigation", type: :request do
       logout_link = logout.at_css("a[href='#{destroy_user_session_path}']")
       expect(logout_link).to be_present
       expect(logout_link["data-turbo-method"]).to eq("delete")
+      expect(logout_link.at_css("svg")).to be_present
+      expect(logout_link.text).not_to include("shared/icons")
 
       # Sticky donate link at bottom left
       donate = document.at_css("#desktop_donate")
       expect(donate).to be_present
       expect(donate["class"]).to include("fixed", "bottom-4", "left-4")
-      expect(donate.at_css("a[href='#{donation_static_path}']")).to be_present
+      donate_link = donate.at_css("a[href='#{donation_static_path}']")
+      expect(donate_link).to be_present
+      expect(donate_link.at_css("svg")).to be_present
+      expect(donate_link.text).not_to include("shared/icons")
     end
 
     it "renders the desktop footer with correct row structure" do
@@ -96,9 +101,17 @@ RSpec.describe "Layout and Footer Navigation", type: :request do
       # Row 1: Donate and Logout
       row1 = rows[0]
       expect(row1["class"]).to include("justify-between")
-      expect(row1.at_css("a[href='#{donation_static_path}']")).to be_present
+      donate_link = row1.at_css("a[href='#{donation_static_path}']")
+      expect(donate_link).to be_present
+      expect(donate_link.at_css("svg")).to be_present
+      expect(donate_link.text).not_to include("shared/icons")
+
       expect(row1.at_css("a[href='#{baby_names_path}']")).to be_nil
-      expect(row1.at_css("a[href='#{destroy_user_session_path}']")).to be_present
+
+      logout_link = row1.at_css("a[href='#{destroy_user_session_path}']")
+      expect(logout_link).to be_present
+      expect(logout_link.at_css("svg")).to be_present
+      expect(logout_link.text).not_to include("shared/icons")
 
       # Row 2: centered light dark button
       row2 = rows[1]
@@ -109,6 +122,7 @@ RSpec.describe "Layout and Footer Navigation", type: :request do
       row3 = rows[2]
       expect(row3["class"]).to include("justify-center")
       expect(row3.css("form[action*='/locale']").size).to eq(2)
+      expect(row3.css("button svg").size).to eq(2)
 
       # Row 4: centered context info (info only, no button)
       row4 = rows[3]

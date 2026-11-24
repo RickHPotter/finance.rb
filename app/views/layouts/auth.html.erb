@@ -28,8 +28,8 @@
 
       <div class="flex justify-center items-center gap-2 mt-4 sm:mx-auto sm:w-full md:max-w-md">
         <span>
-          <%= locale_link("pt-BR", class: "inline-flex items-center gap-1 text-sm text-white hover:bg-gray-600 rounded-full px-2.5 py-1.5") do %>
-            <span aria-hidden="true">🇧🇷</span>
+          <%= locale_link("pt-BR", class: "inline-flex items-center gap-1.5 text-sm text-white hover:bg-gray-600 rounded-full px-2.5 py-1.5") do %>
+            <span aria-hidden="true" class="inline-flex items-center shrink-0"><%= render_icon :flag_br %></span>
             <span>PT-BR</span>
           <% end %>
         </span>
@@ -39,8 +39,8 @@
         </a>
 
         <span>
-          <%= locale_link("en", class: "inline-flex items-center gap-1 text-sm text-white hover:bg-gray-600 rounded-full px-2.5 py-1.5") do %>
-            <span aria-hidden="true">🇬🇧</span>
+          <%= locale_link("en", class: "inline-flex items-center gap-1.5 text-sm text-white hover:bg-gray-600 rounded-full px-2.5 py-1.5") do %>
+            <span aria-hidden="true" class="inline-flex items-center shrink-0"><%= render_icon :flag_en %></span>
             <span>EN</span>
           <% end %>
         </span>

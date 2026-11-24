@@ -36,7 +36,7 @@ RSpec.describe "Entity ledger presentation", type: :request do
       expect(theme_toggle.parent["class"]).to include("justify-start")
       locale_switcher = document.at_css("nav[data-ledger-locale-switcher][aria-label='Language']")
       expect(locale_switcher.css("a").map { |link| link.css("span").last.text }).to eq(%w[PT-BR EN])
-      expect(locale_switcher.css("span[aria-hidden='true']").map(&:text)).to eq(%w[🇧🇷 🇬🇧])
+      expect(locale_switcher.css("span[aria-hidden='true'] svg").count).to eq(2)
       expect(locale_switcher.at_css("a[hreflang='en'][aria-current='page']")).to be_present
       expect(locale_switcher.at_css("a[hreflang='pt-BR']")["href"]).to include("locale=pt-BR", "search_term=ALLOWLISTED")
       aggregate_total = document.at_css("form#search_form [data-ledger-aggregate-total]")

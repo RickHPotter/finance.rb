@@ -73,29 +73,29 @@ class Views::Shared::AppFooter < Views::Base
   def donate_link
     FooterLink(href: donation_static_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do
       plain I18n.t(:donate)
-      render_icon(:heart)
+      cached_icon(:heart)
     end
   end
 
   def logout_link
     FooterLink(href: destroy_user_session_path, class: "flex items-center gap-2 p-2", data: { turbo_method: :delete }) do
       plain I18n.t(:sign_out)
-      render_icon(:leave)
+      cached_icon(:leave)
     end
   end
 
   def locale_links
     div(class: "flex items-center gap-2") do
-      locale_button("pt-BR", "🇧🇷", "PT-BR")
-      locale_button("en", "🇬🇧", "EN")
+      locale_button("pt-BR", :flag_br, "PT-BR")
+      locale_button("en", :flag_en, "EN")
     end
   end
 
-  def locale_button(locale, flag, label)
+  def locale_button(locale, flag_icon, label)
     span do
       button_to(update_locale_path(locale:), method: :patch,
-                                             class: "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-sm text-white hover:bg-gray-600") do
-        span(aria: { hidden: "true" }) { flag }
+                                             class: "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm text-white hover:bg-gray-600") do
+        span(aria: { hidden: "true" }, class: "inline-flex items-center shrink-0") { cached_icon(flag_icon) }
         span { label }
       end
     end
