@@ -210,6 +210,63 @@ RSpec.describe "CardTransactions", type: :request do
       expect(item_descriptions).to include("Card Item A", "Card Item B")
     end
 
+    it "aligns entity modal line item keys and preserves entities when editing a transaction with a discount" do
+      cat = create(:category, :random, user:)
+      discount_category = user.built_in_category("DISCOUNT")
+      friend = create(:entity, user:)
+      composite = create(:card_transaction, user:, price: -3_000, user_card: user_card_one)
+      product_item = create(:line_item, transactable: composite, description: "Product Item", price: -3_500, category_id: cat.id)
+      create(:entity_transaction, transactable: product_item, entity: friend, price: -3_500, is_payer: false)
+      discount_item = create(:line_item, transactable: composite, description: "Discount", price: 500, item_kind: :discount, category_id: discount_category.id)
+
+      get edit_card_transaction_path(composite)
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+
+      expect(document.at_css('input[name="card_transaction[line_items_attributes][0][item_kind]"]')["value"]).to eq("discount")
+      expect(document.at_css('input[name="card_transaction[line_items_attributes][1][description]"]')["value"]).to eq("Product Item")
+
+      expect(document.at_css('[data-composite-entity-modal-target~="group"][data-line-item-key="0"]')).to be_nil
+      product_group = document.at_css('[data-composite-entity-modal-target~="group"][data-line-item-key="1"]')
+      expect(product_group).to be_present
+      expect(product_group.at_css('input[name*="entity_transactions_attributes"][name*="[id]"]')).to be_present
+
+      patch card_transaction_path(composite), params: {
+        card_transaction: {
+          split_purchase: "1",
+          line_items_attributes: {
+            "0" => {
+              id: discount_item.id,
+              item_kind: "discount",
+              category_id: discount_category.id,
+              price: "500"
+            },
+            "1" => {
+              id: product_item.id,
+              description: "Product Item Updated",
+              price: "-3500",
+              category_id: cat.id,
+              entity_transactions_attributes: {
+                "0" => {
+                  id: product_item.reload.entity_transactions.first.id,
+                  entity_id: friend.id,
+                  price: "-3500",
+                  _destroy: "false"
+                }
+              }
+            }
+          }
+        }
+      }
+
+      follow_redirect! if response.redirect?
+      expect(response).to have_http_status(:success)
+      expect(product_item.reload.entity_transactions.count).to eq(1)
+      expect(product_item.entity_transactions.first.entity_id).to eq(friend.id)
+      expect(discount_item.reload.entity_transactions.count).to eq(0)
+    end
+
     it "renders the card-specific form skeleton on edit" do
       user_card_one
       existing_card_transaction = create(

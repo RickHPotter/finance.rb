@@ -48,10 +48,12 @@ class Views::Transactions::FormLineItemEntityModal < Views::Base
   private
 
   def existing_groups
-    items = transaction.line_items.to_a
+    items = transaction.line_items.to_a.sort_by { |item| item.discount? ? 0 : 1 }
     items = [ LineItem.new ] if items.empty?
 
     items.each_with_index do |item, index|
+      next if item.discount?
+
       form.fields_for :line_items, item, child_index: index do |item_form|
         render_item_group(item_form, item, index)
       end
