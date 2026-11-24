@@ -231,10 +231,10 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@kurkle/color@^0.3.0":
-  version "0.3.4"
-  resolved "https://registry.yarnpkg.com/@kurkle/color/-/color-0.3.4.tgz#4d4ff677e1609214fc71c580125ddddd86abcabf"
-  integrity sha512-M5UknZPHRu3DEDWoipU6sE8PdkZ6Z/S+v4dD+Ke8IaNlpdSQah50lz1KtcFBa2vsdOnwbbnxJwVM4wty6udA5w==
+"@kurkle/color@^0.6.6":
+  version "0.6.6"
+  resolved "https://registry.yarnpkg.com/@kurkle/color/-/color-0.6.6.tgz#34e3a0871371987dc00196e8fe883b0e37681faa"
+  integrity sha512-Bd1NjGyoe27ExXRIBu13YymFP6k/wFxpUkX97Z3RlofLFV43nECB2G8vETZzcZzz2Ct2oRzwYElX65lxyi5UNg==
 
 "@napi-rs/wasm-runtime@^1.1.4":
   version "1.1.6"
@@ -429,11 +429,11 @@ camelcase@^5.0.0:
   integrity sha512-L28STB170nwWS63UjtlEOE3dldQApaJXZkOI1uMFfzf3rRuPegHaHesyee+YxQ+W6SvRDQV6UrdOdRiR153wJg==
 
 chart.js@^4.5.1:
-  version "4.6.1"
-  resolved "https://registry.yarnpkg.com/chart.js/-/chart.js-4.6.1.tgz#40a924bc0b92544ed66fa3f4873981152fc62c52"
-  integrity sha512-hJyniucsFmq//EvXYvJ6c6mahPoI3kaxdjVH8awTaJ/fDNWeSqqqArixMJWkWNN6fcYvPU3HneSANFNYtRi61g==
+  version "4.6.2"
+  resolved "https://registry.yarnpkg.com/chart.js/-/chart.js-4.6.2.tgz#f18912826f0b49ca558a5999eedcf0a49640aefe"
+  integrity sha512-xachB+pPHjp0syJi7llUBA1w3kMYl6NF3o7eVrvjnWCT+IB2zMaF2pX5UYDiwbbfsioFEIRnAjreNOMsGj5TIA==
   dependencies:
-    "@kurkle/color" "^0.3.0"
+    "@kurkle/color" "^0.6.6"
 
 cliui@^6.0.0:
   version "6.0.0"
@@ -585,10 +585,10 @@ hasown@^2.0.3:
   dependencies:
     function-bind "^1.1.2"
 
-hotkeys-js@4.1.2:
-  version "4.1.2"
-  resolved "https://registry.yarnpkg.com/hotkeys-js/-/hotkeys-js-4.1.2.tgz#f85cef6749d0a527ca1981eacbd5750dd7e02cd9"
-  integrity sha512-SXPG2KJ4AW0wyZwh7lBtBavfbunm78kcTqjc2b7TXe7bkyKwDJDlByXbMoGiNrhRkONfdzNg6KqRc3PKBj6tfQ==
+hotkeys-js@4.1.4:
+  version "4.1.4"
+  resolved "https://registry.yarnpkg.com/hotkeys-js/-/hotkeys-js-4.1.4.tgz#05eea8ad1a75f88ad513afe80c67f23ec8742edc"
+  integrity sha512-RwTcrHKL2fwFtzZ/3+IPDLFnbWLAmZgmPOcfpxde5eyhlGjFViiB2jm1iOSMo9FLjvX8ussMTTODc8/Ays6hIw==
 
 hotkeys-js@>=3:
   version "4.0.4"
