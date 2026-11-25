@@ -7,7 +7,7 @@ RSpec.describe "Cash card invoice actions", type: :request do
   let(:card) { create(:user_card, :random, user:) }
   let(:date) { Time.zone.today.next_month }
   let(:purchase) do
-    create(:card_transaction, user:, user_card: card, context: user.main_context, date:, price: -1000,
+    create(:card_transaction, user:, user_card: card, context: user.main_context, date:, month: nil, year: nil, price: -1000,
                               card_installments: [ build(:card_installment, number: 1, date:, price: -1000, paid: false) ])
   end
   let(:invoice) { purchase.card_installments.first.cash_transaction }
