@@ -17,6 +17,13 @@ class Views::Transactions::FiscalReceiptSummary < Views::Base
           end
         end
       end
+      div(class: "mt-2 hidden flex flex-wrap gap-1.5 border-t border-sky-200 pt-2 dark:border-sky-800",
+          data: { fiscal_import_target: "fieldConfidences" })
+      div(class: "mt-2 hidden rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
+          data: { fiscal_import_target: "sourceComparisonContainer" }) do
+        p(class: "font-semibold") { I18n.t("ocr.comparison.conflicts_title") }
+        ul(class: "mt-1 space-y-1", data: { fiscal_import_target: "sourceComparisonList" })
+      end
       div(class: "mt-2 hidden border-t border-sky-200 pt-2 dark:border-sky-800",
           data: { fiscal_import_target: "differenceGateContainer" }) do
         label(class: "flex cursor-pointer items-start gap-2 text-xs text-amber-800 dark:text-amber-300") do

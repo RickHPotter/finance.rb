@@ -9,7 +9,8 @@ export default class extends Controller {
   static targets = [
     "file", "fileName", "importButton", "source", "state", "button",
     "status", "cameraPanel", "video", "continueButton", "saveDraftButton",
-    "sourceBadge", "differenceGateContainer", "differenceAck", "differenceGateLabel"
+    "sourceBadge", "fieldConfidences", "sourceComparisonContainer", "sourceComparisonList",
+    "differenceGateContainer", "differenceAck", "differenceGateLabel"
   ]
   static values = {
     url: String,
@@ -27,11 +28,14 @@ export default class extends Controller {
   connect() {
     this.observeModalVisibility()
     if (this.hasStateTarget) this.stateChanged()
+    this.recalculatedHandler = (event) => this.handleCompositeRecalculated(event)
+    this.element.addEventListener("composite-transaction:recalculated", this.recalculatedHandler)
     requestAnimationFrame(() => this.applyPendingDraft())
   }
 
   disconnect() {
     this.modalObserver?.disconnect()
+    this.element.removeEventListener("composite-transaction:recalculated", this.recalculatedHandler)
     this.stopCamera()
   }
 
@@ -377,6 +381,7 @@ export default class extends Controller {
     const priceMask = this.application.getControllerForElementAndIdentifier(this.element, "price-mask")
     if (!splitTab || splitTab.disabled || !composite || !priceMask) throw new Error(this.message("split_unavailable"))
 
+    this.fiscalDraftActive = true
     this.showSourceSummary(draft)
     const identity = this.element.querySelector("#fiscal_identity_token")
     if (identity && draft.identity_token) identity.value = draft.identity_token
@@ -390,10 +395,10 @@ export default class extends Controller {
     const description = this.parentDescriptionInput()
     if (description) description.value = draft.issuer || "Cupom fiscal"
     const parentPrice = this.parentPriceInput()
-    parentPrice.value = _applyMask((-draft.total_cents).toString())
+    parentPrice.value = _applyMask((-Number(draft.total_cents || 0)).toString())
     parentPrice.dispatchEvent(new Event("input", { bubbles: true }))
 
-    draft.items.forEach((item) => {
+    ;(draft.items || []).forEach((item) => {
       composite.addRow()
       const row = composite.activeRows.at(-1)
       if (item.confidence) row.dataset.ocrConfidence = item.confidence
@@ -454,22 +459,112 @@ export default class extends Controller {
       }
     }
 
-    const diffAbs = Math.abs(amounts.difference)
-    if (this.hasDifferenceGateContainerTarget) {
-      if (diffAbs > 5) {
-        this.differenceGateContainerTarget.classList.remove("hidden")
-        if (this.hasDifferenceGateLabelTarget) {
-          const diffFormatted = formatter.format(diffAbs / 100)
-          this.differenceGateLabelTarget.textContent = this.message("difference_gate").replace("%{amount}", diffFormatted)
-        }
-        if (this.hasDifferenceAckTarget) {
-          this.differenceAckTarget.checked = false
-        }
-        this.toggleSubmitButtons(false)
-      } else {
-        this.differenceGateContainerTarget.classList.add("hidden")
-        this.toggleSubmitButtons(true)
+    this.renderFieldConfidences(draft, summary)
+    this.renderSourceComparison(draft, formatter, summary)
+    this.updateDifferenceGate(amounts.difference, formatter, summary)
+  }
+
+  renderFieldConfidences(draft, summary = this.element.querySelector("[data-fiscal-import-summary]")) {
+    const container = summary?.querySelector("[data-fiscal-import-target='fieldConfidences']")
+    if (!container) return
+
+    const confidences = draft.fiscal_details?.field_confidences || draft.ocr_details?.field_confidences
+    if (!confidences || typeof confidences !== "object") {
+      container.classList.add("hidden")
+      container.innerHTML = ""
+      return
+    }
+
+    const fields = ["issuer", "total", "issued_at", "items"]
+    const entries = fields.filter(field => confidences[field])
+    if (entries.length === 0) {
+      container.classList.add("hidden")
+      container.innerHTML = ""
+      return
+    }
+
+    const styles = {
+      high: { icon: "✓", cls: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800" },
+      medium: { icon: "⚠", cls: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800" },
+      low: { icon: "✗", cls: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800" }
+    }
+
+    container.innerHTML = ""
+    entries.forEach((field) => {
+      const level = String(confidences[field])
+      const style = styles[level] || styles.low
+      const badge = document.createElement("span")
+      badge.className = `inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium ${style.cls}`
+      badge.title = this.message(`confidence_${level}`)
+      badge.textContent = `${style.icon} ${this.message(`field_${field}`)}`
+      container.appendChild(badge)
+    })
+    container.classList.remove("hidden")
+  }
+
+  renderSourceComparison(draft, formatter, summary = this.element.querySelector("[data-fiscal-import-summary]")) {
+    const container = summary?.querySelector("[data-fiscal-import-target='sourceComparisonContainer']")
+    const list = summary?.querySelector("[data-fiscal-import-target='sourceComparisonList']")
+    if (!container || !list) return
+
+    const comparisons = Array.isArray(draft.fiscal_details?.source_comparison)
+      ? draft.fiscal_details.source_comparison.filter(entry => entry.status === "conflict")
+      : []
+
+    if (comparisons.length === 0) {
+      container.classList.add("hidden")
+      list.innerHTML = ""
+      return
+    }
+
+    list.innerHTML = ""
+    comparisons.forEach((entry) => {
+      const item = document.createElement("li")
+      item.className = "flex flex-wrap items-center justify-between gap-2"
+      const fieldLabel = this.message(`field_${entry.field}`)
+      const structuredVal = this.formatComparisonValue(entry.field, entry.structured, formatter)
+      const ocrVal = this.formatComparisonValue(entry.field, entry.ocr, formatter)
+      item.textContent = `${fieldLabel}: ${this.message("comparison_structured")}: ${structuredVal} · ${this.message("comparison_ocr")}: ${ocrVal}`
+      list.appendChild(item)
+    })
+    container.classList.remove("hidden")
+  }
+
+  formatComparisonValue(field, value, formatter) {
+    if (field === "total_cents" && Number.isFinite(Number(value))) {
+      return formatter.format(Number(value) / 100)
+    }
+    return String(value ?? "—")
+  }
+
+  handleCompositeRecalculated(event) {
+    if (!this.fiscalDraftActive) return
+    const diff = Number(event.detail?.diff || 0)
+    const formatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+    this.updateDifferenceGate(diff, formatter)
+  }
+
+  updateDifferenceGate(differenceCents, formatter, summary = this.element.querySelector("[data-fiscal-import-summary]")) {
+    const container = summary?.querySelector("[data-fiscal-import-target='differenceGateContainer']") ||
+      (this.hasDifferenceGateContainerTarget ? this.differenceGateContainerTarget : null)
+    const ack = summary?.querySelector("[data-fiscal-import-target='differenceAck']") ||
+      (this.hasDifferenceAckTarget ? this.differenceAckTarget : null)
+    const label = summary?.querySelector("[data-fiscal-import-target='differenceGateLabel']") ||
+      (this.hasDifferenceGateLabelTarget ? this.differenceGateLabelTarget : null)
+    if (!container) return
+
+    const diffAbs = Math.abs(Number(differenceCents || 0))
+    if (diffAbs > 5) {
+      container.classList.remove("hidden")
+      if (label) {
+        const diffFormatted = formatter.format(diffAbs / 100)
+        label.textContent = this.message("difference_gate").replace("%{amount}", diffFormatted)
       }
+      this.toggleSubmitButtons(Boolean(ack?.checked))
+    } else {
+      container.classList.add("hidden")
+      if (ack) ack.checked = false
+      this.toggleSubmitButtons(true)
     }
   }
 

@@ -307,6 +307,8 @@ export default class extends Controller {
     if (this.hasDifferenceBadgeTarget) {
       this.updateDifferenceBadge(diff, parentCents, this.activeRows.length)
     }
+
+    this.dispatch("recalculated", { detail: { diff, parentCents, allocatedCents } })
   }
 
   updateDifferenceBadge(diff, parentCents, activeRowCount) {
