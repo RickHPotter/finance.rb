@@ -90,6 +90,41 @@ RSpec.describe OcrExtractionJob, type: :job do
       expect(draft.ocr_error).to eq("No text found")
     end
 
+    it "re-enqueues on ExtractionTimeout and marks failed after retries are exhausted" do
+      allow_any_instance_of(Ocr::ImagePreprocessor).to receive(:call).and_return([ "/tmp/mock_page.tiff" ])
+      allow_any_instance_of(Ocr::TextExtractor).to receive(:call)
+        .and_raise(Ocr::TextExtractor::ExtractionTimeout, I18n.t("ocr.errors.extraction_timeout"))
+
+      expect do
+        described_class.perform_later(draft.id)
+        perform_enqueued_jobs(only: described_class)
+        perform_enqueued_jobs(only: described_class, at: 1.minute.from_now)
+      end.not_to raise_error
+
+      draft.reload
+      expect(draft.status).to eq("failed")
+      expect(draft.ocr_error).to eq(I18n.t("ocr.errors.extraction_timeout"))
+    end
+
+    it "cleans up temporary working directory after pipeline runs" do
+      created_dirs = []
+      allow(Dir).to receive(:mktmpdir).and_wrap_original do |method, *args, &block|
+        method.call(*args) do |dir|
+          created_dirs << dir
+          block.call(dir)
+        end
+      end
+
+      allow_any_instance_of(Ocr::ImagePreprocessor).to receive(:call).and_return([])
+      allow_any_instance_of(Ocr::TextExtractor).to receive(:call).and_return({ lines: [], raw_text: "test" })
+      allow_any_instance_of(Ocr::ReceiptParser).to receive(:call).and_return(parsed_draft)
+
+      described_class.perform_now(draft.id)
+
+      expect(created_dirs).not_to be_empty
+      expect(Dir.exist?(created_dirs.first)).to be(false)
+    end
+
     it "skips processing if draft is not in processing state" do
       draft.update_columns(status: "ready", payload: { "total_cents" => 100, "items" => [ { "description" => "A", "price_cents" => 100 } ] })
       expect_any_instance_of(Ocr::ImagePreprocessor).not_to receive(:call)

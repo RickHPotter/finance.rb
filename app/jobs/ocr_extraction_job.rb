@@ -3,7 +3,13 @@
 class OcrExtractionJob < ApplicationJob
   queue_as :default
 
-  retry_on Ocr::TextExtractor::ExtractionTimeout, wait: 5.seconds, attempts: 2
+  retry_on Ocr::TextExtractor::ExtractionTimeout, wait: 5.seconds, attempts: 2 do |job, error|
+    draft = FiscalReceiptDraft.find_by(id: job.arguments.first)
+    if draft&.processing?
+      draft.update!(status: :failed, ocr_error: error.message)
+      job.send(:broadcast_draft_update, draft)
+    end
+  end
   discard_on ActiveRecord::RecordNotFound
 
   def perform(fiscal_receipt_draft_id)
@@ -16,6 +22,8 @@ class OcrExtractionJob < ApplicationJob
       payload = fiscal_draft.as_json.merge(ocr_details: ocr_details(result))
 
       draft.update!(payload: payload, status: :ready, ocr_error: nil)
+    rescue Ocr::TextExtractor::ExtractionTimeout
+      raise
     rescue Ocr::ImagePreprocessor::UnsupportedFormat,
            Ocr::TextExtractor::ExtractionError => e
       draft.update!(status: :failed, ocr_error: e.message)
@@ -65,22 +73,23 @@ class OcrExtractionJob < ApplicationJob
   end
 
   def run_pipeline(draft)
-    source_path = download_source(draft)
-
-    image_paths = Ocr::ImagePreprocessor.new(source_path).call
-    ocr_output = Ocr::TextExtractor.new(image_paths).call
-    Ocr::ReceiptParser.new(ocr_output).call
-  ensure
-    cleanup_temp_files(image_paths)
+    Dir.mktmpdir("ocr_#{draft.id}_") do |work_dir|
+      source_path = download_source(draft, work_dir)
+      image_paths = Ocr::ImagePreprocessor.new(source_path, output_dir: work_dir).call
+      ocr_output = Ocr::TextExtractor.new(image_paths).call
+      Ocr::ReceiptParser.new(ocr_output).call
+    end
   end
 
-  def download_source(draft)
+  def download_source(draft, work_dir)
     raise Ocr::ImagePreprocessor::UnsupportedFormat, I18n.t("ocr.errors.file_missing") unless draft.source.attached?
 
-    tempfile = Tempfile.new([ "ocr_source", File.extname(draft.source.filename.to_s) ], binmode: true)
-    draft.source.download { |chunk| tempfile.write(chunk) }
-    tempfile.rewind
-    tempfile.path
+    ext = File.extname(draft.source.filename.to_s)
+    path = File.join(work_dir, "source#{ext}")
+    File.open(path, "wb") do |file|
+      draft.source.download { |chunk| file.write(chunk) }
+    end
+    path
   end
 
   def ocr_details(result)
@@ -91,13 +100,5 @@ class OcrExtractionJob < ApplicationJob
       items_missing: result.items_missing?,
       ocr_originals: result.items.filter_map { |item| item[:ocr_original] }
     }
-  end
-
-  def cleanup_temp_files(paths)
-    Array(paths).each do |path|
-      File.delete(path) if path && File.exist?(path)
-    rescue StandardError
-      # Best-effort cleanup
-    end
   end
 end

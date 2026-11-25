@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "open3"
+require "securerandom"
 require "timeout"
 
 module Ocr
@@ -18,8 +19,9 @@ module Ocr
       application/pdf
     ].freeze
 
-    def initialize(file)
+    def initialize(file, output_dir: nil)
       @file = file
+      @output_dir = output_dir
     end
 
     def call
@@ -38,6 +40,8 @@ module Ocr
     end
 
     def process
+      require "vips"
+
       path = file_path
 
       if pdf?(path)
@@ -45,11 +49,11 @@ module Ocr
       else
         [ process_image(path) ]
       end
+    rescue Vips::Error
+      raise UnsupportedFormat, I18n.t("ocr.errors.unreadable_image")
     end
 
     def process_image(path)
-      require "vips"
-
       image = Vips::Image.new_from_file(path, access: :sequential)
       image = image.autorot
 
@@ -64,14 +68,12 @@ module Ocr
         image = image.resize(scale)
       end
 
-      output = Tempfile.new([ "ocr_preprocessed", ".tiff" ], binmode: true)
-      image.tiffsave(output.path, compression: :none)
-      output.path
+      output_path = File.join(@output_dir || Dir.tmpdir, "ocr_preprocessed_#{SecureRandom.hex(6)}.tiff")
+      image.tiffsave(output_path, compression: :none)
+      output_path
     end
 
     def process_pdf(path)
-      require "vips"
-
       pages = pdf_page_count(path)
       raise UnsupportedFormat, I18n.t("ocr.errors.pdf_too_many_pages") if pages > MAX_PDF_PAGES
 
@@ -81,15 +83,13 @@ module Ocr
 
         image = image.colourspace("b-w") if image.bands > 1
 
-        output = Tempfile.new([ "ocr_pdf_page_#{page_index}", ".tiff" ], binmode: true)
-        image.tiffsave(output.path, compression: :none)
-        output.path
+        output_path = File.join(@output_dir || Dir.tmpdir, "ocr_pdf_page_#{page_index}_#{SecureRandom.hex(6)}.tiff")
+        image.tiffsave(output_path, compression: :none)
+        output_path
       end
     end
 
     def pdf_page_count(path)
-      require "vips"
-
       image = Vips::Image.pdfload(path, dpi: 72, access: :sequential)
       begin
         image.get("n-pages")
