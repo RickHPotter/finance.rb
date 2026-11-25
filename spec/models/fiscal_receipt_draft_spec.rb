@@ -77,6 +77,27 @@ RSpec.describe FiscalReceiptDraft, type: :model do
     expect(ready_draft_without_payload).not_to be_valid
     expect(ready_draft_without_payload.errors).to include(:payload)
   end
+
+  it "allows partial OCR payloads with empty items or zero/missing total when status is ready" do
+    partial_ocr = described_class.new(
+      user:,
+      status: :ready,
+      payload: { "source" => "ocr", "issuer" => "LOJA DEGRADADA", "total_cents" => 0, "items" => [] }
+    )
+
+    expect(partial_ocr).to be_valid
+  end
+
+  it "still rejects empty items for non-OCR structured payloads" do
+    structured_empty = described_class.new(
+      user:,
+      status: :ready,
+      payload: payload.merge("source" => "sefaz_pr", "items" => [])
+    )
+
+    expect(structured_empty).not_to be_valid
+    expect(structured_empty.errors).to include(:payload)
+  end
 end
 
 # == Schema Information

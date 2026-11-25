@@ -20,6 +20,9 @@ class OcrExtractionJob < ApplicationJob
       result = run_pipeline(draft)
       fiscal_draft = process_hybrid_lookup(result, draft)
       payload = fiscal_draft.as_json.merge(ocr_details: ocr_details(result))
+      if fiscal_draft.source != "ocr" && fiscal_draft.access_key.present?
+        payload[:identity_token] = FiscalReceipts::IdentityToken.issue(user: draft.user, access_key: fiscal_draft.access_key)
+      end
 
       draft.update!(payload: payload, status: :ready, ocr_error: nil)
     rescue Ocr::TextExtractor::ExtractionTimeout

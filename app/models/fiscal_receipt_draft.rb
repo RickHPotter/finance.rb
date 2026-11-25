@@ -42,6 +42,10 @@ class FiscalReceiptDraft < ApplicationRecord
   # @private_instance_methods ................................................
   private
 
+  def ocr_source?
+    payload.is_a?(Hash) && payload["source"] == "ocr"
+  end
+
   def payload_follows_contract
     unless payload.is_a?(Hash) && payload.present?
       errors.add(:payload, :invalid)
@@ -49,7 +53,9 @@ class FiscalReceiptDraft < ApplicationRecord
     end
 
     errors.add(:payload, :too_long, count: 256.kilobytes) if payload.to_json.bytesize > 256.kilobytes
-    errors.add(:payload, :invalid) unless payload.fetch("total_cents", nil).is_a?(Integer) && payload.fetch("total_cents").positive?
+    total_cents = payload.fetch("total_cents", nil)
+    valid_total = total_cents.is_a?(Integer) && (ocr_source? ? total_cents >= 0 : total_cents.positive?)
+    errors.add(:payload, :invalid) unless valid_total || (ocr_source? && total_cents.nil?)
     errors.add(:payload, :invalid) unless valid_items?
   end
 
@@ -68,7 +74,8 @@ class FiscalReceiptDraft < ApplicationRecord
 
   def valid_items?
     items = payload["items"]
-    return false unless items.is_a?(Array) && items.present? && items.size <= 500
+    return false unless items.is_a?(Array) && items.size <= 500
+    return false if items.empty? && !ocr_source?
 
     items.all? do |item|
       item.is_a?(Hash) && item["description"].is_a?(String) && item["description"].present? &&

@@ -170,7 +170,32 @@ RSpec.describe OcrExtractionJob, type: :job do
       expect(draft.status).to eq("ready")
       expect(draft.payload["source"]).to eq("sefaz_pr")
       expect(draft.payload["issuer"]).to eq("MERCADO PR S/A")
+      expect(FiscalReceipts::IdentityToken.read(draft.payload["identity_token"], user:)).to eq(pr_key)
       expect(draft.payload.dig("fiscal_details", "source_comparison")).to be_present
+    end
+
+    it "marks degraded OCR drafts with empty items as ready for user review" do
+      degraded_result = Ocr::ReceiptDraft.new(
+        issuer: "LOJA FADED",
+        issued_at: nil,
+        total_cents: 5000,
+        items: [],
+        access_key: nil,
+        field_confidences: { items: :low, items_missing: true, total: :high },
+        source_engine: "tesseract",
+        processing_ms: 90
+      )
+
+      allow_any_instance_of(Ocr::ImagePreprocessor).to receive(:call).and_return([ "/tmp/mock.tiff" ])
+      allow_any_instance_of(Ocr::TextExtractor).to receive(:call).and_return({ lines: [] })
+      allow_any_instance_of(Ocr::ReceiptParser).to receive(:call).and_return(degraded_result)
+
+      described_class.perform_now(draft.id)
+
+      draft.reload
+      expect(draft.status).to eq("ready")
+      expect(draft.payload["items"]).to eq([])
+      expect(draft.payload["total_cents"]).to eq(5000)
     end
 
     it "falls back to OCR-only draft when structured lookup fails" do
