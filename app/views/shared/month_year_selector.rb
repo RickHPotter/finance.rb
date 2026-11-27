@@ -17,7 +17,14 @@ class Views::Shared::MonthYearSelector < Views::Base
   end
 
   def view_template(&)
-    div(class: "w-full", data: { controller: "month-year-selector", form_id: "search_form" }) do
+    div(
+      class: "w-full",
+      data: {
+        controller: "month-year-selector",
+        form_id: "search_form",
+        month_year_selector_solo_hint_message_value: I18n.t("month_year_selector.solo_hint")
+      }
+    ) do
       text_field_tag :default_year, default_year, class: :hidden, data: { month_year_selector_target: "defaultYear" }
       text_field_tag :active_month_years, active_month_years.to_json, class: :hidden, data: { month_year_selector_target: "monthYears" }
 

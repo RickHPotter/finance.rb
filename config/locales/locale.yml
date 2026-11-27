@@ -261,6 +261,8 @@ en:
     finish_chain_without_save: "Finish chain without saving"
     add_to_subscription: "Add to Subscription"
     partial_pay: "Partial Pay"
+  month_year_selector:
+    solo_hint: "Tip: Hold Shift and click a month to select only that month."
   cash_transactions:
     payment_failure:
       reported: "Payment failure reported."
@@ -855,6 +857,8 @@ pt-BR:
     finish_chain_without_save: "Finalizar cadeia sem salvar"
     add_to_subscription: "Adicionar à Assinatura"
     partial_pay: "Pagar Parcial"
+  month_year_selector:
+    solo_hint: "Dica: Segure Shift e clique em um mês para selecionar apenas ele."
   cash_transactions:
     payment_failure:
       reported: "Falha no pagamento reportada."

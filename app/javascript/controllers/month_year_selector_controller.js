@@ -5,12 +5,14 @@ const inactive_bg = [ "bg-slate-100", "text-slate-900", "dark:bg-slate-900", "da
 
 export default class extends Controller {
   static targets = ["monthYearContainer", "monthYear", "monthYears", "defaultYear"]
+  static values = { soloHintMessage: String }
 
   connect() {
     this.initialise()
     this.isMouseDown = false;
     this.buttonStart = null
     this.buttonEnd = null
+    this.shiftPressed = false
   }
 
   initialise() {
@@ -98,6 +100,7 @@ export default class extends Controller {
   activate(event) {
     this.isMouseDown = true
     this.buttonStart = event.currentTarget
+    this.shiftPressed = event.shiftKey
   }
 
   stop(event) {
@@ -105,10 +108,18 @@ export default class extends Controller {
 
     if (!this.buttonStart || !this.buttonEnd) return
 
+    if (event.shiftKey || this.shiftPressed) {
+      this._selectOnly(this.buttonEnd)
+      this.isMouseDown = false
+      this.shiftPressed = false
+      return
+    }
+
     const firstMonthYear = this.buttonStart.dataset.monthYear
     const lastMonthYear = this.buttonEnd.dataset.monthYear
 
     const buttonActive = "active" in this.buttonStart.dataset
+    const previousActiveCount = this.activeMonths.size
 
     const buttonsToClick = this.monthYearTargets.filter(e => {
       return e.dataset.monthYear >= firstMonthYear && e.dataset.monthYear <= lastMonthYear && ("active" in e.dataset) === buttonActive
@@ -116,11 +127,32 @@ export default class extends Controller {
     buttonsToClick.forEach(e => this.toggleMonth(e))
 
     if (buttonsToClick.length > 0) {
+      if (buttonActive) this._maybeNotifySoloShortcut(previousActiveCount)
       this._syncFormState()
       document.getElementById(this.element.dataset.formId)?.requestSubmit()
     }
 
     this.isMouseDown = false
+    this.shiftPressed = false
+  }
+
+  _selectOnly(targetButton) {
+    let changed = false
+
+    this.monthYearTargets.forEach(button => {
+      const isTarget = button === targetButton
+      const isActive = "active" in button.dataset
+
+      if ((isTarget && !isActive) || (!isTarget && isActive)) {
+        this.toggleMonth(button)
+        changed = true
+      }
+    })
+
+    if (!changed) return
+
+    this._syncFormState()
+    document.getElementById(this.element.dataset.formId)?.requestSubmit()
   }
 
   _updateContainer() {
@@ -157,5 +189,22 @@ export default class extends Controller {
   _syncFormState() {
     this.monthYearsTarget.value = JSON.stringify(Array.from(this.activeMonths))
     this.defaultYearTarget.value = this.defaultYear
+  }
+
+  _maybeNotifySoloShortcut(previousActiveCount) {
+    if (!this.hasSoloHintMessageValue || !this.soloHintMessageValue) return
+    if (!window.matchMedia?.("(hover: hover) and (pointer: fine)").matches) return
+
+    const currentActiveCount = this.activeMonths.size
+    const deactivatedOnlyActive = previousActiveCount === 1 && currentActiveCount === 0
+    const narrowedToOne = previousActiveCount > 1 && currentActiveCount === 1
+    if (!deactivatedOnlyActive && !narrowedToOne) return
+
+    const frame = document.querySelector("turbo-frame#notification")
+    if (!frame) return
+
+    const url = `/static/notification?notice=${encodeURIComponent(this.soloHintMessageValue)}`
+    if (frame.getAttribute("src") === url) frame.reload()
+    else frame.src = url
   }
 }
