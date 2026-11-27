@@ -118,6 +118,29 @@ module FeatureBrowser
   end
 end
 
+module ChromeDriverOriginResetPatch
+  def reset!
+    @last_origin_before_reset = begin
+      uri = URI.parse(current_url.to_s)
+      "#{uri.scheme}://#{uri.host}:#{uri.port}" if uri.scheme&.start_with?("http") && uri.host
+    rescue URI::InvalidURIError
+      nil
+    end
+    super
+  end
+
+  def execute_cdp(cmd, params = {})
+    super
+  rescue Selenium::WebDriver::Error::InvalidArgumentError => e
+    raise unless cmd == "Storage.clearDataForOrigin" && params[:origin] == "*" && e.message.include?("not a valid URL")
+
+    execute_cdp("Network.clearBrowserCookies")
+    super(cmd, params.merge(origin: @last_origin_before_reset)) if @last_origin_before_reset
+  end
+end
+
+Capybara::Selenium::Driver::ChromeDriver.prepend(ChromeDriverOriginResetPatch)
+
 Capybara.register_driver :selenium_chrome_headless do |app|
   paths = FeatureBrowser.paths
   options = Selenium::WebDriver::Chrome::Options.new
