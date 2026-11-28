@@ -102,8 +102,7 @@ class BudgetsController < ApplicationController
     set_return_to
     return render_budget_failure unless @budget.valid?
 
-    set_tabs(active_menu: :cash, active_sub_menu: :pix) if @budget.active?
-    redirect_to budget_save_destination,
+    redirect_to @return_to,
                 notice: notification_model(action_name == "create" ? :created : :updated, Budget),
                 status: :see_other
   end
@@ -141,17 +140,21 @@ class BudgetsController < ApplicationController
     end
   end
 
-  def budget_save_destination
-    return @return_to unless @budget.active?
-
-    cash_transactions_path(
-      default_year: @budget.year,
-      active_month_years: [ Date.new(@budget.year, @budget.month, 1).strftime("%Y%m").to_i ].to_json
-    )
+  def set_return_to
+    @return_to = dashboard_navigation_destination(params[:return_to]) ||
+                 cash_transactions_return_destination(params[:return_to]) ||
+                 budget_navigation_destination(params[:return_to])
   end
 
-  def set_return_to
-    @return_to = dashboard_navigation_destination(params[:return_to]) || budget_navigation_destination(params[:return_to])
+  def cash_transactions_return_destination(raw)
+    return nil if raw.blank?
+
+    uri = URI.parse(raw.to_s)
+    return nil if uri.host.present? || uri.scheme.present? || uri.path != cash_transactions_path
+
+    Navigation::CashTransactions.new(raw: raw.to_s, fallback: cash_transactions_path, current_user:, current_context:).destination
+  rescue URI::InvalidURIError
+    nil
   end
 
   def budget_navigation_destination(raw)
@@ -246,12 +249,8 @@ class BudgetsController < ApplicationController
     uri = URI.parse(raw_return_path)
     return nil if uri.host.present? || uri.scheme.present?
     return budget_navigation_destination(raw_return_path) if uri.path == budgets_path
-    if uri.path == cash_transactions_path
-      return Navigation::CashTransactions.new(raw: raw_return_path, fallback: cash_transactions_path, current_user:,
-                                              current_context:).destination
-    end
 
-    nil
+    cash_transactions_return_destination(raw_return_path)
   rescue URI::InvalidURIError
     nil
   end

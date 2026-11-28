@@ -58,9 +58,12 @@ RSpec.describe "Budgets", type: :request do
   end
 
   describe "[ #create ]" do
-    it "creates a budget" do
+    it "creates a budget and redirects back to return_to" do
+      return_to = budgets_path(search_term: "Food")
+
       expect do
         post budgets_path, params: {
+          return_to:,
           budget: {
             description: "Food Budget",
             value: -10_000,
@@ -74,6 +77,8 @@ RSpec.describe "Budgets", type: :request do
           }
         }, headers: turbo_stream_headers
       end.to change(Budget, :count).by(1)
+
+      expect(response).to redirect_to(return_to)
     end
 
     it "shows generic and detailed failure notifications when create validation fails" do
@@ -98,6 +103,26 @@ RSpec.describe "Budgets", type: :request do
       expect(response.body).not_to include(">is invalid<")
       expect(response.body).to include('<turbo-stream action="update" target="notification">')
       expect(response.body).to include('<turbo-stream action="append" target="notification">')
+    end
+  end
+
+  describe "[ #update ]" do
+    it "updates an active budget and redirects back to return_to" do
+      budget = create(:budget, user:, context: user.main_context, active: true,
+                               budget_categories_attributes: [ { category_id: category.id } ])
+      return_to = cash_transactions_path(default_year: 2026)
+
+      patch budget_path(budget), params: {
+        return_to:,
+        budget: {
+          description: "Updated Food Budget",
+          value: -12_000,
+          active: true
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to redirect_to(return_to)
+      expect(budget.reload.description).to eq("Updated Food Budget")
     end
   end
 
