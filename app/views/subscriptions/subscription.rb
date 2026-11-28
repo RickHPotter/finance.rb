@@ -43,7 +43,7 @@ class Views::Subscriptions::Subscription < Views::Base
       class: desktop_row_class,
       data: { id: subscription.id, datatable_target: :row, subscription_bulk_target: :row }
     ) do
-      div(class: "relative col-span-3 flex flex-col justify-center px-9 py-3 text-center") do
+      div(class: "relative col-span-4 flex flex-col justify-center px-9 py-3 text-center") do
         div(class: "absolute left-3 top-1/2 -translate-y-1/2") do
           selection_checkbox
         end
@@ -69,7 +69,7 @@ class Views::Subscriptions::Subscription < Views::Base
 
       render_desktop_entities
 
-      div(class: "col-span-2 flex items-center justify-center px-2 py-3 font-anonymous text-md font-semibold text-slate-800 dark:text-slate-100") do
+      div(class: "col-span-1 flex items-center justify-center px-2 py-3 font-anonymous text-md font-semibold text-slate-800 dark:text-slate-100") do
         subscription.transactions_count
       end
 

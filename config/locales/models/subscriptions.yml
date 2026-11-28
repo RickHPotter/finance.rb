@@ -22,6 +22,7 @@ en:
         entity_id: Entity
         user_id: User
         transactions_count: Transactions
+        count: Count
         created_at: Created at
         updated_at: Updated at
         start_month_year: Start Month/Year
@@ -70,6 +71,7 @@ pt-BR:
         entity_id: Entidade
         user_id: Usuário
         transactions_count: Transações
+        count: Quantidade
         created_at: Criado em
         updated_at: Atualizado em
         start_month_year: Mês/Ano Inicial

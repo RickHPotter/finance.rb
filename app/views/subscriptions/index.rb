@@ -41,11 +41,16 @@ class Views::Subscriptions::Index < Views::Base
                   grid_class: "grid grid-cols-12",
                   rows: [
                     [
-                      { class: "col-span-3 flex justify-center", label: model_attribute(Subscription, :description) },
+                      { class: "col-span-9", label: nil },
+                      { class: "col-span-2 flex justify-center", label: model_attribute(Subscription, :transactions_count), align: :center },
+                      { class: "", label: nil }
+                    ],
+                    [
+                      { class: "col-span-4 flex justify-center", label: model_attribute(Subscription, :description) },
                       { class: "flex justify-center", label: model_attribute(Subscription, :status) },
                       { class: "col-span-2 flex justify-center", label: model_attribute(Subscription, :category_id) },
                       { class: "col-span-2 flex justify-center", label: model_attribute(Subscription, :entity_id) },
-                      { class: "col-span-2 flex justify-center", label: model_attribute(Subscription, :transactions_count) },
+                      { class: "flex justify-center", label: model_attribute(Subscription, :count), align: :center },
                       { class: "flex items-end justify-end", label: model_attribute(Subscription, :price), align: :right },
                       { class: "flex justify-center", label: I18n.t(:datatable_actions) }
                     ]
